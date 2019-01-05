@@ -47,7 +47,7 @@ namespace SolToBoogie
                 string absolutePath = Path.Combine(context.SourceDirectory, relativePath);
 
                 string srcInfo = node.Src;
-                string[] tokens = srcInfo.Split(":");
+                string[] tokens = srcInfo.Split(':');
                 int startPosition = int.Parse(tokens[0]);
                 int lineNumber = MapToLineNumber(relativePath, startPosition);
 
@@ -57,7 +57,7 @@ namespace SolToBoogie
 
         public int MapToLineNumber(string srcFilePathName, int position)
         {
-            srcFilePathName = srcFilePathName.Replace("\\", "/", System.StringComparison.CurrentCulture);
+            srcFilePathName = srcFilePathName.Replace("\\", "/"/*, System.StringComparison.CurrentCulture*/);
             List<int> LineBreaks = DictLineBreaks[srcFilePathName];
 
             //ToDo: Does ConcurrencyExplorer expect the line number to start from 0 or 1?

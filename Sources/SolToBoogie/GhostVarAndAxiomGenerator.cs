@@ -245,7 +245,7 @@ namespace SolToBoogie
                 boogieValType = TransUtils.GetBoogieTypeFromSolidityTypeName(mapping.ValueType);
             }
 
-            KeyValuePair<BoogieType, BoogieType> pair = KeyValuePair.Create(boogieKeyType, boogieValType);
+            KeyValuePair<BoogieType, BoogieType> pair = new KeyValuePair<BoogieType,BoogieType>(boogieKeyType, boogieValType);
             if (!generatedTypes.Contains(pair))
             {
                 generatedTypes.Add(pair);
@@ -272,7 +272,7 @@ namespace SolToBoogie
                 boogieValType = TransUtils.GetBoogieTypeFromSolidityTypeName(array.BaseType);
             }
 
-            KeyValuePair<BoogieType, BoogieType> pair = KeyValuePair.Create(boogieKeyType, boogieValType);
+            KeyValuePair<BoogieType, BoogieType> pair = new KeyValuePair<BoogieType, BoogieType>(boogieKeyType, boogieValType);
             if (!generatedTypes.Contains(pair))
             {
                 generatedTypes.Add(pair);

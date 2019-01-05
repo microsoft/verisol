@@ -18,7 +18,7 @@ namespace SolidityAST
                 throw new SystemException($"Cannot find solidity compiler at {solcPath}");
             }
 
-            derivedFilePath = derivedFilePath.Replace("\\", "/", StringComparison.CurrentCulture);
+            derivedFilePath = derivedFilePath.Replace("\\", "/" /*, StringComparison.CurrentCulture*/);
 
             string jsonString = RunSolc(solcPath, derivedFilePath);
 
@@ -62,8 +62,8 @@ namespace SolidityAST
 
             string configString = "{ \"language\": \"Solidity\", \"sources\": { %SOLPLACEHOLDER%: { \"urls\": [ %URLPLACEHOLDER% ]}},"
                 + "\"settings\": {\"evmVersion\": \"byzantium\", \"outputSelection\": {\"*\": {\"\": [ \"ast\" ]}}}}";
-            configString = configString.Replace("%SOLPLACEHOLDER%", "\"" + derivedFileName + "\"", StringComparison.CurrentCulture);
-            configString = configString.Replace("%URLPLACEHOLDER%", "\"" + derivedFilePath + "\"", StringComparison.CurrentCulture);
+            configString = configString.Replace("%SOLPLACEHOLDER%", "\"" + derivedFileName + "\"" /*, StringComparison.CurrentCulture*/);
+            configString = configString.Replace("%URLPLACEHOLDER%", "\"" + derivedFilePath + "\""/*, StringComparison.CurrentCulture*/);
 
             p.StandardInput.Write(configString);
             p.StandardInput.Close();
