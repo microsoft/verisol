@@ -7,6 +7,7 @@
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
     <OldToolsVersion>2.0</OldToolsVersion>
+    <HighEntropyVA>true</HighEntropyVA> 
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\BoogieAST\BoogieAST.csproj" />
