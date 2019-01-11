@@ -1,4 +1,10 @@
 
+# VeriSol
+
+VeriSol (Verifier for Solidity) is a prototype formal verification system for smart contracts developed
+in the popular [Solidity] (https://solidity.readthedocs.io/en/) programming language. 
+
+
 # Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
