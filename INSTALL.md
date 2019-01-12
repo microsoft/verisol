@@ -15,14 +15,14 @@ The following dependecies are needed to run VeriSol on a Solidity program. There
 ### Dependencies for running verifier
 
    - __Boogie verifier__. Download and build the Boogie sources from [here](https://github.com/boogie-org/boogie
-), and denote _%BOOGIEDIR%_ as the path to the folder containing **Boogie.exe**(and other dlls).
+), and denote _%BOOGIE_DIR%_ as the path to the folder containing **Boogie.exe**(and other dlls).
    - __Corral verifier__. Download and build the Corral sources from [here](https://github.com/boogie-org/corral
-), and denote _%CORRALDIR%_ as the path to the folder containing **Corral.exe** (and other dlls).
+), and denote _%CORRAL_DIR%_ as the path to the folder containing **Corral.exe** (and other dlls).
    - __Z3 theorem prover__. Unless you already have **z3.exe** installed as part of Boogie/Corral download, 
-   download **z3.exe** from [here](https://github.com/Z3Prover/z3), and place it in both _%BOOGIEDIR%_ and _%CORRALDIR%_. We have only tested versions **4.8.0** or below.
+   download **z3.exe** from [here](https://github.com/Z3Prover/z3), and place it in both _%BOOGIE_DIR%_ and _%CORRAL_DIR%_. We have only tested versions **4.8.0** or below.
    
 ### Dependencies for viewing Corral defect traces in source code
-   - __Concurrency explorer__. Downlaod the sources and build the sources of **ConcurencyExplorer** from [here](https://github.com/LeeSanderson/Chess), and denote _%CONCURRENCYEXPLORERDIR%_ as the path containing **ConcurrencyExplorer.exe**.
+   - __Concurrency explorer__. Downlaod the sources and build the sources of **ConcurencyExplorer** from [here](https://github.com/LeeSanderson/Chess), and denote _%CONCURRENCY_EXPLORER_DIR%_ as the path containing **ConcurrencyExplorer.exe**.
 
 ## Build VeriSol
 
@@ -34,11 +34,21 @@ Open the __Sources\SolToBoogie.sln__ file in Visual Studio (2017) and perform __
 Assuming the root folder is *VERISOL_PATH*, run 
 
 > %VERISOL_PATH%\Sources\SolToBoogie\bin\Debug\netstandard2.0\SolToBoogie.dll a.sol %VERISOL_PATH% out.bpl
+> %BOOGIE_DIR%\boogie.exe out.bpl /noVerify /doModSetAnalysis /print:pretty.bpl //optional, for pretty print viewing
 
 ### Run verifier
-Coming soon!
+See the paper [here](https://arxiv.org/abs/1812.08829) for details of what these verification terms mean.
+
+*Sound verification* of the Boogie program (unbounded verification using invariant inference)
+> %BOOGIE_DIR%\Boogie.exe -doModSetAnalysis -inline:assert -noinfer -contractInfer -proc:BoogieEntry_* out.bpl
+
+*Transaction-bounded verification* of the Boogie program (using Corral)
+> %CORRAL_DIR%\corral.exe /recursionBound:4 /k:1 /main:CorralEntry_* /tryCTrace out.bpl /printDataValues:1 > corral.txt
+If Corral throws an exception, try adding "/trackAllVars " to the list of parameters above.  
 
 ### View traces from Corral
+If Corral generates a defect (look at output of Corral and **corral_out_trace.txt** file in the same folder), view it using ConcurrencyExplorer: 
+> %CONCURRENCY_EXPLORER_DIR%\ConcurrencyExplorer.exe corral_out_trace.txt
 
 ## Regression script
 
