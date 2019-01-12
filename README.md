@@ -10,6 +10,30 @@ The following paper describes the design of VeriSol and applications in [Azure B
 
 > __Formal Specification and Verification of Smart Contracts for Azure Blockchain__, Shuvendu K. Lahiri, Shuo Chen, Yuepeng Wang, Isil Dillig, https://arxiv.org/abs/1812.08829
 
+## Dependencies
+
+The following dependecies are needed to run VeriSol on a Solidity program
+   1. __Solidity compiler__.
+   1. __Boogie verifier__.
+   1. __Corral verifier__.
+   1. __Z3 theorem prover__.
+   1. __Concurrency explorer__.
+
+## Build VeriSol
+
+Open the __Sources\SolToBoogie.sln__ file in Visual Studio (2017) and perform __Build Solution__. 
+
+## Running VeriSol
+
+Coming soon!
+
+## Regression script
+
+Coming soon!
+
+## License
+VeriSol is licensed under the MIT license. 
+
 ## Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
