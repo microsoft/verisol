@@ -31,7 +31,7 @@ Open the __Sources\SolToBoogie.sln__ file in Visual Studio (2017) and perform __
 ## Running VeriSol
 
 ### Translate Solidity to Boogie
-Assuming the root folder is *VERISOL_PATH*, run 
+Assuming the root folder of this repository is *VERISOL_PATH*, run 
 
 > %VERISOL_PATH%\Sources\SolToBoogie\bin\Debug\netstandard2.0\SolToBoogie.dll a.sol %VERISOL_PATH% out.bpl
 > %BOOGIE_DIR%\boogie.exe out.bpl /noVerify /doModSetAnalysis /print:pretty.bpl //optional, for pretty print viewing
@@ -44,6 +44,7 @@ See the paper [here](https://arxiv.org/abs/1812.08829) for details of what these
 
 *Transaction-bounded verification* of the Boogie program (using Corral)
 > %CORRAL_DIR%\corral.exe /recursionBound:4 /k:1 /main:CorralEntry_* /tryCTrace out.bpl /printDataValues:1 > corral.txt
+
 If Corral throws an exception, try adding "/trackAllVars " to the list of parameters above.  
 
 ### View traces from Corral
