@@ -12,9 +12,13 @@ The following dependecies are needed to run VeriSol on a Solidity program. There
    - __Solidity compiler__. Download the Solc binary for Windows or Linux from [here](https://github.com/ethereum/solidity/releases/tag/v0.4.24). We have currently tested with version __0.4.24__. Place the executable (solc.exe for Windows, or solc-static-linux for Linux) in the **Tool** folder.
    
 ### Dependencies for running verifier
-   - __Boogie verifier__.
-   - __Corral verifier__.
-   - __Z3 theorem prover__.
+
+   - __Boogie verifier__. Download and build the Boogie sources from [here](https://github.com/boogie-org/boogie
+), and denote _%BOOGIEDIR%_ as the path to the folder containing **Boogie.exe**(and other dlls).
+   - __Corral verifier__. Download and build the Corral sources from [here](https://github.com/boogie-org/corral
+), and denote _%CORRALDIR%_ as the path to the folder containing **Corral.exe** (and other dlls).
+   - __Z3 theorem prover__. Unless you already have **z3.exe** installed as part of Boogie/Corral download, 
+   download **z3.exe** from [here](https://github.com/Z3Prover/z3), and place it in both _%BOOGIEDIR%_ and _%CORRALDIR%_. 
    - __Concurrency explorer__.
 
 ## Build VeriSol
