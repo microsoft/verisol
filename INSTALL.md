@@ -43,7 +43,7 @@ See the paper [here](https://arxiv.org/abs/1812.08829) for details of what these
 > %BOOGIE_DIR%\Boogie.exe -doModSetAnalysis -inline:assert -noinfer -contractInfer -proc:BoogieEntry_* out.bpl
 
 *Transaction-bounded verification* of the Boogie program (using Corral)
-> %CORRAL_DIR%\corral.exe /recursionBound:4 /k:1 /main:CorralEntry_* /tryCTrace out.bpl /printDataValues:1 > corral.txt
+> %CORRAL_DIR%\corral.exe /recursionBound:4 /k:1 /main:CorralEntry_* /tryCTrace out.bpl /printDataValues:1 
 
 If Corral throws an exception, try adding "/trackAllVars " to the list of parameters above.  
 
