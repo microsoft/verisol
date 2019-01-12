@@ -5,6 +5,7 @@
 The following dependecies are needed to run VeriSol on a Solidity program. There are two categories of dependencies:
    - Translating Solidity to Boogie program
    - Run the verifier
+   - Viewing the Corral defect trace in Solidity source 
 
 > NOTE: We currently provide instructions for Windows. Instructions for Linux coming soon!
 
@@ -18,8 +19,10 @@ The following dependecies are needed to run VeriSol on a Solidity program. There
    - __Corral verifier__. Download and build the Corral sources from [here](https://github.com/boogie-org/corral
 ), and denote _%CORRALDIR%_ as the path to the folder containing **Corral.exe** (and other dlls).
    - __Z3 theorem prover__. Unless you already have **z3.exe** installed as part of Boogie/Corral download, 
-   download **z3.exe** from [here](https://github.com/Z3Prover/z3), and place it in both _%BOOGIEDIR%_ and _%CORRALDIR%_. 
-   - __Concurrency explorer__.
+   download **z3.exe** from [here](https://github.com/Z3Prover/z3), and place it in both _%BOOGIEDIR%_ and _%CORRALDIR%_. We have only tested versions **4.8.0** or below.
+   
+### Dependencies for viewing Corral defect traces in source code
+   - __Concurrency explorer__. Downlaod the sources and build the sources of **ConcurencyExplorer** from [here](https://github.com/LeeSanderson/Chess), and denote _%CONCURRENCYEXPLORERDIR%_ as the path containing **ConcurrencyExplorer.exe**.
 
 ## Build VeriSol
 
@@ -34,6 +37,8 @@ Assuming the root folder is *VERISOL_PATH*, run
 
 ### Run verifier
 Coming soon!
+
+### View traces from Corral
 
 ## Regression script
 
