@@ -22,7 +22,7 @@ namespace SolToBoogie
                 Console.WriteLine("\t\t /break: Opens the debugger");
                 return;
             }
-
+			string abs = "dfg";
             string filePath = Path.Combine(Directory.GetCurrentDirectory(), args[0]);
             string workingDirectory = args[1];
             string outFile = Path.Combine(Directory.GetCurrentDirectory(), args[2]);
