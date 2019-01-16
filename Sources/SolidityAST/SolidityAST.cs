@@ -588,11 +588,16 @@ namespace SolidityAST
             if (Arguments != null)
             {
                 builder.Append("(");
+                bool hasArgument = false;
                 foreach (Expression argument in Arguments)
                 {
+                    hasArgument = true;
                     builder.Append(argument).Append(", ");
                 }
-                builder.Length -= 2;
+                if (hasArgument)
+                {
+                    builder.Length -= 2;
+                }
                 builder.Append(")");
             }
             return builder.ToString();
@@ -1254,7 +1259,7 @@ namespace SolidityAST
 
     public class VariableDeclarationStatement : Statement
     {
-        public List<int> Assignments { get; set; }
+        public List<int?> Assignments { get; set; }
 
         public List<VariableDeclaration> Declarations { get; set; }
 
@@ -1264,7 +1269,7 @@ namespace SolidityAST
         {
             if (visitor.Visit(this))
             {
-                Debug.Assert(Declarations.Count == 1);
+                // Debug.Assert(Declarations.Count == 1);
                 Utils.AcceptList(Declarations, visitor);
                 if (InitialValue != null)
                 {
@@ -1282,8 +1287,12 @@ namespace SolidityAST
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
-            Debug.Assert(Declarations.Count == 1, $"Multiple variable declarations: {Declarations.Count}");
-            builder.Append(Declarations[0]);
+            // Debug.Assert(Declarations.Count == 1, $"Multiple variable declarations: {Declarations.Count}");
+            for (int i = 0; i < Declarations.Count; ++i)
+            {
+                builder.Append(Declarations[i]);
+            }
+            
             if (InitialValue != null)
             {
                 builder.Append(" = ").Append(InitialValue);

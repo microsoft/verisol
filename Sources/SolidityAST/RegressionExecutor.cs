@@ -63,7 +63,7 @@ namespace SolidityAST
 
         public bool Execute(string filename)
         {
-            string filePath = testDirectory + "\\" + filename;
+            string filePath = Path.Combine(testDirectory, filename);
 
             // read the program text
             string programText = File.ReadAllText(filePath);
@@ -71,6 +71,13 @@ namespace SolidityAST
             // get the text of AST traversal
             SolidityCompiler compiler = new SolidityCompiler();
             CompilerOutput compilerOutput = compiler.Compile(solcPath, filePath);
+
+            if (compilerOutput.ContainsError())
+            {
+                compilerOutput.PrintErrorsToConsole();
+                throw new SystemException("Compilation Error");
+            }
+
             AST ast = new AST(compilerOutput);
             ASTNode sourceUnits = ast.GetSourceUnits();
 
@@ -79,11 +86,15 @@ namespace SolidityAST
 
         private bool TextCompare(string originalText, string astText)
         {
-            // remove comments from original text
+            // remove line comments from original text
             string lineCommentsRegex = @"//(.*?)\r?\n";
             string textWithoutComments = Regex.Replace(originalText, lineCommentsRegex, "");
+            // remove block comments
+            string blockCommentsRegex = @"(/\*(.|[\r\n])*?\*/)";
+            textWithoutComments = Regex.Replace(textWithoutComments, blockCommentsRegex, "");
 
-            string[] separator = { "{", "}", ",", ".", ";", "(", ")", "^", "[", "]", " ", "\n", "\r", "\t" };
+            string[] separator = { "{", "}", ",", ".", ";", "(", ")", "^", "[", "]", " ", "\n", "\r", "\t", "'", "\""};
+            
             string[] originalWords = textWithoutComments.Split(separator, StringSplitOptions.RemoveEmptyEntries);
             string[] astWords = astText.Split(separator, StringSplitOptions.RemoveEmptyEntries);
 
@@ -96,28 +107,55 @@ namespace SolidityAST
                 "PURE", "VIEW", "NONPAYABLE", "PAYABLE",
             };
 
-            logger.LogDebug($"Normalized program words: {ConcatStringArray(normalizedWords, " ")}");
-            logger.LogDebug($"AST traversal prog words: {ConcatStringArray(astWords, " ")}");
+            // the compiler will add/remove/reorder certain keywords, which need to be skipped for comparison
+            int normalizedIndex = 0;
+            int astIndex = 0;
+            int normalizedLength = normalizedWords.Length;
+            int astLength = astWords.Length;
 
-            if (normalizedWords.Length != astWords.Length)
+            List<string> normalizedSkip = new List<string>() {
+                "public", "private", "view", "internal", "constant", "var",
+                "years", "days", "hours", "minutes", "ether", "finney", "wei",
+                "storage", "memory"
+            };
+            List<string> astSkip = new List<string>() {
+                "CONSTANT", "PUBLIC", "PRIVATE", "VIEW", "INTERNAL", "memory"
+            };
+
+            while (normalizedIndex < normalizedLength)
             {
-                return false;
+                if (normalizedSkip.Contains(normalizedWords[normalizedIndex]))
+                {
+                    normalizedWords[normalizedIndex] = "";
+                }
+                normalizedIndex++;
             }
-            for (int i = 0; i < normalizedWords.Length; ++i)
+
+            while (astIndex < astLength)
             {
-                if (enumKeywords.Contains(astWords[i]))
+                if (astSkip.Contains(astWords[astIndex]))
                 {
-                    if (!astWords[i].ToLower().Equals(normalizedWords[i]))
-                    {
-                        return false;
-                    }
+                    astWords[astIndex] = "";
+                    astIndex++;
+                    continue;
                 }
-                else if (!normalizedWords[i].Equals(astWords[i]))
+                
+                if (enumKeywords.Contains(astWords[astIndex]))
                 {
-                    return false;
+                    astWords[astIndex] = astWords[astIndex].ToLower();
                 }
+                astIndex++;
             }
-            return true;
+
+            logger.LogDebug($"Normalized program words: {ConcatStringArray(normalizedWords, "")}");
+            logger.LogDebug($"AST traversal prog words: {ConcatStringArray(astWords, "")}");
+
+            if (string.Equals(ConcatStringArray(normalizedWords, ""), ConcatStringArray(astWords, "")))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private string ConcatStringArray(string[] array, string delim)

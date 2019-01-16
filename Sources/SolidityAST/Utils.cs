@@ -12,7 +12,10 @@ namespace SolidityAST
             Debug.Assert(list != null);
             foreach (T element in list)
             {
-                element.Accept(visitor);
+                if (element != null)
+                {
+                    element.Accept(visitor);
+                }
             }
         }
     }

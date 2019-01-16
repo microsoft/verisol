@@ -4,23 +4,29 @@ namespace SolidityAST
 {
     using System;
     using System.IO;
+    using System.Runtime.InteropServices;
     using Microsoft.Extensions.Logging;
 
     class TestMain
     {
         public static void Main(string[] args)
         {
-            DirectoryInfo debugDirectoryInfo = Directory.GetParent(Directory.GetCurrentDirectory());
-            string workingDirectory = debugDirectoryInfo.Parent.Parent.Parent.Parent.FullName;
-            string solcPath = workingDirectory + "\\Tool\\solc.exe";
-            string testDir = workingDirectory + "\\Test\\regression";
+            if (args.Length != 1)
+            {
+                Console.WriteLine("Usage: SolidityAST <workingdir>");
+                return;
+            }
 
-            ILoggerFactory loggerFactory = new LoggerFactory().AddConsole(LogLevel.Information);
+            string workingDirectory = args[0];
+            string solcName = GetSolcNameByOSPlatform();
+            string solcPath = Path.Combine(workingDirectory, "Tool", solcName);
+            string testDir = Path.Combine(workingDirectory, "Test", "regression");
+
+            ILoggerFactory loggerFactory = new LoggerFactory().AddConsole(LogLevel.Trace);
             ILogger logger = loggerFactory.CreateLogger("SolidityAST.RegressionExecutor");
 
             RegressionExecutor executor = new RegressionExecutor(solcPath, testDir, logger);
             executor.BatchExecute();
-            Console.ReadLine();
         }
 
         // Legacy entry point for testing
@@ -29,14 +35,37 @@ namespace SolidityAST
             DirectoryInfo debugDirectoryInfo = Directory.GetParent(Directory.GetCurrentDirectory());
             string workingDirectory = debugDirectoryInfo.Parent.Parent.Parent.Parent.FullName;
             string filename = "AssertTrue.sol";
-            string solcPath = workingDirectory + "\\Tool\\solc.exe";
-            string filePath = workingDirectory + "\\Test\\regression\\" + filename;
+            string solcName = GetSolcNameByOSPlatform();
+            string solcPath = Path.Combine(workingDirectory, "Tool", solcName);
+            string filePath = Path.Combine(workingDirectory, "Test", "regression", filename);
             SolidityCompiler compiler = new SolidityCompiler();
             CompilerOutput compilerOutput = compiler.Compile(solcPath, filePath);
             AST ast = new AST(compilerOutput);
 
             Console.WriteLine(ast.GetSourceUnits());
             Console.ReadLine();
+        }
+
+        private static string GetSolcNameByOSPlatform()
+        {
+            string solcName = null;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                solcName = "solc.exe";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                solcName = "solc-static-linux";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                solcName = "solc-mac";
+            }
+            else
+            {
+                throw new SystemException("Cannot recognize OS platform");
+            }
+            return solcName;
         }
     }
 }
