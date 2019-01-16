@@ -33,7 +33,7 @@ Open the __Sources\SolToBoogie.sln__ file in Visual Studio (2017) and perform __
 ### Translate Solidity to Boogie
 Assuming the root folder of this repository is *VERISOL_PATH*, run 
 
-> %VERISOL_PATH%\Sources\SolToBoogie\bin\Debug\netstandard2.0\SolToBoogie.dll a.sol %VERISOL_PATH% out.bpl
+> dotnet %VERISOL_PATH%\Sources\SolToBoogie\bin\Debug\netcoreapp2.0\SolToBoogie.dll a.sol %VERISOL_PATH% out.bpl
 > %BOOGIE_DIR%\boogie.exe out.bpl /noVerify /doModSetAnalysis /print:pretty.bpl //optional, for pretty print viewing
 
 ### Run verifier
