@@ -33,23 +33,30 @@ Open the __Sources\SolToBoogie.sln__ file in Visual Studio (2017) and perform __
 ### Translate Solidity to Boogie
 Assuming the root folder of this repository is *VERISOL_PATH*, run 
 
-> dotnet %VERISOL_PATH%\Sources\SolToBoogie\bin\Debug\netcoreapp2.0\SolToBoogie.dll a.sol %VERISOL_PATH% out.bpl
-> %BOOGIE_DIR%\boogie.exe out.bpl /noVerify /doModSetAnalysis /print:pretty.bpl //optional, for pretty print viewing
+`dotnet %VERISOL_PATH%\Sources\SolToBoogie\bin\Debug\netcoreapp2.0\SolToBoogie.dll a.sol %VERISOL_PATH% out.bpl`
+
+For pretty print viewing, run
+
+ `%BOOGIE_DIR%\boogie.exe out.bpl /noVerify /doModSetAnalysis /print:pretty.bpl`
+
 
 ### Run verifier
 See the paper [here](https://arxiv.org/abs/1812.08829) for details of what these verification terms mean.
 
 *Sound verification* of the Boogie program (unbounded verification using invariant inference)
-> %BOOGIE_DIR%\Boogie.exe -doModSetAnalysis -inline:assert -noinfer -contractInfer -proc:BoogieEntry_* out.bpl
+
+`%BOOGIE_DIR%\Boogie.exe -doModSetAnalysis -inline:assert -noinfer -contractInfer -proc:BoogieEntry_* out.bpl`
 
 *Transaction-bounded verification* of the Boogie program (using Corral), with unrolling depth (say 4) for a top-level contract Foo 
-> %CORRAL_DIR%\corral.exe /recursionBound:4 /k:1 /main:CorralEntry_Foo /tryCTrace out.bpl /printDataValues:1 
+
+`%CORRAL_DIR%\corral.exe /recursionBound:4 /k:1 /main:CorralEntry_Foo /tryCTrace out.bpl /printDataValues:1`
 
 If Corral throws an exception, try adding "/trackAllVars " to the list of parameters above.  
 
 ### View traces from Corral
 If Corral generates a defect (look at output of Corral and **corral_out_trace.txt** file in the same folder), view it using ConcurrencyExplorer: 
-> %CONCURRENCY_EXPLORER_DIR%\ConcurrencyExplorer.exe corral_out_trace.txt
+
+`%CONCURRENCY_EXPLORER_DIR%\ConcurrencyExplorer.exe corral_out_trace.txt`
 
 ## Regression script
 
