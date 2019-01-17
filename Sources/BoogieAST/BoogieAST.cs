@@ -15,7 +15,6 @@ namespace BoogieAST
 
         public BoogieAST(BoogieASTNode root)
         {
-            int a = 0;
             this.root = root;
         }
 
