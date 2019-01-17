@@ -47,7 +47,7 @@ See the paper [here](https://arxiv.org/abs/1812.08829) for details of what these
 
 `%BOOGIE_DIR%\Boogie.exe -doModSetAnalysis -inline:assert -noinfer -contractInfer -proc:BoogieEntry_* out.bpl`
 
-*Transaction-bounded verification* of the Boogie program (using Corral), with unrolling depth (say 4) for a top-level contract Foo 
+*Transaction-bounded verification* of the Boogie program (using Corral), with unrolling depth (replace **4** with desired depth) for a top-level contract (replace **Foo** with the contract name):
 
 `%CORRAL_DIR%\corral.exe /recursionBound:4 /k:1 /main:CorralEntry_Foo /tryCTrace out.bpl /printDataValues:1`
 
