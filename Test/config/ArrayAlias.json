@@ -1,0 +1,10 @@
+{
+    "recursionBound": 8,
+    "k": 1,
+    "main": "CorralEntry_A",
+    "expectedResult": "Verifying program while tracking: {assertsPassed}
+Program has a potential bug: True bug
+PersistentProgram(84,1): error PF5001: This assertion can fail
+
+__SolToBoogieTest_out.bpl(59,1): error PF5001: This assertion can fail"
+}

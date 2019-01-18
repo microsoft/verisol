@@ -1,0 +1,9 @@
+{
+    "recursionBound": 8,
+    "k": 1,
+    "main": "CorralEntry_Foo",
+    "expectedResult": "Verifying program while tracking: {assertsPassed}
+Program has a potential bug: False bug
+Verifying program while tracking: {assertsPassed, a_Foo}
+Program has no bugs"
+}

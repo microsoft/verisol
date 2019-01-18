@@ -1,0 +1,9 @@
+{
+    "recursionBound": 8,
+    "k": 1,
+    "main": "CorralEntry_InternalFunctionCall",
+    "expectedResult": "Verifying program while tracking: {assertsPassed}
+Program has a potential bug: False bug
+Verifying program while tracking: {assertsPassed, DType}
+Program has no bugs"
+}
