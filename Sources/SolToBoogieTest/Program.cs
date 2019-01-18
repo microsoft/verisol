@@ -23,7 +23,7 @@ namespace SolToBoogieTest
             string testDir = Path.Combine(workingDirectory, "Test", "regressions");
             string configDir = Path.Combine(workingDirectory, "Test", "config");
 
-            ILoggerFactory loggerFactory = new LoggerFactory().AddConsole(LogLevel.Debug);
+            ILoggerFactory loggerFactory = new LoggerFactory().AddConsole(LogLevel.Information);
             ILogger logger = loggerFactory.CreateLogger("SolToBoogieTest.RegressionExecutor");
 
             RegressionExecutor executor = new RegressionExecutor(solcPath, corralPath, testDir, configDir, logger);
