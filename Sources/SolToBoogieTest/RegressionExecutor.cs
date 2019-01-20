@@ -150,7 +150,19 @@ namespace SolToBoogieTest
 
         private bool CompareCorralOutput(string expected, string actual)
         {
-            return actual.Contains(expected);
+            if (actual == null)
+            {
+                return false;
+            }
+            string[] actualList = actual.Split("Boogie verification time");
+            if (actualList.Length == 2)
+            {
+                if (actualList[0].TrimEnd().EndsWith(expected))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private string GenerateCorralArguments(CorralConfiguration corralConfig)
