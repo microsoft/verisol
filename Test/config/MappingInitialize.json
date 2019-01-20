@@ -2,10 +2,5 @@
     "recursionBound": 8,
     "k": 1,
     "main": "CorralEntry_Mapping",
-    "expectedResult": "Verifying program while tracking: {assertsPassed}
-Program has a potential bug: False bug
-Verifying program while tracking: {assertsPassed, m_Mapping, M_int_int}
-Program has a potential bug: False bug
-Verifying program while tracking: {assertsPassed, m_Mapping, M_int_int, M_int_bool, n_Mapping}
-Program has no bugs"
+    "expectedResult": "Program has no bugs"
 }

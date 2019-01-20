@@ -2,5 +2,5 @@
     "recursionBound": 8,
     "k": 1,
     "main": "CorralEntry_StructOfFixedSizeArray",
-    "expectedResult": ""
+    "expectedResult": "Program has no bugs"
 }

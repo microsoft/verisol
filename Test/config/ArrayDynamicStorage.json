@@ -2,13 +2,5 @@
     "recursionBound": 8,
     "k": 1,
     "main": "CorralEntry_ArrayDynamicStorage",
-    "expectedResult": "Verifying program while tracking: {assertsPassed}
-Program has a potential bug: False bug
-Verifying program while tracking: {assertsPassed, Length, sa_ArrayDynamicStorage}
-Program has a potential bug: False bug
-Verifying program while tracking: {assertsPassed, Length, sa_ArrayDynamicStorage, M_int_int}
-Program has a potential bug: True bug
-PersistentProgram(116,1): error PF5001: This assertion can fail
-
-__SolToBoogieTest_out.bpl(74,1): error PF5001: This assertion can fail"
+    "expectedResult": "Program has no bugs"
 }
