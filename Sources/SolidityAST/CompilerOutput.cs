@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 namespace SolidityAST
 {
+    using System;
     using System.Collections.Generic;
     using Newtonsoft.Json;
 
@@ -27,6 +28,17 @@ namespace SolidityAST
                 }
             }
             return false;
+        }
+        
+        public void PrintErrorsToConsole()
+        {
+            foreach (CompilerError error in Errors)
+            {
+                if (error.Severity.Equals("error"))
+                {
+                    Console.WriteLine(error.FormattedMessage);
+                }
+            }
         }
     }
 
