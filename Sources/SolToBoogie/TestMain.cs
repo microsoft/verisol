@@ -27,7 +27,8 @@ namespace SolToBoogie
             string workingDirectory = args[1];
             string outFile = Path.Combine(Directory.GetCurrentDirectory(), args[2]);
 
-            string solcName = GetSolcNameByOSPlatform();
+            bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            string solcName = isWindows ? "solc.exe" : "solc-static-linux";
             string solcPath = Path.Combine(workingDirectory, "Tool", solcName);
             SolidityCompiler compiler = new SolidityCompiler();
             CompilerOutput compilerOutput = compiler.Compile(solcPath, filePath);
@@ -65,28 +66,6 @@ namespace SolToBoogie
                     Console.WriteLine(error.FormattedMessage);
                 }
             }
-        }
-
-        private static string GetSolcNameByOSPlatform()
-        {
-            string solcName = null;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                solcName = "solc.exe";
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                solcName = "solc-static-linux";
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                solcName = "solc-mac";
-            }
-            else
-            {
-                throw new SystemException("Cannot recognize OS platform");
-            }
-            return solcName;
         }
     }
 }
