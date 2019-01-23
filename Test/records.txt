@@ -62,3 +62,4 @@ MappingNested.sol
 #LoopContinue.sol
 #InternalRecursiveFunctionCall.sol
 #Modifier.sol
+NoConstructor.sol
