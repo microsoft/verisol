@@ -22,18 +22,23 @@ namespace SolToBoogieTest
 
         private string configDirectory;
 
+        private string recordsDir;
+
         private ILogger logger;
 
         private static readonly int corralTimeoutInMilliseconds = TimeSpan.FromSeconds(60).Seconds * 1000;
 
         private static readonly string outFile = "__SolToBoogieTest_out.bpl";
 
-        public RegressionExecutor(string solcPath, string corralPath, string testDirectory, string configDirectory, ILogger logger)
+        private static Dictionary<string, bool> filesToRun = new Dictionary<string, bool>();
+
+        public RegressionExecutor(string solcPath, string corralPath, string testDirectory, string configDirectory, string recordsDir, ILogger logger)
         {
             this.solcPath = solcPath;
             this.corralPath = corralPath;
             this.testDirectory = testDirectory;
             this.configDirectory = configDirectory;
+            this.recordsDir = recordsDir;
             this.logger = logger;
         }
 
@@ -42,15 +47,28 @@ namespace SolToBoogieTest
             string[] filePaths = Directory.GetFiles(testDirectory);
             int passedCount = 0;
             int failedCount = 0;
+            readRecord();
             foreach (string filePath in filePaths)
             {
                 string filename = Path.GetFileName(filePath);
-                logger.LogDebug($"Running {filename}");
+                if (!filesToRun.ContainsKey(filename))
+                {
+                    logger.LogWarning($"{filename} not found in {Path.Combine(recordsDir, "records.txt")}");
+                    continue;
+                }
+
+                if (!filesToRun[filename])
+                {
+                    continue;
+                }
+
+                logger.LogInformation($"Running {filename}");
 
                 bool success = false;
+                string expectedCorralOutput = "", currentCorralOutput = "";
                 try
                 {
-                    success = Execute(filename);
+                    success = Execute(filename, out expectedCorralOutput, out currentCorralOutput);
                 }
                 catch (Exception exception)
                 {
@@ -66,6 +84,8 @@ namespace SolToBoogieTest
                 {
                     ++failedCount;
                     logger.LogError($"Failed - {filename}");
+                    logger.LogError($"\t Expected - {expectedCorralOutput}");
+                    logger.LogError($"\t Corral detailed Output - {currentCorralOutput}");
                 }
             }
 
@@ -74,7 +94,7 @@ namespace SolToBoogieTest
             return (failedCount == 0);
         }
 
-        public bool Execute(string filename)
+        public bool Execute(string filename, out string expected, out string current)
         {
             string filePath = Path.Combine(testDirectory, filename);
 
@@ -107,6 +127,8 @@ namespace SolToBoogieTest
             CorralConfiguration corralConfig = JsonConvert.DeserializeObject<CorralConfiguration>(jsonString);
 
             string corralOutput = RunCorral(corralConfig);
+            expected = corralConfig.ExpectedResult;
+            current = corralOutput;
             return CompareCorralOutput(corralConfig.ExpectedResult, corralOutput);
         }
 
@@ -177,6 +199,24 @@ namespace SolToBoogieTest
             // Boogie file
             commands.Add(outFile);
             return String.Join(" ", commands);
+        }
+
+        private void readRecord()
+        {
+            StreamReader records = new StreamReader(Path.Combine(recordsDir, "records.txt"));
+            string line;
+            while((line = records.ReadLine()) != null)
+            {
+                string fileName = line.TrimEnd();
+                if (fileName.StartsWith('#'))
+                {
+                    filesToRun[fileName.TrimStart('#')] = false;
+                }
+                else
+                {
+                    filesToRun[fileName] = true;
+                }
+            }
         }
 
         private void DeleteTemporaryFiles()

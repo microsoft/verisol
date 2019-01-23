@@ -8,7 +8,7 @@ contract Consts {
         address c;
 
         a = 10;
-        b = 0x10
+        b = 0x10;
         c = 0xa;
 
         assert(b != c);
