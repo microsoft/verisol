@@ -721,10 +721,21 @@ namespace SolToBoogie
             }
             else
             {
-                BoogieIdentifierExpr retVar = new BoogieIdentifierExpr("__ret");
+                if (currentFunction.ReturnParameters.Length() != 1)
+                {
+                    throw new NotImplementedException("Cannot handle multiple return parameters");
+                }
+
+                VariableDeclaration retVarDecl = currentFunction.ReturnParameters.Parameters[0];
+                string retVarName = String.IsNullOrEmpty(retVarDecl.Name) ?
+                    "__ret" :
+                    TransUtils.GetCanonicalLocalVariableName(retVarDecl);
+                BoogieIdentifierExpr retVar = new BoogieIdentifierExpr(retVarName);
                 BoogieExpr expr = TranslateExpr(node.Expression);
                 BoogieAssignCmd assignCmd = new BoogieAssignCmd(retVar, expr);
                 currentStmtList = BoogieStmtList.MakeSingletonStmtList(assignCmd);
+                // add a return command, in case the original return expr is in the middle of the function body
+                currentStmtList.AddStatement(new BoogieReturnCmd());
             }
             return false;
         }
