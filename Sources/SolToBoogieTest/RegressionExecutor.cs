@@ -65,9 +65,10 @@ namespace SolToBoogieTest
                 logger.LogInformation($"Running {filename}");
 
                 bool success = false;
+                string expectedCorralOutput = "", currentCorralOutput = "";
                 try
                 {
-                    success = Execute(filename);
+                    success = Execute(filename, out expectedCorralOutput, out currentCorralOutput);
                 }
                 catch (Exception exception)
                 {
@@ -83,6 +84,8 @@ namespace SolToBoogieTest
                 {
                     ++failedCount;
                     logger.LogError($"Failed - {filename}");
+                    logger.LogError($"\t Expected - {expectedCorralOutput}");
+                    logger.LogError($"\t Corral detailed Output - {currentCorralOutput}");
                 }
             }
 
@@ -91,7 +94,7 @@ namespace SolToBoogieTest
             return (failedCount == 0);
         }
 
-        public bool Execute(string filename)
+        public bool Execute(string filename, out string expected, out string current)
         {
             string filePath = Path.Combine(testDirectory, filename);
 
@@ -124,6 +127,8 @@ namespace SolToBoogieTest
             CorralConfiguration corralConfig = JsonConvert.DeserializeObject<CorralConfiguration>(jsonString);
 
             string corralOutput = RunCorral(corralConfig);
+            expected = corralConfig.ExpectedResult;
+            current = corralOutput;
             return CompareCorralOutput(corralConfig.ExpectedResult, corralOutput);
         }
 
