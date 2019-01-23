@@ -63,3 +63,4 @@ MappingNested.sol
 #InternalRecursiveFunctionCall.sol
 #Modifier.sol
 NoConstructor.sol
+ReturnNamedParam.sol
