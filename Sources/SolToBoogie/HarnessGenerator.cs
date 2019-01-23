@@ -296,14 +296,17 @@ namespace SolToBoogie
             BoogieProcedure harness = new BoogieProcedure(harnessName, inParams, outParams);
             context.Program.AddDeclaration(harness);
 
-            FunctionDefinition ctor = context.GetConstructorByContract(contract);
             List<BoogieVariable> localVars = new List<BoogieVariable>
             {
                 new BoogieLocalVariable(new BoogieTypedIdent("this", BoogieType.Ref)),
                 new BoogieLocalVariable(new BoogieTypedIdent("msgsender_MSG", BoogieType.Ref)),
                 new BoogieLocalVariable(new BoogieTypedIdent("msgvalue_MSG", BoogieType.Int)),
             };
-            localVars.AddRange(GetParamsOfFunction(ctor));
+            if (context.IsConstructorDefined(contract))
+            {
+                FunctionDefinition ctor = context.GetConstructorByContract(contract);
+                localVars.AddRange(GetParamsOfFunction(ctor));
+            }
             BoogieStmtList harnessBody = new BoogieStmtList();
             harnessBody.AddStatement(GenerateDynamicTypeAssumes(contract));
             GenerateConstructorCall(contract).ForEach(x => harnessBody.AddStatement(x));
