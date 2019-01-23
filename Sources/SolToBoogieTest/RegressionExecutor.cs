@@ -203,9 +203,9 @@ namespace SolToBoogieTest
             while((line = records.ReadLine()) != null)
             {
                 string fileName = line.TrimEnd();
-                if (fileName.EndsWith('#'))
+                if (fileName.StartsWith('#'))
                 {
-                    filesToRun[fileName.TrimEnd('#')] = false;
+                    filesToRun[fileName.TrimStart('#')] = false;
                 }
                 else
                 {
