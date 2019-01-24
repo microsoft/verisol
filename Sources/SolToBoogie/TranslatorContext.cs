@@ -119,7 +119,11 @@ namespace SolToBoogie
 
         public HashSet<FunctionDefinition> GetFuncDefintionsInContract(ContractDefinition contract)
         {
-            return ContractToFunctionsMap[contract];
+            if (ContractToFunctionsMap.ContainsKey(contract))
+            {
+                return ContractToFunctionsMap[contract];
+            }
+            return new HashSet<FunctionDefinition>();
         }
 
         public void AddContract(ContractDefinition contract)
