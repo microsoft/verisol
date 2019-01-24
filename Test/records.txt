@@ -3,7 +3,7 @@ ReturnMult.sol
 #MappingToStruct.sol
 Logical.sol
 Inheritance.sol
-#TypeCast.sol
+TypeCast.sol
 #MappingReference.sol
 InheritInitializer.sol
 StaticDispatching.sol
