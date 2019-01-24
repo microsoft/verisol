@@ -29,10 +29,17 @@ del pretty.bpl
 
 set BINARYDEPENDENCIES=%VERISOL_ROOT_DIR%\verisol_dependencies\
 
+if NOT EXIST %BINARYDEPENDENCIES% (
+    echo "Could not find the verisol_dependencies folder"
+    goto :exit
+)
+
 @echo off
 REM Generate BPL 
 echo Compiling sol files and generating boogie files ....
+@echo on
 dotnet %VERISOL_ROOT_DIR%\Sources\SolToBoogie\bin\Debug\netcoreapp2.0\SolToBoogie.dll %1.sol %VERISOL_ROOT_DIR% out.bpl
+@echo off
 
 REM Check for syntax issues and pretty print
 echo Pretty printing boogie files....
