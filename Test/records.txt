@@ -64,3 +64,5 @@ MappingNested.sol
 #Modifier.sol
 NoConstructor.sol
 ReturnNamedParam.sol
+StringMapping.sol
+#StringMappingNoConstructor.sol
