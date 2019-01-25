@@ -65,5 +65,6 @@ MappingNested.sol
 #Modifier.sol
 NoConstructor.sol
 ReturnNamedParam.sol
+EmptyContract.sol
 StringMapping.sol
 #StringMappingNoConstructor.sol
