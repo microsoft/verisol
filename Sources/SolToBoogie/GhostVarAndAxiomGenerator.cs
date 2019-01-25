@@ -33,8 +33,20 @@ namespace SolToBoogie
         private void GenerateFunctions()
         {
             context.Program.AddDeclaration(GenerateConstToRefFunction());
+            context.Program.AddDeclaration(GenerateKeccakFunction());
         }
 
+        private BoogieFunction GenerateKeccakFunction()
+        {
+            //function for Int to Ref
+            var inVar = new BoogieFormalParam(new BoogieTypedIdent("x", BoogieType.Int));
+            var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", BoogieType.Int));
+            return new BoogieFunction(
+                "keccak256",
+                new List<BoogieVariable>() { inVar },
+                new List<BoogieVariable>() { outVar },
+                null);
+        }
         private BoogieFunction GenerateConstToRefFunction()
         {
             //function for Int to Ref
