@@ -23,9 +23,11 @@ if [%4] EQU [] (
      goto :exit
 )
 
-copy out.bpl out-old.bpl
-del out.bpl
-del pretty.bpl
+if EXIST out.bpl (
+  copy out.bpl out-old.bpl
+  del out.bpl
+  del pretty.bpl
+)
 
 set BINARYDEPENDENCIES=%VERISOL_ROOT_DIR%\verisol_dependencies\
 
@@ -43,7 +45,9 @@ dotnet %VERISOL_ROOT_DIR%\Sources\SolToBoogie\bin\Debug\netcoreapp2.0\SolToBoogi
 
 REM Check for syntax issues and pretty print
 echo Pretty printing boogie files....
+@echo on
 %BINARYDEPENDENCIES%\boogie\boogie.exe  out.bpl /noVerify /doModSetAnalysis /print:pretty.bpl
+@echo off
 
 del corral_out_trace.txt
 

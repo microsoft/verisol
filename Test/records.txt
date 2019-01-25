@@ -66,3 +66,4 @@ NoConstructor.sol
 ReturnNamedParam.sol
 StringMapping.sol
 #StringMappingNoConstructor.sol
+InheritanceWithContractArg.sol

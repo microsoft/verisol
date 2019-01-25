@@ -54,6 +54,10 @@ namespace SolToBoogie
             {
                 return BoogieType.Int;
             }
+            else if (typeString.StartsWith("byte") && !typeString.Contains("["))
+            {
+                return BoogieType.Int;
+            }
             else if (typeString.StartsWith("contract "))
             {
                 return BoogieType.Ref;
