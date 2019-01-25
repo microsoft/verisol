@@ -853,8 +853,22 @@ namespace SolToBoogie
         private BoogieExpr TranslateExpr(Expression expr)
         {
             currentExpr = null;
-            expr.Accept(this);
-            Debug.Assert(currentExpr != null);
+            if (expr is FunctionCall && IsTypeCast((FunctionCall) expr))
+            {
+                if (((FunctionCall) expr).Expression is ElementaryTypeNameExpression)
+                {
+                    currentExpr = TranslateExpr(((FunctionCall) expr).Arguments[0]);
+                }
+                else
+                {
+                    throw new NotImplementedException("Cannot handle non-elementary type cast");
+                }
+            }
+            else
+            {
+                expr.Accept(this);
+                Debug.Assert(currentExpr != null);
+            }
             return currentExpr;
         }
 

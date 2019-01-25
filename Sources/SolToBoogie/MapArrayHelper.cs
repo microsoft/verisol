@@ -8,7 +8,8 @@ namespace SolToBoogie
 
     public class MapArrayHelper
     {
-        private static Regex mappingRegex = new Regex(@"mapping\((\w+)\s*=>\s*(.+)\)$");
+        private static Regex mappingRegex = new Regex(@"mapping\((\w+)\s*\w*\s*=>\s*(.+)\)$");
+        //mapping(string => uint) appears as mapping(string memory => uint)
         private static Regex arrayRegex = new Regex(@"(.+)\[\w*\] (storage ref|storage pointer|memory)$");
         // mapping (uint => uint[]) does not have storage/memory in Typestring
         // private static Regex arrayRegex = new Regex(@"(.+)\[\w*\]$");
@@ -56,6 +57,14 @@ namespace SolToBoogie
             else if (typeString.StartsWith("contract "))
             {
                 return BoogieType.Ref;
+            }
+            else if (typeString.Equals("string") || typeString.StartsWith("string "))
+            {
+                return BoogieType.Int; //we think of string as its hash
+            }
+            else if (typeString.StartsWith("literal_string "))
+            {
+                return BoogieType.Int; //we think of string as its hash
             }
             else
             {
