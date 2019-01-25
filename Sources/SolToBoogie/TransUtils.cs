@@ -19,7 +19,71 @@ namespace SolToBoogie
                 switch (typeString)
                 {
                     case "uint256":
+                    case "uint248":
+                    case "uint240":
+                    case "uint232":
+                    case "uint224":
+                    case "uint216":
+                    case "uint208":
+                    case "uint200":
+                    case "uint192":
+                    case "uint184":
+                    case "uint176":
+                    case "uint168":
+                    case "uint160":
+                    case "uint152":
+                    case "uint144":
+                    case "uint136":
+                    case "uint128":
+                    case "uint120":
+                    case "uint112":
+                    case "uint104":
+                    case "uint96":
+                    case "uint88":
+                    case "uint80":
+                    case "uint72":
+                    case "uint64":
+                    case "uint56":
+                    case "uint48":
+                    case "uint40":
+                    case "uint32":
+                    case "uint24":
+                    case "uint16":
+                    case "uint8":
                     case "int256":
+                    case "int248":
+                    case "int240":
+                    case "int232":
+                    case "int224":
+                    case "int216":
+                    case "int208":
+                    case "int200":
+                    case "int192":
+                    case "int184":
+                    case "int176":
+                    case "int168":
+                    case "int160":
+                    case "int152":
+                    case "int144":
+                    case "int136":
+                    case "int128":
+                    case "int120":
+                    case "int112":
+                    case "int104":
+                    case "int96":
+                    case "int88":
+                    case "int80":
+                    case "int72":
+                    case "int64":
+                    case "int56":
+                    case "int48":
+                    case "int40":
+                    case "int32":
+                    case "int24":
+                    case "int16":
+                    case "int8":
+                    case "uint":
+                    case "int":
                         return BoogieType.Int;
                     case "bool":
                         return BoogieType.Bool;

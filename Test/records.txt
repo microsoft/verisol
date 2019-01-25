@@ -51,6 +51,7 @@ ArrayInitialization.sol
 #ArrayLength.sol
 Arithmetics.sol
 IncDec.sol
+IntTypes.sol
 #LoopFor.sol
 ArrayFixedSize.sol
 #MappingLowerDimRef.sol
@@ -64,6 +65,7 @@ MappingNested.sol
 #Modifier.sol
 NoConstructor.sol
 ReturnNamedParam.sol
+EmptyContract.sol
 StringMapping.sol
 #StringMappingNoConstructor.sol
 InheritanceWithContractArg.sol
