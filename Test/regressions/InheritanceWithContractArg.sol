@@ -1,6 +1,7 @@
 pragma solidity ^0.4.24;
 
 contract A{ 
+    function G() {} //until empty contract bug is fixed. 
 }
 
 contract BaseContract {
