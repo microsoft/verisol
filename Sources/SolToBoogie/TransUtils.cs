@@ -91,6 +91,8 @@ namespace SolToBoogie
                         return BoogieType.Int;
                     case "address":
                         return BoogieType.Ref;
+                    case "bytes32":
+                        return BoogieType.Int;
                     default:
                         throw new SystemException($"Unknown elementary type name: {type}");
                 }
@@ -230,8 +232,12 @@ namespace SolToBoogie
                             {
                                 typeString = "string";
                             }
+                            if (typeString.StartsWith("bytes "))
+                            {
+                                typeString = "bytes"; //"bytes storage ref"
+                            }
                             Debug.Assert(typeString.Equals("string") || typeString.Equals("uint256") || typeString.Equals("int256")
-                                    || typeString.Equals("address"));
+                                    || typeString.Equals("address") || typeString.Equals("bytes"));
                         }
                         builder.Append(typeString).Append(", ");
                     }

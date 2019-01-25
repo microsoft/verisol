@@ -69,3 +69,4 @@ EmptyContract.sol
 StringMapping.sol
 #StringMappingNoConstructor.sol
 InheritanceWithContractArg.sol
+Keccak.sol

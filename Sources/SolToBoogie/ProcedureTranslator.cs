@@ -621,14 +621,17 @@ namespace SolToBoogie
         public override bool Visit(Assignment node)
         {
             BoogieExpr lhs = TranslateExpr(node.LeftHandSide);
-
-
+         
             if (node.RightHandSide is FunctionCall funcCall)
             {
                 if (funcCall.Expression is NewExpression)
                 {
                     // assume the new expression is used as: obj = new Class(args);
                     currentStmtList = TranslateNewStatement(funcCall, lhs);
+                }
+                else if (IsKeccakFunc(funcCall))
+                {
+                    currentStmtList = TranslateKeccakFuncCall(funcCall.Arguments[0], lhs);
                 }
                 else if (IsTypeCast(funcCall))
                 {
@@ -698,6 +701,11 @@ namespace SolToBoogie
 
 
             return false;
+        }
+
+        private BoogieStmtList TranslateInBuiltFunction(FunctionCall funcCall, BoogieExpr lhs)
+        {
+            throw new NotImplementedException();
         }
 
         private void TranslateFunctionCalls(FunctionCall funcCall, List<BoogieIdentifierExpr> outParams)
@@ -1038,7 +1046,12 @@ namespace SolToBoogie
             else if (IsTypeCast(node))
             {
                 // handled in assignment
-                throw new SystemException("Type cast is handled in assignment");
+                throw new SystemException("Type cast is handled in assignment, use temporaries to break up nested expression");
+            }
+            else if (IsKeccakFunc(node))
+            {
+                // handled only in assignments
+                throw new SystemException("Keccak256 only handled in assignment, use temporaries to break up nested expression");
             }
             else if (context.HasEventNameInContract(currentContract, functionName))
             {
@@ -1104,6 +1117,24 @@ namespace SolToBoogie
 
             }
             return false;
+        }
+
+        private bool IsKeccakFunc(FunctionCall node)
+        {
+            if (node.Expression is Identifier ident)
+            {
+                return ident.Name.Equals("keccak256");
+            }
+            return false;
+        }
+
+        private BoogieStmtList TranslateKeccakFuncCall(Expression expression, BoogieExpr lhs)
+        {
+            var boogieExpr = TranslateExpr(expression);
+            var boogieStmtList = new BoogieStmtList();
+            var keccakExpr = new BoogieFuncCallExpr("keccak256", new List<BoogieExpr>() { boogieExpr });
+            boogieStmtList.AddStatement(new BoogieAssignCmd(lhs, keccakExpr));
+            return boogieStmtList;
         }
 
         private BoogieStmtList TranslateCallStatement(FunctionCall node)
