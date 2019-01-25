@@ -68,3 +68,4 @@ ReturnNamedParam.sol
 EmptyContract.sol
 StringMapping.sol
 #StringMappingNoConstructor.sol
+InheritanceWithContractArg.sol

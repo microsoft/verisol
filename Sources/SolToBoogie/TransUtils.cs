@@ -220,12 +220,19 @@ namespace SolToBoogie
                     foreach (Expression argument in node.Arguments)
                     {
                         string typeString = argument.TypeDescriptions.TypeString;
-                        if (typeString.StartsWith("string") || typeString.StartsWith("literal_string"))
+                        if (typeString.StartsWith("contract "))
                         {
-                            typeString = "string";
+                            typeString = typeString.Substring("contract ".Length);
                         }
-                        Debug.Assert(typeString.Equals("string") || typeString.Equals("uint256") || typeString.Equals("int256")
-                                || typeString.Equals("address"));
+                        else
+                        {
+                            if (typeString.StartsWith("string") || typeString.StartsWith("literal_string"))
+                            {
+                                typeString = "string";
+                            }
+                            Debug.Assert(typeString.Equals("string") || typeString.Equals("uint256") || typeString.Equals("int256")
+                                    || typeString.Equals("address"));
+                        }
                         builder.Append(typeString).Append(", ");
                     }
                     builder.Length -= 2;
