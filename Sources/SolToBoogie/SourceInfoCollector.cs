@@ -76,18 +76,46 @@ namespace SolToBoogie
         private List<int> computeLineBreaks(string filePath)
         {
             List<int> LineBreaks = new List<int>();
-            string line;
-            int CharCount = 0, LineCount = 0;
+            int CharCount = 0;
             LineBreaks.Add(0);
             StreamReader file = new StreamReader(filePath);
-            while ((line = file.ReadLine()) != null)
-            {
-                CharCount++;
-                CharCount += line.Length;
-                LineBreaks.Add(CharCount);
-                LineCount++;
-            }
+            string src = file.ReadToEnd();
             file.Close();
+
+            // About newline chars in UNIX and Windows:
+            // The only valid new chars are \r\n and \n, but not \r or \n\r
+            // The following code does make sure that if there are \r or \n\r in the file, it doesn't cause infinite looping.
+            // However, the code is either not properly translated or ConcurrencyExplorer shows highlight multiple lines at each step.
+            // The valid chars \r\n and \n can be mixed in a sol file.
+            int pos_r, pos_n;
+            do
+            {
+                pos_r = src.IndexOf('\r');
+                pos_n = src.IndexOf('\n');
+                if (pos_r >= 0 && (pos_r < pos_n || pos_n < 0))
+                {
+                    CharCount += pos_r + 1;
+                    LineBreaks.Add(CharCount);
+                    if (pos_r + 1 == pos_n)
+                    {
+                        CharCount++;
+                        pos_r++;
+                    }
+                    src = src.Substring(pos_r + 1);
+                }
+                else if (pos_n >= 0 && (pos_n < pos_r || pos_r < 0))
+                {
+                    CharCount += pos_n + 1;
+                    LineBreaks.Add(CharCount);
+                    if (pos_n + 1 == pos_r)
+                    {
+                        CharCount++;
+                        pos_n++;
+                    }
+                    src = src.Substring(pos_n + 1);
+                }
+            } while (pos_r >= 0 || pos_n >= 0);
+            LineBreaks.Add(CharCount + src.Length);
             return LineBreaks;
         }
     }
