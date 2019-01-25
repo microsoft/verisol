@@ -51,6 +51,7 @@ ArrayInitialization.sol
 #ArrayLength.sol
 Arithmetics.sol
 IncDec.sol
+IntTypes.sol
 #LoopFor.sol
 ArrayFixedSize.sol
 #MappingLowerDimRef.sol
