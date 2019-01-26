@@ -59,7 +59,10 @@ namespace SolToBoogie
                     context.Program.AddDeclaration(context.ModifierToBoogiePreProc[modifier]);
                     context.Program.AddDeclaration(context.ModifierToBoogiePreImpl[modifier]);
                 }
+            }
 
+            foreach (string modifier in context.ModifierToBoogiePostProc.Keys)
+            {
                 if (context.ModifierToBoogiePostImpl.ContainsKey(modifier))
                 {
                     context.Program.AddDeclaration(context.ModifierToBoogiePostProc[modifier]);
