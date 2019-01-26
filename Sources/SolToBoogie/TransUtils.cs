@@ -327,5 +327,18 @@ namespace SolToBoogie
             BoogieAssertCmd assertCmd = new BoogieAssertCmd(new BoogieLiteralExpr(true), attributes);
             return assertCmd;
         }
+
+        public static List<BoogieVariable> GetInParams()
+        {
+            return new List<BoogieVariable>()
+            {
+                // add a parameter for this object
+                new BoogieFormalParam(new BoogieTypedIdent("this", BoogieType.Ref)),
+                // add a parameter for msg.sender
+                new BoogieFormalParam(new BoogieTypedIdent("msgsender_MSG", BoogieType.Ref)),
+                // add a parameter for msg.value
+                new BoogieFormalParam(new BoogieTypedIdent("msgvalue_MSG", BoogieType.Int)),
+            };
+        }
     }
 }

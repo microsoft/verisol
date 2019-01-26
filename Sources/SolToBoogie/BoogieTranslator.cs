@@ -60,6 +60,10 @@ namespace SolToBoogie
             GhostVarAndAxiomGenerator generator = new GhostVarAndAxiomGenerator(context);
             generator.Generate();
 
+            // collect modifiers information
+            ModifierCollector modifierCollector = new ModifierCollector(context);
+            sourceUnits.Accept(modifierCollector);
+
             // translate procedures
             ProcedureTranslator procTranslator = new ProcedureTranslator(context);
             sourceUnits.Accept(procTranslator);

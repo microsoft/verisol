@@ -83,7 +83,7 @@ namespace SolToBoogie
 
         public override bool Visit(FunctionDefinition node)
         {
-            Debug.Assert(node.IsConstructor || node.Modifiers.Count == 0, "Modifiers are not supported yet");
+            Debug.Assert(node.IsConstructor || node.Modifiers.Count <= 1, "Multiple Modifiers are not supported yet");
             Debug.Assert(currentContract != null);
 
             currentFunction = node;
@@ -97,15 +97,7 @@ namespace SolToBoogie
             }
 
             // input parameters
-            List<BoogieVariable> inParams = new List<BoogieVariable>()
-            {
-                // add a parameter for this object
-                new BoogieFormalParam(new BoogieTypedIdent("this", BoogieType.Ref)),
-                // add a parameter for msg.sender
-                new BoogieFormalParam(new BoogieTypedIdent("msgsender_MSG", BoogieType.Ref)),
-                // add a parameter for msg.value
-                new BoogieFormalParam(new BoogieTypedIdent("msgvalue_MSG", BoogieType.Int)),
-            };
+            List<BoogieVariable> inParams = TransUtils.GetInParams();
             // get all formal input parameters
             node.Parameters.Accept(this);
             inParams.AddRange(currentParamList);
@@ -137,10 +129,27 @@ namespace SolToBoogie
 
             // TODO: each local array variable should be distinct and 0 initialized
 
-            BoogieStmtList procBody = TranslateStatement(node.Body);
+
+            BoogieStmtList procBody = new BoogieStmtList();
+
+            // insert call to modifier prelude
+            if (node.Modifiers.Count == 1)
+            {
+                if (context.ModifierToBoogiePreImpl.ContainsKey(node.Modifiers[0].ModifierName.Name))
+                {
+                    List<BoogieExpr> arguments = new List<BoogieExpr>()
+                    {
+                        new BoogieIdentifierExpr("this"),
+                        new BoogieIdentifierExpr("msgsender_MSG"),
+                        new BoogieIdentifierExpr("msgvalue_MSG"),
+                    };
+                    string callee = node.Modifiers[0].ModifierName.ToString() + "_pre";
+                    BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, null);
+                    procBody.AddStatement(callCmd);
+                }
+            }
+            procBody.AppendStmtList(TranslateStatement(node.Body));
             List<BoogieVariable> localVars = functionToLocalVarsMap[node];
-
-
 
             // initialization statements
             if (node.IsConstructor)
@@ -540,7 +549,7 @@ namespace SolToBoogie
         private BoogieStmtList currentStmtList;
         private BoogieStmtList currentAuxStmtList; //these are statements generated due to nested calls etc.
 
-        private BoogieStmtList TranslateStatement(Statement node)
+        public BoogieStmtList TranslateStatement(Statement node)
         {
             currentStmtList = null;
             currentAuxStmtList = null;
@@ -571,6 +580,12 @@ namespace SolToBoogie
             }
 
             currentStmtList = block;
+            return false;
+        }
+
+        public override bool Visit(PlaceholderStatement node)
+        {
+            currentStmtList = new BoogieStmtList();
             return false;
         }
 
