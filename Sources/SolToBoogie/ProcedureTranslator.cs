@@ -20,6 +20,9 @@ namespace SolToBoogie
         private ContractDefinition currentContract = null;
         // update in the visitor for function definition
         private FunctionDefinition currentFunction = null;
+        
+        // store the Boogie call for modifier postlude
+        private BoogieCallCmd currentPostlude = null;
 
         public ProcedureTranslator(TranslatorContext context)
         {
@@ -132,9 +135,9 @@ namespace SolToBoogie
 
             BoogieStmtList procBody = new BoogieStmtList();
 
-            // insert call to modifier prelude
             if (node.Modifiers.Count == 1)
             {
+                // insert call to modifier prelude
                 if (context.ModifierToBoogiePreImpl.ContainsKey(node.Modifiers[0].ModifierName.Name))
                 {
                     List<BoogieExpr> arguments = TransUtils.GetArguments();
@@ -142,8 +145,26 @@ namespace SolToBoogie
                     BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, null);
                     procBody.AddStatement(callCmd);
                 }
+
+                // insert call to modifier postlude
+                if (context.ModifierToBoogiePostImpl.ContainsKey(node.Modifiers[0].ModifierName.Name))
+                {
+                    List<BoogieExpr> arguments = TransUtils.GetArguments();
+                    string callee = node.Modifiers[0].ModifierName.ToString() + "_post";
+                    BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, null);
+                    currentPostlude = callCmd;
+                }
             }
+
             procBody.AppendStmtList(TranslateStatement(node.Body));
+
+            // add modifier postlude call if function body has no return
+            if (currentPostlude != null)
+            {
+                procBody.AddStatement(currentPostlude);
+                currentPostlude = null;
+            }
+
             List<BoogieVariable> localVars = functionToLocalVarsMap[node];
 
             // initialization statements
@@ -152,18 +173,6 @@ namespace SolToBoogie
                 BoogieStmtList initStmts = GenerateInitializationStmts(currentContract);
                 initStmts.AppendStmtList(procBody);
                 procBody = initStmts;
-            }
-
-            // insert call to modifier postlude
-            if (node.Modifiers.Count == 1)
-            {
-                if (context.ModifierToBoogiePostImpl.ContainsKey(node.Modifiers[0].ModifierName.Name))
-                {
-                    List<BoogieExpr> arguments = TransUtils.GetArguments();
-                    string callee = node.Modifiers[0].ModifierName.ToString() + "_post";
-                    BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, null);
-                    procBody.AddStatement(callCmd);
-                }
             }
 
             BoogieImplementation impelementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
@@ -747,7 +756,16 @@ namespace SolToBoogie
             if (node.Expression == null)
             {
                 BoogieReturnCmd returnCmd = new BoogieReturnCmd();
-                currentStmtList = BoogieStmtList.MakeSingletonStmtList(returnCmd);
+                if (currentPostlude == null)
+                {
+                    currentStmtList = BoogieStmtList.MakeSingletonStmtList(returnCmd);
+                }
+                else
+                {
+                    currentStmtList = BoogieStmtList.MakeSingletonStmtList(currentPostlude);
+                    currentPostlude = null;
+                    currentStmtList.AddStatement(returnCmd);
+                }
             }
             else
             {
@@ -764,6 +782,12 @@ namespace SolToBoogie
                 BoogieExpr expr = TranslateExpr(node.Expression);
                 BoogieAssignCmd assignCmd = new BoogieAssignCmd(retVar, expr);
                 currentStmtList = BoogieStmtList.MakeSingletonStmtList(assignCmd);
+
+                if (currentPostlude != null)
+                {
+                    currentStmtList.AddStatement(currentPostlude);
+                    currentPostlude = null;
+                }
                 // add a return command, in case the original return expr is in the middle of the function body
                 currentStmtList.AddStatement(new BoogieReturnCmd());
             }
