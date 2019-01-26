@@ -340,5 +340,15 @@ namespace SolToBoogie
                 new BoogieFormalParam(new BoogieTypedIdent("msgvalue_MSG", BoogieType.Int)),
             };
         }
+
+        public static List<BoogieExpr> GetArguments()
+        {
+            return new List<BoogieExpr>()
+            {
+                new BoogieIdentifierExpr("this"),
+                new BoogieIdentifierExpr("msgsender_MSG"),
+                new BoogieIdentifierExpr("msgvalue_MSG"),
+            };
+        }
     }
 }

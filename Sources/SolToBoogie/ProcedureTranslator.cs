@@ -137,12 +137,7 @@ namespace SolToBoogie
             {
                 if (context.ModifierToBoogiePreImpl.ContainsKey(node.Modifiers[0].ModifierName.Name))
                 {
-                    List<BoogieExpr> arguments = new List<BoogieExpr>()
-                    {
-                        new BoogieIdentifierExpr("this"),
-                        new BoogieIdentifierExpr("msgsender_MSG"),
-                        new BoogieIdentifierExpr("msgvalue_MSG"),
-                    };
+                    List<BoogieExpr> arguments = TransUtils.GetArguments();
                     string callee = node.Modifiers[0].ModifierName.ToString() + "_pre";
                     BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, null);
                     procBody.AddStatement(callCmd);
@@ -157,6 +152,18 @@ namespace SolToBoogie
                 BoogieStmtList initStmts = GenerateInitializationStmts(currentContract);
                 initStmts.AppendStmtList(procBody);
                 procBody = initStmts;
+            }
+
+            // insert call to modifier postlude
+            if (node.Modifiers.Count == 1)
+            {
+                if (context.ModifierToBoogiePostImpl.ContainsKey(node.Modifiers[0].ModifierName.Name))
+                {
+                    List<BoogieExpr> arguments = TransUtils.GetArguments();
+                    string callee = node.Modifiers[0].ModifierName.ToString() + "_post";
+                    BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, null);
+                    procBody.AddStatement(callCmd);
+                }
             }
 
             BoogieImplementation impelementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
