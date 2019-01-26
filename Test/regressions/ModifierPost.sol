@@ -3,11 +3,9 @@ pragma solidity ^0.4.24;
 contract ModifierPost {
 
     uint x;
-    bool modified;
 
     constructor (uint _x) public {
         x = _x;
-        modified = false;
     }
 
     modifier onlyGreaterThanTen() {
