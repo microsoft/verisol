@@ -370,12 +370,7 @@ namespace SolToBoogie
         {
             // generate the internal one without base constructors
             string procName = contract.Name + "_" + contract.Name + "_NoBaseCtor";
-            List<BoogieVariable> inParams = new List<BoogieVariable>()
-            {
-                new BoogieFormalParam(new BoogieTypedIdent("this", BoogieType.Ref)),
-                new BoogieFormalParam(new BoogieTypedIdent("msgsender_MSG", BoogieType.Ref)),
-                new BoogieFormalParam(new BoogieTypedIdent("msgvalue_MSG", BoogieType.Int)),
-            };
+            List<BoogieVariable> inParams = TransUtils.GetInParams();
             List<BoogieVariable> outParams = new List<BoogieVariable>();
             List<BoogieAttribute> attributes = new List<BoogieAttribute>()
             {
@@ -1377,12 +1372,7 @@ namespace SolToBoogie
 
         private BoogieStmtList TranslateInternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
-            List<BoogieExpr> arguments = new List<BoogieExpr>()
-            {
-                new BoogieIdentifierExpr("this"),
-                new BoogieIdentifierExpr("msgsender_MSG"),
-                new BoogieIdentifierExpr("msgvalue_MSG"),
-            };
+            List<BoogieExpr> arguments = TransUtils.GetArguments();
 
             foreach (Expression arg in node.Arguments)
             {
