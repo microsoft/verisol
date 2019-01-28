@@ -697,21 +697,30 @@ namespace SolToBoogie
                 (node.RightHandSide.TypeDescriptions != null ?
                     node.RightHandSide.TypeDescriptions : null);
 
-            if (lhsType != null &&
-                (lhsType.TypeString.StartsWith("uint") || lhsType.TypeString.StartsWith("int")))
+            if (lhsType != null)
             {
-                var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
-                callCmd.Attributes = new List<BoogieAttribute>();
-                callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
-                currentStmtList.AddStatement(callCmd);
-            }
-            if (lhsType != null &&
-                (lhsType.TypeString.Equals("address")))
-            {
-                var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_ref", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
-                callCmd.Attributes = new List<BoogieAttribute>();
-                callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
-                currentStmtList.AddStatement(callCmd);
+                //REFACTOR!
+                if (lhsType.TypeString.StartsWith("uint") || lhsType.TypeString.StartsWith("int"))
+                {
+                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
+                    callCmd.Attributes = new List<BoogieAttribute>();
+                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
+                    currentStmtList.AddStatement(callCmd);
+                }
+                if (lhsType.TypeString.Equals("address"))
+                {
+                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_ref", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
+                    callCmd.Attributes = new List<BoogieAttribute>();
+                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
+                    currentStmtList.AddStatement(callCmd);
+                }
+                if (lhsType.TypeString.Equals("bool"))
+                {
+                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_bool", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
+                    callCmd.Attributes = new List<BoogieAttribute>();
+                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
+                    currentStmtList.AddStatement(callCmd);
+                }
             }
 
 
