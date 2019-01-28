@@ -109,6 +109,7 @@ namespace SolToBoogie
             GenerateGlobalProcedureAllocMany();
             GenerateBoogieRecord("int", BoogieType.Int);
             GenerateBoogieRecord("ref", BoogieType.Ref);
+            GenerateBoogieRecord("bool", BoogieType.Bool);
         }
 
         private void GenerateBoogieRecord(string typeName, BoogieType btype)
