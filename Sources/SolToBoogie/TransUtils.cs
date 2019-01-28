@@ -92,6 +92,7 @@ namespace SolToBoogie
                     case "address":
                         return BoogieType.Ref;
                     case "bytes32":
+                    case "bytes":
                         return BoogieType.Int;
                     default:
                         throw new SystemException($"Unknown elementary type name: {type}");
