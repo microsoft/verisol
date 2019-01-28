@@ -68,5 +68,6 @@ ReturnNamedParam.sol
 EmptyContract.sol
 StringMapping.sol
 #StringMappingNoConstructor.sol
+Bytes.sol
 InheritanceWithContractArg.sol
 Keccak.sol
