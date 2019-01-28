@@ -42,7 +42,7 @@ if EXIST out.bpl (
 set BINARYDEPENDENCIES=%VERISOL_DEPENDENCIES_DIR%
 
 if NOT EXIST %BINARYDEPENDENCIES% (
-    echo "Could not find the verisol_dependencies folder"
+    echo "The verisol_dependencies directory %BINARYDEPENDENCIES% does not exist!!"
     goto :exit
 )
 
@@ -79,7 +79,8 @@ if [%4] EQU [proof] (
     REM Run Corral on various entrypoints
     echo Running Corral ...
     @echo on
-    %BINARYDEPENDENCIES%\Corral\corral.exe /recursionBound:%3 /k:1 /main:%methodprefix%%2 /tryCTrace out.bpl /trackAllVars /printDataValues:1 > corral.txt
+    %BINARYDEPENDENCIES%\Corral\corral.exe /recursionBound:%3 /k:1 /main:%methodprefix%%2 /tryCTrace out.bpl  /printDataValues:1 > corral.txt
+    REM %BINARYDEPENDENCIES%\Corral\corral.exe /recursionBound:%3 /k:1 /main:%methodprefix%%2 /tryCTrace out.bpl /trackAllVars /printDataValues:1 > corral.txt
     REM %BINARYDEPENDENCIES%\Corral\corral.exe /recursionBound:%3 /k:1 /main:CorralEntry_%2 /tryCTrace out.bpl  /printDataValues:1 /track:owners_Admin /track:alreadyVotedToAdd_Admin /track:alreadyVotedToRemove_Admin /track:adminMap_AdminSet /track:isValidator_SimpleValidatorSet /track:latestChange_adminOwner_SimpleValidatorSet /track:votesFor_Admin /track:votesAgainst_Admin 
     @echo off
     if EXIST corral_out_trace.txt (
@@ -91,6 +92,13 @@ if [%4] EQU [proof] (
     )
 )
 
-:exit
+:done
+echo DONE!
+goto :stop
 
-echo Done!
+:exit
+echo ERROR!
+goto :stop
+
+
+:stop
