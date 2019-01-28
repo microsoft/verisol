@@ -246,9 +246,21 @@ namespace SolToBoogie
                         var distinctQExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1, qVar2 }, new List<BoogieType>() { mapKeyType, mapKeyType }, neqExpr);
                         stmtList.AddStatement(new BoogieAssumeCmd(distinctQExpr));
                     }
-                    else if (mapping.ValueType is UserDefinedTypeName userTypeName)
+                    else if (mapping.ValueType is UserDefinedTypeName userTypeName ||
+                        mapping.ValueType.ToString().Equals("address"))
                     {
-                        // for now do nothing
+                        stmtList.AddStatement(new BoogieCommentCmd($"Initialize address/contract mapping {varDecl.Name}"));
+
+                        BoogieType mapKeyType;
+                        BoogieMapSelect lhs;
+                        GetBoogieTypesFromMapping(varDecl, mapping, out mapKeyType, out lhs);
+                        var qVar = QVarGenerator.NewQVar(0, 0);
+                        var bodyExpr = new BoogieBinaryOperation(
+                            BoogieBinaryOperation.Opcode.EQ,
+                            new BoogieMapSelect(lhs, qVar),
+                            new BoogieIdentifierExpr("null"));
+                        var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar }, new List<BoogieType>() { mapKeyType }, bodyExpr);
+                        stmtList.AddStatement(new BoogieAssumeCmd(qExpr));
                     }
                     else if (mapping.ValueType.ToString().Equals("bool"))
                     {
@@ -331,7 +343,11 @@ namespace SolToBoogie
         private void GetBoogieTypesFromMapping(VariableDeclaration varDecl, Mapping mapping, out BoogieType mapKeyType, out BoogieMapSelect lhs)
         {
             mapKeyType = MapArrayHelper.InferExprTypeFromTypeString(mapping.KeyType.TypeDescriptions.ToString());
-            var mapValueType = MapArrayHelper.InferExprTypeFromTypeString(mapping.ValueType.ToString());
+            var mapValueTypeString = mapping.ValueType is UserDefinedTypeName ?
+                ((UserDefinedTypeName)mapping.ValueType).TypeDescriptions.ToString() :
+                mapping.ValueType.ToString();
+            // needed as a mapping(int => contract A) only has "A" as the valueType.ToSTring()
+            var mapValueType = MapArrayHelper.InferExprTypeFromTypeString(mapValueTypeString);
             string mapName = MapArrayHelper.GetMemoryMapName(mapKeyType, mapValueType);
 
             string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);

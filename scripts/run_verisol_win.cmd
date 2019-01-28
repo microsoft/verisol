@@ -42,7 +42,7 @@ if EXIST out.bpl (
 set BINARYDEPENDENCIES=%VERISOL_DEPENDENCIES_DIR%
 
 if NOT EXIST %BINARYDEPENDENCIES% (
-    echo "Could not find the verisol_dependencies folder"
+    echo "The verisol_dependencies directory %BINARYDEPENDENCIES% does not exist!!"
     goto :exit
 )
 
@@ -91,6 +91,13 @@ if [%4] EQU [proof] (
     )
 )
 
-:exit
+:done
+echo DONE!
+goto :stop
 
-echo Done!
+:exit
+echo ERROR!
+goto :stop
+
+
+:stop
