@@ -194,6 +194,30 @@ namespace SolToBoogie
                         BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieIdentifierExpr("null"));
                         stmtList.AddStatement(assignCmd);
                     }
+                    else if (elementaryType.TypeDescriptions.TypeString.Equals("bool"))
+                    {
+                        string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
+                        BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
+                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(false));
+                        stmtList.AddStatement(assignCmd);
+                    }
+                    else if (elementaryType.TypeDescriptions.TypeString.Equals("string")) 
+                    {
+                        string x = "";
+                        int hashCode = x.GetHashCode();
+                        BigInteger num = new BigInteger(hashCode);
+                        string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
+                        BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
+                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(num));
+                        stmtList.AddStatement(assignCmd);
+                    }
+                    else //it is integer valued
+                    {
+                        string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
+                        BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
+                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(BigInteger.Zero));
+                        stmtList.AddStatement(assignCmd);
+                    }
                 }
             }
 

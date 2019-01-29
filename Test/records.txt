@@ -71,3 +71,4 @@ StringMapping.sol
 Bytes.sol
 InheritanceWithContractArg.sol
 Keccak.sol
+StateVarInit.sol
