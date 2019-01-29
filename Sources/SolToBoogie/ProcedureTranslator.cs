@@ -712,7 +712,7 @@ namespace SolToBoogie
             if (lhsType != null)
             {
                 //REFACTOR!
-                if (lhsType.TypeString.StartsWith("uint") || lhsType.TypeString.StartsWith("int") || lhsType.TypeString.StartsWith("string"))
+                if (lhsType.TypeString.StartsWith("uint") || lhsType.TypeString.StartsWith("int") || lhsType.TypeString.StartsWith("string ") || lhsType.TypeString.StartsWith("bytes"))
                 {
                     var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
                     callCmd.Attributes = new List<BoogieAttribute>();
