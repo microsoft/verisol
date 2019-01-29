@@ -196,6 +196,7 @@ namespace SolToBoogie
         private void GenerateAxioms()
         {
             context.Program.AddDeclaration(GenerateConstToRefAxiom());
+            context.Program.AddDeclaration(GenerateKeccakAxiom());
         }
 
         private BoogieAxiom GenerateConstToRefAxiom()
@@ -210,6 +211,23 @@ namespace SolToBoogie
             var bodyExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, eqVar12, eqFunc12);
 
             // forall q1:int, q2:int :: q1 == q2 || ConstantToRef(q1) != ConstantToRef(q2) 
+            var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1, qVar2 }, new List<BoogieType>() { BoogieType.Int, BoogieType.Int }, bodyExpr);
+
+            return new BoogieAxiom(qExpr);
+        }
+
+        private BoogieAxiom GenerateKeccakAxiom()
+        {
+
+            var qVar1 = QVarGenerator.NewQVar(0, 0);
+            var qVar2 = QVarGenerator.NewQVar(0, 1);
+            var eqVar12 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, qVar1, qVar2);
+            var qVar1Func = new BoogieFuncCallExpr("keccak256", new List<BoogieExpr>() { qVar1 });
+            var qVar2Func = new BoogieFuncCallExpr("keccak256", new List<BoogieExpr>() { qVar2 });
+            var eqFunc12 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, qVar1Func, qVar2Func);
+            var bodyExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, eqVar12, eqFunc12);
+
+            // forall q1:int, q2:int :: q1 == q2 || keccak256(q1) != keccak256(q2) 
             var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1, qVar2 }, new List<BoogieType>() { BoogieType.Int, BoogieType.Int }, bodyExpr);
 
             return new BoogieAxiom(qExpr);
