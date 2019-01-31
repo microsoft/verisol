@@ -900,6 +900,11 @@ namespace SolToBoogie
                     BoogieExpr rhs = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, lhs, new BoogieLiteralExpr(1));
                     BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, rhs);
                     currentStmtList = BoogieStmtList.MakeSingletonStmtList(assignCmd);
+                    //print the value
+                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
+                    callCmd.Attributes = new List<BoogieAttribute>();
+                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{unaryOperation.SubExpression.ToString()}\""));
+                    currentStmtList.AddStatement(callCmd);
                 }
                 else if (unaryOperation.Operator.Equals("--"))
                 {
