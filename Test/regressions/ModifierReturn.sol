@@ -3,12 +3,14 @@ pragma solidity ^0.4.24;
 contract ModifierReturn {
 
     uint x;
+    uint y;
 
-    constructor (uint _x) public {
+    constructor (uint _x, uint _y) public {
         x = _x;
+        y = _y;
     }
 
-    modifier onlyGreaterThanTen() {
+    modifier increment() {
         _;
         x = x + 1;
     }
@@ -19,9 +21,12 @@ contract ModifierReturn {
         assert (x == 11);
     }
 
-    function plusOne() private onlyGreaterThanTen returns (uint){
+    function plusOne() private increment returns (uint){
         require(x == 10);
-        return x;
+        if (y > 10)
+            return x;
+        else
+            return x;
     }
 
 }

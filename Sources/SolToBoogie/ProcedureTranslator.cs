@@ -170,8 +170,6 @@ namespace SolToBoogie
                 currentPostlude = null;
             }
 
-            List<BoogieVariable> localVars = functionToLocalVarsMap[node];
-
             // initialization statements
             if (node.IsConstructor)
             {
@@ -820,7 +818,6 @@ namespace SolToBoogie
                 else
                 {
                     currentStmtList = BoogieStmtList.MakeSingletonStmtList(currentPostlude);
-                    currentPostlude = null;
                     currentStmtList.AddStatement(returnCmd);
                 }
             }
@@ -843,7 +840,6 @@ namespace SolToBoogie
                 if (currentPostlude != null)
                 {
                     currentStmtList.AddStatement(currentPostlude);
-                    currentPostlude = null;
                 }
                 // add a return command, in case the original return expr is in the middle of the function body
                 currentStmtList.AddStatement(new BoogieReturnCmd());
