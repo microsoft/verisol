@@ -25,6 +25,7 @@ namespace SolToBoogie
             {
                 Dictionary<int, BoogieExpr> houdiniVarMap = HoudiniHelper.GenerateHoudiniVarMapping(contract, context);
                 GenerateHoudiniVarsForContract(contract, houdiniVarMap);
+                GenerateModifiers();
                 GenerateBoogieHarnessForContract(contract, houdiniVarMap);
             }
 
@@ -46,6 +47,27 @@ namespace SolToBoogie
                     new BoogieAttribute("existential", true)
                 };
                 context.Program.AddDeclaration(houdiniVar);
+            }
+        }
+
+        private void GenerateModifiers()
+        {
+            foreach (string modifier in context.ModifierToBoogiePreProc.Keys)
+            {
+                if (context.ModifierToBoogiePreImpl.ContainsKey(modifier))
+                {
+                    context.Program.AddDeclaration(context.ModifierToBoogiePreProc[modifier]);
+                    context.Program.AddDeclaration(context.ModifierToBoogiePreImpl[modifier]);
+                }
+            }
+
+            foreach (string modifier in context.ModifierToBoogiePostProc.Keys)
+            {
+                if (context.ModifierToBoogiePostImpl.ContainsKey(modifier))
+                {
+                    context.Program.AddDeclaration(context.ModifierToBoogiePostProc[modifier]);
+                    context.Program.AddDeclaration(context.ModifierToBoogiePostImpl[modifier]);
+                }
             }
         }
 

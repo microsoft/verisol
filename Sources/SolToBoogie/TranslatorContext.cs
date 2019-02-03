@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 namespace SolToBoogie
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using BoogieAST;
@@ -60,6 +61,18 @@ namespace SolToBoogie
         // all state variables (including private ones) visible in each contract
         public Dictionary<ContractDefinition, HashSet<VariableDeclaration>> ContractToVisibleStateVarsMap { get; private set; }
 
+        // M -> BoogieProcedure(A) for Modifier M {Stmt A; _; Stmt B}
+        public Dictionary<string, BoogieProcedure> ModifierToBoogiePreProc { get; private set;}
+
+        // M -> BoogieProcedure(B) for Modifier M {Stmt A; _; Stmt B}
+        public Dictionary<string, BoogieProcedure> ModifierToBoogiePostProc { get; private set;}
+
+        // M -> BoogieImplementation(A) for Modifier M {Stmt A; _; Stmt B}
+        public Dictionary<string, BoogieImplementation> ModifierToBoogiePreImpl { get; private set;}
+
+        // M -> BoogieImplementation(B) for Modifier M {Stmt A; _; Stmt B}
+        public Dictionary<string, BoogieImplementation> ModifierToBoogiePostImpl { get; private set;}
+
         // num of fresh identifiers, should be incremented when making new fresh id
         private int freshIdentifierCount = 0;
 
@@ -84,6 +97,10 @@ namespace SolToBoogie
             ContractToVisibleFunctionsMap = new Dictionary<ContractDefinition, HashSet<FunctionDefinition>>();
             StateVarNameResolutionMap = new Dictionary<string, Dictionary<ContractDefinition, VariableDeclaration>>();
             ContractToVisibleStateVarsMap = new Dictionary<ContractDefinition, HashSet<VariableDeclaration>>();
+            ModifierToBoogiePreProc = new Dictionary<string, BoogieProcedure>();
+            ModifierToBoogiePostProc = new Dictionary<string, BoogieProcedure>();
+            ModifierToBoogiePreImpl = new Dictionary<string, BoogieImplementation>();
+            ModifierToBoogiePostImpl = new Dictionary<string, BoogieImplementation>();
         }
 
         public bool HasASTNodeId(int id)
@@ -424,6 +441,54 @@ namespace SolToBoogie
             int index = ++freshIdentifierCount;
             string name = "__var_" + index;
             return new BoogieTypedIdent(name, type);
+        }
+
+        public void AddModiferToPreProc(string modifier, BoogieProcedure procedure)
+        {
+            if (ModifierToBoogiePreProc.ContainsKey(modifier))
+            {
+                throw new SystemException("duplicated modifier");
+            }
+            else
+            {
+                ModifierToBoogiePreProc[modifier] = procedure;
+            }
+        }
+
+        public void AddModiferToPostProc(string modifier, BoogieProcedure procedure)
+        {
+            if (ModifierToBoogiePostProc.ContainsKey(modifier))
+            {
+                throw new SystemException("duplicated modifier");
+            }
+            else
+            {
+                ModifierToBoogiePostProc[modifier] = procedure;
+            }
+        }
+
+        public void AddModiferToPreImpl(string modifier, BoogieImplementation procedure)
+        {
+            if (ModifierToBoogiePreImpl.ContainsKey(modifier))
+            {
+                throw new SystemException("duplicated modifier");
+            }
+            else
+            {
+                ModifierToBoogiePreImpl[modifier] = procedure;
+            }
+        }
+
+        public void AddModiferToPostImpl(string modifier, BoogieImplementation procedure)
+        {
+            if (ModifierToBoogiePostImpl.ContainsKey(modifier))
+            {
+                throw new SystemException("duplicated modifier");
+            }
+            else
+            {
+                ModifierToBoogiePostImpl[modifier] = procedure;
+            }
         }
     }
 }
