@@ -22,6 +22,10 @@ namespace SolToBoogie
 
         public override bool Visit(ModifierDefinition modifier)
         {
+            if (modifier.Parameters.Length() > 0)
+            {
+                throw new System.Exception("modifiers with parameters not implemented");
+            }
             Block body = modifier.Body;
             BoogieStmtList prelude = new BoogieStmtList();
             BoogieStmtList postlude = new BoogieStmtList();
@@ -29,6 +33,10 @@ namespace SolToBoogie
             bool translatingPre = true;
             foreach (Statement statement in body.Statements)
             {
+                if (statement is VariableDeclarationStatement)
+                {
+                    throw new System.Exception("locals within modifiers not supported");
+                }
                 if (statement is PlaceholderStatement)
                 {
                     translatingPre = false;
