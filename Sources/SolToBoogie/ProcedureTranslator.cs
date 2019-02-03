@@ -14,7 +14,11 @@ namespace SolToBoogie
     {
         private TranslatorContext context;
 
-        private Dictionary<FunctionDefinition, List<BoogieVariable>> functionToLocalVarsMap;
+        // used to declare local vars in a Boogie implementation
+        private Dictionary<string, List<BoogieVariable>> boogieToLocalVarsMap;
+
+        // current Boogie procedure being translated to
+        private string currentBoogieProc = null;
 
         // update in the visitor for contract definition
         private ContractDefinition currentContract = null;
@@ -27,7 +31,7 @@ namespace SolToBoogie
         public ProcedureTranslator(TranslatorContext context)
         {
             this.context = context;
-            functionToLocalVarsMap = new Dictionary<FunctionDefinition, List<BoogieVariable>>();
+            boogieToLocalVarsMap = new Dictionary<string, List<BoogieVariable>>();
         }
 
         public override bool Visit(ContractDefinition node)
@@ -98,6 +102,7 @@ namespace SolToBoogie
             {
                 procName += "_NoBaseCtor";
             }
+            currentBoogieProc = procName;
 
             // input parameters
             List<BoogieVariable> inParams = TransUtils.GetInParams();
@@ -128,7 +133,7 @@ namespace SolToBoogie
             }
 
             // local variables and function body
-            functionToLocalVarsMap[node] = new List<BoogieVariable>();
+            boogieToLocalVarsMap[currentBoogieProc] = new List<BoogieVariable>();
 
             // TODO: each local array variable should be distinct and 0 initialized
 
@@ -175,6 +180,8 @@ namespace SolToBoogie
                 procBody = initStmts;
             }
 
+            List<BoogieVariable> localVars = boogieToLocalVarsMap[currentBoogieProc];
+
             BoogieImplementation impelementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
             context.Program.AddDeclaration(impelementation);
 
@@ -211,6 +218,30 @@ namespace SolToBoogie
                         string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
                         BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
                         BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieIdentifierExpr("null"));
+                        stmtList.AddStatement(assignCmd);
+                    }
+                    else if (elementaryType.TypeDescriptions.TypeString.Equals("bool"))
+                    {
+                        string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
+                        BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
+                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(false));
+                        stmtList.AddStatement(assignCmd);
+                    }
+                    else if (elementaryType.TypeDescriptions.TypeString.Equals("string")) 
+                    {
+                        string x = "";
+                        int hashCode = x.GetHashCode();
+                        BigInteger num = new BigInteger(hashCode);
+                        string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
+                        BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
+                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(num));
+                        stmtList.AddStatement(assignCmd);
+                    }
+                    else //it is integer valued
+                    {
+                        string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
+                        BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
+                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(BigInteger.Zero));
                         stmtList.AddStatement(assignCmd);
                     }
                 }
@@ -271,9 +302,21 @@ namespace SolToBoogie
                         var distinctQExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1, qVar2 }, new List<BoogieType>() { mapKeyType, mapKeyType }, neqExpr);
                         stmtList.AddStatement(new BoogieAssumeCmd(distinctQExpr));
                     }
-                    else if (mapping.ValueType is UserDefinedTypeName userTypeName)
+                    else if (mapping.ValueType is UserDefinedTypeName userTypeName ||
+                        mapping.ValueType.ToString().Equals("address"))
                     {
-                        // for now do nothing
+                        stmtList.AddStatement(new BoogieCommentCmd($"Initialize address/contract mapping {varDecl.Name}"));
+
+                        BoogieType mapKeyType;
+                        BoogieMapSelect lhs;
+                        GetBoogieTypesFromMapping(varDecl, mapping, out mapKeyType, out lhs);
+                        var qVar = QVarGenerator.NewQVar(0, 0);
+                        var bodyExpr = new BoogieBinaryOperation(
+                            BoogieBinaryOperation.Opcode.EQ,
+                            new BoogieMapSelect(lhs, qVar),
+                            new BoogieIdentifierExpr("null"));
+                        var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar }, new List<BoogieType>() { mapKeyType }, bodyExpr);
+                        stmtList.AddStatement(new BoogieAssumeCmd(qExpr));
                     }
                     else if (mapping.ValueType.ToString().Equals("bool"))
                     {
@@ -335,7 +378,7 @@ namespace SolToBoogie
         {
             // define a local variable to generate a fresh constant
             BoogieLocalVariable tmpVar = new BoogieLocalVariable(context.MakeFreshTypedIdent(BoogieType.Ref));
-            functionToLocalVarsMap[currentFunction].Add(tmpVar);
+            boogieToLocalVarsMap[currentBoogieProc].Add(tmpVar);
             BoogieIdentifierExpr tmpVarIdentExpr = new BoogieIdentifierExpr(tmpVar.Name);
 
             stmtList.AddStatement(new BoogieCommentCmd($"Make array/mapping vars distinct for {varDecl.Name}"));
@@ -356,7 +399,11 @@ namespace SolToBoogie
         private void GetBoogieTypesFromMapping(VariableDeclaration varDecl, Mapping mapping, out BoogieType mapKeyType, out BoogieMapSelect lhs)
         {
             mapKeyType = MapArrayHelper.InferExprTypeFromTypeString(mapping.KeyType.TypeDescriptions.ToString());
-            var mapValueType = MapArrayHelper.InferExprTypeFromTypeString(mapping.ValueType.ToString());
+            var mapValueTypeString = mapping.ValueType is UserDefinedTypeName ?
+                ((UserDefinedTypeName)mapping.ValueType).TypeDescriptions.ToString() :
+                mapping.ValueType.ToString();
+            // needed as a mapping(int => contract A) only has "A" as the valueType.ToSTring()
+            var mapValueType = MapArrayHelper.InferExprTypeFromTypeString(mapValueTypeString);
             string mapName = MapArrayHelper.GetMemoryMapName(mapKeyType, mapValueType);
 
             string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
@@ -370,6 +417,12 @@ namespace SolToBoogie
         {
             // generate the internal one without base constructors
             string procName = contract.Name + "_" + contract.Name + "_NoBaseCtor";
+            currentBoogieProc = procName;
+            if (!boogieToLocalVarsMap.ContainsKey(currentBoogieProc))
+            {
+                boogieToLocalVarsMap[currentBoogieProc] = new List<BoogieVariable>();
+            }
+            
             List<BoogieVariable> inParams = TransUtils.GetInParams();
             List<BoogieVariable> outParams = new List<BoogieVariable>();
             List<BoogieAttribute> attributes = new List<BoogieAttribute>()
@@ -379,8 +432,8 @@ namespace SolToBoogie
             BoogieProcedure procedure = new BoogieProcedure(procName, inParams, outParams, attributes);
             context.Program.AddDeclaration(procedure);
 
-            List<BoogieVariable> localVars = new List<BoogieVariable>();
             BoogieStmtList procBody = GenerateInitializationStmts(contract);
+            List<BoogieVariable> localVars = boogieToLocalVarsMap[currentBoogieProc];
             BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
             context.Program.AddDeclaration(implementation);
 
@@ -606,7 +659,7 @@ namespace SolToBoogie
             {
                 string name = TransUtils.GetCanonicalLocalVariableName(varDecl);
                 BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(varDecl.TypeName);
-                functionToLocalVarsMap[currentFunction].Add(new BoogieLocalVariable(new BoogieTypedIdent(name, type)));
+                boogieToLocalVarsMap[currentBoogieProc].Add(new BoogieLocalVariable(new BoogieTypedIdent(name, type)));
             }
 
             // handle the initial value of variable declaration
@@ -707,21 +760,30 @@ namespace SolToBoogie
                 (node.RightHandSide.TypeDescriptions != null ?
                     node.RightHandSide.TypeDescriptions : null);
 
-            if (lhsType != null &&
-                (lhsType.TypeString.StartsWith("uint") || lhsType.TypeString.StartsWith("int")))
+            if (lhsType != null)
             {
-                var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
-                callCmd.Attributes = new List<BoogieAttribute>();
-                callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
-                currentStmtList.AddStatement(callCmd);
-            }
-            if (lhsType != null &&
-                (lhsType.TypeString.Equals("address")))
-            {
-                var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_ref", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
-                callCmd.Attributes = new List<BoogieAttribute>();
-                callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
-                currentStmtList.AddStatement(callCmd);
+                //REFACTOR!
+                if (lhsType.TypeString.StartsWith("uint") || lhsType.TypeString.StartsWith("int") || lhsType.TypeString.StartsWith("string ") || lhsType.TypeString.StartsWith("bytes"))
+                {
+                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
+                    callCmd.Attributes = new List<BoogieAttribute>();
+                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
+                    currentStmtList.AddStatement(callCmd);
+                }
+                if (lhsType.TypeString.Equals("address"))
+                {
+                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_ref", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
+                    callCmd.Attributes = new List<BoogieAttribute>();
+                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
+                    currentStmtList.AddStatement(callCmd);
+                }
+                if (lhsType.TypeString.Equals("bool"))
+                {
+                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_bool", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
+                    callCmd.Attributes = new List<BoogieAttribute>();
+                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
+                    currentStmtList.AddStatement(callCmd);
+                }
             }
 
 
@@ -880,6 +942,11 @@ namespace SolToBoogie
                     BoogieExpr rhs = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, lhs, new BoogieLiteralExpr(1));
                     BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, rhs);
                     currentStmtList = BoogieStmtList.MakeSingletonStmtList(assignCmd);
+                    //print the value
+                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
+                    callCmd.Attributes = new List<BoogieAttribute>();
+                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{unaryOperation.SubExpression.ToString()}\""));
+                    currentStmtList.AddStatement(callCmd);
                 }
                 else if (unaryOperation.Operator.Equals("--"))
                 {
@@ -1122,7 +1189,7 @@ namespace SolToBoogie
 
                     var boogieTypeCall = MapArrayHelper.InferExprTypeFromTypeString(node.TypeDescriptions.TypeString);
                     var tmpVar = new BoogieLocalVariable(context.MakeFreshTypedIdent(boogieTypeCall));
-                    functionToLocalVarsMap[currentFunction].Add(tmpVar);
+                    boogieToLocalVarsMap[currentBoogieProc].Add(tmpVar);
 
                     var tmpVarExpr = new BoogieIdentifierExpr(tmpVar.Name);
                     outParams.Add(tmpVarExpr);
@@ -1144,7 +1211,7 @@ namespace SolToBoogie
 
                     var boogieTypeCall = MapArrayHelper.InferExprTypeFromTypeString(node.TypeDescriptions.TypeString);
                     var tmpVar = new BoogieLocalVariable(context.MakeFreshTypedIdent(boogieTypeCall));
-                    functionToLocalVarsMap[currentFunction].Add(tmpVar);
+                    boogieToLocalVarsMap[currentBoogieProc].Add(tmpVar);
 
                     var tmpVarExpr = new BoogieIdentifierExpr(tmpVar.Name);
                     outParams.Add(tmpVarExpr);
@@ -1198,12 +1265,12 @@ namespace SolToBoogie
             // define a local variable to temporarily hold the object
             BoogieTypedIdent freshAllocTmpId = context.MakeFreshTypedIdent(BoogieType.Ref);
             BoogieLocalVariable allocTmpVar = new BoogieLocalVariable(freshAllocTmpId);
-            functionToLocalVarsMap[currentFunction].Add(allocTmpVar);
+            boogieToLocalVarsMap[currentBoogieProc].Add(allocTmpVar);
 
             // define a local variable to store the new msg.value
             BoogieTypedIdent freshMsgValueId = context.MakeFreshTypedIdent(BoogieType.Int);
             BoogieLocalVariable msgValueVar = new BoogieLocalVariable(freshMsgValueId);
-            functionToLocalVarsMap[currentFunction].Add(msgValueVar);
+            boogieToLocalVarsMap[currentBoogieProc].Add(msgValueVar);
 
             BoogieIdentifierExpr tmpVarIdentExpr = new BoogieIdentifierExpr(freshAllocTmpId.Name);
             BoogieIdentifierExpr msgValueIdentExpr = new BoogieIdentifierExpr(freshMsgValueId.Name);
@@ -1273,7 +1340,7 @@ namespace SolToBoogie
             BoogieStmtList stmtList = new BoogieStmtList();
             // tmp := Length[this][a];
             BoogieTypedIdent tmpIdent = context.MakeFreshTypedIdent(BoogieType.Int);
-            functionToLocalVarsMap[currentFunction].Add(new BoogieLocalVariable(tmpIdent));
+            boogieToLocalVarsMap[currentBoogieProc].Add(new BoogieLocalVariable(tmpIdent));
             BoogieIdentifierExpr tmp = new BoogieIdentifierExpr(tmpIdent.Name);
             BoogieAssignCmd assignCmd = new BoogieAssignCmd(tmp, lengthMapSelect);
             stmtList.AddStatement(assignCmd);
@@ -1321,7 +1388,7 @@ namespace SolToBoogie
 
             BoogieTypedIdent msgValueId = context.MakeFreshTypedIdent(BoogieType.Int);
             BoogieLocalVariable msgValueVar = new BoogieLocalVariable(msgValueId);
-            functionToLocalVarsMap[currentFunction].Add(msgValueVar);
+            boogieToLocalVarsMap[currentBoogieProc].Add(msgValueVar);
 
             List<BoogieExpr> arguments = new List<BoogieExpr>()
             {

@@ -4,7 +4,7 @@ ReturnMult.sol
 Logical.sol
 Inheritance.sol
 TypeCast.sol
-#MappingReference.sol
+MappingReference.sol
 InheritInitializer.sol
 StaticDispatching.sol
 Event.sol
@@ -21,7 +21,7 @@ InputParameters.sol
 OutputParameters.sol
 Revert.sol
 Require.sol
-#LoopDoWhile.sol
+LoopDoWhile.sol
 #UsingFor.sol
 AssertFalse.sol
 MethodDecl.sol
@@ -33,7 +33,7 @@ MappingInitialize.sol
 ExternalFunctionCall.sol
 Throw.sol
 #ArrayLowerDimCopy.sol
-#Mapping.sol
+Mapping.sol
 Constructor.sol
 #ArrayDynamicStorage.sol
 ConstructorSpecifier.sol
@@ -54,9 +54,9 @@ IncDec.sol
 IntTypes.sol
 #LoopFor.sol
 ArrayFixedSize.sol
-#MappingLowerDimRef.sol
+MappingLowerDimRef.sol
 InternalFunctionCall.sol
-#LoopBreak.sol
+LoopBreak.sol
 MappingNested.sol
 #LoopWhile.sol
 #ArrayNestedFixedSize.sol
@@ -70,5 +70,7 @@ ReturnNamedParam.sol
 EmptyContract.sol
 StringMapping.sol
 #StringMappingNoConstructor.sol
+Bytes.sol
 InheritanceWithContractArg.sol
 Keccak.sol
+StateVarInit.sol
