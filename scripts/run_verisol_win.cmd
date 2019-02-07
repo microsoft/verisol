@@ -80,6 +80,8 @@ if [%4] EQU [proof] (
     echo Running Corral ...
     @echo on
     %BINARYDEPENDENCIES%\Corral\corral.exe /recursionBound:%3 /k:1 /main:%methodprefix%%2 /tryCTrace out.bpl  /printDataValues:1 > corral.txt
+    echo Output of Corral.....
+    tail -14 corral.txt
     REM %BINARYDEPENDENCIES%\Corral\corral.exe /recursionBound:%3 /k:1 /main:%methodprefix%%2 /tryCTrace out.bpl /trackAllVars /printDataValues:1 > corral.txt
     REM %BINARYDEPENDENCIES%\Corral\corral.exe /recursionBound:%3 /k:1 /main:CorralEntry_%2 /tryCTrace out.bpl  /printDataValues:1 /track:owners_Admin /track:alreadyVotedToAdd_Admin /track:alreadyVotedToRemove_Admin /track:adminMap_AdminSet /track:isValidator_SimpleValidatorSet /track:latestChange_adminOwner_SimpleValidatorSet /track:votesFor_Admin /track:votesAgainst_Admin 
     @echo off
