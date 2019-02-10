@@ -949,6 +949,30 @@ namespace SolToBoogie
                     BoogieExpr rhs = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, lhs, new BoogieLiteralExpr(1));
                     BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, rhs);
                     currentStmtList = BoogieStmtList.MakeSingletonStmtList(assignCmd);
+                    //print the value
+                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
+                    callCmd.Attributes = new List<BoogieAttribute>();
+                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{unaryOperation.SubExpression.ToString()}\""));
+                    currentStmtList.AddStatement(callCmd);
+                } 
+                else if (unaryOperation.Operator.Equals("delete"))
+                {
+                    var typeStr = unaryOperation.SubExpression.TypeDescriptions.TypeString;
+                    Debug.Assert(typeStr.StartsWith("int") || typeStr.StartsWith("uint") || typeStr.Equals("bool") || typeStr.StartsWith("string "),
+                        $"Only handle delete for scalars, found {typeStr}");
+                    //REFACTOR to define isInt, isUint, IsByte, IsString etc.
+                    BoogieExpr rhs = null;
+                    if (typeStr.StartsWith("int") || typeStr.StartsWith("uint"))
+                        rhs = new BoogieLiteralExpr(BigInteger.Zero);
+                    else if (typeStr.Equals("bool"))
+                        rhs = new BoogieLiteralExpr(false);
+                    else if (typeStr.StartsWith("string"))
+                    {
+                        var emptyStr = "";
+                        rhs = new BoogieLiteralExpr(new BigInteger(emptyStr.GetHashCode()));
+                    }
+                    var assignCmd = new BoogieAssignCmd(lhs, rhs);
+                    currentStmtList = BoogieStmtList.MakeSingletonStmtList(assignCmd);
                 }
                 return false;
             }
