@@ -74,3 +74,4 @@ Bytes.sol
 InheritanceWithContractArg.sol
 Keccak.sol
 StateVarInit.sol
+DeleteScalar.sol
