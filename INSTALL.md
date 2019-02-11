@@ -60,4 +60,8 @@ If Corral generates a defect (look at output of Corral and **corral_out_trace.tx
 
 ## Regression script
 
-Coming soon!
+To run the regressions, build *SolToBoogie.sln*, install Corral, go to **%VERISOL_PATH%\test\regressions**, and run
+
+`dotnet %VERISOL_PATH%\Sources\SolToBoogieTest\bin\Debug\netcoreapp2.0\SolToBoogieTest.dll <Path to Corral.exe> %VERISOL_PATH%`
+
+All regressions are expected to pass. 
