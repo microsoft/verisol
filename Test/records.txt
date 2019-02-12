@@ -75,3 +75,4 @@ InheritanceWithContractArg.sol
 Keccak.sol
 StateVarInit.sol
 DeleteScalar.sol
+FuncCallInIfCondition.sol
