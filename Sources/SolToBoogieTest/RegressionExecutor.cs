@@ -26,13 +26,15 @@ namespace SolToBoogieTest
 
         private ILogger logger;
 
+        private string testPrefix;
+
         private static readonly int corralTimeoutInMilliseconds = TimeSpan.FromSeconds(60).Seconds * 1000;
 
         private static readonly string outFile = "__SolToBoogieTest_out.bpl";
 
         private static Dictionary<string, bool> filesToRun = new Dictionary<string, bool>();
 
-        public RegressionExecutor(string solcPath, string corralPath, string testDirectory, string configDirectory, string recordsDir, ILogger logger)
+        public RegressionExecutor(string solcPath, string corralPath, string testDirectory, string configDirectory, string recordsDir, ILogger logger, string testPrefix = "")
         {
             this.solcPath = solcPath;
             this.corralPath = corralPath;
@@ -40,6 +42,7 @@ namespace SolToBoogieTest
             this.configDirectory = configDirectory;
             this.recordsDir = recordsDir;
             this.logger = logger;
+            this.testPrefix = testPrefix;
         }
 
         public bool BatchExecute()
@@ -51,6 +54,8 @@ namespace SolToBoogieTest
             foreach (string filePath in filePaths)
             {
                 string filename = Path.GetFileName(filePath);
+                if (!filename.StartsWith(testPrefix))
+                    continue;
                 if (!filesToRun.ContainsKey(filename))
                 {
                     logger.LogWarning($"{filename} not found in {Path.Combine(recordsDir, "records.txt")}");
