@@ -10,14 +10,16 @@ namespace SolToBoogieTest
     {
         public static void Main(string[] args)
         {
-            if (args.Length != 2)
+            if (args.Length < 2 || args.Length > 3)
             {
-                Console.WriteLine("Usage: SolToBoogieTest <path-to-corral> <workingdir>");
+                Console.WriteLine("Usage: SolToBoogieTest <path-to-corral> <workingdir> [<test-prefix>]");
+                Console.WriteLine("\t: if <test-prefix> is specified, we only run subset of tests that have the string as prefix");
                 return;
             }
 
             string corralPath = args[0];
             string workingDirectory = args[1];
+            string testPrefix = args.Length >= 3 ? args[2] : ""; 
             string solcName = GetSolcNameByOSPlatform();
             string solcPath = Path.Combine(workingDirectory, "Tool", solcName);
             string testDir = Path.Combine(workingDirectory, "Test", "regressions");
@@ -27,7 +29,11 @@ namespace SolToBoogieTest
             ILoggerFactory loggerFactory = new LoggerFactory().AddConsole(LogLevel.Information);
             ILogger logger = loggerFactory.CreateLogger("SolToBoogieTest.RegressionExecutor");
 
-            RegressionExecutor executor = new RegressionExecutor(solcPath, corralPath, testDir, configDir, recordsDir, logger);
+            if (!testPrefix.Equals(string.Empty))
+            {
+                Console.WriteLine($"Warning!!! only running tests that have a prefix {testPrefix}....");
+            }
+            RegressionExecutor executor = new RegressionExecutor(solcPath, corralPath, testDir, configDir, recordsDir, logger, testPrefix);
             executor.BatchExecute();
         }
 
