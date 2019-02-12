@@ -857,6 +857,12 @@ namespace SolToBoogie
         public override bool Visit(IfStatement node)
         {
             BoogieExpr guard = TranslateExpr(node.Condition);
+            BoogieStmtList auxStmtList = new BoogieStmtList();
+            if (currentAuxStmtList!=null)
+            {
+                auxStmtList.AppendStmtList(currentAuxStmtList);
+            }
+
             BoogieStmtList thenBody = TranslateStatement(node.TrueBody);
             BoogieStmtList elseBody = null;
             if (node.FalseBody != null)
@@ -865,7 +871,9 @@ namespace SolToBoogie
             }
             BoogieIfCmd ifCmd = new BoogieIfCmd(guard, thenBody, elseBody);
 
-            currentStmtList = BoogieStmtList.MakeSingletonStmtList(ifCmd);
+            currentStmtList = new BoogieStmtList();
+            currentStmtList.AppendStmtList(auxStmtList);
+            currentStmtList.AddStatement(ifCmd);
             return false;
         }
 
