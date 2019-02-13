@@ -329,7 +329,7 @@ namespace SolToBoogie
             return assertCmd;
         }
 
-        public static List<BoogieVariable> GetInParams()
+        public static List<BoogieVariable> GetDefaultInParams()
         {
             return new List<BoogieVariable>()
             {
@@ -342,7 +342,7 @@ namespace SolToBoogie
             };
         }
 
-        public static List<BoogieExpr> GetArguments()
+        public static List<BoogieExpr> GetDefaultArguments()
         {
             return new List<BoogieExpr>()
             {
