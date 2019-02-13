@@ -65,3 +65,8 @@ To run the regressions, build *SolToBoogie.sln*, install Corral, go to **%VERISO
 `dotnet %VERISOL_PATH%\Sources\SolToBoogieTest\bin\Debug\netcoreapp2.0\SolToBoogieTest.dll <Path to Corral.exe> %VERISOL_PATH%`
 
 All regressions are expected to pass. 
+
+To run a subset of examples during testing, add an optional parameter to limit the above run to a subset of tests that match a prefix string *<prefix>*
+
+`dotnet %VERISOL_PATH%\Sources\SolToBoogieTest\bin\Debug\netcoreapp2.0\SolToBoogieTest.dll <Path to Corral.exe> %VERISOL_PATH% [<prefix>]`
+
