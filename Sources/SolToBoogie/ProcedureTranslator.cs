@@ -105,7 +105,7 @@ namespace SolToBoogie
             currentBoogieProc = procName;
 
             // input parameters
-            List<BoogieVariable> inParams = TransUtils.GetInParams();
+            List<BoogieVariable> inParams = TransUtils.GetDefaultInParams();
             // get all formal input parameters
             node.Parameters.Accept(this);
             inParams.AddRange(currentParamList);
@@ -145,7 +145,8 @@ namespace SolToBoogie
                 // insert call to modifier prelude
                 if (context.ModifierToBoogiePreImpl.ContainsKey(node.Modifiers[0].ModifierName.Name))
                 {
-                    List<BoogieExpr> arguments = TransUtils.GetArguments();
+                    List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
+                    arguments.AddRange(node.Modifiers[0].Arguments.ConvertAll(TranslateExpr));
                     string callee = node.Modifiers[0].ModifierName.ToString() + "_pre";
                     BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, null);
                     procBody.AddStatement(callCmd);
@@ -154,7 +155,8 @@ namespace SolToBoogie
                 // insert call to modifier postlude
                 if (context.ModifierToBoogiePostImpl.ContainsKey(node.Modifiers[0].ModifierName.Name))
                 {
-                    List<BoogieExpr> arguments = TransUtils.GetArguments();
+                    List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
+                    arguments.AddRange(node.Modifiers[0].Arguments.ConvertAll(TranslateExpr));
                     string callee = node.Modifiers[0].ModifierName.ToString() + "_post";
                     BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, null);
                     currentPostlude = callCmd;
@@ -421,7 +423,7 @@ namespace SolToBoogie
                 boogieToLocalVarsMap[currentBoogieProc] = new List<BoogieVariable>();
             }
             
-            List<BoogieVariable> inParams = TransUtils.GetInParams();
+            List<BoogieVariable> inParams = TransUtils.GetDefaultInParams();
             List<BoogieVariable> outParams = new List<BoogieVariable>();
             List<BoogieAttribute> attributes = new List<BoogieAttribute>()
             {
@@ -1467,7 +1469,7 @@ namespace SolToBoogie
 
         private BoogieStmtList TranslateInternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
-            List<BoogieExpr> arguments = TransUtils.GetArguments();
+            List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
 
             foreach (Expression arg in node.Arguments)
             {
