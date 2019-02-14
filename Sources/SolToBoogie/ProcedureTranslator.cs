@@ -222,7 +222,12 @@ namespace SolToBoogie
                     {
                         string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
                         BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
-                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(false));
+                        bool value = false;
+                        if (varDecl.Value != null && varDecl.Value.ToString() == "true")
+                        {
+                            value = true;
+                        }
+                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(value));
                         stmtList.AddStatement(assignCmd);
                     }
                     else if (elementaryType.TypeDescriptions.TypeString.Equals("string")) 
@@ -239,7 +244,13 @@ namespace SolToBoogie
                     {
                         string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
                         BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
-                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(BigInteger.Zero));
+                        BigInteger bigInt = BigInteger.Zero;
+                        if (varDecl.Value!=null)
+                        {
+                            decimal value = new decimal(Int32.Parse(varDecl.Value.ToString()));
+                            bigInt = new BigInteger(value);
+                        }
+                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(bigInt));
                         stmtList.AddStatement(assignCmd);
                     }
                 }
