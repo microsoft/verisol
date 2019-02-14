@@ -56,6 +56,9 @@ namespace SolToBoogieTest
                 string filename = Path.GetFileName(filePath);
                 if (!filename.StartsWith(testPrefix))
                     continue;
+                //silently ignore non .sol files
+                if (!filename.EndsWith(".sol"))
+                    continue;
                 if (!filesToRun.ContainsKey(filename))
                 {
                     logger.LogWarning($"{filename} not found in {Path.Combine(recordsDir, "records.txt")}");
