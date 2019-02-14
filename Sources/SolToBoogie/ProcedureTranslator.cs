@@ -251,7 +251,11 @@ namespace SolToBoogie
                         BigInteger bigInt = BigInteger.Zero;
                         if (varDecl.Value!=null)
                         {
-                            decimal value = new decimal(Int32.Parse(varDecl.Value.ToString()));
+                            string valStr = varDecl.Value.ToString();
+                            if (valStr[0] == '\'')
+                                valStr = valStr.Substring(1, valStr.Length - 2);
+                            int baseOfValue = (valStr.StartsWith("0x", true, new CultureInfo("en-US"))) ? 16 : 10;
+                            decimal value = new decimal(Convert.ToInt32(valStr, baseOfValue));
                             bigInt = new BigInteger(value);
                         }
                         BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(bigInt));
