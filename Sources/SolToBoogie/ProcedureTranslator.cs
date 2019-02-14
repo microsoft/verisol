@@ -105,7 +105,7 @@ namespace SolToBoogie
             currentBoogieProc = procName;
 
             // input parameters
-            List<BoogieVariable> inParams = TransUtils.GetInParams();
+            List<BoogieVariable> inParams = TransUtils.GetDefaultInParams();
             // get all formal input parameters
             node.Parameters.Accept(this);
             inParams.AddRange(currentParamList);
@@ -145,7 +145,9 @@ namespace SolToBoogie
                 // insert call to modifier prelude
                 if (context.ModifierToBoogiePreImpl.ContainsKey(node.Modifiers[0].ModifierName.Name))
                 {
-                    List<BoogieExpr> arguments = TransUtils.GetArguments();
+                    List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
+                    if (node.Modifiers[0].Arguments != null)
+                        arguments.AddRange(node.Modifiers[0].Arguments.ConvertAll(TranslateExpr));
                     string callee = node.Modifiers[0].ModifierName.ToString() + "_pre";
                     BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, null);
                     procBody.AddStatement(callCmd);
@@ -154,7 +156,9 @@ namespace SolToBoogie
                 // insert call to modifier postlude
                 if (context.ModifierToBoogiePostImpl.ContainsKey(node.Modifiers[0].ModifierName.Name))
                 {
-                    List<BoogieExpr> arguments = TransUtils.GetArguments();
+                    List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
+                    if (node.Modifiers[0].Arguments != null)
+                        arguments.AddRange(node.Modifiers[0].Arguments.ConvertAll(TranslateExpr));
                     string callee = node.Modifiers[0].ModifierName.ToString() + "_post";
                     BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, null);
                     currentPostlude = callCmd;
@@ -432,7 +436,7 @@ namespace SolToBoogie
                 boogieToLocalVarsMap[currentBoogieProc] = new List<BoogieVariable>();
             }
             
-            List<BoogieVariable> inParams = TransUtils.GetInParams();
+            List<BoogieVariable> inParams = TransUtils.GetDefaultInParams();
             List<BoogieVariable> outParams = new List<BoogieVariable>();
             List<BoogieAttribute> attributes = new List<BoogieAttribute>()
             {
@@ -1449,9 +1453,13 @@ namespace SolToBoogie
             Debug.Assert(dynamicTypeToFuncMap.Count > 0);
 
             BoogieIfCmd ifCmd = null;
+            BoogieExpr lastGuard = null;
+            BoogieCallCmd lastCallCmd = null;
+
             // generate a single if-then-else statement
             foreach (ContractDefinition dynamicType in dynamicTypeToFuncMap.Keys)
             {
+
                 //ignore the ones those who do not derive from the current contract
                 // TODO: we need a way to determine type of receiver from "x.Foo()"
                 if (memberAccess.Expression.ToString() == "this" && 
@@ -1465,20 +1473,32 @@ namespace SolToBoogie
                 BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), receiver);
                 BoogieExpr rhs = new BoogieIdentifierExpr(dynamicType.Name);
                 BoogieExpr guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lhs, rhs);
+                lastGuard = guard;
                 BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, outParams);
+                lastCallCmd = callCmd;
                 BoogieStmtList thenBody = BoogieStmtList.MakeSingletonStmtList(callCmd);
                 BoogieStmtList elseBody = ifCmd == null ? null : BoogieStmtList.MakeSingletonStmtList(ifCmd);
 
                 ifCmd = new BoogieIfCmd(guard, thenBody, elseBody);
             }
-            stmtList.AddStatement(ifCmd);
+
+            // optimization: if there is only 1 type that we replace the if with a assume
+            if (dynamicTypeToFuncMap.Keys.Count == 1)
+            {
+                stmtList.AddStatement(new BoogieAssumeCmd(lastGuard));
+                stmtList.AddStatement(lastCallCmd);
+            }
+            else
+            {
+                stmtList.AddStatement(ifCmd);
+            }
 
             return stmtList;
         }
 
         private BoogieStmtList TranslateInternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
-            List<BoogieExpr> arguments = TransUtils.GetArguments();
+            List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
 
             foreach (Expression arg in node.Arguments)
             {
@@ -1488,6 +1508,8 @@ namespace SolToBoogie
 
             BoogieStmtList stmtList = new BoogieStmtList();
 
+
+            // Question: why do we have a dynamic dispatch for an internal call?
             if (IsDynamicDispatching(node))
             {
                 string signature = TransUtils.InferFunctionSignature(context, node);
@@ -1497,6 +1519,8 @@ namespace SolToBoogie
                 Debug.Assert(dynamicTypeToFuncMap.Count > 0);
 
                 BoogieIfCmd ifCmd = null;
+                BoogieExpr lastGuard = null;
+                BoogieCallCmd lastCallCmd = null;
                 // generate a single if-then-else statement
                 foreach (ContractDefinition dynamicType in dynamicTypeToFuncMap.Keys)
                 {
@@ -1510,13 +1534,25 @@ namespace SolToBoogie
                     BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), new BoogieIdentifierExpr("this"));
                     BoogieExpr rhs = new BoogieIdentifierExpr(dynamicType.Name);
                     BoogieExpr guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lhs, rhs);
+                    lastGuard = guard;
                     BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, outParams);
+                    lastCallCmd = callCmd;
                     BoogieStmtList thenBody = BoogieStmtList.MakeSingletonStmtList(callCmd);
                     BoogieStmtList elseBody = ifCmd == null ? null : BoogieStmtList.MakeSingletonStmtList(ifCmd);
 
                     ifCmd = new BoogieIfCmd(guard, thenBody, elseBody);
                 }
-                stmtList.AddStatement(ifCmd);
+
+                // optimization: if there is only 1 type that we replace the if with a assume
+                if (dynamicTypeToFuncMap.Keys.Count == 1)
+                {
+                    stmtList.AddStatement(new BoogieAssumeCmd(lastGuard));
+                    stmtList.AddStatement(lastCallCmd);
+                }
+                else
+                {
+                    stmtList.AddStatement(ifCmd);
+                }
             }
             else if (IsStaticDispatching(node))
             {

@@ -22,10 +22,20 @@ namespace SolToBoogie
 
         public override bool Visit(ModifierDefinition modifier)
         {
-            if (modifier.Parameters.Length() > 0)
+            //if (modifier.Parameters.Length() > 0)
+            //{
+            //    throw new System.Exception("modifiers with parameters not implemented");
+            //}
+            var modifierInParams = TransUtils.GetDefaultInParams();
+            
+            foreach (var parameter in modifier.Parameters.Parameters)
             {
-                throw new System.Exception("modifiers with parameters not implemented");
+                string name = null;
+                name = TransUtils.GetCanonicalLocalVariableName(parameter);
+                BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(parameter.TypeName);
+                modifierInParams.Add(new BoogieFormalParam(new BoogieTypedIdent(name, type)));
             }
+
             Block body = modifier.Body;
             BoogieStmtList prelude = new BoogieStmtList();
             BoogieStmtList postlude = new BoogieStmtList();
@@ -55,13 +65,11 @@ namespace SolToBoogie
 
             if (prelude.StatementCount() > 0)
             {
-                List<BoogieVariable> inParams = TransUtils.GetInParams();
+                List<BoogieVariable> inParams = modifierInParams;
                 List<BoogieVariable> outParams = new List<BoogieVariable>();
                 BoogieProcedure preludeProc = new BoogieProcedure(modifier.Name + "_pre", inParams, outParams);
                 context.AddModiferToPreProc(modifier.Name, preludeProc);
 
-                inParams = TransUtils.GetInParams();
-                outParams = new List<BoogieVariable>();
                 BoogieImplementation preludeImpl = new BoogieImplementation(modifier.Name + "_pre", 
                     inParams, outParams, new List<BoogieVariable>(), prelude);
                 context.AddModiferToPreImpl(modifier.Name, preludeImpl);
@@ -69,13 +77,11 @@ namespace SolToBoogie
 
             if (postlude.StatementCount() > 0)
             {
-                List<BoogieVariable> inParams = TransUtils.GetInParams();
+                List<BoogieVariable> inParams = modifierInParams;
                 List<BoogieVariable> outParams = new List<BoogieVariable>();
                 BoogieProcedure postludeProc = new BoogieProcedure(modifier.Name + "_post", inParams, outParams);
                 context.AddModiferToPostProc(modifier.Name, postludeProc);
 
-                inParams = TransUtils.GetInParams();
-                outParams = new List<BoogieVariable>();
                 BoogieImplementation postludeImpl = new BoogieImplementation(modifier.Name + "_post",
                     inParams, outParams, new List<BoogieVariable>(), postlude);
                 context.AddModiferToPostImpl(modifier.Name, postludeImpl);
