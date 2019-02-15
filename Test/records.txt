@@ -78,3 +78,5 @@ DeleteScalar.sol
 FuncCallInIfCondition.sol
 ModifierWithArgs.sol
 EmbeddedCalls.sol
+InitOutsideCtors.sol
+ModifierWithArgs.sol

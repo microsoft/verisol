@@ -226,12 +226,22 @@ namespace SolToBoogie
                     {
                         string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
                         BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
-                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(false));
+                        bool value = false;
+                        if (varDecl.Value != null && varDecl.Value.ToString() == "true")
+                        {
+                            value = true;
+                        }
+                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(value));
                         stmtList.AddStatement(assignCmd);
                     }
                     else if (elementaryType.TypeDescriptions.TypeString.Equals("string")) 
                     {
                         string x = "";
+                        if (varDecl.Value != null)
+                        {
+                            x = varDecl.Value.ToString();
+                            x=x.Substring(1, x.Length - 2);  //to strip off the single quotations
+                        }
                         int hashCode = x.GetHashCode();
                         BigInteger num = new BigInteger(hashCode);
                         string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
@@ -243,7 +253,17 @@ namespace SolToBoogie
                     {
                         string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
                         BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
-                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(BigInteger.Zero));
+                        BigInteger bigInt = BigInteger.Zero;
+                        if (varDecl.Value!=null)
+                        {
+                            string valStr = varDecl.Value.ToString();
+                            if (valStr[0] == '\'')
+                                valStr = valStr.Substring(1, valStr.Length - 2); //to strip off the single quotations
+                            int baseOfValue = (valStr.StartsWith("0x", true, new CultureInfo("en-US"))) ? 16 : 10;
+                            decimal value = new decimal(Convert.ToInt32(valStr, baseOfValue));
+                            bigInt = new BigInteger(value);
+                        }
+                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(bigInt));
                         stmtList.AddStatement(assignCmd);
                     }
                 }
