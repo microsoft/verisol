@@ -77,3 +77,4 @@ StateVarInit.sol
 DeleteScalar.sol
 FuncCallInIfCondition.sol
 ModifierWithArgs.sol
+EmbeddedCalls.sol

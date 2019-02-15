@@ -1405,6 +1405,9 @@ namespace SolToBoogie
                     {
                         return true;
                     }
+                } else if (memberAccess.Expression is FunctionCall)
+                {
+                    return true;
                 }
             }
             return false;
@@ -1417,7 +1420,10 @@ namespace SolToBoogie
             Debug.Assert(node.Expression is MemberAccess);
             MemberAccess memberAccess = node.Expression as MemberAccess;
             BoogieExpr receiver = TranslateExpr(memberAccess.Expression);
-
+            if (currentAuxStmtList != null)
+            {
+                stmtList.AppendStmtList(currentAuxStmtList);
+            }
             BoogieTypedIdent msgValueId = context.MakeFreshTypedIdent(BoogieType.Int);
             BoogieLocalVariable msgValueVar = new BoogieLocalVariable(msgValueId);
             boogieToLocalVarsMap[currentBoogieProc].Add(msgValueVar);
@@ -1433,6 +1439,10 @@ namespace SolToBoogie
             {
                 BoogieExpr argument = TranslateExpr(arg);
                 arguments.Add(argument);
+                if (currentAuxStmtList != null)
+                {
+                    stmtList.AppendStmtList(currentAuxStmtList);
+                }
             }
 
             string signature = TransUtils.InferFunctionSignature(context, node);
@@ -1488,15 +1498,16 @@ namespace SolToBoogie
         private BoogieStmtList TranslateInternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
             List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
-
+            BoogieStmtList stmtList = new BoogieStmtList();
             foreach (Expression arg in node.Arguments)
             {
-                BoogieExpr argument = TranslateExpr(arg);
+                BoogieExpr argument = TranslateExpr(arg);    
                 arguments.Add(argument);
+                if (currentAuxStmtList != null)
+                {
+                    stmtList.AppendStmtList(currentAuxStmtList);
+                }
             }
-
-            BoogieStmtList stmtList = new BoogieStmtList();
-
 
             // Question: why do we have a dynamic dispatch for an internal call?
             if (IsDynamicDispatching(node))
