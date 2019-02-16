@@ -1,6 +1,15 @@
 pragma solidity ^0.4.24;
 
+contract A {
+
+   function get_a()  public returns (uint) {
+       return 2;
+   }
+}
+
 contract NestedFunction {
+
+    A a;
 
     function NestedFunction() {
     } 
@@ -19,10 +28,14 @@ contract NestedFunction {
        assert (y == x + 4);
     }
 
+    function bar() public {
+       assert(a.get_a() == 2);
+    }
+
     function unhandled(uint x) public {
        uint y;
        y = foo(foo(x) + foo(foo(x)));
-       // assert (y == 2*x + 4); // cannot handle multiple levels of nesting
+       assert (y == 2*x + 4); 
     }
 
 }
