@@ -610,7 +610,7 @@ namespace SolToBoogie
 
         // updated in the visitor of parameter list
         private List<BoogieVariable> currentParamList;
-
+        
         public override bool Visit(ParameterList node)
         {
             currentParamList = new List<BoogieVariable>();
@@ -1421,7 +1421,8 @@ namespace SolToBoogie
                     {
                         return true;
                     }
-                    if (!(context.GetASTNodeById(identifier.ReferencedDeclaration) is ContractDefinition))
+                    var contract = context.GetASTNodeById(identifier.ReferencedDeclaration) as ContractDefinition;
+                    if (contract == null)
                     {
                         return true;
                     }
@@ -1432,6 +1433,25 @@ namespace SolToBoogie
             }
             return false;
         }
+
+        private ContractDefinition IsLibraryFunctionCall(FunctionCall node)
+        {
+            if (node.Expression is MemberAccess memberAccess)
+            {
+                if (memberAccess.Expression is Identifier identifier)
+                {
+                    var contract = context.GetASTNodeById(identifier.ReferencedDeclaration) as ContractDefinition;
+                    // a Library is treated as an external function call
+                    // we need to do it here as the Lib.Foo, Lib is not an expression but name of a contract
+                    if (contract.ContractKind == EnumContractKind.LIBRARY)
+                    {
+                        return contract;
+                    }
+                }
+            }
+            return null;
+        }
+
 
         private BoogieStmtList TranslateExternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
@@ -1518,6 +1538,14 @@ namespace SolToBoogie
         private BoogieStmtList TranslateInternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
             List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
+
+            // a Library is treated as an external function call
+            // we need to do it here as the Lib.Foo, Lib is not an expression but name of a contract
+            if (IsLibraryFunctionCall(node) != null)
+            {
+                arguments[1] = arguments[0]; //msg.sender is also this 
+            }
+
             BoogieStmtList stmtList = new BoogieStmtList();
             foreach (Expression arg in node.Arguments)
             {

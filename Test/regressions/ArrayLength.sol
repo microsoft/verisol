@@ -9,5 +9,6 @@ contract ArrayLength {
     function test() public {
         assert (a.length == 2);
         assert (a[0].length == 3);
+        
     }
 }
