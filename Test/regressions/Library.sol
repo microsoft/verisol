@@ -5,7 +5,6 @@ pragma solidity ^0.4.24;
 library Lib {
     function add(uint _a, uint _b) public view returns (uint r) {
         address x = address(this);
-        x = msg.sender;
         assert(x == msg.sender);
         r = _a + _b;
     }

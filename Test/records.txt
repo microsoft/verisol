@@ -80,3 +80,4 @@ ModifierWithArgs.sol
 EmbeddedCalls.sol
 InitOutsideCtors.sol
 ModifierWithArgs.sol
+Library.sol
