@@ -77,6 +77,14 @@ namespace SolToBoogie
                 BoogieTypedIdent typedIdent = new BoogieTypedIdent(contract.Name, tnameType);
                 BoogieConstant contractNameConstant = new BoogieConstant(typedIdent, true);
                 context.Program.AddDeclaration(contractNameConstant);
+                foreach(var node in contract.Nodes)
+                {
+                    if (node is StructDefinition structDefn)
+                    {
+                        var structTypedIdent = new BoogieTypedIdent(structDefn.CanonicalName, tnameType);
+                        context.Program.AddDeclaration(new BoogieConstant(structTypedIdent, true));
+                    }
+                }
             }
         }
 
@@ -110,6 +118,61 @@ namespace SolToBoogie
             GenerateBoogieRecord("int", BoogieType.Int);
             GenerateBoogieRecord("ref", BoogieType.Ref);
             GenerateBoogieRecord("bool", BoogieType.Bool);
+            GenerateStructConstructors();
+        }
+
+        private void GenerateStructConstructors()
+        {
+            foreach (ContractDefinition contract in context.ContractDefinitions)
+            {
+                foreach (var node in contract.Nodes)
+                {
+                    if (node is StructDefinition structDefn)
+                    {
+                        GenerateStructConstructors(contract, structDefn);
+                    }
+                }
+            }
+        }
+
+        private void GenerateStructConstructors(ContractDefinition contract, StructDefinition structDefn)
+        {
+            // generate the internal one without base constructors
+            string procName = structDefn.CanonicalName + "_ctor";
+            List<BoogieVariable> inParams = new List<BoogieVariable>();
+            inParams.AddRange(TransUtils.GetDefaultInParams());
+            foreach(var member in structDefn.Members)
+            {
+                Debug.Assert(!member.TypeDescriptions.TypeString.StartsWith("struct "), "Do no handle nested structs yet!");
+                var formalType = TransUtils.GetBoogieTypeFromSolidityTypeName(member.TypeName);
+                var formalName = member.Name;
+                inParams.Add(new BoogieFormalParam(new BoogieTypedIdent(formalName, formalType)));
+            }
+
+            List<BoogieVariable> outParams = new List<BoogieVariable>();
+            List<BoogieAttribute> attributes = new List<BoogieAttribute>()
+            {
+                new BoogieAttribute("inline", 10),
+            };
+            BoogieProcedure procedure = new BoogieProcedure(procName, inParams, outParams, attributes);
+            context.Program.AddDeclaration(procedure);
+
+            //List<BoogieVariable> localVars = new List<BoogieVariable>();
+            //BoogieStmtList procBody = new BoogieStmtList();
+
+            //var outVarIdentifier = new BoogieIdentifierExpr("newRef");
+            //BoogieIdentifierExpr allocIdentExpr = new BoogieIdentifierExpr("Alloc");
+            //// havoc tmp;
+            //procBody.AddStatement(new BoogieHavocCmd(outVarIdentifier));
+            //// assume Alloc[tmp] == false;
+            //BoogieMapSelect allocMapSelect = new BoogieMapSelect(allocIdentExpr, outVarIdentifier);
+            //BoogieExpr allocAssumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, allocMapSelect, new BoogieLiteralExpr(false));
+            //procBody.AddStatement(new BoogieAssumeCmd(allocAssumeExpr));
+            //// Alloc[tmp] := true;
+            //procBody.AddStatement(new BoogieAssignCmd(allocMapSelect, new BoogieLiteralExpr(true)));
+
+            //BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
+            //context.Program.AddDeclaration(implementation);
         }
 
         private void GenerateBoogieRecord(string typeName, BoogieType btype)

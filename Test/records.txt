@@ -81,3 +81,4 @@ EmbeddedCalls.sol
 InitOutsideCtors.sol
 ModifierWithArgs.sol
 Library.sol
+StructType.sol

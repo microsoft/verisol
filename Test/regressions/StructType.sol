@@ -20,6 +20,13 @@ contract StructType {
         assert (s.x == 1);
         assert (s.y == 2);
     }
+
+    function testStructConstructor() public {
+        s = S(22, 33, "abc");
+        assert (s.x == 22);
+        assert (s.y == 33);
+    }
+
 /*
    constructor() public {
        S memory t = S(1,2,"aa");
