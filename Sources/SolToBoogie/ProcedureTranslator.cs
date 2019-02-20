@@ -1406,6 +1406,8 @@ namespace SolToBoogie
 
         private BoogieStmtList TranslateStructConstrucotr(FunctionCall node, BoogieExpr lhs)
         {
+            Debug.Assert(lhs is BoogieIdentifierExpr, $"Expect to have an identifier for return from a structConstructor call, found {lhs}");
+
             var structString = node.TypeDescriptions.TypeString.Split(' ')[1];
 
             // define a local variable to temporarily hold the object
@@ -1453,7 +1455,7 @@ namespace SolToBoogie
             stmtList.AddStatement(new BoogieAssumeCmd(dtypeAssumeExpr));
             // The assume DType[tmp] == A is before the call as the constructor may do a dynamic 
             // dispatch and the DType[tmp] is unconstrained before the call
-            List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
+            List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>() {lhs as BoogieIdentifierExpr};
             stmtList.AddStatement(new BoogieCallCmd(callee, inputs, outputs));
             // lhs := tmp;
             stmtList.AddStatement(new BoogieAssignCmd(lhs, tmpVarIdentExpr));

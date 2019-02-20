@@ -149,7 +149,11 @@ namespace SolToBoogie
                 inParams.Add(new BoogieFormalParam(new BoogieTypedIdent(formalName, formalType)));
             }
 
-            List<BoogieVariable> outParams = new List<BoogieVariable>();
+            var outVar = new BoogieFormalParam(new BoogieTypedIdent("newStructRef", BoogieType.Ref));
+            List<BoogieVariable> outParams = new List<BoogieVariable>()
+            {
+                outVar
+            };
             List<BoogieAttribute> attributes = new List<BoogieAttribute>()
             {
                 new BoogieAttribute("inline", 10),
@@ -157,22 +161,22 @@ namespace SolToBoogie
             BoogieProcedure procedure = new BoogieProcedure(procName, inParams, outParams, attributes);
             context.Program.AddDeclaration(procedure);
 
-            //List<BoogieVariable> localVars = new List<BoogieVariable>();
-            //BoogieStmtList procBody = new BoogieStmtList();
+            List<BoogieVariable> localVars = new List<BoogieVariable>();
+            BoogieStmtList procBody = new BoogieStmtList();
 
-            //var outVarIdentifier = new BoogieIdentifierExpr("newRef");
-            //BoogieIdentifierExpr allocIdentExpr = new BoogieIdentifierExpr("Alloc");
-            //// havoc tmp;
-            //procBody.AddStatement(new BoogieHavocCmd(outVarIdentifier));
-            //// assume Alloc[tmp] == false;
-            //BoogieMapSelect allocMapSelect = new BoogieMapSelect(allocIdentExpr, outVarIdentifier);
-            //BoogieExpr allocAssumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, allocMapSelect, new BoogieLiteralExpr(false));
-            //procBody.AddStatement(new BoogieAssumeCmd(allocAssumeExpr));
-            //// Alloc[tmp] := true;
-            //procBody.AddStatement(new BoogieAssignCmd(allocMapSelect, new BoogieLiteralExpr(true)));
+            BoogieIdentifierExpr allocIdentExpr = new BoogieIdentifierExpr("Alloc");
+            var outVarIdentifier = new BoogieIdentifierExpr("newStructRef");
+            // havoc tmp;
+            procBody.AddStatement(new BoogieHavocCmd(outVarIdentifier));
+            // assume Alloc[tmp] == false;
+            BoogieMapSelect allocMapSelect = new BoogieMapSelect(allocIdentExpr, outVarIdentifier);
+            BoogieExpr allocAssumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, allocMapSelect, new BoogieLiteralExpr(false));
+            procBody.AddStatement(new BoogieAssumeCmd(allocAssumeExpr));
+            // Alloc[tmp] := true;
+            procBody.AddStatement(new BoogieAssignCmd(allocMapSelect, new BoogieLiteralExpr(true)));
 
-            //BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
-            //context.Program.AddDeclaration(implementation);
+            BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
+            context.Program.AddDeclaration(implementation);
         }
 
         private void GenerateBoogieRecord(string typeName, BoogieType btype)
