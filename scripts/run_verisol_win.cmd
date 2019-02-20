@@ -53,6 +53,11 @@ echo Compiling sol files and generating boogie files ....
 dotnet %VERISOL_ROOT_DIR%\Sources\SolToBoogie\bin\Debug\netcoreapp2.0\SolToBoogie.dll %1.sol %VERISOL_SOLC_DIR% out.bpl
 @echo off
 
+if NOT EXIST out.bpl (
+    echo ERROR!! Boogie translation failed, aborting....
+    goto :exit
+)
+
 REM Check for syntax issues and pretty print
 echo Pretty printing boogie files....
 @echo on

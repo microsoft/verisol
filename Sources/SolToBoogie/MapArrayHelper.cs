@@ -62,6 +62,10 @@ namespace SolToBoogie
             {
                 return BoogieType.Ref;
             }
+            else if (typeString.StartsWith("struct "))
+            {
+                return BoogieType.Ref;
+            }
             else if (typeString.Equals("string") || typeString.StartsWith("string "))
             {
                 return BoogieType.Int; //we think of string as its hash

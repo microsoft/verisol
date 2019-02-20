@@ -112,6 +112,11 @@ namespace SolToBoogie
                     // model contract type using Ref
                     return BoogieType.Ref;
                 }
+                else if (typeString.StartsWith("struct "))
+                {
+                    string contractName = typeString.Substring("struct ".Length);
+                    return BoogieType.Ref;
+                }
                 else
                 {
                     throw new SystemException($"Unknown type name: {typeString}");
@@ -226,9 +231,16 @@ namespace SolToBoogie
                         if (typeString.StartsWith("contract "))
                         {
                             typeString = typeString.Substring("contract ".Length);
+                        } else if (typeString.StartsWith("struct "))
+                        {
+                            typeString = typeString.Substring("struct ".Length);
                         }
                         else
                         {
+                            if (typeString.StartsWith("int_const") || typeString.StartsWith("uint_const"))
+                            {
+                                typeString = "int256";
+                            }
                             if (typeString.StartsWith("string") || typeString.StartsWith("literal_string"))
                             {
                                 typeString = "string";
