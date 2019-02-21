@@ -149,11 +149,8 @@ namespace SolToBoogie
                 inParams.Add(new BoogieFormalParam(new BoogieTypedIdent(formalName, formalType)));
             }
 
-            var outVar = new BoogieFormalParam(new BoogieTypedIdent("newStructRef", BoogieType.Ref));
-            List<BoogieVariable> outParams = new List<BoogieVariable>()
-            {
-                outVar
-            };
+            //var outVar = new BoogieFormalParam(new BoogieTypedIdent("newStructRef", BoogieType.Ref));
+            List<BoogieVariable> outParams = new List<BoogieVariable>(); // {}
             List<BoogieAttribute> attributes = new List<BoogieAttribute>()
             {
                 new BoogieAttribute("inline", 10),
@@ -164,16 +161,16 @@ namespace SolToBoogie
             List<BoogieVariable> localVars = new List<BoogieVariable>();
             BoogieStmtList procBody = new BoogieStmtList();
 
-            BoogieIdentifierExpr allocIdentExpr = new BoogieIdentifierExpr("Alloc");
-            var outVarIdentifier = new BoogieIdentifierExpr("newStructRef");
-            // havoc tmp;
-            procBody.AddStatement(new BoogieHavocCmd(outVarIdentifier));
-            // assume Alloc[tmp] == false;
-            BoogieMapSelect allocMapSelect = new BoogieMapSelect(allocIdentExpr, outVarIdentifier);
-            BoogieExpr allocAssumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, allocMapSelect, new BoogieLiteralExpr(false));
-            procBody.AddStatement(new BoogieAssumeCmd(allocAssumeExpr));
-            // Alloc[tmp] := true;
-            procBody.AddStatement(new BoogieAssignCmd(allocMapSelect, new BoogieLiteralExpr(true)));
+            foreach (var member in structDefn.Members)
+            {
+                //f[this] = f_arg
+                Debug.Assert(!member.TypeDescriptions.TypeString.StartsWith("struct "), "Do no handle nested structs yet!");
+                var mapName = member.Name + "_" + structDefn.CanonicalName;
+                var formalName = member.Name;
+                var mapSelectExpr = new BoogieMapSelect(new BoogieIdentifierExpr(mapName), new BoogieIdentifierExpr("this"));
+                procBody.AddStatement(new BoogieAssignCmd(mapSelectExpr, new BoogieIdentifierExpr(member.Name)));
+            }
+
 
             BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
             context.Program.AddDeclaration(implementation);
