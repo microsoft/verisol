@@ -149,8 +149,7 @@ namespace SolToBoogie
                 inParams.Add(new BoogieFormalParam(new BoogieTypedIdent(formalName, formalType)));
             }
 
-            //var outVar = new BoogieFormalParam(new BoogieTypedIdent("newStructRef", BoogieType.Ref));
-            List<BoogieVariable> outParams = new List<BoogieVariable>(); // {}
+            List<BoogieVariable> outParams = new List<BoogieVariable>(); 
             List<BoogieAttribute> attributes = new List<BoogieAttribute>()
             {
                 new BoogieAttribute("inline", 10),
@@ -170,7 +169,6 @@ namespace SolToBoogie
                 var mapSelectExpr = new BoogieMapSelect(new BoogieIdentifierExpr(mapName), new BoogieIdentifierExpr("this"));
                 procBody.AddStatement(new BoogieAssignCmd(mapSelectExpr, new BoogieIdentifierExpr(member.Name)));
             }
-
 
             BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
             context.Program.AddDeclaration(implementation);

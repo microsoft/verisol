@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 //Simplest struct with an array 
-//no nested a[i] expressions
+//this version does not use any temporaries
 
 contract StructType {
 
@@ -28,11 +28,10 @@ contract StructType {
     }
 
    constructor() public {
-       S memory t = S(1,2,"aa"); //cannot handle nested calls yet
-       ss.push(t);
-       S storage u = ss[0];
-       assert(u.x == 1);
+       ss.push(S(1,2,"aa"));
+       assert(ss[0].x == 1);
+       S memory u = ss[0];
        u.x = 2;
-       assert(u.x == 2);
+       assert(ss[0].x == 1);
     }
 }

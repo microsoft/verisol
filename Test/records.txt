@@ -82,3 +82,6 @@ InitOutsideCtors.sol
 ModifierWithArgs.sol
 Library.sol
 StructType.sol
+#StructTypeNoTemporaries.sol
+#StructTutorial.sol
+#StructMemory.sol
