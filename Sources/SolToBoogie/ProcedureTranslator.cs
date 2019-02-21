@@ -50,6 +50,10 @@ namespace SolToBoogie
                 {
                     TranslateStateVarDeclaration(varDecl);
                 }
+                else if (child is StructDefinition structDefn)
+                {
+                    TranslateStructDefinition(structDefn);
+                }
                 else
                 {
                     child.Accept(this);
@@ -57,6 +61,19 @@ namespace SolToBoogie
             }
 
             return false;
+        }
+
+        private void TranslateStructDefinition(StructDefinition structDefn)
+        {
+            foreach(var member in structDefn.Members)
+            {
+                Debug.Assert(!member.TypeDescriptions.TypeString.StartsWith("struct "),
+                    "Do no handle nested structs yet!");
+                var type = TransUtils.GetBoogieTypeFromSolidityTypeName(member.TypeName);
+                var mapType = new BoogieMapType(BoogieType.Ref, type);
+                var mapName = member.Name + "_" + structDefn.CanonicalName;
+                context.Program.AddDeclaration(new BoogieGlobalVariable(new BoogieTypedIdent(mapName, mapType)));
+            }
         }
 
         private void TranslateStateVarDeclaration(VariableDeclaration varDecl)
@@ -730,6 +747,11 @@ namespace SolToBoogie
                     // assume the new expression is used as: obj = new Class(args);
                     currentStmtList = TranslateNewStatement(funcCall, lhs);
                 }
+                else if (funcCall.Kind.Equals("structConstructorCall"))
+                {
+                    // assume the structAssignment is used as: s = S(args);
+                    currentStmtList = TranslateStructConstrucotr(funcCall, lhs);
+                }
                 else if (IsKeccakFunc(funcCall))
                 {
                     currentStmtList = TranslateKeccakFuncCall(funcCall.Arguments[0], lhs);
@@ -1120,6 +1142,22 @@ namespace SolToBoogie
                 return false;
             }
 
+            // only structs will need to use x.f.g notation, since 
+            // one can only access functions of nested contracts
+            // RESTRICTION: only handle e.f where e is Identifier | IndexExpr | FunctionCall
+            Debug.Assert(node.Expression is Identifier || node.Expression is IndexAccess || node.Expression is FunctionCall,
+                $"Only handle non-nested structures, found {node.Expression.ToString()}");
+            if (node.Expression.TypeDescriptions.TypeString.StartsWith("struct "))
+            {
+                var baseExpr = TranslateExpr(node.Expression);
+                var memberMap = node.MemberName + "_" + node.Expression.TypeDescriptions.TypeString.Split(" ")[1];
+                currentExpr = new BoogieMapSelect(
+                    new BoogieIdentifierExpr(memberMap),
+                    baseExpr);
+                return false;
+            }
+
+
             if (node.Expression is Identifier)
             {
                 Identifier identifier = node.Expression as Identifier;
@@ -1355,6 +1393,62 @@ namespace SolToBoogie
             // assume DType[tmp] == A
             BoogieMapSelect dtypeMapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), tmpVarIdentExpr);
             BoogieIdentifierExpr contractIdent = new BoogieIdentifierExpr(contract.Name);
+            BoogieExpr dtypeAssumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, dtypeMapSelect, contractIdent);
+            stmtList.AddStatement(new BoogieAssumeCmd(dtypeAssumeExpr));
+            // The assume DType[tmp] == A is before the call as the constructor may do a dynamic 
+            // dispatch and the DType[tmp] is unconstrained before the call
+            List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
+            stmtList.AddStatement(new BoogieCallCmd(callee, inputs, outputs));
+            // lhs := tmp;
+            stmtList.AddStatement(new BoogieAssignCmd(lhs, tmpVarIdentExpr));
+            return stmtList;
+        }
+
+        private BoogieStmtList TranslateStructConstrucotr(FunctionCall node, BoogieExpr lhs)
+        {
+            var structString = node.TypeDescriptions.TypeString.Split(' ')[1];
+
+            // define a local variable to temporarily hold the object
+            BoogieTypedIdent freshAllocTmpId = context.MakeFreshTypedIdent(BoogieType.Ref);
+            BoogieLocalVariable allocTmpVar = new BoogieLocalVariable(freshAllocTmpId);
+            boogieToLocalVarsMap[currentBoogieProc].Add(allocTmpVar);
+
+            // define a local variable to store the new msg.value
+            BoogieTypedIdent freshMsgValueId = context.MakeFreshTypedIdent(BoogieType.Int);
+            BoogieLocalVariable msgValueVar = new BoogieLocalVariable(freshMsgValueId);
+            boogieToLocalVarsMap[currentBoogieProc].Add(msgValueVar);
+
+            BoogieIdentifierExpr tmpVarIdentExpr = new BoogieIdentifierExpr(freshAllocTmpId.Name);
+            BoogieIdentifierExpr msgValueIdentExpr = new BoogieIdentifierExpr(freshMsgValueId.Name);
+            BoogieIdentifierExpr allocIdentExpr = new BoogieIdentifierExpr("Alloc");
+
+            // suppose the statement is lhs := new A(args);
+            BoogieStmtList stmtList = new BoogieStmtList();
+
+            // call tmp := FreshRefGenerator();
+            stmtList.AddStatement(
+                new BoogieCallCmd(
+                    "FreshRefGenerator",
+                    new List<BoogieExpr>(),
+                    new List<BoogieIdentifierExpr>() { tmpVarIdentExpr }
+                    ));
+
+            // call constructor of A with this = tmp, msg.sender = this, msg.value = tmpMsgValue, args
+            string callee = structString + "_ctor"; // TransUtils.GetCanonicalConstructorName(contract);
+            List<BoogieExpr> inputs = new List<BoogieExpr>()
+            {
+                tmpVarIdentExpr,
+                new BoogieIdentifierExpr("this"),
+                msgValueIdentExpr,
+            };
+            foreach (Expression arg in node.Arguments)
+            {
+                BoogieExpr argument = TranslateExpr(arg);
+                inputs.Add(argument);
+            }
+            // assume DType[tmp] == A
+            BoogieMapSelect dtypeMapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), tmpVarIdentExpr);
+            BoogieIdentifierExpr contractIdent = new BoogieIdentifierExpr(structString); // contract.Name);
             BoogieExpr dtypeAssumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, dtypeMapSelect, contractIdent);
             stmtList.AddStatement(new BoogieAssumeCmd(dtypeAssumeExpr));
             // The assume DType[tmp] == A is before the call as the constructor may do a dynamic 
