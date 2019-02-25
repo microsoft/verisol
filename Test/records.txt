@@ -13,6 +13,7 @@ InheritanceMultiple.sol
 #ArrayParamAlias.sol
 #LoopNestedFor.sol
 EnumType.sol
+EnumParam.sol
 #StructOfMapping.sol
 InputParameters.sol
 #ArrayAlias.sol
