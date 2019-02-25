@@ -231,9 +231,14 @@ namespace SolToBoogie
                         if (typeString.StartsWith("contract "))
                         {
                             typeString = typeString.Substring("contract ".Length);
-                        } else if (typeString.StartsWith("struct "))
+                        }
+                        else if (typeString.StartsWith("struct "))
                         {
                             typeString = typeString.Substring("struct ".Length);
+                        }
+                        else if (typeString.StartsWith("enum "))
+                        {
+                            typeString = typeString.Substring("enum ".Length);
                         }
                         else
                         {
