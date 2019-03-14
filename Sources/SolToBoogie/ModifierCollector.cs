@@ -37,8 +37,9 @@ namespace SolToBoogie
             }
 
             Block body = modifier.Body;
-            BoogieStmtList prelude = new BoogieStmtList();
-            BoogieStmtList postlude = new BoogieStmtList();
+            bool hasPre = false;
+            bool hasPost = false;
+            List<Statement> postlude = new List<Statement>();
 
             bool translatingPre = true;
             foreach (Statement statement in body.Statements)
@@ -52,18 +53,17 @@ namespace SolToBoogie
                     translatingPre = false;
                     continue;
                 }
-                BoogieStmtList stmtList = localTranslator.TranslateStatement(statement);
                 if (translatingPre)
                 {
-                    prelude.AppendStmtList(stmtList);
+                    hasPre = true;
                 }
                 else
                 {
-                    postlude.AppendStmtList(stmtList);
+                    hasPost = true;
                 }
             }
 
-            if (prelude.StatementCount() > 0)
+            if (hasPre)
             {
                 List<BoogieVariable> inParams = modifierInParams;
                 List<BoogieVariable> outParams = new List<BoogieVariable>();
@@ -71,11 +71,11 @@ namespace SolToBoogie
                 context.AddModiferToPreProc(modifier.Name, preludeProc);
 
                 BoogieImplementation preludeImpl = new BoogieImplementation(modifier.Name + "_pre", 
-                    inParams, outParams, new List<BoogieVariable>(), prelude);
+                    inParams, outParams, new List<BoogieVariable>(), new BoogieStmtList());
                 context.AddModiferToPreImpl(modifier.Name, preludeImpl);
             }
 
-            if (postlude.StatementCount() > 0)
+            if (hasPost)
             {
                 List<BoogieVariable> inParams = modifierInParams;
                 List<BoogieVariable> outParams = new List<BoogieVariable>();
@@ -83,7 +83,7 @@ namespace SolToBoogie
                 context.AddModiferToPostProc(modifier.Name, postludeProc);
 
                 BoogieImplementation postludeImpl = new BoogieImplementation(modifier.Name + "_post",
-                    inParams, outParams, new List<BoogieVariable>(), postlude);
+                    inParams, outParams, new List<BoogieVariable>(), new BoogieStmtList());
                 context.AddModiferToPostImpl(modifier.Name, postludeImpl);
             }
 

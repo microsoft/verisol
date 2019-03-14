@@ -213,6 +213,56 @@ namespace SolToBoogie
             return false;
         }
 
+        public override bool Visit(ModifierDefinition node)
+        {
+            currentBoogieProc = node.Name + "_pre";
+            boogieToLocalVarsMap[currentBoogieProc] = new List<BoogieVariable>();
+
+            Block body = node.Body;
+            BoogieStmtList prelude = new BoogieStmtList();
+            BoogieStmtList postlude = new BoogieStmtList();
+
+            bool translatingPre = true;
+            bool hasPre = false;
+            bool hasPost = false;
+            foreach (Statement statement in body.Statements)
+            {
+                if (statement is VariableDeclarationStatement)
+                {
+                    throw new System.Exception("locals within modifiers not supported");
+                }
+                if (statement is PlaceholderStatement)
+                {
+                    translatingPre = false;
+                    currentBoogieProc = node.Name + "_post";
+                    boogieToLocalVarsMap[currentBoogieProc] = new List<BoogieVariable>();
+                    continue;
+                }
+                BoogieStmtList stmtList = TranslateStatement(statement);
+                if (translatingPre)
+                {
+                    prelude.AppendStmtList(stmtList);
+                    hasPre = true;
+                }
+                else
+                {
+                    postlude.AppendStmtList(stmtList);
+                    hasPost = true;
+                }
+            }
+            if (hasPre)
+            {
+                context.ModifierToBoogiePreImpl[node.Name].LocalVars = boogieToLocalVarsMap[node.Name + "_pre"];
+                context.ModifierToBoogiePreImpl[node.Name].StructuredStmts = prelude;
+            }
+            if (hasPost)
+            {
+                context.ModifierToBoogiePostImpl[node.Name].LocalVars = boogieToLocalVarsMap[node.Name + "_post"];
+                context.ModifierToBoogiePostImpl[node.Name].StructuredStmts = postlude;
+            }
+            return false;
+        }
+
         // generate the initialization statements for state variables
         // assume message sender is not null
         // assign null to other address variables
