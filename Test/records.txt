@@ -87,3 +87,4 @@ StructType.sol
 #StructTypeNoTemporaries.sol
 #StructTutorial.sol
 #StructMemory.sol
+abiEncoded.sol

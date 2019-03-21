@@ -806,6 +806,10 @@ namespace SolToBoogie
                 {
                     currentStmtList = TranslateKeccakFuncCall(funcCall.Arguments[0], lhs);
                 }
+                else if (IsAbiEncodePackedFunc(funcCall))
+                {
+                    currentStmtList = TranslateAbiEncodedFuncCall(funcCall.Arguments, lhs);
+                }
                 else if (IsTypeCast(funcCall))
                 {
                     // assume the type cast is used as: obj = C(var);
@@ -1376,12 +1380,42 @@ namespace SolToBoogie
             return false;
         }
 
+        private bool IsAbiEncodePackedFunc(FunctionCall node)
+        {
+            if (node.Expression is MemberAccess member)
+            {
+                if (member.Expression is Identifier ident)
+                {
+                    if (ident.Name.Equals("abi"))
+                    {
+                        if (member.MemberName.Equals("encodePacked"))
+                            return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         private BoogieStmtList TranslateKeccakFuncCall(Expression expression, BoogieExpr lhs)
         {
             var boogieExpr = TranslateExpr(expression);
             var boogieStmtList = new BoogieStmtList();
             var keccakExpr = new BoogieFuncCallExpr("keccak256", new List<BoogieExpr>() { boogieExpr });
             boogieStmtList.AddStatement(new BoogieAssignCmd(lhs, keccakExpr));
+            return boogieStmtList;
+        }
+
+        private BoogieStmtList TranslateAbiEncodedFuncCall(List<Expression> arguments, BoogieExpr lhs)
+        {
+            if (arguments.Count > 2)
+            {
+                throw new NotImplementedException($"Variable argument function abi.encodePacked(...) currently supported only for 1 or 2 arguments, encountered  {arguments.Count} arguments");
+            }
+            var boogieExprs = arguments.ConvertAll(x => TranslateExpr(x));
+            var boogieStmtList = new BoogieStmtList();
+            var funcName = $"abiEncodePacked{arguments.Count}";
+            var abiEncodeFuncCall = new BoogieFuncCallExpr(funcName, boogieExprs);
+            boogieStmtList.AddStatement(new BoogieAssignCmd(lhs, abiEncodeFuncCall));
             return boogieStmtList;
         }
 
