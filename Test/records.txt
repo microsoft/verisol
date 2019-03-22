@@ -87,4 +87,5 @@ StructType.sol
 #StructTypeNoTemporaries.sol
 #StructTutorial.sol
 #StructMemory.sol
+StructNestedConstructor.sol
 abiEncoded.sol

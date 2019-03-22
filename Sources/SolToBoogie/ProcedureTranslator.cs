@@ -800,7 +800,7 @@ namespace SolToBoogie
                 else if (funcCall.Kind.Equals("structConstructorCall"))
                 {
                     // assume the structAssignment is used as: s = S(args);
-                    currentStmtList = TranslateStructConstrucotr(funcCall, lhs);
+                    currentStmtList = TranslateStructConstructor(funcCall, lhs);
                 }
                 else if (IsKeccakFunc(funcCall))
                 {
@@ -1271,9 +1271,24 @@ namespace SolToBoogie
 
         public override bool Visit(FunctionCall node)
         {
-            Debug.Assert(!(node.Expression is NewExpression), $"new expressions should be handled in assignment");
+            // Debug.Assert(!(node.Expression is NewExpression), $"new expressions should be handled in assignment");
+            if (node.Expression is NewExpression newExpr)
+            {
+                {
+                    // internal function calls
 
-            string functionName = TransUtils.GetFuncNameFromFunctionCall(node);
+                    var boogieTypeCall = MapArrayHelper.InferExprTypeFromTypeString(node.TypeDescriptions.TypeString);
+                    var tmpVar = new BoogieLocalVariable(context.MakeFreshTypedIdent(boogieTypeCall));
+                    boogieToLocalVarsMap[currentBoogieProc].Add(tmpVar);
+
+                    var tmpVarExpr = new BoogieIdentifierExpr(tmpVar.Name);
+                    currentAuxStmtList = TranslateNewStatement(node, tmpVarExpr);
+                    currentExpr = tmpVarExpr;
+                }
+                return false;
+            }
+
+            var functionName = TransUtils.GetFuncNameFromFunctionCall(node);
 
             if (functionName.Equals("assert"))
             {
@@ -1488,7 +1503,7 @@ namespace SolToBoogie
             return stmtList;
         }
 
-        private BoogieStmtList TranslateStructConstrucotr(FunctionCall node, BoogieExpr lhs)
+        private BoogieStmtList TranslateStructConstructor(FunctionCall node, BoogieExpr lhs)
         {
             var structString = node.TypeDescriptions.TypeString.Split(' ')[1];
 
@@ -1736,7 +1751,12 @@ namespace SolToBoogie
             }
 
             // Question: why do we have a dynamic dispatch for an internal call?
-            if (IsDynamicDispatching(node))
+            if (node.Kind.Equals("structConstructorCall"))
+            {
+                // assume the structAssignment is used as: s = S(args);
+                stmtList.AppendStmtList(TranslateStructConstructor(node, outParams[0]));
+            }
+            else if (IsDynamicDispatching(node))
             {
                 string signature = TransUtils.InferFunctionSignature(context, node);
                 Debug.Assert(context.HasFuncSignature(signature), $"Cannot find signature: {signature}");
