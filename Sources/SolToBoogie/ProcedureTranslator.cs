@@ -792,23 +792,21 @@ namespace SolToBoogie
          
             if (node.RightHandSide is FunctionCall funcCall)
             {
-                if (funcCall.Expression is NewExpression)
+                if (IsContractConstructor(funcCall))
                 {
-                    // assume the new expression is used as: obj = new Class(args);
                     currentStmtList = TranslateNewStatement(funcCall, lhs);
                 }
-                else if (funcCall.Kind.Equals("structConstructorCall"))
+                else if (IsStructConstructor(funcCall))
                 {
-                    // assume the structAssignment is used as: s = S(args);
                     currentStmtList = TranslateStructConstructor(funcCall, lhs);
                 }
                 else if (IsKeccakFunc(funcCall))
                 {
-                    currentStmtList = TranslateKeccakFuncCall(funcCall.Arguments[0], lhs);
+                    currentStmtList = TranslateKeccakFuncCall(funcCall, lhs);
                 }
                 else if (IsAbiEncodePackedFunc(funcCall))
                 {
-                    currentStmtList = TranslateAbiEncodedFuncCall(funcCall.Arguments, lhs);
+                    currentStmtList = TranslateAbiEncodedFuncCall(funcCall, lhs);
                 }
                 else if (IsTypeCast(funcCall))
                 {
@@ -1272,19 +1270,11 @@ namespace SolToBoogie
         public override bool Visit(FunctionCall node)
         {
             // Debug.Assert(!(node.Expression is NewExpression), $"new expressions should be handled in assignment");
-            if (node.Expression is NewExpression newExpr)
+            if (node.Expression is NewExpression)
             {
-                {
-                    // internal function calls
-
-                    var boogieTypeCall = MapArrayHelper.InferExprTypeFromTypeString(node.TypeDescriptions.TypeString);
-                    var tmpVar = new BoogieLocalVariable(context.MakeFreshTypedIdent(boogieTypeCall));
-                    boogieToLocalVarsMap[currentBoogieProc].Add(tmpVar);
-
-                    var tmpVarExpr = new BoogieIdentifierExpr(tmpVar.Name);
-                    currentAuxStmtList = TranslateNewStatement(node, tmpVarExpr);
-                    currentExpr = tmpVarExpr;
-                }
+                BoogieIdentifierExpr tmpVarExpr = MkNewLocalVariableForFunctionReturn(node);
+                currentAuxStmtList = TranslateNewStatement(node, tmpVarExpr);
+                currentExpr = tmpVarExpr;
                 return false;
             }
 
@@ -1310,16 +1300,33 @@ namespace SolToBoogie
                 BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(new BoogieLiteralExpr(false));
                 currentStmtList = BoogieStmtList.MakeSingletonStmtList(assumeCmd);
             }
-            else if (IsTypeCast(node))
+            else if (IsImplicitFunc(node))
             {
-                // handled in assignment
-                throw new SystemException("Type cast is handled in assignment, use temporaries to break up nested expression");
+                BoogieIdentifierExpr tmpVarExpr = MkNewLocalVariableForFunctionReturn(node);
+                currentAuxStmtList =
+                    IsContractConstructor(node) ? TranslateNewStatement(node, tmpVarExpr) :
+                        IsTypeCast(node) ? TranslateTypeCast(node, tmpVarExpr) :
+                          IsAbiEncodePackedFunc(node) ? TranslateAbiEncodedFuncCall(node, tmpVarExpr):
+                           IsKeccakFunc(node) ? TranslateKeccakFuncCall(node, tmpVarExpr) :
+                              IsStructConstructor(node) ? TranslateStructConstructor(node, tmpVarExpr) : null;
+                Debug.Assert(currentAuxStmtList != null, "Unexpected implicit function");
+                currentExpr = tmpVarExpr;
             }
-            else if (IsKeccakFunc(node))
-            {
-                // handled only in assignments
-                throw new SystemException("Keccak256 only handled in assignment, use temporaries to break up nested expression");
-            }
+            //else if (IsAbiEncodePackedFunc(node))
+            //{
+            //    // handled in assignment
+            //    throw new SystemException("abi.EncodePacked is handled in assignment, use temporaries to break up nested expression");
+            //}
+            //else if (IsTypeCast(node))
+            //{
+            //    // handled in assignment
+            //    throw new SystemException("Type cast is handled in assignment, use temporaries to break up nested expression");
+            //}
+            //else if (IsKeccakFunc(node))
+            //{
+            //    // handled only in assignments
+            //    throw new SystemException("Keccak256 only handled in assignment, use temporaries to break up nested expression");
+            //}
             else if (context.HasEventNameInContract(currentContract, functionName))
             {
                 // generate empty statement list to ignore the event call
@@ -1344,14 +1351,8 @@ namespace SolToBoogie
                 // HACK: this is the way to identify the return type is void and hence don't need temporary variable
                 if (node.TypeDescriptions.TypeString != "tuple()")
                 {
-                    var outParams = new List<BoogieIdentifierExpr>();
-
-                    var boogieTypeCall = MapArrayHelper.InferExprTypeFromTypeString(node.TypeDescriptions.TypeString);
-                    var tmpVar = new BoogieLocalVariable(context.MakeFreshTypedIdent(boogieTypeCall));
-                    boogieToLocalVarsMap[currentBoogieProc].Add(tmpVar);
-
-                    var tmpVarExpr = new BoogieIdentifierExpr(tmpVar.Name);
-                    outParams.Add(tmpVarExpr);
+                    var tmpVarExpr = MkNewLocalVariableForFunctionReturn(node);
+                    var outParams = new List<BoogieIdentifierExpr>() { tmpVarExpr };
                     currentAuxStmtList = TranslateExternalFunctionCall(node, outParams);
                     currentExpr = tmpVarExpr;
                 }
@@ -1366,14 +1367,8 @@ namespace SolToBoogie
                 if (node.TypeDescriptions.TypeString != "tuple()")
                 {
                     // internal function calls
-                    var outParams = new List<BoogieIdentifierExpr>();
-
-                    var boogieTypeCall = MapArrayHelper.InferExprTypeFromTypeString(node.TypeDescriptions.TypeString);
-                    var tmpVar = new BoogieLocalVariable(context.MakeFreshTypedIdent(boogieTypeCall));
-                    boogieToLocalVarsMap[currentBoogieProc].Add(tmpVar);
-
-                    var tmpVarExpr = new BoogieIdentifierExpr(tmpVar.Name);
-                    outParams.Add(tmpVarExpr);
+                    var tmpVarExpr = MkNewLocalVariableForFunctionReturn(node);
+                    var outParams = new List<BoogieIdentifierExpr>() { tmpVarExpr };
                     currentAuxStmtList = TranslateInternalFunctionCall(node, outParams);
                     currentExpr = tmpVarExpr;
                 }
@@ -1384,6 +1379,42 @@ namespace SolToBoogie
 
             }
             return false;
+        }
+
+        private BoogieIdentifierExpr MkNewLocalVariableForFunctionReturn(FunctionCall node)
+        {
+            var boogieTypeCall = MapArrayHelper.InferExprTypeFromTypeString(node.TypeDescriptions.TypeString);
+            var tmpVar = new BoogieLocalVariable(context.MakeFreshTypedIdent(boogieTypeCall));
+            boogieToLocalVarsMap[currentBoogieProc].Add(tmpVar);
+
+            var tmpVarExpr = new BoogieIdentifierExpr(tmpVar.Name);
+            return tmpVarExpr;
+        }
+
+        #region implicit functions 
+        /// <summary>
+        /// Implicit function calls
+        /// </summary>
+        /// <param name="node"></param>
+        /// <returns></returns>
+        private bool IsImplicitFunc(FunctionCall node)
+        {
+            return
+                IsKeccakFunc(node) ||
+                IsAbiEncodePackedFunc(node) ||
+                IsTypeCast(node) ||
+                IsStructConstructor(node) ||
+                IsContractConstructor(node);
+         }
+
+        private bool IsContractConstructor(FunctionCall node)
+        {
+            return node.Expression is NewExpression;
+        }
+
+        private bool IsStructConstructor(FunctionCall node)
+        {
+            return node.Kind.Equals("structConstructorCall");
         }
 
         private bool IsKeccakFunc(FunctionCall node)
@@ -1411,8 +1442,9 @@ namespace SolToBoogie
             return false;
         }
 
-        private BoogieStmtList TranslateKeccakFuncCall(Expression expression, BoogieExpr lhs)
+        private BoogieStmtList TranslateKeccakFuncCall(FunctionCall funcCall, BoogieExpr lhs)
         {
+            var expression = funcCall.Arguments[0];
             var boogieExpr = TranslateExpr(expression);
             var boogieStmtList = new BoogieStmtList();
             var keccakExpr = new BoogieFuncCallExpr("keccak256", new List<BoogieExpr>() { boogieExpr });
@@ -1420,8 +1452,9 @@ namespace SolToBoogie
             return boogieStmtList;
         }
 
-        private BoogieStmtList TranslateAbiEncodedFuncCall(List<Expression> arguments, BoogieExpr lhs)
+        private BoogieStmtList TranslateAbiEncodedFuncCall(FunctionCall funcCall, BoogieExpr lhs)
         {
+            var arguments = funcCall.Arguments;
             if (arguments.Count > 2)
             {
                 throw new NotImplementedException($"Variable argument function abi.encodePacked(...) currently supported only for 1 or 2 arguments, encountered  {arguments.Count} arguments");
@@ -1603,6 +1636,8 @@ namespace SolToBoogie
             stmtList.AddStatement(updateLengthCmd);
             return stmtList;
         }
+        #endregion
+
 
         private bool IsExternalFunctionCall(FunctionCall node)
         {
