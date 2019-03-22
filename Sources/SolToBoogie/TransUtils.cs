@@ -248,7 +248,7 @@ namespace SolToBoogie
                             }
                             if (typeString.StartsWith("uint_const"))
                             {
-                                typeString = "uint256";
+                                typeString = "int256";
                             }
                             if (typeString.StartsWith("string") || typeString.StartsWith("literal_string"))
                             {
