@@ -1126,24 +1126,7 @@ namespace SolToBoogie
             }
             else if (node.Kind.Equals("number"))
             {
-                // assumption: numbers statrting in 0x are addresses
-                if (node.Value.StartsWith("0x") || node.Value.StartsWith("0X"))
-                {
-                    BigInteger num = BigInteger.Parse(node.Value.Substring(2), NumberStyles.AllowHexSpecifier);
-                    if (num == BigInteger.Zero)
-                    {
-                        currentExpr = new BoogieIdentifierExpr("null");
-                    }
-                    else
-                    {
-                        currentExpr = new BoogieFuncCallExpr("ConstantToRef", new List<BoogieExpr>() { new BoogieLiteralExpr(num) });
-                    }
-                }
-                else
-                {
-                    BigInteger num = BigInteger.Parse(node.Value);
-                    currentExpr = new BoogieLiteralExpr(num);
-                }
+                currentExpr = TranslateNumberToExpr(node);
             }
             else if (node.Kind.Equals("string"))
             {
@@ -1156,6 +1139,28 @@ namespace SolToBoogie
                 throw new SystemException($"Unknown literal kind: {node.Kind}");
             }
             return false;
+        }
+
+        private BoogieExpr TranslateNumberToExpr(Literal node)
+        {
+            // assumption: numbers statrting in 0x are addresses
+            if (node.Value.StartsWith("0x") || node.Value.StartsWith("0X"))
+            {
+                BigInteger num = BigInteger.Parse(node.Value.Substring(2), NumberStyles.AllowHexSpecifier);
+                if (num == BigInteger.Zero)
+                {
+                    return new BoogieIdentifierExpr("null");
+                }
+                else
+                {
+                    return new BoogieFuncCallExpr("ConstantToRef", new List<BoogieExpr>() { new BoogieLiteralExpr(num) });
+                }
+            }
+            else
+            {
+                BigInteger num = BigInteger.Parse(node.Value);
+                return new BoogieLiteralExpr(num);
+            }
         }
 
         public override bool Visit(Identifier node)
@@ -1880,7 +1885,8 @@ namespace SolToBoogie
         {
             Debug.Assert(node.Kind.Equals("typeConversion"));
             Debug.Assert(node.Arguments.Count == 1);
-            Debug.Assert(node.Arguments[0] is Identifier || node.Arguments[0] is MemberAccess);
+            Debug.Assert(node.Arguments[0] is Identifier || node.Arguments[0] is MemberAccess || node.Arguments[0] is Literal,
+                "Argument to a typecast has to be an identifier, memberAccess or Literal");
 
             // target: lhs := T(expr);
             BoogieExpr exprToCast = TranslateExpr(node.Arguments[0]);
@@ -1905,7 +1911,7 @@ namespace SolToBoogie
                 // lhs := expr;
                 currentStmtList.AddStatement(new BoogieAssignCmd(lhs, exprToCast));
                 return;
-            }
+            } 
             else
             {
                 throw new SystemException($"Unknown type cast: {node.Expression}");
