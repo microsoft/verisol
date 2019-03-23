@@ -736,7 +736,7 @@ namespace SolToBoogie
                 block.AppendStmtList(stmtList);
             }
 
-            //currentStmtList = block;
+            currentStmtList = block;
             return false;
         }
 

@@ -40,7 +40,7 @@ contract NestedFunction {
 
     function unhandled(uint x) public {
        uint y;
-       y = foo(fooW(x) + foo(foo(x)));
+       y = foo(foo(x) + foo(foo(x)));
        assert (y == 2*x + 4); 
     }
 
