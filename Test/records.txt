@@ -89,3 +89,4 @@ StructType.sol
 #StructMemory.sol
 StructNestedConstructor.sol
 abiEncoded.sol
+abiLibrary.sol
