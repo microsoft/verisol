@@ -9,7 +9,7 @@ contract Consts {
 
         a = 10;
         b = 0x10;
-        c = 0xa;
+        c = 0x12;
 
         assert(b != c);
     }

@@ -10,6 +10,7 @@ contract A {
 contract NestedFunction {
 
     A a;
+    uint count = 0;
 
     function NestedFunction() {
     } 
@@ -30,6 +31,11 @@ contract NestedFunction {
 
     function bar() public {
        assert(a.get_a() == 2);
+    }
+   
+    function fooW(uint x) private returns (uint){
+       count ++; 
+       return foo(x) + count;
     }
 
     function unhandled(uint x) public {

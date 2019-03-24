@@ -21,7 +21,7 @@ contract AbiContract {
        bytes32 x = keccak256(abi.encodePacked(a, b));
        bytes32 y = keccak256(abi.encodePacked(a, b));
        assert(x == y);
-       //assert(keccak256(abi.encodePacked(a, b)) == keccak256(abi.encodePacked(a, b))); //not supported yet
+       assert(keccak256(abi.encodePacked(a, b)) == keccak256(abi.encodePacked(a, b))); //not supported yet
     }
 
 }

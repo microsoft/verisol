@@ -29,6 +29,7 @@ contract StructType {
        
        a.push(new A()); //nested contract constructor
        A aa = a[0]; 
-       assert(aa.XX() == 55); //nested calls on arrays don't work, issue #74
+       assert(aa.XX() == 55); 
+       // assert(a[0].XX() == 55); //nested calls on arrays don't work, issue #74
     }
 }

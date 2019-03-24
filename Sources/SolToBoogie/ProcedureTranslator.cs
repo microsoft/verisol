@@ -699,28 +699,32 @@ namespace SolToBoogie
         }
 
         // update in the visitor of different statements
-        private BoogieStmtList currentStmtList;
-        private BoogieStmtList currentAuxStmtList; //these are statements generated due to nested calls etc.
+        // this now accumulates all Boogie stmts generated when they are being generated
+        private BoogieStmtList currentStmtList = null;
 
+        /// <summary>
+        /// This the only method that returns a BoogieStmtList (value of currentStmtList)
+        /// </summary>
+        /// <param name="node"></param>
+        /// <returns></returns>
         public BoogieStmtList TranslateStatement(Statement node)
         {
-            currentStmtList = null;
-            currentAuxStmtList = null;
+            //push the current Statement
+            var oldCurrentStmtList = currentStmtList; 
+
+            //new scope
+            currentStmtList = new BoogieStmtList(); // reset before starting to translate a Statement
             node.Accept(this);
             Debug.Assert(currentStmtList != null);
 
             // add source file path and line number
             BoogieAssertCmd annotationCmd = TransUtils.GenerateSourceInfoAnnotation(node, context);
             BoogieStmtList annotatedStmtList = BoogieStmtList.MakeSingletonStmtList(annotationCmd);
-            if (currentAuxStmtList != null)
-            {
-                annotatedStmtList.AppendStmtList(currentAuxStmtList);
-                currentAuxStmtList = null;
-            }
             annotatedStmtList.AppendStmtList(currentStmtList);
-            currentStmtList = annotatedStmtList;
 
-            return currentStmtList;
+            currentStmtList = oldCurrentStmtList; // pop the stack of currentStmtList
+
+            return annotatedStmtList;
         }
 
         public override bool Visit(Block node)
@@ -738,7 +742,6 @@ namespace SolToBoogie
 
         public override bool Visit(PlaceholderStatement node)
         {
-            currentStmtList = new BoogieStmtList();
             return false;
         }
 
@@ -781,7 +784,7 @@ namespace SolToBoogie
                     varsToHavoc.Add(new BoogieIdentifierExpr(varIdent));
                 }
                 BoogieHavocCmd havocCmd = new BoogieHavocCmd(varsToHavoc);
-                currentStmtList = BoogieStmtList.MakeSingletonStmtList(havocCmd);
+                currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(havocCmd));
             }
             return false;
         }
@@ -794,24 +797,24 @@ namespace SolToBoogie
             {
                 if (IsContractConstructor(funcCall))
                 {
-                    currentStmtList = TranslateNewStatement(funcCall, lhs);
+                    TranslateNewStatement(funcCall, lhs);
                 }
                 else if (IsStructConstructor(funcCall))
                 {
-                    currentStmtList = TranslateStructConstructor(funcCall, lhs);
+                    TranslateStructConstructor(funcCall, lhs);
                 }
                 else if (IsKeccakFunc(funcCall))
                 {
-                    currentStmtList = TranslateKeccakFuncCall(funcCall, lhs);
+                    TranslateKeccakFuncCall(funcCall, lhs);
                 }
                 else if (IsAbiEncodePackedFunc(funcCall))
                 {
-                    currentStmtList = TranslateAbiEncodedFuncCall(funcCall, lhs);
+                    TranslateAbiEncodedFuncCall(funcCall, lhs);
                 }
                 else if (IsTypeCast(funcCall))
                 {
                     // assume the type cast is used as: obj = C(var);
-                    currentStmtList = TranslateTypeCast(funcCall, lhs);
+                    TranslateTypeCast(funcCall, lhs);
                 }
                 else // normal function calls
                 {
@@ -848,7 +851,7 @@ namespace SolToBoogie
                     default:
                         throw new SystemException($"Unknown assignment operator: {node.Operator}");
                 }
-                currentStmtList = stmtList;
+                currentStmtList.AppendStmtList(stmtList);
             }
 
             var lhsType = node.LeftHandSide.TypeDescriptions != null ?
@@ -887,7 +890,7 @@ namespace SolToBoogie
             return false;
         }
 
-        private BoogieStmtList TranslateInBuiltFunction(FunctionCall funcCall, BoogieExpr lhs)
+        private void TranslateInBuiltFunction(FunctionCall funcCall, BoogieExpr lhs)
         {
             throw new NotImplementedException();
         }
@@ -896,11 +899,11 @@ namespace SolToBoogie
         {
             if (IsExternalFunctionCall(funcCall))
             {
-                currentStmtList = TranslateExternalFunctionCall(funcCall, outParams);
+                TranslateExternalFunctionCall(funcCall, outParams);
             }
             else
             {
-                currentStmtList = TranslateInternalFunctionCall(funcCall, outParams);
+                TranslateInternalFunctionCall(funcCall, outParams);
             }
         }
 
@@ -911,11 +914,11 @@ namespace SolToBoogie
                 BoogieReturnCmd returnCmd = new BoogieReturnCmd();
                 if (currentPostlude == null)
                 {
-                    currentStmtList = BoogieStmtList.MakeSingletonStmtList(returnCmd);
+                    currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(returnCmd));
                 }
                 else
                 {
-                    currentStmtList = BoogieStmtList.MakeSingletonStmtList(currentPostlude);
+                    currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(currentPostlude));
                     currentStmtList.AddStatement(returnCmd);
                 }
             }
@@ -933,7 +936,7 @@ namespace SolToBoogie
                 BoogieIdentifierExpr retVar = new BoogieIdentifierExpr(retVarName);
                 BoogieExpr expr = TranslateExpr(node.Expression);
                 BoogieAssignCmd assignCmd = new BoogieAssignCmd(retVar, expr);
-                currentStmtList = BoogieStmtList.MakeSingletonStmtList(assignCmd);
+                currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(assignCmd));
 
                 if (currentPostlude != null)
                 {
@@ -948,18 +951,18 @@ namespace SolToBoogie
         public override bool Visit(Throw node)
         {
             BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(new BoogieLiteralExpr(false));
-            currentStmtList = BoogieStmtList.MakeSingletonStmtList(assumeCmd);
+            currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(assumeCmd));
             return false;
         }
 
         public override bool Visit(IfStatement node)
         {
             BoogieExpr guard = TranslateExpr(node.Condition);
-            BoogieStmtList auxStmtList = new BoogieStmtList();
-            if (currentAuxStmtList!=null)
-            {
-                auxStmtList.AppendStmtList(currentAuxStmtList);
-            }
+            //BoogieStmtList auxStmtList = new BoogieStmtList();
+            //if (currentAuxStmtList!=null)
+            //{
+            //    auxStmtList.AppendStmtList(currentAuxStmtList);
+            //}
 
             BoogieStmtList thenBody = TranslateStatement(node.TrueBody);
             BoogieStmtList elseBody = null;
@@ -969,8 +972,8 @@ namespace SolToBoogie
             }
             BoogieIfCmd ifCmd = new BoogieIfCmd(guard, thenBody, elseBody);
 
-            currentStmtList = new BoogieStmtList();
-            currentStmtList.AppendStmtList(auxStmtList);
+            //currentStmtList = new BoogieStmtList();
+            //currentStmtList.AppendStmtList(auxStmtList);
             currentStmtList.AddStatement(ifCmd);
             return false;
         }
@@ -982,7 +985,7 @@ namespace SolToBoogie
 
             BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, body);
 
-            currentStmtList = BoogieStmtList.MakeSingletonStmtList(whileCmd);
+            currentStmtList.AddStatement(whileCmd);
             return false;
         }
 
@@ -1000,7 +1003,7 @@ namespace SolToBoogie
             BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, body);
             stmtList.AddStatement(whileCmd);
 
-            currentStmtList = stmtList;
+            currentStmtList.AppendStmtList(stmtList);
             return false;
         }
 
@@ -1015,14 +1018,14 @@ namespace SolToBoogie
             BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, body);
             stmtList.AddStatement(whileCmd);
 
-            currentStmtList = stmtList;
+            currentStmtList.AppendStmtList(stmtList);
             return false;
         }
 
         public override bool Visit(Break node)
         {
             BoogieBreakCmd breakCmd = new BoogieBreakCmd();
-            currentStmtList = BoogieStmtList.MakeSingletonStmtList(breakCmd);
+            currentStmtList.AddStatement(breakCmd);
             return false;
         }
 
@@ -1078,7 +1081,7 @@ namespace SolToBoogie
                         rhs = new BoogieLiteralExpr(new BigInteger(emptyStr.GetHashCode()));
                     }
                     var assignCmd = new BoogieAssignCmd(lhs, rhs);
-                    currentStmtList = BoogieStmtList.MakeSingletonStmtList(assignCmd);
+                    currentStmtList.AddStatement(assignCmd);
                 }
                 return false;
             }
@@ -1123,24 +1126,7 @@ namespace SolToBoogie
             }
             else if (node.Kind.Equals("number"))
             {
-                // assumption: numbers statrting in 0x are addresses
-                if (node.Value.StartsWith("0x") || node.Value.StartsWith("0X"))
-                {
-                    BigInteger num = BigInteger.Parse(node.Value.Substring(2), NumberStyles.AllowHexSpecifier);
-                    if (num == BigInteger.Zero)
-                    {
-                        currentExpr = new BoogieIdentifierExpr("null");
-                    }
-                    else
-                    {
-                        currentExpr = new BoogieFuncCallExpr("ConstantToRef", new List<BoogieExpr>() { new BoogieLiteralExpr(num) });
-                    }
-                }
-                else
-                {
-                    BigInteger num = BigInteger.Parse(node.Value);
-                    currentExpr = new BoogieLiteralExpr(num);
-                }
+                currentExpr = TranslateNumberToExpr(node);
             }
             else if (node.Kind.Equals("string"))
             {
@@ -1153,6 +1139,28 @@ namespace SolToBoogie
                 throw new SystemException($"Unknown literal kind: {node.Kind}");
             }
             return false;
+        }
+
+        private BoogieExpr TranslateNumberToExpr(Literal node)
+        {
+            // assumption: numbers statrting in 0x are addresses
+            if (node.Value.StartsWith("0x") || node.Value.StartsWith("0X"))
+            {
+                BigInteger num = BigInteger.Parse(node.Value.Substring(2), NumberStyles.AllowHexSpecifier);
+                if (num == BigInteger.Zero)
+                {
+                    return new BoogieIdentifierExpr("null");
+                }
+                else
+                {
+                    return new BoogieFuncCallExpr("ConstantToRef", new List<BoogieExpr>() { new BoogieLiteralExpr(num) });
+                }
+            }
+            else
+            {
+                BigInteger num = BigInteger.Parse(node.Value);
+                return new BoogieLiteralExpr(num);
+            }
         }
 
         public override bool Visit(Identifier node)
@@ -1273,7 +1281,7 @@ namespace SolToBoogie
             if (node.Expression is NewExpression)
             {
                 BoogieIdentifierExpr tmpVarExpr = MkNewLocalVariableForFunctionReturn(node);
-                currentAuxStmtList = TranslateNewStatement(node, tmpVarExpr);
+                TranslateNewStatement(node, tmpVarExpr);
                 currentExpr = tmpVarExpr;
                 return false;
             }
@@ -1285,56 +1293,49 @@ namespace SolToBoogie
                 Debug.Assert(node.Arguments.Count == 1);
                 BoogieExpr predicate = TranslateExpr(node.Arguments[0]);
                 BoogieAssertCmd assertCmd = new BoogieAssertCmd(predicate);
-                currentStmtList = BoogieStmtList.MakeSingletonStmtList(assertCmd);
+                currentStmtList.AddStatement(assertCmd);
             }
             else if (functionName.Equals("require"))
             {
                 Debug.Assert(node.Arguments.Count == 1 || node.Arguments.Count == 2);
                 BoogieExpr predicate = TranslateExpr(node.Arguments[0]);
                 BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(predicate);
-                currentStmtList = BoogieStmtList.MakeSingletonStmtList(assumeCmd);
+                currentStmtList.AddStatement(assumeCmd);
             }
             else if (functionName.Equals("revert"))
             {
                 Debug.Assert(node.Arguments.Count == 0 || node.Arguments.Count == 1);
                 BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(new BoogieLiteralExpr(false));
-                currentStmtList = BoogieStmtList.MakeSingletonStmtList(assumeCmd);
+                currentStmtList.AddStatement(assumeCmd);
             }
             else if (IsImplicitFunc(node))
             {
                 BoogieIdentifierExpr tmpVarExpr = MkNewLocalVariableForFunctionReturn(node);
-                currentAuxStmtList =
-                    IsContractConstructor(node) ? TranslateNewStatement(node, tmpVarExpr) :
-                        IsTypeCast(node) ? TranslateTypeCast(node, tmpVarExpr) :
-                          IsAbiEncodePackedFunc(node) ? TranslateAbiEncodedFuncCall(node, tmpVarExpr):
-                           IsKeccakFunc(node) ? TranslateKeccakFuncCall(node, tmpVarExpr) :
-                              IsStructConstructor(node) ? TranslateStructConstructor(node, tmpVarExpr) : null;
-                Debug.Assert(currentAuxStmtList != null, "Unexpected implicit function");
+
+                if (IsContractConstructor(node)) {
+                    TranslateNewStatement(node, tmpVarExpr);
+                } else if (IsTypeCast(node)) {
+                    TranslateTypeCast(node, tmpVarExpr);
+                } else if (IsAbiEncodePackedFunc(node)) {
+                    TranslateAbiEncodedFuncCall(node, tmpVarExpr);
+                } else if (IsKeccakFunc(node)) {
+                    TranslateKeccakFuncCall(node, tmpVarExpr);
+                } else if (IsStructConstructor(node)) {
+                    TranslateStructConstructor(node, tmpVarExpr);
+                } else
+                {
+                    Debug.Assert(false, $"Unexpected implicit function {node.ToString()}");
+                }
+
                 currentExpr = tmpVarExpr;
             }
-            //else if (IsAbiEncodePackedFunc(node))
-            //{
-            //    // handled in assignment
-            //    throw new SystemException("abi.EncodePacked is handled in assignment, use temporaries to break up nested expression");
-            //}
-            //else if (IsTypeCast(node))
-            //{
-            //    // handled in assignment
-            //    throw new SystemException("Type cast is handled in assignment, use temporaries to break up nested expression");
-            //}
-            //else if (IsKeccakFunc(node))
-            //{
-            //    // handled only in assignments
-            //    throw new SystemException("Keccak256 only handled in assignment, use temporaries to break up nested expression");
-            //}
             else if (context.HasEventNameInContract(currentContract, functionName))
             {
-                // generate empty statement list to ignore the event call
-                currentStmtList = new BoogieStmtList();
+                // generate empty statement list to ignore the event call                
             }
             else if (functionName.Equals("call"))
             {
-                currentStmtList = TranslateCallStatement(node);
+                TranslateCallStatement(node);
             }
             else if (functionName.Equals("send") || functionName.Equals("delegatecall"))
             {
@@ -1342,7 +1343,7 @@ namespace SolToBoogie
             }
             else if (IsDynamicArrayPush(node))
             {
-                currentStmtList = TranslateDynamicArrayPush(node);
+                TranslateDynamicArrayPush(node);
             }
             else if (IsExternalFunctionCall(node))
             {
@@ -1353,12 +1354,12 @@ namespace SolToBoogie
                 {
                     var tmpVarExpr = MkNewLocalVariableForFunctionReturn(node);
                     var outParams = new List<BoogieIdentifierExpr>() { tmpVarExpr };
-                    currentAuxStmtList = TranslateExternalFunctionCall(node, outParams);
+                    TranslateExternalFunctionCall(node, outParams);
                     currentExpr = tmpVarExpr;
                 }
                 else
                 {
-                    currentStmtList = TranslateExternalFunctionCall(node);
+                    TranslateExternalFunctionCall(node);
                 }
             }
             else // internal function calls
@@ -1369,12 +1370,12 @@ namespace SolToBoogie
                     // internal function calls
                     var tmpVarExpr = MkNewLocalVariableForFunctionReturn(node);
                     var outParams = new List<BoogieIdentifierExpr>() { tmpVarExpr };
-                    currentAuxStmtList = TranslateInternalFunctionCall(node, outParams);
+                    TranslateInternalFunctionCall(node, outParams);
                     currentExpr = tmpVarExpr;
                 }
                 else
                 {
-                    currentStmtList = TranslateInternalFunctionCall(node);
+                    TranslateInternalFunctionCall(node);
                 }
 
             }
@@ -1442,17 +1443,16 @@ namespace SolToBoogie
             return false;
         }
 
-        private BoogieStmtList TranslateKeccakFuncCall(FunctionCall funcCall, BoogieExpr lhs)
+        private void TranslateKeccakFuncCall(FunctionCall funcCall, BoogieExpr lhs)
         {
             var expression = funcCall.Arguments[0];
             var boogieExpr = TranslateExpr(expression);
-            var boogieStmtList = new BoogieStmtList();
             var keccakExpr = new BoogieFuncCallExpr("keccak256", new List<BoogieExpr>() { boogieExpr });
-            boogieStmtList.AddStatement(new BoogieAssignCmd(lhs, keccakExpr));
-            return boogieStmtList;
+            currentStmtList.AddStatement(new BoogieAssignCmd(lhs, keccakExpr));
+            return;
         }
 
-        private BoogieStmtList TranslateAbiEncodedFuncCall(FunctionCall funcCall, BoogieExpr lhs)
+        private void TranslateAbiEncodedFuncCall(FunctionCall funcCall, BoogieExpr lhs)
         {
             var arguments = funcCall.Arguments;
             if (arguments.Count > 2)
@@ -1460,21 +1460,19 @@ namespace SolToBoogie
                 throw new NotImplementedException($"Variable argument function abi.encodePacked(...) currently supported only for 1 or 2 arguments, encountered  {arguments.Count} arguments");
             }
             var boogieExprs = arguments.ConvertAll(x => TranslateExpr(x));
-            var boogieStmtList = new BoogieStmtList();
             var funcName = $"abiEncodePacked{arguments.Count}";
             var abiEncodeFuncCall = new BoogieFuncCallExpr(funcName, boogieExprs);
-            boogieStmtList.AddStatement(new BoogieAssignCmd(lhs, abiEncodeFuncCall));
-            return boogieStmtList;
+            currentStmtList.AddStatement(new BoogieAssignCmd(lhs, abiEncodeFuncCall));
+            return;
         }
 
-        private BoogieStmtList TranslateCallStatement(FunctionCall node)
+        private void TranslateCallStatement(FunctionCall node)
         {
-            BoogieStmtList stmtList = new BoogieStmtList();
-            stmtList.AddStatement(new BoogieSkipCmd(node.ToString()));
+            currentStmtList.AddStatement(new BoogieSkipCmd(node.ToString()));
             throw new NotImplementedException();
         }
 
-        private BoogieStmtList TranslateNewStatement(FunctionCall node, BoogieExpr lhs)
+        private void TranslateNewStatement(FunctionCall node, BoogieExpr lhs)
         {
             Debug.Assert(node.Expression is NewExpression);
             NewExpression newExpr = node.Expression as NewExpression;
@@ -1499,10 +1497,9 @@ namespace SolToBoogie
             BoogieIdentifierExpr allocIdentExpr = new BoogieIdentifierExpr("Alloc");
 
             // suppose the statement is lhs := new A(args);
-            BoogieStmtList stmtList = new BoogieStmtList();
 
             // call tmp := FreshRefGenerator();
-            stmtList.AddStatement(
+            currentStmtList.AddStatement(
                 new BoogieCallCmd(
                     "FreshRefGenerator",
                     new List<BoogieExpr>(),
@@ -1526,17 +1523,17 @@ namespace SolToBoogie
             BoogieMapSelect dtypeMapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), tmpVarIdentExpr);
             BoogieIdentifierExpr contractIdent = new BoogieIdentifierExpr(contract.Name);
             BoogieExpr dtypeAssumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, dtypeMapSelect, contractIdent);
-            stmtList.AddStatement(new BoogieAssumeCmd(dtypeAssumeExpr));
+            currentStmtList.AddStatement(new BoogieAssumeCmd(dtypeAssumeExpr));
             // The assume DType[tmp] == A is before the call as the constructor may do a dynamic 
             // dispatch and the DType[tmp] is unconstrained before the call
             List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
-            stmtList.AddStatement(new BoogieCallCmd(callee, inputs, outputs));
+            currentStmtList.AddStatement(new BoogieCallCmd(callee, inputs, outputs));
             // lhs := tmp;
-            stmtList.AddStatement(new BoogieAssignCmd(lhs, tmpVarIdentExpr));
-            return stmtList;
+            currentStmtList.AddStatement(new BoogieAssignCmd(lhs, tmpVarIdentExpr));
+            return;
         }
 
-        private BoogieStmtList TranslateStructConstructor(FunctionCall node, BoogieExpr lhs)
+        private void TranslateStructConstructor(FunctionCall node, BoogieExpr lhs)
         {
             var structString = node.TypeDescriptions.TypeString.Split(' ')[1];
 
@@ -1555,10 +1552,9 @@ namespace SolToBoogie
             BoogieIdentifierExpr allocIdentExpr = new BoogieIdentifierExpr("Alloc");
 
             // suppose the statement is lhs := new A(args);
-            BoogieStmtList stmtList = new BoogieStmtList();
 
             // call tmp := FreshRefGenerator();
-            stmtList.AddStatement(
+            currentStmtList.AddStatement(
                 new BoogieCallCmd(
                     "FreshRefGenerator",
                     new List<BoogieExpr>(),
@@ -1582,14 +1578,14 @@ namespace SolToBoogie
             BoogieMapSelect dtypeMapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), tmpVarIdentExpr);
             BoogieIdentifierExpr contractIdent = new BoogieIdentifierExpr(structString); // contract.Name);
             BoogieExpr dtypeAssumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, dtypeMapSelect, contractIdent);
-            stmtList.AddStatement(new BoogieAssumeCmd(dtypeAssumeExpr));
+            currentStmtList.AddStatement(new BoogieAssumeCmd(dtypeAssumeExpr));
             // The assume DType[tmp] == A is before the call as the constructor may do a dynamic 
             // dispatch and the DType[tmp] is unconstrained before the call
             List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
-            stmtList.AddStatement(new BoogieCallCmd(callee, inputs, outputs));
+            currentStmtList.AddStatement(new BoogieCallCmd(callee, inputs, outputs));
             // lhs := tmp;
-            stmtList.AddStatement(new BoogieAssignCmd(lhs, tmpVarIdentExpr));
-            return stmtList;
+            currentStmtList.AddStatement(new BoogieAssignCmd(lhs, tmpVarIdentExpr));
+            return;
         }
 
         private bool IsDynamicArrayPush(FunctionCall node)
@@ -1604,7 +1600,7 @@ namespace SolToBoogie
             return false;
         }
 
-        private BoogieStmtList TranslateDynamicArrayPush(FunctionCall node)
+        private void TranslateDynamicArrayPush(FunctionCall node)
         {
             Debug.Assert(node.Expression is MemberAccess);
             Debug.Assert(node.Arguments.Count == 1);
@@ -1615,26 +1611,25 @@ namespace SolToBoogie
 
             BoogieExpr lengthMapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("Length"), receiver);
             // suppose the form is a.push(e)
-            BoogieStmtList stmtList = new BoogieStmtList();
             // tmp := Length[this][a];
             BoogieTypedIdent tmpIdent = context.MakeFreshTypedIdent(BoogieType.Int);
             boogieToLocalVarsMap[currentBoogieProc].Add(new BoogieLocalVariable(tmpIdent));
             BoogieIdentifierExpr tmp = new BoogieIdentifierExpr(tmpIdent.Name);
             BoogieAssignCmd assignCmd = new BoogieAssignCmd(tmp, lengthMapSelect);
-            stmtList.AddStatement(assignCmd);
+            currentStmtList.AddStatement(assignCmd);
 
             // M[this][a][tmp] := e;
             BoogieType mapKeyType = BoogieType.Int;
             BoogieType mapValType = MapArrayHelper.InferExprTypeFromTypeString(node.Arguments[0].TypeDescriptions.TypeString);
             BoogieExpr mapSelect = MapArrayHelper.GetMemoryMapSelectExpr(mapKeyType, mapValType, receiver, tmp);
             BoogieAssignCmd writeCmd = new BoogieAssignCmd(mapSelect, element);
-            stmtList.AddStatement(writeCmd);
+            currentStmtList.AddStatement(writeCmd);
 
             // Length[this][a] := tmp + 1;
             BoogieExpr rhs = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, tmp, new BoogieLiteralExpr(1));
             BoogieAssignCmd updateLengthCmd = new BoogieAssignCmd(lengthMapSelect, rhs);
-            stmtList.AddStatement(updateLengthCmd);
-            return stmtList;
+            currentStmtList.AddStatement(updateLengthCmd);
+            return;
         }
         #endregion
 
@@ -1681,17 +1676,15 @@ namespace SolToBoogie
         }
 
 
-        private BoogieStmtList TranslateExternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
+        private void TranslateExternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
-            BoogieStmtList stmtList = new BoogieStmtList();
-
             Debug.Assert(node.Expression is MemberAccess);
             MemberAccess memberAccess = node.Expression as MemberAccess;
             BoogieExpr receiver = TranslateExpr(memberAccess.Expression);
-            if (currentAuxStmtList != null)
-            {
-                stmtList.AppendStmtList(currentAuxStmtList);
-            }
+            //if (currentAuxStmtList != null)
+            //{
+            //    stmtList.AppendStmtList(currentAuxStmtList);
+            //}
             BoogieTypedIdent msgValueId = context.MakeFreshTypedIdent(BoogieType.Int);
             BoogieLocalVariable msgValueVar = new BoogieLocalVariable(msgValueId);
             boogieToLocalVarsMap[currentBoogieProc].Add(msgValueVar);
@@ -1707,10 +1700,10 @@ namespace SolToBoogie
             {
                 BoogieExpr argument = TranslateExpr(arg);
                 arguments.Add(argument);
-                if (currentAuxStmtList != null)
-                {
-                    stmtList.AppendStmtList(currentAuxStmtList);
-                }
+                //if (currentAuxStmtList != null)
+                //{
+                //    stmtList.AppendStmtList(currentAuxStmtList);
+                //}
             }
 
             string signature = TransUtils.InferFunctionSignature(context, node);
@@ -1752,18 +1745,18 @@ namespace SolToBoogie
             // optimization: if there is only 1 type that we replace the if with a assume
             if (dynamicTypeToFuncMap.Keys.Count == 1)
             {
-                stmtList.AddStatement(new BoogieAssumeCmd(lastGuard));
-                stmtList.AddStatement(lastCallCmd);
+                currentStmtList.AddStatement(new BoogieAssumeCmd(lastGuard));
+                currentStmtList.AddStatement(lastCallCmd);
             }
             else
             {
-                stmtList.AddStatement(ifCmd);
+                currentStmtList.AddStatement(ifCmd);
             }
 
-            return stmtList;
+            return;
         }
 
-        private BoogieStmtList TranslateInternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
+        private void TranslateInternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
             List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
 
@@ -1774,22 +1767,21 @@ namespace SolToBoogie
                 arguments[1] = arguments[0]; //msg.sender is also this 
             }
 
-            BoogieStmtList stmtList = new BoogieStmtList();
             foreach (Expression arg in node.Arguments)
             {
                 BoogieExpr argument = TranslateExpr(arg);    
                 arguments.Add(argument);
-                if (currentAuxStmtList != null)
-                {
-                    stmtList.AppendStmtList(currentAuxStmtList);
-                }
+                //if (currentAuxStmtList != null)
+                //{
+                //    stmtList.AppendStmtList(currentAuxStmtList);
+                //}
             }
 
             // Question: why do we have a dynamic dispatch for an internal call?
             if (node.Kind.Equals("structConstructorCall"))
             {
                 // assume the structAssignment is used as: s = S(args);
-                stmtList.AppendStmtList(TranslateStructConstructor(node, outParams[0]));
+                TranslateStructConstructor(node, outParams[0]);
             }
             else if (IsDynamicDispatching(node))
             {
@@ -1827,12 +1819,12 @@ namespace SolToBoogie
                 // optimization: if there is only 1 type that we replace the if with a assume
                 if (dynamicTypeToFuncMap.Keys.Count == 1)
                 {
-                    stmtList.AddStatement(new BoogieAssumeCmd(lastGuard));
-                    stmtList.AddStatement(lastCallCmd);
+                    currentStmtList.AddStatement(new BoogieAssumeCmd(lastGuard));
+                    currentStmtList.AddStatement(lastCallCmd);
                 }
                 else
                 {
-                    stmtList.AddStatement(ifCmd);
+                    currentStmtList.AddStatement(ifCmd);
                 }
             }
             else if (IsStaticDispatching(node))
@@ -1842,13 +1834,13 @@ namespace SolToBoogie
                 string callee = functionName + "_" + contract.Name;
                 BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, outParams);
 
-                stmtList.AddStatement(callCmd);
+                currentStmtList.AddStatement(callCmd);
             }
             else
             {
                 throw new SystemException($"Unknown type of internal function call: {node.Expression}");
             }
-            return stmtList;
+            return;
         }
 
         private bool IsStaticDispatching(FunctionCall node)
@@ -1889,11 +1881,12 @@ namespace SolToBoogie
             return node.Kind.Equals("typeConversion");
         }
 
-        private BoogieStmtList TranslateTypeCast(FunctionCall node, BoogieExpr lhs)
+        private void TranslateTypeCast(FunctionCall node, BoogieExpr lhs)
         {
             Debug.Assert(node.Kind.Equals("typeConversion"));
             Debug.Assert(node.Arguments.Count == 1);
-            Debug.Assert(node.Arguments[0] is Identifier || node.Arguments[0] is MemberAccess);
+            Debug.Assert(node.Arguments[0] is Identifier || node.Arguments[0] is MemberAccess || node.Arguments[0] is Literal,
+                "Argument to a typecast has to be an identifier, memberAccess or Literal");
 
             // target: lhs := T(expr);
             BoogieExpr exprToCast = TranslateExpr(node.Arguments[0]);
@@ -1904,22 +1897,21 @@ namespace SolToBoogie
                 ContractDefinition contract = context.GetASTNodeById(contractId.ReferencedDeclaration) as ContractDefinition;
                 Debug.Assert(contract != null);
 
-                BoogieStmtList stmtList = new BoogieStmtList();
                 // assume (DType[var] == T);
                 BoogieMapSelect dtype = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), exprToCast);
                 BoogieExpr assumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, dtype, new BoogieIdentifierExpr(contract.Name));
-                stmtList.AddStatement(new BoogieAssumeCmd(assumeExpr));
+                currentStmtList.AddStatement(new BoogieAssumeCmd(assumeExpr));
                 // lhs := expr;
-                stmtList.AddStatement(new BoogieAssignCmd(lhs, exprToCast));
-                return stmtList;
+                currentStmtList.AddStatement(new BoogieAssignCmd(lhs, exprToCast));
+                return;
             }
             else if (node.Expression is ElementaryTypeNameExpression) // cast to elementary types
             {
                 BoogieStmtList stmtList = new BoogieStmtList();
                 // lhs := expr;
-                stmtList.AddStatement(new BoogieAssignCmd(lhs, exprToCast));
-                return stmtList;
-            }
+                currentStmtList.AddStatement(new BoogieAssignCmd(lhs, exprToCast));
+                return;
+            } 
             else
             {
                 throw new SystemException($"Unknown type cast: {node.Expression}");
