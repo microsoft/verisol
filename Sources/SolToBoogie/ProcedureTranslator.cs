@@ -795,37 +795,51 @@ namespace SolToBoogie
          
             if (node.RightHandSide is FunctionCall funcCall)
             {
+                // if lhs is not an identifier (e.g. a[i]), then
+                // we have to introduce a temporary
+                // we do it even when lhs is identifier to keep translation simple
+                var tmpVar =
+                    lhs is BoogieIdentifierExpr ? lhs : 
+                    MkNewLocalVariableForFunctionReturn(funcCall);
+
+                // a Boolean to decide is we needed to use tmpVar
+                bool usedTmpVar = true;
+
                 if (IsContractConstructor(funcCall))
                 {
-                    TranslateNewStatement(funcCall, lhs);
+                    TranslateNewStatement(funcCall, tmpVar);
                 }
                 else if (IsStructConstructor(funcCall))
                 {
-                    TranslateStructConstructor(funcCall, lhs);
+                    TranslateStructConstructor(funcCall, tmpVar);
                 }
                 else if (IsKeccakFunc(funcCall))
                 {
-                    TranslateKeccakFuncCall(funcCall, lhs);
+                    TranslateKeccakFuncCall(funcCall, lhs); //this is not a procedure call in Boogie
+                    usedTmpVar = false;
                 }
                 else if (IsAbiEncodePackedFunc(funcCall))
                 {
-                    TranslateAbiEncodedFuncCall(funcCall, lhs);
+                    TranslateAbiEncodedFuncCall(funcCall, tmpVar); //this is not a procedure call in Boogie
+                    usedTmpVar = false;
                 }
                 else if (IsTypeCast(funcCall))
                 {
                     // assume the type cast is used as: obj = C(var);
-                    TranslateTypeCast(funcCall, lhs);
+                    TranslateTypeCast(funcCall, tmpVar); //this is not a procedure call in Boogie
+                    usedTmpVar = false;
                 }
                 else // normal function calls
                 {
-                    // assume it is used as: x = foo(args);
-                    // Debug.Assert(lhs is BoogieIdentifierExpr, $"LHS is not identifier: {node.LeftHandSide}");
+                    Debug.Assert(tmpVar is BoogieIdentifierExpr, $"tmpVar has to be an Boogie identifier: {tmpVar}");
 
                     List<BoogieIdentifierExpr> outParams = new List<BoogieIdentifierExpr>();
-                    outParams.Add(lhs as BoogieIdentifierExpr);
+                    outParams.Add(tmpVar as BoogieIdentifierExpr);
 
                     TranslateFunctionCalls(funcCall, outParams);
                 }
+                if (usedTmpVar && !(lhs is BoogieIdentifierExpr))
+                    currentStmtList.AddStatement(new BoogieAssignCmd(lhs, tmpVar));
             }
             else
             {
