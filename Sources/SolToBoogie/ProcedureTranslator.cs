@@ -1652,6 +1652,10 @@ namespace SolToBoogie
                 } else if (memberAccess.Expression is FunctionCall)
                 {
                     return true;
+                } else if (memberAccess.Expression is IndexAccess)
+                {
+                    //a[i].foo(..)
+                    return true;
                 }
             }
             return false;
@@ -1771,10 +1775,6 @@ namespace SolToBoogie
             {
                 BoogieExpr argument = TranslateExpr(arg);    
                 arguments.Add(argument);
-                //if (currentAuxStmtList != null)
-                //{
-                //    stmtList.AppendStmtList(currentAuxStmtList);
-                //}
             }
 
             // Question: why do we have a dynamic dispatch for an internal call?

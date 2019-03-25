@@ -6,9 +6,11 @@ contract B{
 
 contract A {
    B[] a;
+   B[1][2] c;
    constructor() public {
-        B b = new B(); //need temporary 
-        a.push(b);
+        a.push(new B());
         assert (a[0].foo() == 33);       
+        c[0][0] = new B();
+        assert (c[0][0].foo() == 33);       
    }
 }
