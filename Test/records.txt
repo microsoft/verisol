@@ -91,3 +91,4 @@ StructType.sol
 StructNestedConstructor.sol
 abiEncoded.sol
 abiLibrary.sol
+StateVarCall.sol
