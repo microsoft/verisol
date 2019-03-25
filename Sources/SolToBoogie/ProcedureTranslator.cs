@@ -958,12 +958,6 @@ namespace SolToBoogie
         public override bool Visit(IfStatement node)
         {
             BoogieExpr guard = TranslateExpr(node.Condition);
-            //BoogieStmtList auxStmtList = new BoogieStmtList();
-            //if (currentAuxStmtList!=null)
-            //{
-            //    auxStmtList.AppendStmtList(currentAuxStmtList);
-            //}
-
             BoogieStmtList thenBody = TranslateStatement(node.TrueBody);
             BoogieStmtList elseBody = null;
             if (node.FalseBody != null)
@@ -1652,6 +1646,10 @@ namespace SolToBoogie
                 } else if (memberAccess.Expression is FunctionCall)
                 {
                     return true;
+                } else if (memberAccess.Expression is IndexAccess)
+                {
+                    //a[i].foo(..)
+                    return true;
                 }
             }
             return false;
@@ -1681,10 +1679,6 @@ namespace SolToBoogie
             Debug.Assert(node.Expression is MemberAccess);
             MemberAccess memberAccess = node.Expression as MemberAccess;
             BoogieExpr receiver = TranslateExpr(memberAccess.Expression);
-            //if (currentAuxStmtList != null)
-            //{
-            //    stmtList.AppendStmtList(currentAuxStmtList);
-            //}
             BoogieTypedIdent msgValueId = context.MakeFreshTypedIdent(BoogieType.Int);
             BoogieLocalVariable msgValueVar = new BoogieLocalVariable(msgValueId);
             boogieToLocalVarsMap[currentBoogieProc].Add(msgValueVar);
@@ -1700,10 +1694,6 @@ namespace SolToBoogie
             {
                 BoogieExpr argument = TranslateExpr(arg);
                 arguments.Add(argument);
-                //if (currentAuxStmtList != null)
-                //{
-                //    stmtList.AppendStmtList(currentAuxStmtList);
-                //}
             }
 
             string signature = TransUtils.InferFunctionSignature(context, node);
@@ -1771,10 +1761,6 @@ namespace SolToBoogie
             {
                 BoogieExpr argument = TranslateExpr(arg);    
                 arguments.Add(argument);
-                //if (currentAuxStmtList != null)
-                //{
-                //    stmtList.AppendStmtList(currentAuxStmtList);
-                //}
             }
 
             // Question: why do we have a dynamic dispatch for an internal call?
