@@ -681,12 +681,14 @@ namespace SolToBoogie
         public override bool Visit(ParameterList node)
         {
             currentParamList = new List<BoogieVariable>();
+            var retParamCount = 0;
             foreach (VariableDeclaration parameter in node.Parameters)
             {
                 string name = null;
                 if (String.IsNullOrEmpty(parameter.Name))
                 {
-                    name = "__ret";
+                    //name = "__ret";
+                    name = $"__ret_{retParamCount++}_" ;
                 }
                 else
                 {
@@ -943,9 +945,12 @@ namespace SolToBoogie
                     throw new NotImplementedException("Cannot handle multiple return parameters");
                 }
 
+                //TODO:
+                //string name = $"__ret_{retParamCount++}_" + funcDef.Name;
+                var retParamCount = 0;
                 VariableDeclaration retVarDecl = currentFunction.ReturnParameters.Parameters[0];
                 string retVarName = String.IsNullOrEmpty(retVarDecl.Name) ?
-                    "__ret" :
+                    $"__ret_{retParamCount++}_" :
                     TransUtils.GetCanonicalLocalVariableName(retVarDecl);
                 BoogieIdentifierExpr retVar = new BoogieIdentifierExpr(retVarName);
                 BoogieExpr expr = TranslateExpr(node.Expression);

@@ -119,9 +119,11 @@ namespace SolToBoogie
                         }
                     }
 
+                    var retParamCount = 0;
                     foreach (VariableDeclaration param in funcDef.ReturnParameters.Parameters)
                     {
-                        string name = "__ret" + funcDef.Name;
+                        //string name = "__ret" + funcDef.Name;
+                        string name = $"__ret_{retParamCount++}_" + funcDef.Name;
                         if (!string.IsNullOrEmpty(param.Name))
                         {
                             name = TransUtils.GetCanonicalLocalVariableName(param);
@@ -268,9 +270,13 @@ namespace SolToBoogie
                 }
 
                 List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
+                var retParamCount = 0;
+
                 foreach (VariableDeclaration param in funcDef.ReturnParameters.Parameters)
                 {
-                    string name = "__ret" + funcDef.Name;
+                    //string name = "__ret" + funcDef.Name;
+                    string name = $"__ret_{retParamCount++}_" + funcDef.Name;
+
                     if (!string.IsNullOrEmpty(param.Name))
                     {
                         name = TransUtils.GetCanonicalLocalVariableName(param);
@@ -374,9 +380,12 @@ namespace SolToBoogie
                 parameters.Add(localVar);
             }
 
+            var retParamCount = 0;
             foreach (VariableDeclaration param in funcDef.ReturnParameters.Parameters)
             {
-                string name = "__ret" + funcDef.Name;
+                //string name = "__ret" + funcDef.Name;
+                string name = $"__ret_{retParamCount++}_" + funcDef.Name;
+
                 if (!string.IsNullOrEmpty(param.Name))
                 {
                     name = TransUtils.GetCanonicalLocalVariableName(param);
