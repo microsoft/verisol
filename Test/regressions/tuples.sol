@@ -18,7 +18,8 @@ contract A {
       (a, b) = returnTupleByName();
       assert (a == 5);
       assert (b == 55);
-      //(, b) = returnTuple(); //can;t handle null
+
+      //(, b) = returnTuple(); //can;t handle null placeholders
       //assert (b == 40);
    }
    
