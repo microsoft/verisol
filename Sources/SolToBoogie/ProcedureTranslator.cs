@@ -1762,7 +1762,7 @@ namespace SolToBoogie
 
         private void TranslateExternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
-            Debug.Assert(node.Expression is MemberAccess);
+            Debug.Assert(node.Expression is MemberAccess, $"Expecting a member access expression here {node.Expression.ToString()}");
             MemberAccess memberAccess = node.Expression as MemberAccess;
             BoogieExpr receiver = TranslateExpr(memberAccess.Expression);
             BoogieTypedIdent msgValueId = context.MakeFreshTypedIdent(BoogieType.Int);
@@ -1782,52 +1782,11 @@ namespace SolToBoogie
                 arguments.Add(argument);
             }
 
-            string signature = TransUtils.InferFunctionSignature(context, node);
-            Debug.Assert(context.HasFuncSignature(signature), $"Cannot find signature: {signature}");
-
-            Dictionary<ContractDefinition, FunctionDefinition> dynamicTypeToFuncMap = context.GetAllFuncDefinitions(signature);
-            Debug.Assert(dynamicTypeToFuncMap.Count > 0);
-
-            BoogieIfCmd ifCmd = null;
-            BoogieExpr lastGuard = null;
-            BoogieCallCmd lastCallCmd = null;
-
-            // generate a single if-then-else statement
-            foreach (ContractDefinition dynamicType in dynamicTypeToFuncMap.Keys)
-            {
-
-                //ignore the ones those who do not derive from the current contract
-                // TODO: we need a way to determine type of receiver from "x.Foo()"
-                if (memberAccess.Expression.ToString() == "this" && 
-                    !dynamicType.LinearizedBaseContracts.Contains(currentContract.Id))
-                    continue;
-
-
-                FunctionDefinition function = dynamicTypeToFuncMap[dynamicType];
-                string callee = TransUtils.GetCanonicalFunctionName(function, context);
-
-                BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), receiver);
-                BoogieExpr rhs = new BoogieIdentifierExpr(dynamicType.Name);
-                BoogieExpr guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lhs, rhs);
-                lastGuard = guard;
-                BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, outParams);
-                lastCallCmd = callCmd;
-                BoogieStmtList thenBody = BoogieStmtList.MakeSingletonStmtList(callCmd);
-                BoogieStmtList elseBody = ifCmd == null ? null : BoogieStmtList.MakeSingletonStmtList(ifCmd);
-
-                ifCmd = new BoogieIfCmd(guard, thenBody, elseBody);
-            }
-
-            // optimization: if there is only 1 type that we replace the if with a assume
-            if (dynamicTypeToFuncMap.Keys.Count == 1)
-            {
-                currentStmtList.AddStatement(new BoogieAssumeCmd(lastGuard));
-                currentStmtList.AddStatement(lastCallCmd);
-            }
-            else
-            {
-                currentStmtList.AddStatement(ifCmd);
-            }
+            // TODO: we need a way to determine type of receiver from "x.Foo()"
+            // This additional condition is checked in the loop at this call site
+            // and was the reason why the code was not abstracted into a single call
+            var guard = memberAccess.Expression.ToString() == "this"; 
+            TranslateDynamicDispatchCall(node, outParams, arguments, guard);
 
             return;
         }
@@ -1857,47 +1816,7 @@ namespace SolToBoogie
             }
             else if (IsDynamicDispatching(node))
             {
-                string signature = TransUtils.InferFunctionSignature(context, node);
-                Debug.Assert(context.HasFuncSignature(signature), $"Cannot find signature: {signature}");
-
-                Dictionary<ContractDefinition, FunctionDefinition> dynamicTypeToFuncMap = context.GetAllFuncDefinitions(signature);
-                Debug.Assert(dynamicTypeToFuncMap.Count > 0);
-
-                BoogieIfCmd ifCmd = null;
-                BoogieExpr lastGuard = null;
-                BoogieCallCmd lastCallCmd = null;
-                // generate a single if-then-else statement
-                foreach (ContractDefinition dynamicType in dynamicTypeToFuncMap.Keys)
-                {
-                    //ignore the ones those who do not derive from the current contract
-                    if (!dynamicType.LinearizedBaseContracts.Contains(currentContract.Id))
-                        continue;
-
-                    FunctionDefinition function = dynamicTypeToFuncMap[dynamicType];
-                    string callee = TransUtils.GetCanonicalFunctionName(function, context);
-
-                    BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), new BoogieIdentifierExpr("this"));
-                    BoogieExpr rhs = new BoogieIdentifierExpr(dynamicType.Name);
-                    BoogieExpr guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lhs, rhs);
-                    lastGuard = guard;
-                    BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, outParams);
-                    lastCallCmd = callCmd;
-                    BoogieStmtList thenBody = BoogieStmtList.MakeSingletonStmtList(callCmd);
-                    BoogieStmtList elseBody = ifCmd == null ? null : BoogieStmtList.MakeSingletonStmtList(ifCmd);
-
-                    ifCmd = new BoogieIfCmd(guard, thenBody, elseBody);
-                }
-
-                // optimization: if there is only 1 type that we replace the if with a assume
-                if (dynamicTypeToFuncMap.Keys.Count == 1)
-                {
-                    currentStmtList.AddStatement(new BoogieAssumeCmd(lastGuard));
-                    currentStmtList.AddStatement(lastCallCmd);
-                }
-                else
-                {
-                    currentStmtList.AddStatement(ifCmd);
-                }
+                TranslateDynamicDispatchCall(node, outParams, arguments);
             }
             else if (IsStaticDispatching(node))
             {
@@ -1913,6 +1832,53 @@ namespace SolToBoogie
                 throw new SystemException($"Unknown type of internal function call: {node.Expression}");
             }
             return;
+        }
+
+        private void TranslateDynamicDispatchCall(FunctionCall node, List<BoogieIdentifierExpr> outParams, List<BoogieExpr> arguments, bool condition = true)
+        {
+            Debug.Assert(node.Expression is MemberAccess, $"Expecting a member access expression here {node.Expression.ToString()}");
+
+            string signature = TransUtils.InferFunctionSignature(context, node);
+            Debug.Assert(context.HasFuncSignature(signature), $"Cannot find signature: {signature}");
+
+            Dictionary<ContractDefinition, FunctionDefinition> dynamicTypeToFuncMap = context.GetAllFuncDefinitions(signature);
+            Debug.Assert(dynamicTypeToFuncMap.Count > 0);
+
+            BoogieIfCmd ifCmd = null;
+            BoogieExpr lastGuard = null;
+            BoogieCallCmd lastCallCmd = null;
+            // generate a single if-then-else statement
+            foreach (ContractDefinition dynamicType in dynamicTypeToFuncMap.Keys)
+            {
+                //ignore the ones those who do not derive from the current contract
+                if (condition && !dynamicType.LinearizedBaseContracts.Contains(currentContract.Id))
+                    continue;
+
+                FunctionDefinition function = dynamicTypeToFuncMap[dynamicType];
+                string callee = TransUtils.GetCanonicalFunctionName(function, context);
+
+                BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), new BoogieIdentifierExpr("this"));
+                BoogieExpr rhs = new BoogieIdentifierExpr(dynamicType.Name);
+                BoogieExpr guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lhs, rhs);
+                lastGuard = guard;
+                BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, outParams);
+                lastCallCmd = callCmd;
+                BoogieStmtList thenBody = BoogieStmtList.MakeSingletonStmtList(callCmd);
+                BoogieStmtList elseBody = ifCmd == null ? null : BoogieStmtList.MakeSingletonStmtList(ifCmd);
+
+                ifCmd = new BoogieIfCmd(guard, thenBody, elseBody);
+            }
+
+            // optimization: if there is only 1 type that we replace the if with a assume
+            if (dynamicTypeToFuncMap.Keys.Count == 1)
+            {
+                currentStmtList.AddStatement(new BoogieAssumeCmd(lastGuard));
+                currentStmtList.AddStatement(lastCallCmd);
+            }
+            else
+            {
+                currentStmtList.AddStatement(ifCmd);
+            }
         }
 
         private bool IsStaticDispatching(FunctionCall node)

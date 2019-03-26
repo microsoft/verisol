@@ -205,6 +205,7 @@ namespace SolToBoogie
             {
                 Debug.Assert(memberAccess.ReferencedDeclaration != null);
                 FunctionDefinition function = context.GetASTNodeById(memberAccess.ReferencedDeclaration.Value) as FunctionDefinition;
+                Debug.Assert(function != null, $"Could not find function {node.ToString()}");
                 StringBuilder builder = new StringBuilder();
                 builder.Append(function.Name).Append("(");
                 if (function.Parameters.Parameters != null && function.Parameters.Parameters.Count > 0)
