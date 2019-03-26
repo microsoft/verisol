@@ -1245,4 +1245,20 @@ namespace BoogieAST
             return $"{Function}({argString})";
         }
     }
+    public class BoogieTupleExpr : BoogieExpr
+    {
+        public List<BoogieExpr> Arguments { get; set; }
+
+        public BoogieTupleExpr(List<BoogieExpr> arguments)
+        {
+            this.Arguments = arguments;
+        }
+
+        public override string ToString()
+        {
+            var argString = string.Join(", ", Arguments.Select(x => x.ToString()));
+            return $"({argString})";
+        }
+    }
+
 }

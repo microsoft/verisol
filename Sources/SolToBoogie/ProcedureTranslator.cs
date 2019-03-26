@@ -793,76 +793,109 @@ namespace SolToBoogie
 
         public override bool Visit(Assignment node)
         {
-            BoogieExpr lhs = TranslateExpr(node.LeftHandSide);
+            List<BoogieExpr> lhs = new List<BoogieExpr>();
+            List<BoogieType> lhsTypes = new List<BoogieType>(); //stores types in case of tuples
+
+            bool isTupleAssignment = false;
+
+            if (node.LeftHandSide is TupleExpression tuple)
+            {
+                // we only handle the case (e1, e2, .., _, _)  = funcCall(...)
+                lhs.AddRange(tuple.Components.ConvertAll(x => TranslateExpr(x)));
+                isTupleAssignment = true;
+                lhsTypes.AddRange(tuple.Components.ConvertAll(x => MapArrayHelper.InferExprTypeFromTypeString(x.TypeDescriptions.TypeString)));
+            }
+            else
+            {
+                lhs.Add(TranslateExpr(node.LeftHandSide));
+            }
          
             if (node.RightHandSide is FunctionCall funcCall)
             {
                 // if lhs is not an identifier (e.g. a[i]), then
                 // we have to introduce a temporary
                 // we do it even when lhs is identifier to keep translation simple
-                var tmpVar =
-                    lhs is BoogieIdentifierExpr ? lhs : 
-                    MkNewLocalVariableForFunctionReturn(funcCall);
+                var tmpVars = new List<BoogieIdentifierExpr>();
+
+                if (!isTupleAssignment) {
+                    tmpVars.Add(lhs[0] is BoogieIdentifierExpr ? lhs[0] as BoogieIdentifierExpr : MkNewLocalVariableForFunctionReturn(funcCall));
+                } else {
+                    // always use temporaries for tuples regardless if lhs[i] is an identifier
+                    tmpVars.AddRange(lhsTypes.ConvertAll(x => MkNewLocalVariableWithType(x)));
+                }
 
                 // a Boolean to decide is we needed to use tmpVar
                 bool usedTmpVar = true;
 
                 if (IsContractConstructor(funcCall))
                 {
-                    TranslateNewStatement(funcCall, tmpVar);
+                    Debug.Assert(!isTupleAssignment, "Not expecting a tuple for Constructors");
+                    TranslateNewStatement(funcCall, tmpVars[0]);
                 }
                 else if (IsStructConstructor(funcCall))
                 {
-                    TranslateStructConstructor(funcCall, tmpVar);
+                    Debug.Assert(!isTupleAssignment, "Not expecting a tuple for Constructors");
+                    TranslateStructConstructor(funcCall, tmpVars[0]);
                 }
                 else if (IsKeccakFunc(funcCall))
                 {
-                    TranslateKeccakFuncCall(funcCall, lhs); //this is not a procedure call in Boogie
+                    Debug.Assert(!isTupleAssignment, "Not expecting a tuple for Keccak256");
+                    TranslateKeccakFuncCall(funcCall, lhs[0]); //this is not a procedure call in Boogie
                     usedTmpVar = false;
                 }
                 else if (IsAbiEncodePackedFunc(funcCall))
                 {
-                    TranslateAbiEncodedFuncCall(funcCall, tmpVar); //this is not a procedure call in Boogie
+                    TranslateAbiEncodedFuncCall(funcCall, tmpVars[0]); //this is not a procedure call in Boogie
+                    Debug.Assert(!isTupleAssignment, "Not expecting a tuple for abi.encodePacked");
                     usedTmpVar = false;
                 }
                 else if (IsTypeCast(funcCall))
                 {
                     // assume the type cast is used as: obj = C(var);
-                    TranslateTypeCast(funcCall, tmpVar); //this is not a procedure call in Boogie
+                    Debug.Assert(!isTupleAssignment, "Not expecting a tuple for type cast");
+                    TranslateTypeCast(funcCall, tmpVars[0]); //this is not a procedure call in Boogie
                     usedTmpVar = false;
                 }
                 else // normal function calls
                 {
-                    Debug.Assert(tmpVar is BoogieIdentifierExpr, $"tmpVar has to be an Boogie identifier: {tmpVar}");
-
-                    List<BoogieIdentifierExpr> outParams = new List<BoogieIdentifierExpr>();
-                    outParams.Add(tmpVar as BoogieIdentifierExpr);
-
-                    TranslateFunctionCalls(funcCall, outParams);
+                    Debug.Assert(tmpVars is List<BoogieIdentifierExpr>, $"tmpVar has to be a list of Boogie identifiers: {tmpVars}");
+                    TranslateFunctionCalls(funcCall, tmpVars);
                 }
-                if (usedTmpVar && !(lhs is BoogieIdentifierExpr))
-                    currentStmtList.AddStatement(new BoogieAssignCmd(lhs, tmpVar));
+                if (!isTupleAssignment)
+                {
+                    if (usedTmpVar && !(lhs[0] is BoogieIdentifierExpr))
+                        currentStmtList.AddStatement(new BoogieAssignCmd(lhs[0], tmpVars[0]));
+                } else
+                {
+                    for (int i = 0; i < lhs.Count; ++i)
+                    {
+                        currentStmtList.AddStatement(new BoogieAssignCmd(lhs[i], tmpVars[i]));
+                    }
+                }
             }
             else
             {
+                if (isTupleAssignment)
+                    throw new NotImplementedException("Currently only support assignment of tuples as returns of a function call");
+
                 BoogieExpr rhs = TranslateExpr(node.RightHandSide);
                 BoogieStmtList stmtList = new BoogieStmtList();
                 switch (node.Operator)
                 {
                     case "=":
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs, rhs));
+                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], rhs));
                         break;
                     case "+=":
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, lhs, rhs)));
+                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, lhs[0], rhs)));
                         break;
                     case "-=":
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, lhs, rhs)));
+                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, lhs[0], rhs)));
                         break;
                     case "*=":
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.MUL, lhs, rhs)));
+                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.MUL, lhs[0], rhs)));
                         break;
                     case "/=":
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.DIV, lhs, rhs)));
+                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.DIV, lhs[0], rhs)));
                         break;
                     default:
                         throw new SystemException($"Unknown assignment operator: {node.Operator}");
@@ -875,26 +908,26 @@ namespace SolToBoogie
                 (node.RightHandSide.TypeDescriptions != null ?
                     node.RightHandSide.TypeDescriptions : null);
 
-            if (lhsType != null)
+            if (lhsType != null && !isTupleAssignment)
             {
                 //REFACTOR!
                 if (lhsType.TypeString.StartsWith("uint") || lhsType.TypeString.StartsWith("int") || lhsType.TypeString.StartsWith("string ") || lhsType.TypeString.StartsWith("bytes"))
                 {
-                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
+                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { lhs[0] }, new List<BoogieIdentifierExpr>());
                     callCmd.Attributes = new List<BoogieAttribute>();
                     callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
                     currentStmtList.AddStatement(callCmd);
                 }
                 if (lhsType.TypeString.Equals("address"))
                 {
-                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_ref", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
+                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_ref", new List<BoogieExpr>() { lhs[0] }, new List<BoogieIdentifierExpr>());
                     callCmd.Attributes = new List<BoogieAttribute>();
                     callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
                     currentStmtList.AddStatement(callCmd);
                 }
                 if (lhsType.TypeString.Equals("bool"))
                 {
-                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_bool", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
+                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_bool", new List<BoogieExpr>() { lhs[0] }, new List<BoogieIdentifierExpr>());
                     callCmd.Attributes = new List<BoogieAttribute>();
                     callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
                     currentStmtList.AddStatement(callCmd);
@@ -927,6 +960,7 @@ namespace SolToBoogie
         {
             if (node.Expression == null)
             {
+                //Void
                 BoogieReturnCmd returnCmd = new BoogieReturnCmd();
                 if (currentPostlude == null)
                 {
@@ -940,22 +974,39 @@ namespace SolToBoogie
             }
             else
             {
-                if (currentFunction.ReturnParameters.Length() != 1)
-                {
-                    throw new NotImplementedException("Cannot handle multiple return parameters");
-                }
-
-                //TODO:
-                //string name = $"__ret_{retParamCount++}_" + funcDef.Name;
+                BoogieExpr retExpr = TranslateExpr(node.Expression); //TODO: handle tuples here?
                 var retParamCount = 0;
-                VariableDeclaration retVarDecl = currentFunction.ReturnParameters.Parameters[0];
-                string retVarName = String.IsNullOrEmpty(retVarDecl.Name) ?
-                    $"__ret_{retParamCount++}_" :
-                    TransUtils.GetCanonicalLocalVariableName(retVarDecl);
-                BoogieIdentifierExpr retVar = new BoogieIdentifierExpr(retVarName);
-                BoogieExpr expr = TranslateExpr(node.Expression);
-                BoogieAssignCmd assignCmd = new BoogieAssignCmd(retVar, expr);
-                currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(assignCmd));
+                if (node.Expression is TupleExpression tuple)
+                {
+                    //Tuple
+                    if (!(retExpr is BoogieTupleExpr))
+                    {
+                        Debug.Assert(false, "Expecting a Boogie tuple expression here");
+                    }
+                    var bTupleExpr = retExpr as BoogieTupleExpr;
+
+                    //turn the tuple assignment into a serial assignment [TODO: understand the evaluation semantics]
+                    foreach (var retVarDecl in currentFunction.ReturnParameters.Parameters)
+                    {
+                        string retVarName = String.IsNullOrEmpty(retVarDecl.Name) ?
+                            $"__ret_{retParamCount}_" :
+                            TransUtils.GetCanonicalLocalVariableName(retVarDecl);
+                        BoogieIdentifierExpr retVar = new BoogieIdentifierExpr(retVarName);
+                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(retVar, bTupleExpr.Arguments[retParamCount++]);
+                        currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(assignCmd)); //TODO: simultaneous updates
+                    }
+                }
+                else
+                {
+                    //Singleton 
+                    var retVarDecl = currentFunction.ReturnParameters.Parameters[0];
+                    string retVarName = String.IsNullOrEmpty(retVarDecl.Name) ?
+                        $"__ret_{retParamCount++}_" :
+                        TransUtils.GetCanonicalLocalVariableName(retVarDecl);
+                    BoogieIdentifierExpr retVar = new BoogieIdentifierExpr(retVarName);
+                    BoogieAssignCmd assignCmd = new BoogieAssignCmd(retVar, retExpr);
+                    currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(assignCmd)); //TODO: simultaneous updates
+                }
 
                 if (currentPostlude != null)
                 {
@@ -1121,6 +1172,17 @@ namespace SolToBoogie
                 {
                     throw new NotImplementedException("Cannot handle non-elementary type cast");
                 }
+            }
+            else if(expr is TupleExpression tuple)
+            {
+                var transArgs = new List<BoogieExpr>();
+                foreach(var e in tuple.Components)
+                {
+                    e.Accept(this);
+                    Debug.Assert(currentExpr != null);
+                    transArgs.Add(currentExpr);
+                }
+                currentExpr = new BoogieTupleExpr(transArgs);
             }
             else
             {
@@ -1398,6 +1460,11 @@ namespace SolToBoogie
         private BoogieIdentifierExpr MkNewLocalVariableForFunctionReturn(FunctionCall node)
         {
             var boogieTypeCall = MapArrayHelper.InferExprTypeFromTypeString(node.TypeDescriptions.TypeString);
+            return MkNewLocalVariableWithType(boogieTypeCall);
+        }
+
+        private BoogieIdentifierExpr MkNewLocalVariableWithType(BoogieType boogieTypeCall)
+        {
             var tmpVar = new BoogieLocalVariable(context.MakeFreshTypedIdent(boogieTypeCall));
             boogieToLocalVarsMap[currentBoogieProc].Add(tmpVar);
 
