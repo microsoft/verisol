@@ -2000,9 +2000,20 @@ namespace SolToBoogie
                 currentStmtList.AddStatement(new BoogieAssignCmd(lhs, exprToCast));
                 return;
             }
-            else if (node.Expression is ElementaryTypeNameExpression) // cast to elementary types
+            else if (node.Expression is ElementaryTypeNameExpression elemType) // cast to elementary types
             {
-                BoogieStmtList stmtList = new BoogieStmtList();
+                if (elemType.TypeName.Equals("address"))
+                {
+                    //try to do a best-effort to detect address(0) 
+                    if (exprToCast is BoogieLiteralExpr blit)
+                    {
+                        if (blit.ToString().Equals("0"))
+                        {
+                            currentStmtList.AddStatement(new BoogieAssignCmd(lhs, new BoogieIdentifierExpr("null")));
+                            return;
+                        }
+                    }
+                }
                 // lhs := expr;
                 currentStmtList.AddStatement(new BoogieAssignCmd(lhs, exprToCast));
                 return;
