@@ -1185,14 +1185,17 @@ namespace SolToBoogie
             currentExpr = null;
             if (expr is FunctionCall && IsTypeCast((FunctionCall) expr))
             {
-                if (((FunctionCall) expr).Expression is ElementaryTypeNameExpression)
-                {
-                    currentExpr = TranslateExpr(((FunctionCall) expr).Arguments[0]);
-                }
-                else
-                {
-                    throw new NotImplementedException("Cannot handle non-elementary type cast");
-                }
+                expr.Accept(this);
+                Debug.Assert(currentExpr != null);
+                // TranslateTypeCast()
+                //if (((FunctionCall) expr).Expression is ElementaryTypeNameExpression)
+                //{
+                //    currentExpr = TranslateExpr(((FunctionCall) expr).Arguments[0]);
+                //}
+                //else
+                //{
+                //    throw new NotImplementedException("Cannot handle non-elementary type cast");
+                //}
             }
             else if(expr is TupleExpression tuple)
             {
@@ -1980,8 +1983,8 @@ namespace SolToBoogie
         {
             Debug.Assert(node.Kind.Equals("typeConversion"));
             Debug.Assert(node.Arguments.Count == 1);
-            Debug.Assert(node.Arguments[0] is Identifier || node.Arguments[0] is MemberAccess || node.Arguments[0] is Literal,
-                "Argument to a typecast has to be an identifier, memberAccess or Literal");
+            Debug.Assert(node.Arguments[0] is Identifier || node.Arguments[0] is MemberAccess || node.Arguments[0] is Literal || node.Arguments[0] is IndexAccess,
+                "Argument to a typecast has to be an identifier, memberAccess, indexAccess or Literal");
 
             // target: lhs := T(expr);
             BoogieExpr exprToCast = TranslateExpr(node.Arguments[0]);
