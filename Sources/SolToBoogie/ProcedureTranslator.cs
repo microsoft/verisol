@@ -578,6 +578,7 @@ namespace SolToBoogie
 
             ContractDefinition contract = context.GetContractByFunction(ctor);
             string procName = contract.Name + "_" + contract.Name;
+
             // no output params for constructor
             List<BoogieVariable> outParams = new List<BoogieVariable>();
             List<BoogieAttribute> attributes = new List<BoogieAttribute>()
@@ -602,6 +603,9 @@ namespace SolToBoogie
             {
                 ContractDefinition baseContract = context.GetASTNodeById(id) as ContractDefinition;
                 Debug.Assert(baseContract != null);
+
+                // since we are not translating any statements, currentStmtList remains null
+                currentStmtList = new BoogieStmtList();
 
                 string callee = TransUtils.GetCanonicalConstructorName(baseContract) + "_NoBaseCtor";
                 List<BoogieExpr> inputs = new List<BoogieExpr>();
@@ -650,9 +654,12 @@ namespace SolToBoogie
                     }
                 }
                 BoogieCallCmd callCmd = new BoogieCallCmd(callee, inputs, outputs);
+                ctorBody.AppendStmtList(currentStmtList);
                 ctorBody.AddStatement(callCmd);
+                currentStmtList = null;
             }
 
+            localVars.AddRange(boogieToLocalVarsMap[currentBoogieProc]);
             BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, ctorBody);
             context.Program.AddDeclaration(implementation);
         }
