@@ -641,7 +641,8 @@ namespace SolToBoogie
                     }
                     else
                     {
-                        Debug.Assert(context.GetConstructorByContract(baseContract).Parameters.Length() == 0,
+                        var baseCtr = context.IsConstructorDefined(baseContract) ? context.GetConstructorByContract(baseContract) : null;
+                        Debug.Assert(baseCtr == null || baseCtr.Parameters.Length() ==0, 
                         $"Base constructor {callee} has empty parameters but not specified in {ctor.Name}...do not handle abstract contracts");
                         inputs.Add(new BoogieIdentifierExpr("this"));
                         inputs.Add(new BoogieIdentifierExpr("msgsender_MSG"));
