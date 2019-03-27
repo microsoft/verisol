@@ -596,6 +596,8 @@ namespace SolToBoogie
 
             List<int> baseContractIds = new List<int>(contract.LinearizedBaseContracts);
             baseContractIds.Reverse();
+
+            //Note that the current derived contract appears as a baseContractId 
             foreach (int id in baseContractIds)
             {
                 ContractDefinition baseContract = context.GetASTNodeById(id) as ContractDefinition;
@@ -629,9 +631,21 @@ namespace SolToBoogie
                 }
                 else // no argument for this base constructor
                 {
-                    foreach (BoogieVariable param in inParams)
+                    if (baseContract.Name == contract.Name)
                     {
-                        inputs.Add(new BoogieIdentifierExpr(param.TypedIdent.Name));
+                        // only do this for the derived contract
+                        foreach (BoogieVariable param in inParams)
+                        {
+                            inputs.Add(new BoogieIdentifierExpr(param.TypedIdent.Name));
+                        }
+                    }
+                    else
+                    {
+                        Debug.Assert(context.GetConstructorByContract(baseContract).Parameters.Length() == 0,
+                        $"Base constructor {callee} has empty parameters but not specified in {ctor.Name}...do not handle abstract contracts");
+                        inputs.Add(new BoogieIdentifierExpr("this"));
+                        inputs.Add(new BoogieIdentifierExpr("msgsender_MSG"));
+                        inputs.Add(new BoogieIdentifierExpr("msgvalue_MSG"));
                     }
                 }
                 BoogieCallCmd callCmd = new BoogieCallCmd(callee, inputs, outputs);

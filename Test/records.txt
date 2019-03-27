@@ -3,6 +3,7 @@ ReturnMult.sol
 #MappingToStruct.sol
 Logical.sol
 Inheritance.sol
+InheritWithConstructorArgs.sol
 TypeCast.sol
 MappingReference.sol
 InheritInitializer.sol

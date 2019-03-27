@@ -19,11 +19,12 @@ contract DerivedContract is BaseContract {
   uint[4] D;
   mapping (uint => uint) E;
 
-  constructor() {
+  //derived class takes an extra parameter
+  constructor(uint x) {
        assert(B.length == 2);
        assert(C.length == 1);
        assert(D.length == 4);
        assert(A[1] == 1);
-       assert (false); //should be reachable
+       //assert (false); //should be reachable
   }      
 }
