@@ -263,6 +263,17 @@ namespace SolToBoogie
                             Debug.Assert(typeString.Equals("string") || typeString.Equals("uint256") || typeString.Equals("int256")
                                     || typeString.Equals("address") || typeString.Equals("bytes"));
                         }
+
+                        // let us remove any suffix such as "storage/memory pointer" 
+                        if (typeString.Contains(" "))
+                        {
+                            typeString = typeString.Substring(0, typeString.IndexOf(" "));
+                        }
+                        //HACK: lets also remove any prefix (e.g. A.B when B is a contract and B is a struct)
+                        if (typeString.Contains("."))
+                        {
+                            typeString = typeString.Substring(typeString.IndexOf(".") + 1);
+                        }
                         builder.Append(typeString).Append(", ");
                     }
                     builder.Length -= 2;

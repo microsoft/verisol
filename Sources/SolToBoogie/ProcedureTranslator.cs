@@ -1132,21 +1132,26 @@ namespace SolToBoogie
                 else if (unaryOperation.Operator.Equals("delete"))
                 {
                     var typeStr = unaryOperation.SubExpression.TypeDescriptions.TypeString;
-                    Debug.Assert(typeStr.StartsWith("int") || typeStr.StartsWith("uint") || typeStr.Equals("bool") || typeStr.StartsWith("string "),
-                        $"Only handle delete for scalars, found {typeStr}");
-                    //REFACTOR to define isInt, isUint, IsByte, IsString etc.
-                    BoogieExpr rhs = null;
-                    if (typeStr.StartsWith("int") || typeStr.StartsWith("uint"))
-                        rhs = new BoogieLiteralExpr(BigInteger.Zero);
-                    else if (typeStr.Equals("bool"))
-                        rhs = new BoogieLiteralExpr(false);
-                    else if (typeStr.StartsWith("string"))
+                    if (typeStr.StartsWith("int") || typeStr.StartsWith("uint") || typeStr.Equals("bool") || typeStr.StartsWith("string "))
                     {
-                        var emptyStr = "";
-                        rhs = new BoogieLiteralExpr(new BigInteger(emptyStr.GetHashCode()));
+                        //REFACTOR to define isInt, isUint, IsByte, IsString etc.
+                        BoogieExpr rhs = null;
+                        if (typeStr.StartsWith("int") || typeStr.StartsWith("uint"))
+                            rhs = new BoogieLiteralExpr(BigInteger.Zero);
+                        else if (typeStr.Equals("bool"))
+                            rhs = new BoogieLiteralExpr(false);
+                        else if (typeStr.StartsWith("string"))
+                        {
+                            var emptyStr = "";
+                            rhs = new BoogieLiteralExpr(new BigInteger(emptyStr.GetHashCode()));
+                        }
+                        var assignCmd = new BoogieAssignCmd(lhs, rhs);
+                        currentStmtList.AddStatement(assignCmd);
                     }
-                    var assignCmd = new BoogieAssignCmd(lhs, rhs);
-                    currentStmtList.AddStatement(assignCmd);
+                    else
+                    {
+                        Console.WriteLine($"Warning!!: Only handle delete for scalars, found {typeStr}");
+                    }
                 }
                 return false;
             }
@@ -2095,6 +2100,7 @@ namespace SolToBoogie
             BoogieType indexType = MapArrayHelper.InferExprTypeFromTypeString(indexExpression.TypeDescriptions.TypeString);
             BoogieExpr indexExpr = TranslateExpr(indexExpression);
 
+            // the baseExpression has an array or mapping type
             BoogieType baseKeyType = MapArrayHelper.InferKeyTypeFromTypeString(baseExpression.TypeDescriptions.TypeString);
             BoogieType baseValType = MapArrayHelper.InferValueTypeFromTypeString(baseExpression.TypeDescriptions.TypeString);
             BoogieExpr baseExpr = null;

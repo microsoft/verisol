@@ -5,7 +5,12 @@ contract EnumParam {
     enum Action {GoLeft, GoRight}
     Action action;
 
+/*
     function foo(EnumParam.Action a) public {
+        action = a;
+    }
+*/
+    function foo(Action a) public {
         action = a;
     }
 
