@@ -19,3 +19,9 @@ contract Modifier {
     }
 
 }
+
+// Presence of multiple contracts with modifiers
+// generated a modifier multiple times
+contract Bar {
+
+}
