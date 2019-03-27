@@ -221,6 +221,7 @@ namespace SolToBoogie
             }
             else
             {
+                // Is this dead code???
                 string functionName = GetFuncNameFromFunctionCall(node);
                 StringBuilder builder = new StringBuilder();
                 builder.Append(functionName).Append("(");

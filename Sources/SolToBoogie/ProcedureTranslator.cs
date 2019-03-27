@@ -7,6 +7,7 @@ namespace SolToBoogie
     using System.Diagnostics;
     using System.Globalization;
     using System.Numerics;
+    using System.Text;
     using BoogieAST;
     using SolidityAST;
 
@@ -1713,7 +1714,6 @@ namespace SolToBoogie
         }
         #endregion
 
-
         private bool IsExternalFunctionCall(FunctionCall node)
         {
             if (node.Expression is MemberAccess memberAccess)
@@ -1759,7 +1759,6 @@ namespace SolToBoogie
             return null;
         }
 
-
         private void TranslateExternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
             Debug.Assert(node.Expression is MemberAccess, $"Expecting a member access expression here {node.Expression.ToString()}");
@@ -1786,7 +1785,7 @@ namespace SolToBoogie
             // This additional condition is checked in the loop at this call site
             // and was the reason why the code was not abstracted into a single call
             var guard = memberAccess.Expression.ToString() == "this"; 
-            TranslateDynamicDispatchCall(node, outParams, arguments, guard);
+            TranslateDynamicDispatchCall(node, outParams, arguments, guard, receiver);
 
             return;
         }
@@ -1816,7 +1815,7 @@ namespace SolToBoogie
             }
             else if (IsDynamicDispatching(node))
             {
-                TranslateDynamicDispatchCall(node, outParams, arguments);
+                TranslateDynamicDispatchCall(node, outParams, arguments, true, new BoogieIdentifierExpr("this"));
             }
             else if (IsStaticDispatching(node))
             {
@@ -1834,14 +1833,29 @@ namespace SolToBoogie
             return;
         }
 
-        private void TranslateDynamicDispatchCall(FunctionCall node, List<BoogieIdentifierExpr> outParams, List<BoogieExpr> arguments, bool condition = true)
+        private void TranslateDynamicDispatchCall(FunctionCall node, List<BoogieIdentifierExpr> outParams, List<BoogieExpr> arguments, bool condition, BoogieExpr receiver)
         {
-            Debug.Assert(node.Expression is MemberAccess, $"Expecting a member access expression here {node.Expression.ToString()}");
+            ContractDefinition contractDefn;
+            VariableDeclaration varDecl;
+            // Solidity internally generates foo() getter for any public state 
+            // variable foo in a contract. 
+            if (IsGetterForPublicVariable(node, out varDecl, out contractDefn))
+            {
+                BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), receiver);
+                BoogieExpr rhs = new BoogieIdentifierExpr(contractDefn.Name);
+                BoogieExpr guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lhs, rhs);
+                currentStmtList.AddStatement(new BoogieAssumeCmd(guard));
+                Debug.Assert(outParams.Count == 1, $"Do not support getters for tuples yet {node.ToString()} ");
+                string varMapName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
+                BoogieMapSelect mapSelect = new BoogieMapSelect(new BoogieIdentifierExpr(varMapName), arguments[0]);
+                currentStmtList.AddStatement(new BoogieAssignCmd(outParams[0], mapSelect));
+                return;
+            }
 
+            Dictionary<ContractDefinition, FunctionDefinition> dynamicTypeToFuncMap;
             string signature = TransUtils.InferFunctionSignature(context, node);
             Debug.Assert(context.HasFuncSignature(signature), $"Cannot find signature: {signature}");
-
-            Dictionary<ContractDefinition, FunctionDefinition> dynamicTypeToFuncMap = context.GetAllFuncDefinitions(signature);
+            dynamicTypeToFuncMap = context.GetAllFuncDefinitions(signature);
             Debug.Assert(dynamicTypeToFuncMap.Count > 0);
 
             BoogieIfCmd ifCmd = null;
@@ -1857,7 +1871,7 @@ namespace SolToBoogie
                 FunctionDefinition function = dynamicTypeToFuncMap[dynamicType];
                 string callee = TransUtils.GetCanonicalFunctionName(function, context);
 
-                BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), new BoogieIdentifierExpr("this"));
+                BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), receiver);
                 BoogieExpr rhs = new BoogieIdentifierExpr(dynamicType.Name);
                 BoogieExpr guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lhs, rhs);
                 lastGuard = guard;
@@ -1879,6 +1893,29 @@ namespace SolToBoogie
             {
                 currentStmtList.AddStatement(ifCmd);
             }
+        }
+
+        private bool IsGetterForPublicVariable(FunctionCall node, out VariableDeclaration var, out ContractDefinition contractDefinition)
+        {
+            var = null;
+            contractDefinition = null;
+            if (node.Expression is MemberAccess memberAccess)
+            {
+                Debug.Assert(memberAccess.ReferencedDeclaration != null);
+                var contractTypeStr = memberAccess.Expression.TypeDescriptions.TypeString;
+
+                if (!context.HasStateVarName(memberAccess.MemberName))
+                {
+                    return false;
+                }
+                contractDefinition = context.GetContractByName(contractTypeStr.Substring("contract ".Length));
+                Debug.Assert(contractDefinition != null, $"Expecting a contract {contractTypeStr} to exist in context");
+
+                var = context.GetStateVarByDynamicType(memberAccess.MemberName, contractDefinition);
+                return true;
+            }
+
+            return false;
         }
 
         private bool IsStaticDispatching(FunctionCall node)
