@@ -335,6 +335,10 @@ namespace SolToBoogie
             {
                 functionName = ident.Name;
             }
+            else if (expr is ElementaryTypeNameExpression elemExpr)
+            {
+                functionName = elemExpr.TypeName;
+            }
             else if (expr is MemberAccess memberAccess)
             {
                 functionName = memberAccess.MemberName;

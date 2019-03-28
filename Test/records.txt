@@ -3,7 +3,9 @@ ReturnMult.sol
 #MappingToStruct.sol
 Logical.sol
 Inheritance.sol
+InheritWithConstructorArgs.sol
 TypeCast.sol
+AddressCast.sol
 MappingReference.sol
 InheritInitializer.sol
 StaticDispatching.sol

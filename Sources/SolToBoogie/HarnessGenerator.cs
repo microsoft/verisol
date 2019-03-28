@@ -25,9 +25,10 @@ namespace SolToBoogie
             {
                 Dictionary<int, BoogieExpr> houdiniVarMap = HoudiniHelper.GenerateHoudiniVarMapping(contract, context);
                 GenerateHoudiniVarsForContract(contract, houdiniVarMap);
-                GenerateModifiers();
                 GenerateBoogieHarnessForContract(contract, houdiniVarMap);
             }
+
+            GenerateModifiers();
 
             foreach (ContractDefinition contract in context.ContractDefinitions)
             {

@@ -27,7 +27,7 @@ namespace SolToBoogie
         private FunctionDefinition currentFunction = null;
         
         // store the Boogie call for modifier postlude
-        private BoogieCallCmd currentPostlude = null;
+        private BoogieStmtList currentPostlude = null;
 
         public ProcedureTranslator(TranslatorContext context)
         {
@@ -108,7 +108,7 @@ namespace SolToBoogie
 
         public override bool Visit(FunctionDefinition node)
         {
-            Debug.Assert(node.IsConstructor || node.Modifiers.Count <= 1, "Multiple Modifiers are not supported yet");
+            // Debug.Assert(node.IsConstructor || node.Modifiers.Count <= 1, "Multiple Modifiers are not supported yet");
             Debug.Assert(currentContract != null);
 
             currentFunction = node;
@@ -157,29 +157,31 @@ namespace SolToBoogie
 
 
             BoogieStmtList procBody = new BoogieStmtList();
+            currentPostlude = new BoogieStmtList();
 
-            if (node.Modifiers.Count == 1)
+            // if (node.Modifiers.Count == 1)
+            for (int i = 0; i < node.Modifiers.Count; ++ i)
             {
                 // insert call to modifier prelude
-                if (context.ModifierToBoogiePreImpl.ContainsKey(node.Modifiers[0].ModifierName.Name))
+                if (context.ModifierToBoogiePreImpl.ContainsKey(node.Modifiers[i].ModifierName.Name))
                 {
                     List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
-                    if (node.Modifiers[0].Arguments != null)
-                        arguments.AddRange(node.Modifiers[0].Arguments.ConvertAll(TranslateExpr));
-                    string callee = node.Modifiers[0].ModifierName.ToString() + "_pre";
+                    if (node.Modifiers[i].Arguments != null)
+                        arguments.AddRange(node.Modifiers[i].Arguments.ConvertAll(TranslateExpr));
+                    string callee = node.Modifiers[i].ModifierName.ToString() + "_pre";
                     BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, null);
                     procBody.AddStatement(callCmd);
                 }
 
                 // insert call to modifier postlude
-                if (context.ModifierToBoogiePostImpl.ContainsKey(node.Modifiers[0].ModifierName.Name))
+                if (context.ModifierToBoogiePostImpl.ContainsKey(node.Modifiers[i].ModifierName.Name))
                 {
                     List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
-                    if (node.Modifiers[0].Arguments != null)
-                        arguments.AddRange(node.Modifiers[0].Arguments.ConvertAll(TranslateExpr));
-                    string callee = node.Modifiers[0].ModifierName.ToString() + "_post";
+                    if (node.Modifiers[i].Arguments != null)
+                        arguments.AddRange(node.Modifiers[i].Arguments.ConvertAll(TranslateExpr));
+                    string callee = node.Modifiers[i].ModifierName.ToString() + "_post";
                     BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, null);
-                    currentPostlude = callCmd;
+                    currentPostlude.AddStatement(callCmd);
                 }
             }
 
@@ -188,7 +190,7 @@ namespace SolToBoogie
             // add modifier postlude call if function body has no return
             if (currentPostlude != null)
             {
-                procBody.AddStatement(currentPostlude);
+                procBody.AppendStmtList(currentPostlude);
                 currentPostlude = null;
             }
 
@@ -578,6 +580,7 @@ namespace SolToBoogie
 
             ContractDefinition contract = context.GetContractByFunction(ctor);
             string procName = contract.Name + "_" + contract.Name;
+
             // no output params for constructor
             List<BoogieVariable> outParams = new List<BoogieVariable>();
             List<BoogieAttribute> attributes = new List<BoogieAttribute>()
@@ -596,10 +599,15 @@ namespace SolToBoogie
 
             List<int> baseContractIds = new List<int>(contract.LinearizedBaseContracts);
             baseContractIds.Reverse();
+
+            //Note that the current derived contract appears as a baseContractId 
             foreach (int id in baseContractIds)
             {
                 ContractDefinition baseContract = context.GetASTNodeById(id) as ContractDefinition;
                 Debug.Assert(baseContract != null);
+
+                // since we are not translating any statements, currentStmtList remains null
+                currentStmtList = new BoogieStmtList();
 
                 string callee = TransUtils.GetCanonicalConstructorName(baseContract) + "_NoBaseCtor";
                 List<BoogieExpr> inputs = new List<BoogieExpr>();
@@ -629,15 +637,31 @@ namespace SolToBoogie
                 }
                 else // no argument for this base constructor
                 {
-                    foreach (BoogieVariable param in inParams)
+                    if (baseContract.Name == contract.Name)
                     {
-                        inputs.Add(new BoogieIdentifierExpr(param.TypedIdent.Name));
+                        // only do this for the derived contract
+                        foreach (BoogieVariable param in inParams)
+                        {
+                            inputs.Add(new BoogieIdentifierExpr(param.TypedIdent.Name));
+                        }
+                    }
+                    else
+                    {
+                        var baseCtr = context.IsConstructorDefined(baseContract) ? context.GetConstructorByContract(baseContract) : null;
+                        Debug.Assert(baseCtr == null || baseCtr.Parameters.Length() ==0, 
+                        $"Base constructor {callee} has empty parameters but not specified in {ctor.Name}...do not handle abstract contracts");
+                        inputs.Add(new BoogieIdentifierExpr("this"));
+                        inputs.Add(new BoogieIdentifierExpr("msgsender_MSG"));
+                        inputs.Add(new BoogieIdentifierExpr("msgvalue_MSG"));
                     }
                 }
                 BoogieCallCmd callCmd = new BoogieCallCmd(callee, inputs, outputs);
+                ctorBody.AppendStmtList(currentStmtList);
                 ctorBody.AddStatement(callCmd);
+                currentStmtList = null;
             }
 
+            localVars.AddRange(boogieToLocalVarsMap[currentBoogieProc]);
             BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, ctorBody);
             context.Program.AddDeclaration(implementation);
         }
@@ -969,7 +993,7 @@ namespace SolToBoogie
                 }
                 else
                 {
-                    currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(currentPostlude));
+                    currentStmtList.AppendStmtList(currentPostlude);
                     currentStmtList.AddStatement(returnCmd);
                 }
             }
@@ -1011,7 +1035,7 @@ namespace SolToBoogie
 
                 if (currentPostlude != null)
                 {
-                    currentStmtList.AddStatement(currentPostlude);
+                    currentStmtList.AppendStmtList(currentPostlude);
                 }
                 // add a return command, in case the original return expr is in the middle of the function body
                 currentStmtList.AddStatement(new BoogieReturnCmd());
@@ -1170,14 +1194,17 @@ namespace SolToBoogie
             currentExpr = null;
             if (expr is FunctionCall && IsTypeCast((FunctionCall) expr))
             {
-                if (((FunctionCall) expr).Expression is ElementaryTypeNameExpression)
-                {
-                    currentExpr = TranslateExpr(((FunctionCall) expr).Arguments[0]);
-                }
-                else
-                {
-                    throw new NotImplementedException("Cannot handle non-elementary type cast");
-                }
+                expr.Accept(this);
+                Debug.Assert(currentExpr != null);
+                // TranslateTypeCast()
+                //if (((FunctionCall) expr).Expression is ElementaryTypeNameExpression)
+                //{
+                //    currentExpr = TranslateExpr(((FunctionCall) expr).Arguments[0]);
+                //}
+                //else
+                //{
+                //    throw new NotImplementedException("Cannot handle non-elementary type cast");
+                //}
             }
             else if(expr is TupleExpression tuple)
             {
@@ -1965,8 +1992,8 @@ namespace SolToBoogie
         {
             Debug.Assert(node.Kind.Equals("typeConversion"));
             Debug.Assert(node.Arguments.Count == 1);
-            Debug.Assert(node.Arguments[0] is Identifier || node.Arguments[0] is MemberAccess || node.Arguments[0] is Literal,
-                "Argument to a typecast has to be an identifier, memberAccess or Literal");
+            Debug.Assert(node.Arguments[0] is Identifier || node.Arguments[0] is MemberAccess || node.Arguments[0] is Literal || node.Arguments[0] is IndexAccess,
+                "Argument to a typecast has to be an identifier, memberAccess, indexAccess or Literal");
 
             // target: lhs := T(expr);
             BoogieExpr exprToCast = TranslateExpr(node.Arguments[0]);
@@ -1985,9 +2012,20 @@ namespace SolToBoogie
                 currentStmtList.AddStatement(new BoogieAssignCmd(lhs, exprToCast));
                 return;
             }
-            else if (node.Expression is ElementaryTypeNameExpression) // cast to elementary types
+            else if (node.Expression is ElementaryTypeNameExpression elemType) // cast to elementary types
             {
-                BoogieStmtList stmtList = new BoogieStmtList();
+                if (elemType.TypeName.Equals("address"))
+                {
+                    //try to do a best-effort to detect address(0) 
+                    if (exprToCast is BoogieLiteralExpr blit)
+                    {
+                        if (blit.ToString().Equals("0"))
+                        {
+                            currentStmtList.AddStatement(new BoogieAssignCmd(lhs, new BoogieIdentifierExpr("null")));
+                            return;
+                        }
+                    }
+                }
                 // lhs := expr;
                 currentStmtList.AddStatement(new BoogieAssignCmd(lhs, exprToCast));
                 return;

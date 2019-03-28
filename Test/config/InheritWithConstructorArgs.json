@@ -1,6 +1,6 @@
 {
     "recursionBound": 8,
     "k": 1,
-    "main": "CorralEntry_DerivedContract",
+    "main": "CorralEntry_Derived2",
     "expectedResult": "Program has no bugs"
 }

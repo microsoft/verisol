@@ -14,7 +14,13 @@ contract A {
         x = x + 2;
     }
 
-    function plusOne(uint b) private onlyGreaterThanTen(b) {
+    modifier GtX(uint a) {
+        require(x > a);
+        _;
+        x = x; //just a dummy post
+    }
+
+    function plusOne(uint b) private GtX(b) onlyGreaterThanTen(b) {
         x = x + 1;
     }
 
