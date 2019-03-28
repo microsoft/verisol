@@ -20,6 +20,9 @@ namespace SolToBoogie
                 Console.WriteLine("Usage: SolToBoogie <relative path to filename.sol> <workingdir> <relative path to outfile.bpl> [options]");
                 Console.WriteLine("\t Options:");
                 Console.WriteLine("\t\t /break: Opens the debugger");
+                Console.WriteLine("\t\t /ignoreMethod:<method>@<contract>: Ignores translatoin of the method within contract, and only generates a declaration");
+                Console.WriteLine("\t\t\t\t multiple such pairs can be specified, ignored set is the union");
+                Console.WriteLine("\t\t\t\t a wild card '*' can be used for method, would mean all the methods of the contract");
                 return;
             }
 
@@ -31,11 +34,22 @@ namespace SolToBoogie
             string solcPath = Path.Combine(workingDirectory, "Tool", solcName);
             SolidityCompiler compiler = new SolidityCompiler();
             CompilerOutput compilerOutput = compiler.Compile(solcPath, filePath);
+            HashSet<Tuple<string, string>> ignoredMethods = new HashSet<Tuple<string, string>>();
 
             if (args.Any(x => x.Equals("/break")))
             {
                 Debugger.Launch();
             }
+            foreach (var arg in args.Where(x => x.StartsWith("/ignoreMethod:")))
+            {
+                Debug.Assert(arg.Contains("@"), $"Error: incorrect use of /ignoreMethod in {arg}");
+                Debug.Assert(arg.LastIndexOf("@") == arg.IndexOf("@"), $"Error: incorrect use of /ignoreMethod in {arg}");
+                var str = arg.Substring("/ignoreMethod:".Length);
+                var method = str.Substring(0, str.IndexOf("@"));
+                var contract = str.Substring(str.IndexOf("@")+1);
+                ignoredMethods.Add(Tuple.Create(method, contract));
+            }
+            Console.WriteLine($"Ignored method/contract pairs ==> \n\t {string.Join(",", ignoredMethods.Select(x => x.Item1 + "@" + x.Item2))}");
 
             if (compilerOutput.ContainsError())
             {
@@ -47,7 +61,7 @@ namespace SolToBoogie
                 AST solidityAST = new AST(compilerOutput, Path.GetDirectoryName(filePath));
 
                 BoogieTranslator translator = new BoogieTranslator();
-                BoogieAST boogieAST = translator.Translate(solidityAST);
+                BoogieAST boogieAST = translator.Translate(solidityAST, ignoredMethods);
 
                 using (var outWriter = new StreamWriter(outFile))
                 {

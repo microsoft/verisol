@@ -150,6 +150,12 @@ namespace SolToBoogie
                 return false;
             }
 
+            // skip if it in ignored set
+            if (context.IsMethodInIgnoredSet(node, currentContract))
+            {
+                Console.WriteLine($"Warning!: Ignoring method {node.Name} in contract {currentContract.Name} specified using /ignoreMethod:");
+                return false;
+            }
             // local variables and function body
             boogieToLocalVarsMap[currentBoogieProc] = new List<BoogieVariable>();
 

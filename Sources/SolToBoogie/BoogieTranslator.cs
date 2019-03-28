@@ -2,16 +2,23 @@
 // Licensed under the MIT license.
 namespace SolToBoogie
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.IO;
+    using System.Linq;
+    using System.Runtime.InteropServices;
     using BoogieAST;
     using SolidityAST;
 
     public class BoogieTranslator
     {
-        public BoogieAST Translate(AST solidityAST)
+            // set of method@contract pairs whose translatin is skipped
+        public BoogieAST Translate(AST solidityAST, HashSet<Tuple<string, string>> ignoredMethods)
         {
             SourceUnitList sourceUnits = solidityAST.GetSourceUnits();
 
-            TranslatorContext context = new TranslatorContext();
+            TranslatorContext context = new TranslatorContext(ignoredMethods);
             context.IdToNodeMap = solidityAST.GetIdToNodeMap();
             context.SourceDirectory = solidityAST.SourceDirectory;
 
