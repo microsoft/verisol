@@ -20,7 +20,7 @@ namespace SolToBoogie
                 Console.WriteLine("Usage: SolToBoogie <relative path to filename.sol> <workingdir> <relative path to outfile.bpl> [options]");
                 Console.WriteLine("\t Options:");
                 Console.WriteLine("\t\t /break: Opens the debugger");
-                Console.WriteLine("\t\t /ignoreMethod:<method>@<contract>: Ignores translatoin of the method within contract, and only generates a declaration");
+                Console.WriteLine("\t\t /ignoreMethod:<method>@<contract>: Ignores translation of the method within contract, and only generates a declaration");
                 Console.WriteLine("\t\t\t\t multiple such pairs can be specified, ignored set is the union");
                 Console.WriteLine("\t\t\t\t a wild card '*' can be used for method, would mean all the methods of the contract");
                 return;
@@ -36,11 +36,17 @@ namespace SolToBoogie
             CompilerOutput compilerOutput = compiler.Compile(solcPath, filePath);
             HashSet<Tuple<string, string>> ignoredMethods = new HashSet<Tuple<string, string>>();
 
-            if (args.Any(x => x.Equals("/break")))
+            // Issue with run_verisol_win.cmd it passes "/ignoreMethod:a@b /ignoreMethod:c@d .." as a single string
+            var splitArgs = new List<string>();
+            args.Select(arg => arg.Split(" "))
+            .ToList()
+            .ForEach(a => a.ToList().ForEach(b => splitArgs.Add(b)));
+
+            if (splitArgs.Any(x => x.Equals("/break")))
             {
                 Debugger.Launch();
             }
-            foreach (var arg in args.Where(x => x.StartsWith("/ignoreMethod:")))
+            foreach (var arg in splitArgs.Where(x => x.StartsWith("/ignoreMethod:")))
             {
                 Debug.Assert(arg.Contains("@"), $"Error: incorrect use of /ignoreMethod in {arg}");
                 Debug.Assert(arg.LastIndexOf("@") == arg.IndexOf("@"), $"Error: incorrect use of /ignoreMethod in {arg}");
