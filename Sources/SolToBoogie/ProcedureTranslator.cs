@@ -154,64 +154,66 @@ namespace SolToBoogie
             if (context.IsMethodInIgnoredSet(node, currentContract))
             {
                 Console.WriteLine($"Warning!: Ignoring method {node.Name} in contract {currentContract.Name} specified using /ignoreMethod:");
-                return false;
             }
-            // local variables and function body
-            boogieToLocalVarsMap[currentBoogieProc] = new List<BoogieVariable>();
-
-            // TODO: each local array variable should be distinct and 0 initialized
-
-
-            BoogieStmtList procBody = new BoogieStmtList();
-            currentPostlude = new BoogieStmtList();
-
-            // if (node.Modifiers.Count == 1)
-            for (int i = 0; i < node.Modifiers.Count; ++ i)
+            else
             {
-                // insert call to modifier prelude
-                if (context.ModifierToBoogiePreImpl.ContainsKey(node.Modifiers[i].ModifierName.Name))
+                // local variables and function body
+                boogieToLocalVarsMap[currentBoogieProc] = new List<BoogieVariable>();
+
+                // TODO: each local array variable should be distinct and 0 initialized
+
+
+                BoogieStmtList procBody = new BoogieStmtList();
+                currentPostlude = new BoogieStmtList();
+
+                // if (node.Modifiers.Count == 1)
+                for (int i = 0; i < node.Modifiers.Count; ++i)
                 {
-                    List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
-                    if (node.Modifiers[i].Arguments != null)
-                        arguments.AddRange(node.Modifiers[i].Arguments.ConvertAll(TranslateExpr));
-                    string callee = node.Modifiers[i].ModifierName.ToString() + "_pre";
-                    BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, null);
-                    procBody.AddStatement(callCmd);
+                    // insert call to modifier prelude
+                    if (context.ModifierToBoogiePreImpl.ContainsKey(node.Modifiers[i].ModifierName.Name))
+                    {
+                        List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
+                        if (node.Modifiers[i].Arguments != null)
+                            arguments.AddRange(node.Modifiers[i].Arguments.ConvertAll(TranslateExpr));
+                        string callee = node.Modifiers[i].ModifierName.ToString() + "_pre";
+                        BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, null);
+                        procBody.AddStatement(callCmd);
+                    }
+
+                    // insert call to modifier postlude
+                    if (context.ModifierToBoogiePostImpl.ContainsKey(node.Modifiers[i].ModifierName.Name))
+                    {
+                        List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
+                        if (node.Modifiers[i].Arguments != null)
+                            arguments.AddRange(node.Modifiers[i].Arguments.ConvertAll(TranslateExpr));
+                        string callee = node.Modifiers[i].ModifierName.ToString() + "_post";
+                        BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, null);
+                        currentPostlude.AddStatement(callCmd);
+                    }
                 }
 
-                // insert call to modifier postlude
-                if (context.ModifierToBoogiePostImpl.ContainsKey(node.Modifiers[i].ModifierName.Name))
+                procBody.AppendStmtList(TranslateStatement(node.Body));
+
+                // add modifier postlude call if function body has no return
+                if (currentPostlude != null)
                 {
-                    List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
-                    if (node.Modifiers[i].Arguments != null)
-                        arguments.AddRange(node.Modifiers[i].Arguments.ConvertAll(TranslateExpr));
-                    string callee = node.Modifiers[i].ModifierName.ToString() + "_post";
-                    BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, null);
-                    currentPostlude.AddStatement(callCmd);
+                    procBody.AppendStmtList(currentPostlude);
+                    currentPostlude = null;
                 }
+
+                // initialization statements
+                if (node.IsConstructor)
+                {
+                    BoogieStmtList initStmts = GenerateInitializationStmts(currentContract);
+                    initStmts.AppendStmtList(procBody);
+                    procBody = initStmts;
+                }
+
+                List<BoogieVariable> localVars = boogieToLocalVarsMap[currentBoogieProc];
+
+                BoogieImplementation impelementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
+                context.Program.AddDeclaration(impelementation);
             }
-
-            procBody.AppendStmtList(TranslateStatement(node.Body));
-
-            // add modifier postlude call if function body has no return
-            if (currentPostlude != null)
-            {
-                procBody.AppendStmtList(currentPostlude);
-                currentPostlude = null;
-            }
-
-            // initialization statements
-            if (node.IsConstructor)
-            {
-                BoogieStmtList initStmts = GenerateInitializationStmts(currentContract);
-                initStmts.AppendStmtList(procBody);
-                procBody = initStmts;
-            }
-
-            List<BoogieVariable> localVars = boogieToLocalVarsMap[currentBoogieProc];
-
-            BoogieImplementation impelementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
-            context.Program.AddDeclaration(impelementation);
 
             // generate real constructors
             if (node.IsConstructor)
@@ -599,77 +601,86 @@ namespace SolToBoogie
             BoogieProcedure procedure = new BoogieProcedure(procName, inParams, outParams, attributes);
             context.Program.AddDeclaration(procedure);
 
-            // no local variables for constructor
-            List<BoogieVariable> localVars = new List<BoogieVariable>();
-            BoogieStmtList ctorBody = new BoogieStmtList();
-
-            List<int> baseContractIds = new List<int>(contract.LinearizedBaseContracts);
-            baseContractIds.Reverse();
-
-            //Note that the current derived contract appears as a baseContractId 
-            foreach (int id in baseContractIds)
+            // skip if it in ignored set
+            if (context.IsMethodInIgnoredSet(ctor, currentContract))
             {
-                ContractDefinition baseContract = context.GetASTNodeById(id) as ContractDefinition;
-                Debug.Assert(baseContract != null);
+                Console.WriteLine($"Warning!: Ignoring constructor {ctor.Name} in contract {currentContract.Name} specified using /ignoreMethod:");
+            }
+            else
+            {
 
-                // since we are not translating any statements, currentStmtList remains null
-                currentStmtList = new BoogieStmtList();
+                // no local variables for constructor
+                List<BoogieVariable> localVars = new List<BoogieVariable>();
+                BoogieStmtList ctorBody = new BoogieStmtList();
 
-                string callee = TransUtils.GetCanonicalConstructorName(baseContract) + "_NoBaseCtor";
-                List<BoogieExpr> inputs = new List<BoogieExpr>();
-                List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
+                List<int> baseContractIds = new List<int>(contract.LinearizedBaseContracts);
+                baseContractIds.Reverse();
 
-                InheritanceSpecifier inheritanceSpecifier = GetInheritanceSpecifierOfBase(contract, baseContract);
-                ModifierInvocation modifierInvocation = GetModifierInvocationOfBase(ctor, baseContract);
-                if (inheritanceSpecifier != null)
+                //Note that the current derived contract appears as a baseContractId 
+                foreach (int id in baseContractIds)
                 {
-                    inputs.Add(new BoogieIdentifierExpr("this"));
-                    inputs.Add(new BoogieIdentifierExpr("msgsender_MSG"));
-                    inputs.Add(new BoogieIdentifierExpr("msgvalue_MSG"));
-                    foreach (Expression argument in inheritanceSpecifier.Arguments)
+                    ContractDefinition baseContract = context.GetASTNodeById(id) as ContractDefinition;
+                    Debug.Assert(baseContract != null);
+
+                    // since we are not translating any statements, currentStmtList remains null
+                    currentStmtList = new BoogieStmtList();
+
+                    string callee = TransUtils.GetCanonicalConstructorName(baseContract) + "_NoBaseCtor";
+                    List<BoogieExpr> inputs = new List<BoogieExpr>();
+                    List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
+
+                    InheritanceSpecifier inheritanceSpecifier = GetInheritanceSpecifierOfBase(contract, baseContract);
+                    ModifierInvocation modifierInvocation = GetModifierInvocationOfBase(ctor, baseContract);
+                    if (inheritanceSpecifier != null)
                     {
-                        inputs.Add(TranslateExpr(argument));
-                    }
-                }
-                else if (modifierInvocation != null)
-                {
-                    inputs.Add(new BoogieIdentifierExpr("this"));
-                    inputs.Add(new BoogieIdentifierExpr("msgsender_MSG"));
-                    inputs.Add(new BoogieIdentifierExpr("msgvalue_MSG"));
-                    foreach (Expression argument in modifierInvocation.Arguments)
-                    {
-                        inputs.Add(TranslateExpr(argument));
-                    }
-                }
-                else // no argument for this base constructor
-                {
-                    if (baseContract.Name == contract.Name)
-                    {
-                        // only do this for the derived contract
-                        foreach (BoogieVariable param in inParams)
-                        {
-                            inputs.Add(new BoogieIdentifierExpr(param.TypedIdent.Name));
-                        }
-                    }
-                    else
-                    {
-                        var baseCtr = context.IsConstructorDefined(baseContract) ? context.GetConstructorByContract(baseContract) : null;
-                        Debug.Assert(baseCtr == null || baseCtr.Parameters.Length() ==0, 
-                        $"Base constructor {callee} has empty parameters but not specified in {ctor.Name}...do not handle abstract contracts");
                         inputs.Add(new BoogieIdentifierExpr("this"));
                         inputs.Add(new BoogieIdentifierExpr("msgsender_MSG"));
                         inputs.Add(new BoogieIdentifierExpr("msgvalue_MSG"));
+                        foreach (Expression argument in inheritanceSpecifier.Arguments)
+                        {
+                            inputs.Add(TranslateExpr(argument));
+                        }
                     }
+                    else if (modifierInvocation != null)
+                    {
+                        inputs.Add(new BoogieIdentifierExpr("this"));
+                        inputs.Add(new BoogieIdentifierExpr("msgsender_MSG"));
+                        inputs.Add(new BoogieIdentifierExpr("msgvalue_MSG"));
+                        foreach (Expression argument in modifierInvocation.Arguments)
+                        {
+                            inputs.Add(TranslateExpr(argument));
+                        }
+                    }
+                    else // no argument for this base constructor
+                    {
+                        if (baseContract.Name == contract.Name)
+                        {
+                            // only do this for the derived contract
+                            foreach (BoogieVariable param in inParams)
+                            {
+                                inputs.Add(new BoogieIdentifierExpr(param.TypedIdent.Name));
+                            }
+                        }
+                        else
+                        {
+                            var baseCtr = context.IsConstructorDefined(baseContract) ? context.GetConstructorByContract(baseContract) : null;
+                            Debug.Assert(baseCtr == null || baseCtr.Parameters.Length() == 0,
+                            $"Base constructor {callee} has empty parameters but not specified in {ctor.Name}...do not handle abstract contracts");
+                            inputs.Add(new BoogieIdentifierExpr("this"));
+                            inputs.Add(new BoogieIdentifierExpr("msgsender_MSG"));
+                            inputs.Add(new BoogieIdentifierExpr("msgvalue_MSG"));
+                        }
+                    }
+                    BoogieCallCmd callCmd = new BoogieCallCmd(callee, inputs, outputs);
+                    ctorBody.AppendStmtList(currentStmtList);
+                    ctorBody.AddStatement(callCmd);
+                    currentStmtList = null;
                 }
-                BoogieCallCmd callCmd = new BoogieCallCmd(callee, inputs, outputs);
-                ctorBody.AppendStmtList(currentStmtList);
-                ctorBody.AddStatement(callCmd);
-                currentStmtList = null;
-            }
 
-            localVars.AddRange(boogieToLocalVarsMap[currentBoogieProc]);
-            BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, ctorBody);
-            context.Program.AddDeclaration(implementation);
+                localVars.AddRange(boogieToLocalVarsMap[currentBoogieProc]);
+                BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, ctorBody);
+                context.Program.AddDeclaration(implementation);
+            }
         }
 
         // get the inheritance specifier of `baseContract' in contract definition `contract' if it specifies arguments

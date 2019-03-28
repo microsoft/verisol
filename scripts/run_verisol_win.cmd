@@ -3,9 +3,9 @@
 REM ************ README starts ***********************************
 REM A helper script to run verisol end to end on Windows
 REM Usage: 
-REM    Example: script.cmd poa AdminValidatorSet 8 bounded
-REM    Example: script.cmd poa AdminValidatorSet 8 proof
-REM    Example: script.cmd poa removeAdmin_AdminSet 8 audit
+REM    Example: script.cmd poa AdminValidatorSet 8 bounded ["<args to SolToBoogie>"]
+REM    Example: script.cmd poa AdminValidatorSet 8 proof ["<args to SolToBoogie>"]
+REM    Example: script.cmd poa removeAdmin_AdminSet 8 audit ["<args to SolToBoogie>"]
  
 REM Set these variables in command line (NOT IN THIS FILE) before running 
 REM set VERISOL_ROOT_DIR=d:\verisol //Top-level verisol sources root
@@ -50,7 +50,8 @@ if NOT EXIST %BINARYDEPENDENCIES% (
 REM Generate BPL 
 echo Compiling sol files and generating boogie files ....
 @echo on
-dotnet %VERISOL_ROOT_DIR%\Sources\SolToBoogie\bin\Debug\netcoreapp2.0\SolToBoogie.dll %1.sol %VERISOL_SOLC_DIR% out.bpl
+echo Options to SolToBoogie "%5"
+dotnet %VERISOL_ROOT_DIR%\Sources\SolToBoogie\bin\Debug\netcoreapp2.0\SolToBoogie.dll %1.sol %VERISOL_SOLC_DIR% out.bpl %5
 @echo off
 
 if NOT EXIST out.bpl (
