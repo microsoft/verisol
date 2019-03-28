@@ -625,7 +625,8 @@ namespace SolToBoogie
                     // since we are not translating any statements, currentStmtList remains null
                     currentStmtList = new BoogieStmtList();
 
-                    string callee = TransUtils.GetCanonicalConstructorName(baseContract) + "_NoBaseCtor";
+                    string callee = TransUtils.GetCanonicalConstructorName(baseContract) + "_NoBaseCtor" ;
+                    
                     List<BoogieExpr> inputs = new List<BoogieExpr>();
                     List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
 
@@ -663,9 +664,16 @@ namespace SolToBoogie
                         }
                         else
                         {
+
+                            // Do we call the constructor or assume that it is invoked in teh base contract?
+                            /* Assume it is invoked in the constructor for the base contract if the parameter list is non-empty (HACK) */ 
                             var baseCtr = context.IsConstructorDefined(baseContract) ? context.GetConstructorByContract(baseContract) : null;
-                            Debug.Assert(baseCtr == null || baseCtr.Parameters.Length() == 0,
-                            $"Base constructor {callee} has empty parameters but not specified in {ctor.Name}...do not handle abstract contracts");
+                            if (baseCtr != null && baseCtr.Parameters.Length() > 0)
+                            {
+                                Console.WriteLine($"Warning!!: Base constructor { callee} has non-empty parameters but not specified in { ctor.Name}...assuming it is invoked from a base contract");
+                                currentStmtList = null;
+                                continue;
+                            }
                             inputs.Add(new BoogieIdentifierExpr("this"));
                             inputs.Add(new BoogieIdentifierExpr("msgsender_MSG"));
                             inputs.Add(new BoogieIdentifierExpr("msgvalue_MSG"));
