@@ -1943,7 +1943,7 @@ namespace SolToBoogie
             // optimization: if there is only 1 type that we replace the if with a assume
             if (dynamicTypeToFuncMap.Keys.Count == 1)
             {
-                currentStmtList.AddStatement(new BoogieAssumeCmd(lastGuard));
+                // currentStmtList.AddStatement(new BoogieAssumeCmd(lastGuard));
                 currentStmtList.AddStatement(lastCallCmd);
             }
             else
