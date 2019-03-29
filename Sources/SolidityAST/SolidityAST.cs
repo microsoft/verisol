@@ -10,6 +10,8 @@ namespace SolidityAST
     using Newtonsoft.Json.Converters;
     using JsonSubTypes;
     using System.IO;
+    using System.Linq;
+
     public enum EnumContractKind
     {
         CONTRACT,
@@ -1610,7 +1612,9 @@ namespace SolidityAST
             {
                 if (Components != null)
                 {
-                    Utils.AcceptList(Components, visitor);
+                    //HACK: to support (x, y, _) we need to skip null
+                    List<Expression> nonNullComponents = Components.Where(x => x != null).ToList();
+                    Utils.AcceptList(/*Components*/ nonNullComponents, visitor);
                 }
             }
             visitor.EndVisit(this);

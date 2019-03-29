@@ -5,6 +5,7 @@ namespace SolToBoogie
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using BoogieAST;
     using SolidityAST;
 
@@ -76,7 +77,10 @@ namespace SolToBoogie
         // num of fresh identifiers, should be incremented when making new fresh id
         private int freshIdentifierCount = 0;
 
-        public TranslatorContext()
+        // methods whose translation has to be skipped
+        private HashSet<Tuple<string, string>> IgnoreMethods;
+
+        public TranslatorContext(HashSet<Tuple<string, string>> ignoreMethods)
         {
             Program = new BoogieProgram();
             ContractDefinitions = new HashSet<ContractDefinition>();
@@ -101,6 +105,7 @@ namespace SolToBoogie
             ModifierToBoogiePostProc = new Dictionary<string, BoogieProcedure>();
             ModifierToBoogiePreImpl = new Dictionary<string, BoogieImplementation>();
             ModifierToBoogiePostImpl = new Dictionary<string, BoogieImplementation>();
+            IgnoreMethods = ignoreMethods;
         }
 
         public bool HasASTNodeId(int id)
@@ -489,6 +494,11 @@ namespace SolToBoogie
             {
                 ModifierToBoogiePostImpl[modifier] = procedure;
             }
+        }
+
+        public bool IsMethodInIgnoredSet(FunctionDefinition func, ContractDefinition contract)
+        {
+            return IgnoreMethods.Any(x => x.Item2.Equals(contract.Name) && (x.Item1.Equals("*") || x.Item1.Equals(func.Name))) ;
         }
     }
 }

@@ -121,7 +121,7 @@ namespace SolToBoogieTest
 
             // translate Solidity to Boogie
             BoogieTranslator translator = new BoogieTranslator();
-            BoogieAST boogieAST = translator.Translate(solidityAST);
+            BoogieAST boogieAST = translator.Translate(solidityAST, new HashSet<Tuple<string, string>>());
 
             // dump the Boogie program to a file
             using (var outWriter = new StreamWriter(outFile))
