@@ -237,6 +237,8 @@ namespace SolToBoogie
                 if (funcDef.IsConstructor) continue;
                 if (funcDef.Visibility == EnumVisibility.PUBLIC || funcDef.Visibility == EnumVisibility.EXTERNAL)
                 {
+                    if (funcDef.StateMutability == EnumStateMutability.VIEW || funcDef.StateMutability == EnumStateMutability.PURE)
+                        continue; 
                     publicFuncDefs.Add(funcDef);
                 }
             }
