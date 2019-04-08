@@ -68,7 +68,7 @@ namespace SolToBoogie
         {
             foreach(var member in structDefn.Members)
             {
-                Debug.Assert(!member.TypeDescriptions.TypeString.StartsWith("struct "),
+                VeriSolAssert(!member.TypeDescriptions.TypeString.StartsWith("struct "),
                     "Do no handle nested structs yet!");
                 var type = TransUtils.GetBoogieTypeFromSolidityTypeName(member.TypeName);
                 var mapType = new BoogieMapType(BoogieType.Ref, type);
@@ -79,7 +79,7 @@ namespace SolToBoogie
 
         private void TranslateStateVarDeclaration(VariableDeclaration varDecl)
         {
-            Debug.Assert(varDecl.StateVariable, $"{varDecl} is not a state variable");
+            VeriSolAssert(varDecl.StateVariable, $"{varDecl} is not a state variable");
 
             string name = TransUtils.GetCanonicalStateVariableName(varDecl, context);
             BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(varDecl.TypeName);
@@ -108,8 +108,8 @@ namespace SolToBoogie
 
         public override bool Visit(FunctionDefinition node)
         {
-            // Debug.Assert(node.IsConstructor || node.Modifiers.Count <= 1, "Multiple Modifiers are not supported yet");
-            Debug.Assert(currentContract != null);
+            // VeriSolAssert(node.IsConstructor || node.Modifiers.Count <= 1, "Multiple Modifiers are not supported yet");
+            VeriSolAssert(currentContract != null);
 
             currentFunction = node;
 
@@ -550,7 +550,7 @@ namespace SolToBoogie
             foreach (int id in baseContractIds)
             {
                 ContractDefinition baseContract = context.GetASTNodeById(id) as ContractDefinition;
-                Debug.Assert(baseContract != null);
+                VeriSolAssert(baseContract != null);
 
                 string callee = TransUtils.GetCanonicalConstructorName(baseContract) + "_NoBaseCtor";
                 List<BoogieExpr> inputs = new List<BoogieExpr>();
@@ -584,7 +584,7 @@ namespace SolToBoogie
         // generate actual constructor procedures that invoke constructors without base in linearized order
         private void GenerateConstructorWithBaseCalls(FunctionDefinition ctor, List<BoogieVariable> inParams)
         {
-            Debug.Assert(ctor.IsConstructor, $"{ctor.Name} is not a constructor");
+            VeriSolAssert(ctor.IsConstructor, $"{ctor.Name} is not a constructor");
 
             ContractDefinition contract = context.GetContractByFunction(ctor);
             string procName = contract.Name + "_" + contract.Name;
@@ -620,7 +620,7 @@ namespace SolToBoogie
                 foreach (int id in baseContractIds)
                 {
                     ContractDefinition baseContract = context.GetASTNodeById(id) as ContractDefinition;
-                    Debug.Assert(baseContract != null);
+                    VeriSolAssert(baseContract != null);
 
                     // since we are not translating any statements, currentStmtList remains null
                     currentStmtList = new BoogieStmtList();
@@ -767,7 +767,7 @@ namespace SolToBoogie
             //new scope
             currentStmtList = new BoogieStmtList(); // reset before starting to translate a Statement
             node.Accept(this);
-            Debug.Assert(currentStmtList != null);
+            VeriSolAssert(currentStmtList != null);
 
             // add source file path and line number
             BoogieAssertCmd annotationCmd = TransUtils.GenerateSourceInfoAnnotation(node, context);
@@ -809,7 +809,7 @@ namespace SolToBoogie
             // handle the initial value of variable declaration
             if (node.InitialValue != null)
             {
-                Debug.Assert(node.Declarations.Count == 1, "Invalid multiple variable declarations");
+                VeriSolAssert(node.Declarations.Count == 1, "Invalid multiple variable declarations");
 
                 // de-sugar to variable declaration and an assignment
                 VariableDeclaration varDecl = node.Declarations[0];
@@ -879,36 +879,36 @@ namespace SolToBoogie
 
                 if (IsContractConstructor(funcCall))
                 {
-                    Debug.Assert(!isTupleAssignment, "Not expecting a tuple for Constructors");
+                    VeriSolAssert(!isTupleAssignment, "Not expecting a tuple for Constructors");
                     TranslateNewStatement(funcCall, tmpVars[0]);
                 }
                 else if (IsStructConstructor(funcCall))
                 {
-                    Debug.Assert(!isTupleAssignment, "Not expecting a tuple for Constructors");
+                    VeriSolAssert(!isTupleAssignment, "Not expecting a tuple for Constructors");
                     TranslateStructConstructor(funcCall, tmpVars[0]);
                 }
                 else if (IsKeccakFunc(funcCall))
                 {
-                    Debug.Assert(!isTupleAssignment, "Not expecting a tuple for Keccak256");
+                    VeriSolAssert(!isTupleAssignment, "Not expecting a tuple for Keccak256");
                     TranslateKeccakFuncCall(funcCall, lhs[0]); //this is not a procedure call in Boogie
                     usedTmpVar = false;
                 }
                 else if (IsAbiEncodePackedFunc(funcCall))
                 {
                     TranslateAbiEncodedFuncCall(funcCall, tmpVars[0]); //this is not a procedure call in Boogie
-                    Debug.Assert(!isTupleAssignment, "Not expecting a tuple for abi.encodePacked");
+                    VeriSolAssert(!isTupleAssignment, "Not expecting a tuple for abi.encodePacked");
                     usedTmpVar = false;
                 }
                 else if (IsTypeCast(funcCall))
                 {
                     // assume the type cast is used as: obj = C(var);
-                    Debug.Assert(!isTupleAssignment, "Not expecting a tuple for type cast");
+                    VeriSolAssert(!isTupleAssignment, "Not expecting a tuple for type cast");
                     TranslateTypeCast(funcCall, tmpVars[0]); //this is not a procedure call in Boogie
                     usedTmpVar = false;
                 }
                 else // normal function calls
                 {
-                    Debug.Assert(tmpVars is List<BoogieIdentifierExpr>, $"tmpVar has to be a list of Boogie identifiers: {tmpVars}");
+                    VeriSolAssert(tmpVars is List<BoogieIdentifierExpr>, $"tmpVar has to be a list of Boogie identifiers: {tmpVars}");
                     TranslateFunctionCalls(funcCall, tmpVars);
                 }
                 if (!isTupleAssignment)
@@ -1031,7 +1031,7 @@ namespace SolToBoogie
                     //Tuple
                     if (!(retExpr is BoogieTupleExpr))
                     {
-                        Debug.Assert(false, "Expecting a Boogie tuple expression here");
+                        VeriSolAssert(false, "Expecting a Boogie tuple expression here");
                     }
                     var bTupleExpr = retExpr as BoogieTupleExpr;
 
@@ -1153,7 +1153,7 @@ namespace SolToBoogie
             if (node.Expression is UnaryOperation unaryOperation)
             {
                 // only handle increment and decrement operators in a separate statement
-                Debug.Assert(!(unaryOperation.SubExpression is UnaryOperation));
+                VeriSolAssert(!(unaryOperation.SubExpression is UnaryOperation));
 
                 BoogieExpr lhs = TranslateExpr(unaryOperation.SubExpression);
                 if (unaryOperation.Operator.Equals("++"))
@@ -1220,7 +1220,7 @@ namespace SolToBoogie
             if (expr is FunctionCall && IsTypeCast((FunctionCall) expr))
             {
                 expr.Accept(this);
-                Debug.Assert(currentExpr != null);
+                VeriSolAssert(currentExpr != null);
                 // TranslateTypeCast()
                 //if (((FunctionCall) expr).Expression is ElementaryTypeNameExpression)
                 //{
@@ -1237,7 +1237,7 @@ namespace SolToBoogie
                 foreach(var e in tuple.Components)
                 {
                     e.Accept(this);
-                    Debug.Assert(currentExpr != null);
+                    VeriSolAssert(currentExpr != null);
                     transArgs.Add(currentExpr);
                 }
                 currentExpr = new BoogieTupleExpr(transArgs);
@@ -1245,7 +1245,7 @@ namespace SolToBoogie
             else
             {
                 expr.Accept(this);
-                Debug.Assert(currentExpr != null);
+                VeriSolAssert(currentExpr != null);
             }
             return currentExpr;
         }
@@ -1304,9 +1304,9 @@ namespace SolToBoogie
             }
             else // explicitly defined identifiers
             {
-                Debug.Assert(context.HasASTNodeId(node.ReferencedDeclaration), $"Unknown node: {node}");
+                VeriSolAssert(context.HasASTNodeId(node.ReferencedDeclaration), $"Unknown node: {node}");
                 VariableDeclaration varDecl = context.GetASTNodeById(node.ReferencedDeclaration) as VariableDeclaration;
-                Debug.Assert(varDecl != null);
+                VeriSolAssert(varDecl != null);
 
                 if (varDecl.StateVariable)
                 {
@@ -1338,7 +1338,7 @@ namespace SolToBoogie
             // only structs will need to use x.f.g notation, since 
             // one can only access functions of nested contracts
             // RESTRICTION: only handle e.f where e is Identifier | IndexExpr | FunctionCall
-            Debug.Assert(node.Expression is Identifier || node.Expression is IndexAccess || node.Expression is FunctionCall,
+            VeriSolAssert(node.Expression is Identifier || node.Expression is IndexAccess || node.Expression is FunctionCall,
                 $"Only handle non-nested structures, found {node.Expression.ToString()}");
             if (node.Expression.TypeDescriptions.TypeString.StartsWith("struct "))
             {
@@ -1379,7 +1379,7 @@ namespace SolToBoogie
                     return false;
                 }
 
-                Debug.Assert(context.HasASTNodeId(identifier.ReferencedDeclaration), $"Unknown node: {identifier}");
+                VeriSolAssert(context.HasASTNodeId(identifier.ReferencedDeclaration), $"Unknown node: {identifier}");
                 ASTNode refDecl = context.GetASTNodeById(identifier.ReferencedDeclaration);
 
                 if (refDecl is EnumDefinition)
@@ -1401,7 +1401,7 @@ namespace SolToBoogie
 
         private BoogieExpr TranslateArrayLength(MemberAccess node)
         {
-            Debug.Assert(node.MemberName.Equals("length"));
+            VeriSolAssert(node.MemberName.Equals("length"));
 
             BoogieExpr indexExpr = TranslateExpr(node.Expression);
             var mapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("Length"), indexExpr);
@@ -1410,7 +1410,7 @@ namespace SolToBoogie
 
         public override bool Visit(FunctionCall node)
         {
-            // Debug.Assert(!(node.Expression is NewExpression), $"new expressions should be handled in assignment");
+            // VeriSolAssert(!(node.Expression is NewExpression), $"new expressions should be handled in assignment");
             if (node.Expression is NewExpression)
             {
                 BoogieIdentifierExpr tmpVarExpr = MkNewLocalVariableForFunctionReturn(node);
@@ -1423,21 +1423,21 @@ namespace SolToBoogie
 
             if (functionName.Equals("assert"))
             {
-                Debug.Assert(node.Arguments.Count == 1);
+                VeriSolAssert(node.Arguments.Count == 1);
                 BoogieExpr predicate = TranslateExpr(node.Arguments[0]);
                 BoogieAssertCmd assertCmd = new BoogieAssertCmd(predicate);
                 currentStmtList.AddStatement(assertCmd);
             }
             else if (functionName.Equals("require"))
             {
-                Debug.Assert(node.Arguments.Count == 1 || node.Arguments.Count == 2);
+                VeriSolAssert(node.Arguments.Count == 1 || node.Arguments.Count == 2);
                 BoogieExpr predicate = TranslateExpr(node.Arguments[0]);
                 BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(predicate);
                 currentStmtList.AddStatement(assumeCmd);
             }
             else if (functionName.Equals("revert"))
             {
-                Debug.Assert(node.Arguments.Count == 0 || node.Arguments.Count == 1);
+                VeriSolAssert(node.Arguments.Count == 0 || node.Arguments.Count == 1);
                 BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(new BoogieLiteralExpr(false));
                 currentStmtList.AddStatement(assumeCmd);
             }
@@ -1457,7 +1457,7 @@ namespace SolToBoogie
                     TranslateStructConstructor(node, tmpVarExpr);
                 } else
                 {
-                    Debug.Assert(false, $"Unexpected implicit function {node.ToString()}");
+                    VeriSolAssert(false, $"Unexpected implicit function {node.ToString()}");
                 }
 
                 currentExpr = tmpVarExpr;
@@ -1612,13 +1612,13 @@ namespace SolToBoogie
 
         private void TranslateNewStatement(FunctionCall node, BoogieExpr lhs)
         {
-            Debug.Assert(node.Expression is NewExpression);
+            VeriSolAssert(node.Expression is NewExpression);
             NewExpression newExpr = node.Expression as NewExpression;
-            Debug.Assert(newExpr.TypeName is UserDefinedTypeName);
+            VeriSolAssert(newExpr.TypeName is UserDefinedTypeName);
             UserDefinedTypeName udt = newExpr.TypeName as UserDefinedTypeName;
 
             ContractDefinition contract = context.GetASTNodeById(udt.ReferencedDeclaration) as ContractDefinition;
-            Debug.Assert(contract != null);
+            VeriSolAssert(contract != null);
 
             // define a local variable to temporarily hold the object
             BoogieTypedIdent freshAllocTmpId = context.MakeFreshTypedIdent(BoogieType.Ref);
@@ -1731,7 +1731,7 @@ namespace SolToBoogie
             string functionName = TransUtils.GetFuncNameFromFunctionCall(node);
             if (functionName.Equals("push"))
             {
-                Debug.Assert(node.Expression is MemberAccess);
+                VeriSolAssert(node.Expression is MemberAccess);
                 MemberAccess memberAccess = node.Expression as MemberAccess;
                 return MapArrayHelper.IsArrayTypeString(memberAccess.Expression.TypeDescriptions.TypeString);
             }
@@ -1740,8 +1740,8 @@ namespace SolToBoogie
 
         private void TranslateDynamicArrayPush(FunctionCall node)
         {
-            Debug.Assert(node.Expression is MemberAccess);
-            Debug.Assert(node.Arguments.Count == 1);
+            VeriSolAssert(node.Expression is MemberAccess);
+            VeriSolAssert(node.Arguments.Count == 1);
 
             MemberAccess memberAccess = node.Expression as MemberAccess;
             BoogieExpr receiver = TranslateExpr(memberAccess.Expression);
@@ -1818,7 +1818,7 @@ namespace SolToBoogie
 
         private void TranslateExternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
-            Debug.Assert(node.Expression is MemberAccess, $"Expecting a member access expression here {node.Expression.ToString()}");
+            VeriSolAssert(node.Expression is MemberAccess, $"Expecting a member access expression here {node.Expression.ToString()}");
             MemberAccess memberAccess = node.Expression as MemberAccess;
             BoogieExpr receiver = TranslateExpr(memberAccess.Expression);
             BoogieTypedIdent msgValueId = context.MakeFreshTypedIdent(BoogieType.Int);
@@ -1902,7 +1902,7 @@ namespace SolToBoogie
                 BoogieExpr rhs = new BoogieIdentifierExpr(contractDefn.Name);
                 BoogieExpr guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lhs, rhs);
                 currentStmtList.AddStatement(new BoogieAssumeCmd(guard));
-                Debug.Assert(outParams.Count == 1, $"Do not support getters for tuples yet {node.ToString()} ");
+                VeriSolAssert(outParams.Count == 1, $"Do not support getters for tuples yet {node.ToString()} ");
                 string varMapName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
                 BoogieMapSelect mapSelect = new BoogieMapSelect(new BoogieIdentifierExpr(varMapName), arguments[0]);
                 currentStmtList.AddStatement(new BoogieAssignCmd(outParams[0], mapSelect));
@@ -1911,9 +1911,9 @@ namespace SolToBoogie
 
             Dictionary<ContractDefinition, FunctionDefinition> dynamicTypeToFuncMap;
             string signature = TransUtils.InferFunctionSignature(context, node);
-            Debug.Assert(context.HasFuncSignature(signature), $"Cannot find signature: {signature}");
+            VeriSolAssert(context.HasFuncSignature(signature), $"Cannot find signature: {signature}");
             dynamicTypeToFuncMap = context.GetAllFuncDefinitions(signature);
-            Debug.Assert(dynamicTypeToFuncMap.Count > 0);
+            VeriSolAssert(dynamicTypeToFuncMap.Count > 0);
 
             BoogieIfCmd ifCmd = null;
             BoogieExpr lastGuard = null;
@@ -1958,7 +1958,7 @@ namespace SolToBoogie
             contractDefinition = null;
             if (node.Expression is MemberAccess memberAccess)
             {
-                Debug.Assert(memberAccess.ReferencedDeclaration != null);
+                VeriSolAssert(memberAccess.ReferencedDeclaration != null);
                 var contractTypeStr = memberAccess.Expression.TypeDescriptions.TypeString;
 
                 if (!context.HasStateVarName(memberAccess.MemberName))
@@ -1966,7 +1966,7 @@ namespace SolToBoogie
                     return false;
                 }
                 contractDefinition = context.GetContractByName(contractTypeStr.Substring("contract ".Length));
-                Debug.Assert(contractDefinition != null, $"Expecting a contract {contractTypeStr} to exist in context");
+                VeriSolAssert(contractDefinition != null, $"Expecting a contract {contractTypeStr} to exist in context");
 
                 var = context.GetStateVarByDynamicType(memberAccess.MemberName, contractDefinition);
                 return true;
@@ -1992,14 +1992,14 @@ namespace SolToBoogie
 
         private ContractDefinition GetStaticDispatchingContract(FunctionCall node)
         {
-            Debug.Assert(node.Expression is MemberAccess);
+            VeriSolAssert(node.Expression is MemberAccess);
             MemberAccess memberAccess = node.Expression as MemberAccess;
 
             Identifier contractId = memberAccess.Expression as Identifier;
-            Debug.Assert(contractId != null, $"Unknown contract name: {memberAccess.Expression}");
+            VeriSolAssert(contractId != null, $"Unknown contract name: {memberAccess.Expression}");
 
             ContractDefinition contract = context.GetASTNodeById(contractId.ReferencedDeclaration) as ContractDefinition;
-            Debug.Assert(contract != null);
+            VeriSolAssert(contract != null);
             return contract;
         }
 
@@ -2015,9 +2015,9 @@ namespace SolToBoogie
 
         private void TranslateTypeCast(FunctionCall node, BoogieExpr lhs)
         {
-            Debug.Assert(node.Kind.Equals("typeConversion"));
-            Debug.Assert(node.Arguments.Count == 1);
-            Debug.Assert(node.Arguments[0] is Identifier || node.Arguments[0] is MemberAccess || node.Arguments[0] is Literal || node.Arguments[0] is IndexAccess,
+            VeriSolAssert(node.Kind.Equals("typeConversion"));
+            VeriSolAssert(node.Arguments.Count == 1);
+            VeriSolAssert(node.Arguments[0] is Identifier || node.Arguments[0] is MemberAccess || node.Arguments[0] is Literal || node.Arguments[0] is IndexAccess,
                 "Argument to a typecast has to be an identifier, memberAccess, indexAccess or Literal");
 
             // target: lhs := T(expr);
@@ -2027,7 +2027,7 @@ namespace SolToBoogie
             {
                 Identifier contractId = node.Expression as Identifier;
                 ContractDefinition contract = context.GetASTNodeById(contractId.ReferencedDeclaration) as ContractDefinition;
-                Debug.Assert(contract != null);
+                VeriSolAssert(contract != null);
 
                 // assume (DType[var] == T);
                 BoogieMapSelect dtype = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), exprToCast);
@@ -2058,6 +2058,16 @@ namespace SolToBoogie
             else
             {
                 throw new SystemException($"Unknown type cast: {node.Expression}");
+            }
+        }
+
+        private void VeriSolAssert(bool cond, string message = "")
+        {
+            if (!cond)
+            {
+                var contractName = currentContract != null ? currentContract.Name : "Unknown";
+                var funcName = currentFunction != null ? currentFunction.Name : "Unknown";
+                Console.WriteLine($"Translation Error!! Contract {contractName}, Function {funcName}:: {message}");
             }
         }
 
