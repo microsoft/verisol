@@ -272,7 +272,8 @@ namespace SolToBoogie
                         //HACK: lets also remove any prefix (e.g. A.B when B is a contract and B is a struct)
                         if (typeString.Contains("."))
                         {
-                            typeString = typeString.Substring(typeString.IndexOf(".") + 1);
+                            //TODO: don't drop this when the prefix is a library name
+                            //typeString = typeString.Substring(typeString.IndexOf(".") + 1);
                         }
                         builder.Append(typeString).Append(", ");
                     }
