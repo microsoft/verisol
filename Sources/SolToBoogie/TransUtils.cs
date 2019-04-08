@@ -355,16 +355,9 @@ namespace SolToBoogie
             return functionName;
         }
 
-        public static BoogieAssertCmd GenerateSourceInfoAnnotation(ASTNode node, TranslatorContext context)
+        public static Tuple<string, int> GenerateSourceInfoAnnotation(ASTNode node, TranslatorContext context)
         {
-            List<BoogieAttribute> attributes = new List<BoogieAttribute>()
-            {
-                new BoogieAttribute("first"),
-                new BoogieAttribute("sourceFile", "\"" + context.GetAbsoluteSourcePathOfASTNode(node) + "\""),
-                new BoogieAttribute("sourceLine", context.GetLineNumberOfASTNode(node)),
-            };
-            BoogieAssertCmd assertCmd = new BoogieAssertCmd(new BoogieLiteralExpr(true), attributes);
-            return assertCmd;
+            return (Tuple.Create<string,int>(context.GetAbsoluteSourcePathOfASTNode(node), context.GetLineNumberOfASTNode(node)));
         }
 
         public static List<BoogieVariable> GetDefaultInParams()
