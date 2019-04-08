@@ -2017,8 +2017,8 @@ namespace SolToBoogie
         {
             VeriSolAssert(node.Kind.Equals("typeConversion"));
             VeriSolAssert(node.Arguments.Count == 1);
-            VeriSolAssert(node.Arguments[0] is Identifier || node.Arguments[0] is MemberAccess || node.Arguments[0] is Literal || node.Arguments[0] is IndexAccess,
-                "Argument to a typecast has to be an identifier, memberAccess, indexAccess or Literal");
+            //VeriSolAssert(node.Arguments[0] is Identifier || node.Arguments[0] is MemberAccess || node.Arguments[0] is Literal || node.Arguments[0] is IndexAccess,
+            //    "Argument to a typecast has to be an identifier, memberAccess, indexAccess or Literal");
 
             // target: lhs := T(expr);
             BoogieExpr exprToCast = TranslateExpr(node.Arguments[0]);
