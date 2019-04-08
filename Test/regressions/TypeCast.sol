@@ -12,8 +12,8 @@ contract B {
         uint b = a.foo();
         assert (b == 1);
 
-        address x = address(0x5); //does not work yet. should not crash
+        address x = address(0x5); 
         address y = address(a); 
-
+        address z = address(new A());
     }
 }
