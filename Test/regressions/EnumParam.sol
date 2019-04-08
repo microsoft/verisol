@@ -5,17 +5,17 @@ contract EnumParam {
     enum Action {GoLeft, GoRight}
     Action action;
 
-/*
     function foo(EnumParam.Action a) public {
         action = a;
     }
-*/
-    function foo(Action a) public {
+
+    function bar(Action a) public {
         action = a;
     }
 
     function test() public {
         foo(Action.GoRight);
+        bar(Action.GoLeft);
         assert (action == Action.GoRight);
     }
 

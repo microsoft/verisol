@@ -143,7 +143,7 @@ namespace SolToBoogie
             {
                 attributes.Add(new BoogieAttribute("public"));
             }
-            attributes.Add(new BoogieAttribute("inline", 10));
+            attributes.Add(new BoogieAttribute("inline", 1));
 
             BoogieProcedure procedure = new BoogieProcedure(procName, inParams, outParams, attributes);
             context.Program.AddDeclaration(procedure);
@@ -531,7 +531,7 @@ namespace SolToBoogie
             List<BoogieVariable> outParams = new List<BoogieVariable>();
             List<BoogieAttribute> attributes = new List<BoogieAttribute>()
             {
-                new BoogieAttribute("inline", 10),
+                new BoogieAttribute("inline", 1),
             };
             BoogieProcedure procedure = new BoogieProcedure(procName, inParams, outParams, attributes);
             context.Program.AddDeclaration(procedure);
@@ -599,7 +599,7 @@ namespace SolToBoogie
             {
                 new BoogieAttribute("constructor"),
                 new BoogieAttribute("public"),
-                new BoogieAttribute("inline", 10),
+                new BoogieAttribute("inline", 1),
             };
 
             BoogieProcedure procedure = new BoogieProcedure(procName, inParams, outParams, attributes);
