@@ -14,6 +14,6 @@ contract B {
 
         address x = address(0x5); 
         address y = address(a); 
-        address z = address(new A());
+        //address z = address(new A());
     }
 }

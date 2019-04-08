@@ -66,12 +66,19 @@ namespace SolToBoogie
             {
                 AST solidityAST = new AST(compilerOutput, Path.GetDirectoryName(filePath));
 
-                BoogieTranslator translator = new BoogieTranslator();
-                BoogieAST boogieAST = translator.Translate(solidityAST, ignoredMethods);
-
-                using (var outWriter = new StreamWriter(outFile))
+                try
                 {
-                    outWriter.WriteLine(boogieAST.GetRoot());
+                    BoogieTranslator translator = new BoogieTranslator();
+                    BoogieAST boogieAST = translator.Translate(solidityAST, ignoredMethods);
+
+                    using (var outWriter = new StreamWriter(outFile))
+                    {
+                        outWriter.WriteLine(boogieAST.GetRoot());
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Verisol translation exception: {e.Message}");
                 }
             }
         }
