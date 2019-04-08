@@ -25,6 +25,10 @@ namespace SolToBoogie
         private ContractDefinition currentContract = null;
         // update in the visitor for function definition
         private FunctionDefinition currentFunction = null;
+
+        // information about current file and linenumber
+        private string currentSourceFile = null;
+        private int currentSourceLine = -1;
         
         // store the Boogie call for modifier postlude
         private BoogieStmtList currentPostlude = null;
@@ -764,13 +768,24 @@ namespace SolToBoogie
             //push the current Statement
             var oldCurrentStmtList = currentStmtList; 
 
+            var srcFileLineInfo = TransUtils.GenerateSourceInfoAnnotation(node, context);
+            currentSourceFile = srcFileLineInfo.Item1;
+            currentSourceLine = srcFileLineInfo.Item2;
+
             //new scope
             currentStmtList = new BoogieStmtList(); // reset before starting to translate a Statement
             node.Accept(this);
             VeriSolAssert(currentStmtList != null);
 
             // add source file path and line number
-            BoogieAssertCmd annotationCmd = TransUtils.GenerateSourceInfoAnnotation(node, context);
+
+            List<BoogieAttribute> attributes = new List<BoogieAttribute>()
+            {
+                new BoogieAttribute("first"),
+                new BoogieAttribute("sourceFile", "\"" + srcFileLineInfo.Item1 + "\""),
+                new BoogieAttribute("sourceLine", srcFileLineInfo.Item2)
+            };
+            BoogieAssertCmd annotationCmd = new BoogieAssertCmd(new BoogieLiteralExpr(true), attributes);
             BoogieStmtList annotatedStmtList = BoogieStmtList.MakeSingletonStmtList(annotationCmd);
             annotatedStmtList.AppendStmtList(currentStmtList);
 
@@ -2067,7 +2082,7 @@ namespace SolToBoogie
             {
                 var contractName = currentContract != null ? currentContract.Name : "Unknown";
                 var funcName = currentFunction != null ? currentFunction.Name : "Unknown";
-                throw new Exception ($"Contract {contractName}, Function {funcName}:: {message}....");
+                throw new Exception ($"File {currentSourceFile}, Line {currentSourceLine}, Contract {contractName}, Function {funcName}:: {message}....");
             }
         }
 
