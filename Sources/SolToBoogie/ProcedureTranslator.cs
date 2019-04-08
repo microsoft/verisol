@@ -2067,7 +2067,7 @@ namespace SolToBoogie
             {
                 var contractName = currentContract != null ? currentContract.Name : "Unknown";
                 var funcName = currentFunction != null ? currentFunction.Name : "Unknown";
-                Console.WriteLine($"Translation Error!! Contract {contractName}, Function {funcName}:: {message}");
+                throw new Exception ($"Contract {contractName}, Function {funcName}:: {message}....");
             }
         }
 
