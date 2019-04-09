@@ -23,6 +23,7 @@ namespace SolToBoogie
                 Console.WriteLine("\t\t /ignoreMethod:<method>@<contract>: Ignores translation of the method within contract, and only generates a declaration");
                 Console.WriteLine("\t\t\t\t multiple such pairs can be specified, ignored set is the union");
                 Console.WriteLine("\t\t\t\t a wild card '*' can be used for method, would mean all the methods of the contract");
+                Console.WriteLine("\t\t /noInlineAttrs: do not generate any {:inline x} attributes, to speed Corral");
                 return;
             }
 
@@ -57,6 +58,13 @@ namespace SolToBoogie
             }
             Console.WriteLine($"Ignored method/contract pairs ==> \n\t {string.Join(",", ignoredMethods.Select(x => x.Item1 + "@" + x.Item2))}");
 
+            bool genInlineAttributesInBpl = true; 
+            if (splitArgs.Any(x => x.Equals("/noInlineAttrs")))
+            {
+                genInlineAttributesInBpl = false;
+                Console.WriteLine($"Warning! Found /noInlineAttrs option...the generated Bpl file cannot be used for unbounded verification");
+            }
+
             if (compilerOutput.ContainsError())
             {
                 PrintErrors(compilerOutput.Errors);
@@ -69,7 +77,7 @@ namespace SolToBoogie
                 try
                 {
                     BoogieTranslator translator = new BoogieTranslator();
-                    BoogieAST boogieAST = translator.Translate(solidityAST, ignoredMethods);
+                    BoogieAST boogieAST = translator.Translate(solidityAST, ignoredMethods, genInlineAttributesInBpl);
 
                     using (var outWriter = new StreamWriter(outFile))
                     {

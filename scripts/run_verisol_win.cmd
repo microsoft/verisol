@@ -46,12 +46,17 @@ if NOT EXIST %BINARYDEPENDENCIES% (
     goto :exit
 )
 
+set inlineArg=
+if [%4] EQU [bounded] (
+    set inlineArg=/noInlineAttrs
+)
+
 @echo off
 REM Generate BPL 
 echo Compiling sol files and generating boogie files ....
 @echo on
 echo Options to SolToBoogie "%5"
-dotnet %VERISOL_ROOT_DIR%\Sources\SolToBoogie\bin\Debug\netcoreapp2.0\SolToBoogie.dll %1.sol %VERISOL_SOLC_DIR% out.bpl %5
+dotnet %VERISOL_ROOT_DIR%\Sources\SolToBoogie\bin\Debug\netcoreapp2.0\SolToBoogie.dll %1.sol %VERISOL_SOLC_DIR% out.bpl %5 %inlineArg%
 @echo off
 
 if NOT EXIST out.bpl (

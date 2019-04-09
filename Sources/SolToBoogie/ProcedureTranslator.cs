@@ -33,10 +33,14 @@ namespace SolToBoogie
         // store the Boogie call for modifier postlude
         private BoogieStmtList currentPostlude = null;
 
-        public ProcedureTranslator(TranslatorContext context)
+        // to generate inline attributes 
+        private bool genInlineAttrsInBpl;
+
+        public ProcedureTranslator(TranslatorContext context, bool _genInlineAttrsInBpl = true)
         {
             this.context = context;
             boogieToLocalVarsMap = new Dictionary<string, List<BoogieVariable>>();
+            genInlineAttrsInBpl = _genInlineAttrsInBpl;
         }
 
         public override bool Visit(ContractDefinition node)
@@ -143,7 +147,9 @@ namespace SolToBoogie
             {
                 attributes.Add(new BoogieAttribute("public"));
             }
-            attributes.Add(new BoogieAttribute("inline", 1));
+            // generate inline attribute for a function only when /noInlineAttrs is specified
+            if (genInlineAttrsInBpl)
+                attributes.Add(new BoogieAttribute("inline", 1));
 
             BoogieProcedure procedure = new BoogieProcedure(procName, inParams, outParams, attributes);
             context.Program.AddDeclaration(procedure);

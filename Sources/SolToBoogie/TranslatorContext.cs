@@ -80,7 +80,10 @@ namespace SolToBoogie
         // methods whose translation has to be skipped
         private HashSet<Tuple<string, string>> IgnoreMethods;
 
-        public TranslatorContext(HashSet<Tuple<string, string>> ignoreMethods)
+        // do we generate inline attributes (required for unbounded verification)
+        private bool genInlineAttrInBpl;
+
+        public TranslatorContext(HashSet<Tuple<string, string>> ignoreMethods, bool _genInlineAttrInBpl)
         {
             Program = new BoogieProgram();
             ContractDefinitions = new HashSet<ContractDefinition>();
@@ -106,6 +109,7 @@ namespace SolToBoogie
             ModifierToBoogiePreImpl = new Dictionary<string, BoogieImplementation>();
             ModifierToBoogiePostImpl = new Dictionary<string, BoogieImplementation>();
             IgnoreMethods = ignoreMethods;
+            genInlineAttrInBpl = _genInlineAttrInBpl;
         }
 
         public bool HasASTNodeId(int id)
