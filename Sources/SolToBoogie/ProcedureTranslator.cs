@@ -244,7 +244,7 @@ namespace SolToBoogie
             {
                 if (statement is VariableDeclarationStatement)
                 {
-                    throw new System.Exception("locals within modifiers not supported");
+                    VeriSolAssert(false, "locals within modifiers not supported");
                 }
                 if (statement is PlaceholderStatement)
                 {
@@ -941,7 +941,7 @@ namespace SolToBoogie
             else
             {
                 if (isTupleAssignment)
-                    throw new NotImplementedException("Currently only support assignment of tuples as returns of a function call");
+                    VeriSolAssert(false, "Not implemented...currently only support assignment of tuples as returns of a function call");
 
                 BoogieExpr rhs = TranslateExpr(node.RightHandSide);
                 BoogieStmtList stmtList = new BoogieStmtList();
@@ -963,7 +963,8 @@ namespace SolToBoogie
                         stmtList.AddStatement(new BoogieAssignCmd(lhs[0], new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.DIV, lhs[0], rhs)));
                         break;
                     default:
-                        throw new SystemException($"Unknown assignment operator: {node.Operator}");
+                        VeriSolAssert(false,  $"Unknown assignment operator: {node.Operator}");
+                        break;
                 }
                 currentStmtList.AppendStmtList(stmtList);
             }
@@ -1284,7 +1285,7 @@ namespace SolToBoogie
             }
             else
             {
-                throw new SystemException($"Unknown literal kind: {node.Kind}");
+               VeriSolAssert(false, $"Unknown literal kind: {node.Kind}");
             }
             return false;
         }
@@ -1381,7 +1382,7 @@ namespace SolToBoogie
                     }
                     else
                     {
-                        throw new SystemException($"Unknown member for msg: {node}");
+                        VeriSolAssert(false, $"Unknown member for msg: {node}");
                     }
                     return false;
                 }
@@ -1410,7 +1411,8 @@ namespace SolToBoogie
             }
             else
             {
-                throw new SystemException($"Unknown expression type for member access: {node}");
+                VeriSolAssert(false, $"Unknown expression type for member access: {node}");
+                throw new Exception();
             }
         }
 
@@ -1487,7 +1489,7 @@ namespace SolToBoogie
             }
             else if (functionName.Equals("send") || functionName.Equals("delegatecall"))
             {
-                throw new NotImplementedException(functionName);
+                VeriSolAssert(false, $"Not implemented functions {functionName}");
             }
             else if (IsDynamicArrayPush(node))
             {
@@ -1610,7 +1612,7 @@ namespace SolToBoogie
             var arguments = funcCall.Arguments;
             if (arguments.Count > 2)
             {
-                throw new NotImplementedException($"Variable argument function abi.encodePacked(...) currently supported only for 1 or 2 arguments, encountered  {arguments.Count} arguments");
+                VeriSolAssert(false, $"Variable argument function abi.encodePacked(...) currently supported only for 1 or 2 arguments, encountered  {arguments.Count} arguments");
             }
             var boogieExprs = arguments.ConvertAll(x => TranslateExpr(x));
             var funcName = $"abiEncodePacked{arguments.Count}";
@@ -1622,7 +1624,7 @@ namespace SolToBoogie
         private void TranslateCallStatement(FunctionCall node)
         {
             currentStmtList.AddStatement(new BoogieSkipCmd(node.ToString()));
-            throw new NotImplementedException();
+            VeriSolAssert(false, "call statements not implemented..");
         }
 
         private void TranslateNewStatement(FunctionCall node, BoogieExpr lhs)
@@ -1900,7 +1902,7 @@ namespace SolToBoogie
             }
             else
             {
-                throw new SystemException($"Unknown type of internal function call: {node.Expression}");
+                VeriSolAssert(false, $"Unknown type of internal function call: {node.Expression}");
             }
             return;
         }
@@ -2072,7 +2074,7 @@ namespace SolToBoogie
             } 
             else
             {
-                throw new SystemException($"Unknown type cast: {node.Expression}");
+                VeriSolAssert(false, $"Unknown type cast: {node.Expression}");
             }
         }
 
@@ -2101,7 +2103,8 @@ namespace SolToBoogie
                     break;
                 default:
                     op = BoogieUnaryOperation.Opcode.UNKNOWN;
-                    throw new SystemException($"Unknwon unary operator: {node.Operator}");
+                    VeriSolAssert(false, $"Unknwon unary operator: {node.Operator}");
+                    break;
             }
 
             BoogieUnaryOperation unaryExpr = new BoogieUnaryOperation(op, expr);
@@ -2159,7 +2162,8 @@ namespace SolToBoogie
                     break;
                 default:
                     op = BoogieBinaryOperation.Opcode.UNKNOWN;
-                    throw new SystemException($"Unknown binary operator: {node.Operator}");
+                    VeriSolAssert(false, $"Unknown binary operator: {node.Operator}");
+                    break;
             }
 
             BoogieBinaryOperation binaryExpr = new BoogieBinaryOperation(op, leftExpr, rightExpr);
@@ -2202,7 +2206,7 @@ namespace SolToBoogie
             }
             else
             {
-                throw new SystemException($"Unknown base in index access: {node.BaseExpression}");
+                VeriSolAssert(false, $"Unknown base in index access: {node.BaseExpression}");
             }
 
             BoogieExpr indexAccessExpr = new BoogieMapSelect(baseExpr, indexExpr);
@@ -2212,12 +2216,14 @@ namespace SolToBoogie
 
         public override bool Visit(UsingForDirective node)
         {
-            throw new NotSupportedException(node.ToString());
+            VeriSolAssert(false, $"Using unsupported...{node.ToString()}");
+            throw new NotImplementedException();
         }
 
         public override bool Visit(InlineAssembly node)
         {
-            throw new NotSupportedException(node.ToString());
+            VeriSolAssert(false, $"Inline assembly unsupported {node.ToString()}");
+            throw new NotImplementedException();
         }
     }
 

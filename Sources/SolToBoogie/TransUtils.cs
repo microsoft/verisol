@@ -249,10 +249,10 @@ namespace SolToBoogie
                         {
                             typeString = "bytes"; //"bytes storage ref"
                         }
+                        builder.Append(typeString).Append(", ");
                     }
-                    builder.Append(typeString).Append(", ");
+                    builder.Length -= 2;
                 }
-                builder.Length -= 2;
                 builder.Append(")");
                 return builder.ToString();
             }
