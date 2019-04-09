@@ -15,8 +15,9 @@ contract EnumParam {
 
     function test() public {
         foo(Action.GoRight);
-        bar(Action.GoLeft);
         assert (action == Action.GoRight);
+        bar(Action.GoLeft);
+        assert (action == Action.GoLeft);
     }
 
 }

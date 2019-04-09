@@ -189,7 +189,11 @@ namespace SolToBoogie
             {
                 foreach (VariableDeclaration varDecl in parameterList.Parameters)
                 {
-                    builder.Append(varDecl.TypeName).Append(", ");
+                    // use TypeDescriptions.TypeString instead of TypeName
+                    // when a nested struct/Enum is declared TypeName may not have the contractprefix (Foo.EnumType), 
+                    // but TypeDescriptions has the entire prefix. This is useful as a function may be declared as (EnumType a)
+                    // and the TypeName does not have the context. 
+                    builder.Append(varDecl.TypeDescriptions.TypeString).Append(", ");
                 }
                 builder.Length -= 2;
             }
@@ -212,7 +216,7 @@ namespace SolToBoogie
                 {
                     foreach (VariableDeclaration varDecl in function.Parameters.Parameters)
                     {
-                        builder.Append(varDecl.TypeName).Append(", ");
+                        builder.Append(varDecl.TypeDescriptions.TypeString).Append(", ");
                     }
                     builder.Length -= 2;
                 }
@@ -221,7 +225,6 @@ namespace SolToBoogie
             }
             else
             {
-                // Is this dead code???
                 string functionName = GetFuncNameFromFunctionCall(node);
                 StringBuilder builder = new StringBuilder();
                 builder.Append(functionName).Append("(");
@@ -230,55 +233,26 @@ namespace SolToBoogie
                     foreach (Expression argument in node.Arguments)
                     {
                         string typeString = argument.TypeDescriptions.TypeString;
-                        if (typeString.StartsWith("contract "))
+                        if (typeString.StartsWith("int_const"))
                         {
-                            typeString = typeString.Substring("contract ".Length);
+                            typeString = "int256";
                         }
-                        else if (typeString.StartsWith("struct "))
+                        if (typeString.StartsWith("uint_const"))
                         {
-                            typeString = typeString.Substring("struct ".Length);
+                            typeString = "int256";
                         }
-                        else if (typeString.StartsWith("enum "))
+                        if (typeString.StartsWith("string") || typeString.StartsWith("literal_string"))
                         {
-                            typeString = typeString.Substring("enum ".Length);
+                            typeString = "string";
                         }
-                        else
+                        if (typeString.StartsWith("bytes "))
                         {
-                            if (typeString.StartsWith("int_const"))
-                            {
-                                typeString = "int256";
-                            }
-                            if (typeString.StartsWith("uint_const"))
-                            {
-                                typeString = "int256";
-                            }
-                            if (typeString.StartsWith("string") || typeString.StartsWith("literal_string"))
-                            {
-                                typeString = "string";
-                            }
-                            if (typeString.StartsWith("bytes "))
-                            {
-                                typeString = "bytes"; //"bytes storage ref"
-                            }
-                            Debug.Assert(typeString.Equals("string") || typeString.Equals("uint256") || typeString.Equals("int256")
-                                    || typeString.Equals("address") || typeString.Equals("bytes"));
+                            typeString = "bytes"; //"bytes storage ref"
                         }
-
-                        // let us remove any suffix such as "storage/memory pointer" 
-                        if (typeString.Contains(" "))
-                        {
-                            typeString = typeString.Substring(0, typeString.IndexOf(" "));
-                        }
-                        //HACK: lets also remove any prefix (e.g. A.B when B is a contract and B is a struct)
-                        if (typeString.Contains("."))
-                        {
-                            //TODO: don't drop this when the prefix is a library name
-                            //typeString = typeString.Substring(typeString.IndexOf(".") + 1);
-                        }
-                        builder.Append(typeString).Append(", ");
                     }
-                    builder.Length -= 2;
+                    builder.Append(typeString).Append(", ");
                 }
+                builder.Length -= 2;
                 builder.Append(")");
                 return builder.ToString();
             }

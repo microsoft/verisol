@@ -1926,7 +1926,7 @@ namespace SolToBoogie
 
             Dictionary<ContractDefinition, FunctionDefinition> dynamicTypeToFuncMap;
             string signature = TransUtils.InferFunctionSignature(context, node);
-            VeriSolAssert(context.HasFuncSignature(signature), $"Cannot find signature: {signature}");
+            VeriSolAssert(context.HasFuncSignature(signature), $"Cannot find a function with signature: {signature}");
             dynamicTypeToFuncMap = context.GetAllFuncDefinitions(signature);
             VeriSolAssert(dynamicTypeToFuncMap.Count > 0);
 
