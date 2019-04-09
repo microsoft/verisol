@@ -249,6 +249,14 @@ namespace SolToBoogie
                         {
                             typeString = "bytes"; //"bytes storage ref"
                         }
+                        if (typeString.Contains(" memory")) //"struct Foo memory"
+                        {
+                            typeString = typeString.Substring(0, typeString.IndexOf(" memory"));
+                        }
+                        if (typeString.Contains(" storage"))
+                        {
+                            typeString = typeString.Substring(0, typeString.IndexOf(" storage"));
+                        }
                         builder.Append(typeString).Append(", ");
                     }
                     builder.Length -= 2;
