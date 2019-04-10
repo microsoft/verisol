@@ -87,6 +87,7 @@ EmbeddedCalls.sol
 InitOutsideCtors.sol
 ModifierWithArgs.sol
 Library.sol
+LibraryStruct.sol
 StructType.sol
 #StructTypeNoTemporaries.sol
 #StructTutorial.sol

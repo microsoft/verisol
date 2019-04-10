@@ -120,13 +120,21 @@ namespace SolToBoogieTest
             AST solidityAST = new AST(compilerOutput, Path.GetDirectoryName(filePath));
 
             // translate Solidity to Boogie
-            BoogieTranslator translator = new BoogieTranslator();
-            BoogieAST boogieAST = translator.Translate(solidityAST, new HashSet<Tuple<string, string>>());
-
-            // dump the Boogie program to a file
-            using (var outWriter = new StreamWriter(outFile))
+            try
             {
-                outWriter.WriteLine(boogieAST.GetRoot());
+                BoogieTranslator translator = new BoogieTranslator();
+                BoogieAST boogieAST = translator.Translate(solidityAST, new HashSet<Tuple<string, string>>(), true);
+
+                // dump the Boogie program to a file
+                using (var outWriter = new StreamWriter(outFile))
+                {
+                    outWriter.WriteLine(boogieAST.GetRoot());
+                }
+            } catch (Exception e)
+            {
+                Console.WriteLine($"VeriSol translation error: {e.Message}");
+                expected = current = null;
+                return false;
             }
 
             // read the corral configuration from Json

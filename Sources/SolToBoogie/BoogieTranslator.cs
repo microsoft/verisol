@@ -14,11 +14,11 @@ namespace SolToBoogie
     public class BoogieTranslator
     {
             // set of method@contract pairs whose translatin is skipped
-        public BoogieAST Translate(AST solidityAST, HashSet<Tuple<string, string>> ignoredMethods)
+        public BoogieAST Translate(AST solidityAST, HashSet<Tuple<string, string>> ignoredMethods, bool generateInlineAttributesInBpl)
         {
             SourceUnitList sourceUnits = solidityAST.GetSourceUnits();
 
-            TranslatorContext context = new TranslatorContext(ignoredMethods);
+            TranslatorContext context = new TranslatorContext(ignoredMethods, generateInlineAttributesInBpl);
             context.IdToNodeMap = solidityAST.GetIdToNodeMap();
             context.SourceDirectory = solidityAST.SourceDirectory;
 
@@ -72,7 +72,7 @@ namespace SolToBoogie
             sourceUnits.Accept(modifierCollector);
 
             // translate procedures
-            ProcedureTranslator procTranslator = new ProcedureTranslator(context);
+            ProcedureTranslator procTranslator = new ProcedureTranslator(context, generateInlineAttributesInBpl);
             sourceUnits.Accept(procTranslator);
 
             // generate harness for each contract
