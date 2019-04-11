@@ -1,17 +1,19 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27703.2026
+VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SolToBoogie", "SolToBoogie\SolToBoogie.csproj", "{59597B6D-F34D-4FB1-97CB-070DA34C281B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SolidityAST", "SolidityAST\SolidityAST.csproj", "{945006A9-F4EB-4A47-9015-C458D85BD055}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoogieAST", "BoogieAST\BoogieAST.csproj", "{2CF88D19-5E50-4E31-929F-AB8B411C7D6E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BoogieAST", "BoogieAST\BoogieAST.csproj", "{2CF88D19-5E50-4E31-929F-AB8B411C7D6E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SolidityCFG", "SolidityCFG\SolidityCFG.csproj", "{7F7E8937-0BAA-451D-884B-DE982DDE4FD3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SolidityCFG", "SolidityCFG\SolidityCFG.csproj", "{7F7E8937-0BAA-451D-884B-DE982DDE4FD3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SolToBoogieTest", "SolToBoogieTest\SolToBoogieTest.csproj", "{6F8F5214-7E0C-4377-B5F2-6D3A553AA8D9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SolToBoogieTest", "SolToBoogieTest\SolToBoogieTest.csproj", "{6F8F5214-7E0C-4377-B5F2-6D3A553AA8D9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VeriSolRunner", "VeriSolRunner\VeriSolRunner.csproj", "{068C4F28-49B0-448D-AEE2-71DB2908C3B7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -83,6 +85,18 @@ Global
 		{6F8F5214-7E0C-4377-B5F2-6D3A553AA8D9}.Release|x64.Build.0 = Release|Any CPU
 		{6F8F5214-7E0C-4377-B5F2-6D3A553AA8D9}.Release|x86.ActiveCfg = Release|Any CPU
 		{6F8F5214-7E0C-4377-B5F2-6D3A553AA8D9}.Release|x86.Build.0 = Release|Any CPU
+		{068C4F28-49B0-448D-AEE2-71DB2908C3B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{068C4F28-49B0-448D-AEE2-71DB2908C3B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{068C4F28-49B0-448D-AEE2-71DB2908C3B7}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{068C4F28-49B0-448D-AEE2-71DB2908C3B7}.Debug|x64.Build.0 = Debug|Any CPU
+		{068C4F28-49B0-448D-AEE2-71DB2908C3B7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{068C4F28-49B0-448D-AEE2-71DB2908C3B7}.Debug|x86.Build.0 = Debug|Any CPU
+		{068C4F28-49B0-448D-AEE2-71DB2908C3B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{068C4F28-49B0-448D-AEE2-71DB2908C3B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{068C4F28-49B0-448D-AEE2-71DB2908C3B7}.Release|x64.ActiveCfg = Release|Any CPU
+		{068C4F28-49B0-448D-AEE2-71DB2908C3B7}.Release|x64.Build.0 = Release|Any CPU
+		{068C4F28-49B0-448D-AEE2-71DB2908C3B7}.Release|x86.ActiveCfg = Release|Any CPU
+		{068C4F28-49B0-448D-AEE2-71DB2908C3B7}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
