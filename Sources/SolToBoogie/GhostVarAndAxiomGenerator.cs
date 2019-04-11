@@ -242,6 +242,9 @@ namespace SolToBoogie
             procBody.AddStatement(new BoogieAssumeCmd(allocAssumeExpr));
             // Alloc[tmp] := true;
             procBody.AddStatement(new BoogieAssignCmd(allocMapSelect, new BoogieLiteralExpr(true)));
+            // assume tmp != null
+            procBody.AddStatement(new BoogieAssumeCmd(
+                              new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, outVarIdentifier, new BoogieIdentifierExpr("null"))));
 
             BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
             context.Program.AddDeclaration(implementation);
