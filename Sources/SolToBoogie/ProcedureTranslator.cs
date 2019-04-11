@@ -934,7 +934,7 @@ namespace SolToBoogie
                 }
                 if (!isTupleAssignment)
                 {
-                    if (usedTmpVar && !(lhs[0] is BoogieIdentifierExpr))
+                    if (usedTmpVar || !(lhs[0] is BoogieIdentifierExpr)) //bad bug: was && before!!
                         currentStmtList.AddStatement(new BoogieAssignCmd(lhs[0], tmpVars[0]));
                 } else
                 {
