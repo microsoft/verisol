@@ -3,6 +3,7 @@ namespace VeriSolOutOfBandsSpecsRunner
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Runtime.InteropServices;
@@ -10,10 +11,10 @@ namespace VeriSolOutOfBandsSpecsRunner
 
     /// <summary>
     /// Running VeriSol when the specifications are provided out of band in a separate Solidity file
+    /// Highly experimental!!
     /// </summary>
     class Program
     {
-
         public static int Main(string[] args)
         {
             if (args.Length < 6)
@@ -33,6 +34,20 @@ namespace VeriSolOutOfBandsSpecsRunner
             ILoggerFactory loggerFactory = new LoggerFactory().AddConsole(LogLevel.Information);
             ILogger logger = loggerFactory.CreateLogger("VeriSolRunner");
 
+
+            HashSet<Tuple<string, string>> ignoredMethods = new HashSet<Tuple<string, string>>();
+            foreach (var arg in args.Where(x => x.StartsWith("/ignoreMethod:")))
+            {
+                Debug.Assert(arg.Contains("@"), $"Error: incorrect use of /ignoreMethod in {arg}");
+                Debug.Assert(arg.LastIndexOf("@") == arg.IndexOf("@"), $"Error: incorrect use of /ignoreMethod in {arg}");
+                var str = arg.Substring("/ignoreMethod:".Length);
+                var method = str.Substring(0, str.IndexOf("@"));
+                var contract = str.Substring(str.IndexOf("@") + 1);
+                ignoredMethods.Add(Tuple.Create(method, contract));
+            }
+            Console.WriteLine($"Ignored method/contract pairs ==> \n\t {string.Join(",", ignoredMethods.Select(x => x.Item1 + "@" + x.Item2))}");
+
+
             var verisolExecuter = 
                 new VeriSolExecuterWithSpecs(
                     specFilePath, 
@@ -42,16 +57,9 @@ namespace VeriSolOutOfBandsSpecsRunner
                     solcPath, 
                     solcName, 
                     corralRecursionBound, 
+                    ignoredMethods,
                     logger);
-            try
-            {
-                return verisolExecuter.Execute();
-            }
-            catch (Exception e)
-            {
-                logger.LogError($"VeriSol did not run successfully {e.Message}");
-                return 1;
-            }
+            return verisolExecuter.Execute();
         }
 
         private static string GetSolcNameByOSPlatform()
