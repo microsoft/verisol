@@ -13,7 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SolidityCFG", "SolidityCFG\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SolToBoogieTest", "SolToBoogieTest\SolToBoogieTest.csproj", "{6F8F5214-7E0C-4377-B5F2-6D3A553AA8D9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VeriSolRunner", "VeriSolRunner\VeriSolRunner.csproj", "{068C4F28-49B0-448D-AEE2-71DB2908C3B7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VeriSolOutOfBandSpecsRunner", "VeriSolRunner\VeriSolOutOfBandSpecsRunner.csproj", "{068C4F28-49B0-448D-AEE2-71DB2908C3B7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
