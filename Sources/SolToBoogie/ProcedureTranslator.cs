@@ -408,8 +408,10 @@ namespace SolToBoogie
                         var lhs2 = new BoogieMapSelect(lhs0, qVar2);
                         var distinctQVars = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, qVar1, qVar2);
                         var distinctLhs = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, lhs1, lhs2);
+                        var triggers = new List<BoogieExpr>() { lhs1, lhs2};
+
                         var neqExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, distinctQVars, distinctLhs);
-                        var distinctQExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1, qVar2 }, new List<BoogieType>() { mapKeyType, mapKeyType }, neqExpr);
+                        var distinctQExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1, qVar2 }, new List<BoogieType>() { mapKeyType, mapKeyType }, neqExpr, triggers);
                         stmtList.AddStatement(new BoogieAssumeCmd(distinctQExpr));
                     }
                     else if (mapping.ValueType is UserDefinedTypeName userTypeName ||

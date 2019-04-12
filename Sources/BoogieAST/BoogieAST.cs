@@ -1208,7 +1208,10 @@ namespace BoogieAST
 
         public BoogieExpr BodyExpr { get; set; }
 
-        public BoogieQuantifiedExpr(bool isForall, List<BoogieIdentifierExpr> qvars, List<BoogieType> qvarTypes, BoogieExpr bodyExpr)
+        // let us limit us to a single trigger only {e1, e2, ... }
+        public List<BoogieExpr> Trigger { get; set; }
+
+        public BoogieQuantifiedExpr(bool isForall, List<BoogieIdentifierExpr> qvars, List<BoogieType> qvarTypes, BoogieExpr bodyExpr, List<BoogieExpr> trigger = null)
         {
             this.IsForall = isForall;
             this.QVars = qvars;
@@ -1216,14 +1219,18 @@ namespace BoogieAST
             Debug.Assert(QVars.Count != 0, "Need at least one bound variable");
             Debug.Assert(QVarTypes.Count == QVars.Count, "Need at least one bound variable");
             this.BodyExpr = bodyExpr;
+            this.Trigger = trigger;
         }
 
         public override string ToString()
         {
             var quantifierString = IsForall ? "forall " : "exists";
             var results = QVars.Zip(QVarTypes, (x, y) => x + ":" + y.ToString());
-            var qVarsString = string.Join(", ", results); 
-            return $"{quantifierString} {qVarsString} :: ({BodyExpr.ToString()})"; 
+            var qVarsString = string.Join(", ", results);
+            var triggerString = ""; 
+            if (Trigger != null && Trigger.Count > 0)
+                triggerString = "{" + string.Join(", ", Trigger.Select(x => x.ToString())) + "}";
+            return $"{quantifierString} {qVarsString} :: {triggerString} ({BodyExpr.ToString()})"; 
         }
     }
 
