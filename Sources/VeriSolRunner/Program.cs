@@ -20,6 +20,8 @@ namespace VeriSolOutOfBandsSpecsRunner
             if (args.Length < 6)
             {
                 Console.WriteLine("Usage:  VeriSolOutOfBandsSpecsRunner <specification.sol> <contractName> <relative-path-from-specification-to-root-contract.sol> <path-to-corral> <path-to-solc> <recusion-bound>");
+                Console.WriteLine("\t An (experimental) utility to add formal specification and verification using VeriSol on a smart contract without changing contract sources");
+                Console.WriteLine("\t Currently only supports transaction-depth-bounded verification");
                 return 1;
             }
 
