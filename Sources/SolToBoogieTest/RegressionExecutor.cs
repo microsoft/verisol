@@ -50,7 +50,7 @@ namespace SolToBoogieTest
             string[] filePaths = Directory.GetFiles(testDirectory);
             int passedCount = 0;
             int failedCount = 0;
-            readRecord();
+            ReadRecord();
             foreach (string filePath in filePaths)
             {
                 string filename = Path.GetFileName(filePath);
@@ -195,7 +195,11 @@ namespace SolToBoogieTest
             string[] actualList = actual.Split("Boogie verification time");
             if (actualList.Length == 2)
             {
-                if (actualList[0].TrimEnd().EndsWith(expected))
+                // This check will not work in the presence of loops 
+                // Corral ends with something about Recursion bound being reached
+                // See LoopFor.sol regression
+                // if (actualList[0].TrimEnd().EndsWith(expected))
+                if (actualList[0].Contains(expected))
                 {
                     return true;
                 }
@@ -205,19 +209,21 @@ namespace SolToBoogieTest
 
         private string GenerateCorralArguments(CorralConfiguration corralConfig)
         {
-            List<string> commands = new List<string>();
-            // recursion bound
-            commands.Add($"/recursionBound:{corralConfig.RecursionBound}");
-            // context bound (k)
-            commands.Add($"/k:{corralConfig.K}");
-            // main method
-            commands.Add($"/main:{corralConfig.Main}");
-            // Boogie file
-            commands.Add(outFile);
+            List<string> commands = new List<string>
+            {
+                // recursion bound
+                $"/recursionBound:{corralConfig.RecursionBound}",
+                // context bound (k)
+                $"/k:{corralConfig.K}",
+                // main method
+                $"/main:{corralConfig.Main}",
+                // Boogie file
+                outFile
+            };
             return String.Join(" ", commands);
         }
 
-        private void readRecord()
+        private void ReadRecord()
         {
             StreamReader records = new StreamReader(Path.Combine(recordsDir, "records.txt"));
             string line;
