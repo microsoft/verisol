@@ -247,7 +247,7 @@ namespace VeriSolOutOfBandsSpecsRunner
             string[] actualList = actual.Split("Boogie verification time");
             if (actualList.Length == 2)
             {
-                if (actualList[0].TrimEnd().EndsWith(expected))
+                if (actualList[0].Contains(expected))
                 {
                     return true;
                 }
