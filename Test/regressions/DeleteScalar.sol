@@ -26,10 +26,13 @@ contract A {
         assert (b1 ==  b2);
 
 
-/*        
+        
         delete n;
-        assert (keccak256(bytes(s)) == keccak256(bytes(n[1])));
 
+        assert (n.length == 0);
+        
+/*
+        assert (keccak256(bytes(s)) == keccak256(bytes(n[1])));
         m[0][0] = 1;
         m[0][1] = 2;
         m[1][1] = 3;
