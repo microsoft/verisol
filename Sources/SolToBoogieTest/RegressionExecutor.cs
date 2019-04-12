@@ -195,7 +195,11 @@ namespace SolToBoogieTest
             string[] actualList = actual.Split("Boogie verification time");
             if (actualList.Length == 2)
             {
-                if (actualList[0].TrimEnd().EndsWith(expected))
+                // This check will not work in the presence of loops 
+                // Corral ends with something about Recursion bound being reached
+                // See LoopFor.sol regression
+                // if (actualList[0].TrimEnd().EndsWith(expected))
+                if (actualList[0].Contains(expected))
                 {
                     return true;
                 }
