@@ -301,9 +301,10 @@ namespace SolToBoogie
             var qVar2Func = new BoogieFuncCallExpr("ConstantToRef", new List<BoogieExpr>() { qVar2 });
             var eqFunc12 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, qVar1Func, qVar2Func);
             var bodyExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, eqVar12, eqFunc12);
+            var triggers = new List<BoogieExpr>() { qVar1Func, qVar2Func };
 
             // forall q1:int, q2:int :: q1 == q2 || ConstantToRef(q1) != ConstantToRef(q2) 
-            var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1, qVar2 }, new List<BoogieType>() { BoogieType.Int, BoogieType.Int }, bodyExpr);
+            var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1, qVar2 }, new List<BoogieType>() { BoogieType.Int, BoogieType.Int }, bodyExpr, triggers);
 
             return new BoogieAxiom(qExpr);
         }
@@ -318,9 +319,10 @@ namespace SolToBoogie
             var qVar2Func = new BoogieFuncCallExpr("keccak256", new List<BoogieExpr>() { qVar2 });
             var eqFunc12 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, qVar1Func, qVar2Func);
             var bodyExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, eqVar12, eqFunc12);
+            var triggers = new List<BoogieExpr>() { qVar1Func, qVar2Func };
 
             // forall q1:int, q2:int :: q1 == q2 || keccak256(q1) != keccak256(q2) 
-            var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1, qVar2 }, new List<BoogieType>() { BoogieType.Int, BoogieType.Int }, bodyExpr);
+            var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1, qVar2 }, new List<BoogieType>() { BoogieType.Int, BoogieType.Int }, bodyExpr, triggers);
 
             return new BoogieAxiom(qExpr);
         }
@@ -334,9 +336,10 @@ namespace SolToBoogie
             var qVar2Func = new BoogieFuncCallExpr("abiEncodePacked1", new List<BoogieExpr>() { qVar2 });
             var eqFunc12 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, qVar1Func, qVar2Func);
             var bodyExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, eqVar12, eqFunc12);
+            var triggers = new List<BoogieExpr>() { qVar1Func, qVar2Func };
 
             // forall q1:int, q2:int :: q1 == q2 || abiEncodePacked(q1) != abiEncodePacked(q2) 
-            var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1, qVar2 }, new List<BoogieType>() { BoogieType.Int, BoogieType.Int }, bodyExpr);
+            var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1, qVar2 }, new List<BoogieType>() { BoogieType.Int, BoogieType.Int }, bodyExpr, triggers);
 
             return new BoogieAxiom(qExpr);
         }
@@ -351,13 +354,15 @@ namespace SolToBoogie
             var eqVar2 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, qVar21, qVar22);
             var qVar1Func = new BoogieFuncCallExpr("abiEncodePacked2", new List<BoogieExpr>() { qVar11, qVar21 });
             var qVar2Func = new BoogieFuncCallExpr("abiEncodePacked2", new List<BoogieExpr>() { qVar12, qVar22 });
+            var triggers = new List<BoogieExpr>() { qVar1Func, qVar2Func };
+
             var eqFunc12 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, qVar1Func, qVar2Func);
             var eqArgs = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, eqVar1, eqVar2);
             var bodyExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, eqArgs, eqFunc12);
 
             // forall q1:int, q2:int, q1', q2' :: (q1 == q1' && q2 == q2') || abiEncodePacked(q1, q2) != abiEncodePacked(q1', q2') 
             var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar11, qVar12, qVar21, qVar22 }, 
-                new List<BoogieType>() { BoogieType.Int, BoogieType.Int, BoogieType.Int, BoogieType.Int }, bodyExpr);
+                new List<BoogieType>() { BoogieType.Int, BoogieType.Int, BoogieType.Int, BoogieType.Int }, bodyExpr, triggers);
 
             return new BoogieAxiom(qExpr);
         }

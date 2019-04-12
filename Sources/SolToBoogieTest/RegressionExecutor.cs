@@ -123,7 +123,7 @@ namespace SolToBoogieTest
             try
             {
                 BoogieTranslator translator = new BoogieTranslator();
-                BoogieAST boogieAST = translator.Translate(solidityAST, new HashSet<Tuple<string, string>>(), true);
+                BoogieAST boogieAST = translator.Translate(solidityAST, new HashSet<Tuple<string, string>>(), false);
 
                 // dump the Boogie program to a file
                 using (var outWriter = new StreamWriter(outFile))
