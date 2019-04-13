@@ -2,12 +2,14 @@
 
 ## Dependencies
 
+> NOTE: We currently provide instructions for Windows. Instructions for Linux coming soon!
+
+Install .NET Core 2.2 from [here](https://dotnet.microsoft.com/download/dotnet-core/2.2#sdk-2.2.106) (for Windows)
+
 The following dependecies are needed to run VeriSol on a Solidity program. There are two categories of dependencies:
    - Translating Solidity to Boogie program
    - Run the verifier
    - Viewing the Corral defect trace in Solidity source 
-
-> NOTE: We currently provide instructions for Windows. Instructions for Linux coming soon!
 
 ### Depedencies for translating Solidity to Boogie 
    - __Solidity compiler__. Download the Solc binary for Windows or Linux from [here](https://github.com/ethereum/solidity/releases/tag/v0.4.24). We have currently tested with version __0.4.24__. Place the executable (solc.exe for Windows, or solc-static-linux for Linux) in the **Tool** folder.
@@ -33,7 +35,7 @@ Open the __Sources\SolToBoogie.sln__ file in Visual Studio (2017) and perform __
 ### Translate Solidity to Boogie
 Assuming the root folder of this repository is *VERISOL_PATH*, run 
 
-`dotnet %VERISOL_PATH%\Sources\SolToBoogie\bin\Debug\netcoreapp2.0\SolToBoogie.dll a.sol %VERISOL_PATH% out.bpl`
+`dotnet %VERISOL_PATH%\Sources\SolToBoogie\bin\Debug\netcoreapp2.2\SolToBoogie.dll a.sol %VERISOL_PATH% out.bpl`
 
 For pretty print viewing, run
 
@@ -62,13 +64,13 @@ If Corral generates a defect (look at output of Corral and **corral_out_trace.tx
 
 To run the regressions, build *SolToBoogie.sln*, install Corral, go to **%VERISOL_PATH%\test\regressions**, and run
 
-`dotnet %VERISOL_PATH%\Sources\SolToBoogieTest\bin\Debug\netcoreapp2.0\SolToBoogieTest.dll <Path to Corral.exe> %VERISOL_PATH%`
+`dotnet %VERISOL_PATH%\Sources\SolToBoogieTest\bin\Debug\netcoreapp2.2\SolToBoogieTest.dll <Path to Corral.exe> %VERISOL_PATH%`
 
 All regressions are expected to pass. 
 
 To run a subset of examples during testing, add an optional parameter to limit the above run to a subset of tests that match a prefix string *<prefix>*
 
-`dotnet %VERISOL_PATH%\Sources\SolToBoogieTest\bin\Debug\netcoreapp2.0\SolToBoogieTest.dll <Path to Corral.exe> %VERISOL_PATH% [<prefix>]`
+`dotnet %VERISOL_PATH%\Sources\SolToBoogieTest\bin\Debug\netcoreapp2.2\SolToBoogieTest.dll <Path to Corral.exe> %VERISOL_PATH% [<prefix>]`
 
 > Instructions to run the regressions on Linux can be found [here](https://github.com/Microsoft/verisol/wiki/How-to-run-regressions-in-Linux). 
 
