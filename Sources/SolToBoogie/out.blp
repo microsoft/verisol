@@ -1,0 +1,131 @@
+type Ref;
+type ContractName;
+const unique null: Ref;
+const unique TestDelete: ContractName;
+function ConstantToRef(x: int) returns (ret: Ref);
+function keccak256(x: int) returns (ret: int);
+function abiEncodePacked1(x: int) returns (ret: int);
+function abiEncodePacked2(x: int, y: int) returns (ret: int);
+var DType: [Ref]ContractName;
+var Alloc: [Ref]bool;
+var balance_ADDR: [Ref]int;
+var M_int_int: [Ref][int]int;
+var Length: [Ref]int;
+procedure {:inline 1} FreshRefGenerator() returns (newRef: Ref);
+implementation FreshRefGenerator() returns (newRef: Ref)
+{
+havoc newRef;
+assume ((Alloc[newRef]) == (false));
+Alloc[newRef] := true;
+assume ((newRef) != (null));
+}
+
+procedure {:inline 1} HavocAllocMany();
+implementation HavocAllocMany()
+{
+var oldAlloc: [Ref]bool;
+oldAlloc := Alloc;
+havoc Alloc;
+assume (forall  __i__0_0:Ref :: ((oldAlloc[__i__0_0]) ==> (Alloc[__i__0_0])));
+}
+
+procedure boogie_si_record_sol2Bpl_int(x: int);
+procedure boogie_si_record_sol2Bpl_ref(x: Ref);
+procedure boogie_si_record_sol2Bpl_bool(x: bool);
+
+axiom(forall  __i__0_0:int, __i__0_1:int :: (((__i__0_0) == (__i__0_1)) || ((ConstantToRef(__i__0_0)) != (ConstantToRef(__i__0_1)))));
+
+axiom(forall  __i__0_0:int, __i__0_1:int :: (((__i__0_0) == (__i__0_1)) || ((keccak256(__i__0_0)) != (keccak256(__i__0_1)))));
+
+axiom(forall  __i__0_0:int, __i__0_1:int :: (((__i__0_0) == (__i__0_1)) || ((abiEncodePacked1(__i__0_0)) != (abiEncodePacked1(__i__0_1)))));
+
+axiom(forall  __i__0_0:int, __i__0_1:int, __i__1_0:int, __i__1_1:int :: ((((__i__0_0) == (__i__0_1)) && ((__i__1_0) == (__i__1_1))) || ((abiEncodePacked2(__i__0_0, __i__1_0)) != (abiEncodePacked2(__i__0_1, __i__1_1)))));
+var elements_TestDelete: [Ref]Ref;
+var x_TestDelete: [Ref]int;
+procedure {:inline 1} TestDelete_TestDelete_NoBaseCtor(this: Ref, msgsender_MSG: Ref, msgvalue_MSG: int);
+implementation TestDelete_TestDelete_NoBaseCtor(this: Ref, msgsender_MSG: Ref, msgvalue_MSG: int)
+{
+var __var_1: Ref;
+// start of initialization
+assume ((msgsender_MSG) != (null));
+x_TestDelete[this] := 0;
+// Make array/mapping vars distinct for elements
+call __var_1 := FreshRefGenerator();
+elements_TestDelete[this] := __var_1;
+assume ((Length[elements_TestDelete[this]]) == (0));
+// end of initialization
+assert {:first} {:sourceFile "/Users/diegog/Temp/testDelete.sol"} {:sourceLine 6} (true);
+assert {:first} {:sourceFile "/Users/diegog/Temp/testDelete.sol"} {:sourceLine 7} (true);
+call init_TestDelete(this, msgsender_MSG, msgvalue_MSG);
+}
+
+procedure {:constructor} {:public} {:inline 1} TestDelete_TestDelete(this: Ref, msgsender_MSG: Ref, msgvalue_MSG: int);
+implementation TestDelete_TestDelete(this: Ref, msgsender_MSG: Ref, msgvalue_MSG: int)
+{
+var __var_1: Ref;
+call TestDelete_TestDelete_NoBaseCtor(this, msgsender_MSG, msgvalue_MSG);
+}
+
+procedure {:inline 1} init_TestDelete(this: Ref, msgsender_MSG: Ref, msgvalue_MSG: int);
+implementation init_TestDelete(this: Ref, msgsender_MSG: Ref, msgvalue_MSG: int)
+{
+var __var_2: int;
+var __var_3: int;
+assert {:first} {:sourceFile "/Users/diegog/Temp/testDelete.sol"} {:sourceLine 10} (true);
+assert {:first} {:sourceFile "/Users/diegog/Temp/testDelete.sol"} {:sourceLine 13} (true);
+Length[elements_TestDelete[this]] := 0;
+assert {:first} {:sourceFile "/Users/diegog/Temp/testDelete.sol"} {:sourceLine 14} (true);
+__var_2 := Length[elements_TestDelete[this]];
+M_int_int[elements_TestDelete[this]][__var_2] := 1;
+Length[elements_TestDelete[this]] := (__var_2) + (1);
+assert {:first} {:sourceFile "/Users/diegog/Temp/testDelete.sol"} {:sourceLine 15} (true);
+__var_3 := Length[elements_TestDelete[this]];
+M_int_int[elements_TestDelete[this]][__var_3] := 2;
+Length[elements_TestDelete[this]] := (__var_3) + (1);
+assert {:first} {:sourceFile "/Users/diegog/Temp/testDelete.sol"} {:sourceLine 16} (true);
+M_int_int[elements_TestDelete[this]][1] := 0;
+}
+
+procedure BoogieEntry_TestDelete();
+implementation BoogieEntry_TestDelete()
+{
+var this: Ref;
+var msgsender_MSG: Ref;
+var msgvalue_MSG: int;
+var choice: int;
+assume ((DType[this]) == (TestDelete));
+call TestDelete_TestDelete(this, msgsender_MSG, msgvalue_MSG);
+while (true)
+{
+havoc msgsender_MSG;
+havoc msgvalue_MSG;
+havoc choice;
+}
+}
+
+procedure CorralChoice_TestDelete(this: Ref);
+implementation CorralChoice_TestDelete(this: Ref)
+{
+var msgsender_MSG: Ref;
+var msgvalue_MSG: int;
+var choice: int;
+havoc msgsender_MSG;
+havoc msgvalue_MSG;
+havoc choice;
+}
+
+procedure CorralEntry_TestDelete();
+implementation CorralEntry_TestDelete()
+{
+var this: Ref;
+var msgsender_MSG: Ref;
+var msgvalue_MSG: int;
+assume ((DType[this]) == (TestDelete));
+call TestDelete_TestDelete(this, msgsender_MSG, msgvalue_MSG);
+while (true)
+{
+call CorralChoice_TestDelete(this);
+}
+}
+
+

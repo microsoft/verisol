@@ -1228,12 +1228,17 @@ namespace SolToBoogie
                     }
                     else if (unaryOperation.SubExpression is Identifier)
                     {
-                        BoogieExpr element = TranslateExpr(unaryOperation.SubExpression);
-                        BoogieExpr lengthMapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("Length"), element);
-                        BoogieExpr rhs = new BoogieLiteralExpr(BigInteger.Zero);
-                        var assignCmd = new BoogieAssignCmd(lengthMapSelect, rhs);
-                        currentStmtList.AddStatement(assignCmd);
-
+                        Identifier identifier = unaryOperation.SubExpression as Identifier;
+                        var typeStr = identifier.TypeDescriptions.TypeString;
+                        // For some reason TypeDescriptor
+                        if (typeStr.Contains("[]"))
+                        {
+                            BoogieExpr element = TranslateExpr(unaryOperation.SubExpression);
+                            BoogieExpr lengthMapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("Length"), element);
+                            BoogieExpr rhs = new BoogieLiteralExpr(BigInteger.Zero);
+                            var assignCmd = new BoogieAssignCmd(lengthMapSelect, rhs);
+                            currentStmtList.AddStatement(assignCmd);
+                        }
                     }
                 }
                 return false;
