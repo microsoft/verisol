@@ -25,4 +25,27 @@ contract IncDec {
         a--;
         assert (a == 9);
     }
+   
+/*
+    // as expressions
+    function test5() public {
+       uint a = 10;
+       Foo(a++);
+       assert (a == 11);       
+       Foo(--a);
+       assert (a == 10);       
+    }
+
+    function test6() public {
+       uint a = 10;
+       Foo(a--);
+       assert (a == 9);       
+       Foo(++a);
+       assert (a == 10);       
+    }
+
+    function Foo(uint x) private {
+       assert (x == 10);
+    }
+*/
 }

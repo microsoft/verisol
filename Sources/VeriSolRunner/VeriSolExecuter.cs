@@ -34,6 +34,11 @@ namespace VeriSolOutOfBandsSpecsRunner
             this.SpecFilePath = specFilePath;
             this.ContractName = contractName;
             this.SpecFileDir = Path.GetDirectoryName(specFilePath);
+            Console.WriteLine($"SpecFilesDir = {SpecFileDir}");
+            if (this.SpecFileDir.TrimEnd().Equals(string.Empty))
+            {
+                throw new Exception($"Specify the specFilePath as .\\{specFilePath} instead of {specFilePath}");
+            }
             this.ContractPath = contractPath;
             this.ContractDir = Path.GetDirectoryName(contractPath);
             this.CorralPath = corralPath;
