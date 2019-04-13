@@ -53,7 +53,10 @@ namespace VeriSolOutOfBandsSpecsRunner
             RewritePrivateVariables();
 
             // call SolToBoogie on specFilePath
-            ExecuteSolToBoogie();
+            if (!ExecuteSolToBoogie())
+            {
+                return 1;
+            }
 
             // run Corral on outFile
             var corralArgs = new List<string>
