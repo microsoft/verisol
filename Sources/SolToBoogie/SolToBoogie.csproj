@@ -13,4 +13,7 @@
     <ProjectReference Include="..\BoogieAST\BoogieAST.csproj" />
     <ProjectReference Include="..\SolidityAST\SolidityAST.csproj" />
   </ItemGroup>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="copy &quot;$(ProjectDir)\..\..\Tool\solc.exe&quot; &quot;$(OutDir)&quot;" />
+  </Target>
 </Project>
