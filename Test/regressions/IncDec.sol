@@ -26,7 +26,6 @@ contract IncDec {
         assert (a == 9);
     }
    
-/*
     // as expressions
     function test5() public {
        uint a = 10;
@@ -47,5 +46,4 @@ contract IncDec {
     function Foo(uint x) private {
        assert (x == 10);
     }
-*/
 }
