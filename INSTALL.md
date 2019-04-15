@@ -16,15 +16,19 @@ The following dependecies are needed to run VeriSol on a Solidity program. There
    
 ### Dependencies for running verifier
 
-   - __Boogie verifier__. Download and build the Boogie sources from [here](https://github.com/boogie-org/boogie
-), and denote _%BOOGIE_DIR%_ as the path to the folder containing **Boogie.exe**(and other dlls).
-   - __Corral verifier__. Download and build the Corral sources from [here](https://github.com/boogie-org/corral
-), and denote _%CORRAL_DIR%_ as the path to the folder containing **Corral.exe** (and other dlls).
-   - __Z3 theorem prover__. Unless you already have **z3.exe** installed as part of Boogie/Corral download, 
-   download **z3.exe** from [here](https://github.com/Z3Prover/z3), and place it in both _%BOOGIE_DIR%_ and _%CORRAL_DIR%_. We have only tested versions **4.8.0** or below.
+We use **Corral** as a git submodule. Corral in turn uses **Boogie** as a submodule. 
+Run a recursive git submodule update command from the root folder
+
+> git submodule update --recursive --init
+
+Make sure that Corral and Corral\Boogie folders are populated. 
+Let us denote %CORRAL_DIR% as corral\bin\debug\ and %BOOGIE_DIR% as corral\boogie\binaries\ folders.
+
+   - __Z3 theorem prover__. Download **z3.exe** from [here](https://github.com/Z3Prover/z3), and place it in both Boogie and Corral binaries directories. We have only tested versions **4.8.0** or below.
    
 ### Dependencies for viewing Corral defect traces in source code
-   - __Concurrency explorer__. Downlaod the sources and build the sources of **ConcurencyExplorer** from [here](https://github.com/LeeSanderson/Chess), and denote _%CONCURRENCY_EXPLORER_DIR%_ as the path containing **ConcurrencyExplorer.exe**.
+   - __Concurrency explorer__. There is a version of [ConcurrencyExplorer](https://github.com/LeeSanderson/Chess) in Corral\Tool\. Denote this as _%CONCURRENCY_EXPLORER_DIR%_.
+%Download the sources and build the sources of **ConcurencyExplorer** from [here](https://github.com/LeeSanderson/Chess), and denote _%CONCURRENCY_EXPLORER_DIR%_ as the path containing **ConcurrencyExplorer.exe**.
 
 ## Build VeriSol
 
