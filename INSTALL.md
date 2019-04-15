@@ -19,7 +19,7 @@ The following dependecies are needed to run VeriSol on a Solidity program. There
 We use **Corral** as a git submodule. Corral in turn uses **Boogie** as a submodule. 
 Run a recursive git submodule update command from the root folder
 
-> git submodule update --recursive --init
+`git submodule update --recursive --init`
 
 Make sure that Corral and Corral\Boogie folders are populated. 
 Let us denote %CORRAL_DIR% as corral\bin\debug\ and %BOOGIE_DIR% as corral\boogie\binaries\ folders.
@@ -34,7 +34,7 @@ Let us denote %CORRAL_DIR% as corral\bin\debug\ and %BOOGIE_DIR% as corral\boogi
 
 Perform the following commands from the root folder:
 <!-- Open the __Sources\SolToBoogie.sln__ file in Visual Studio (2017) and perform __Build Solution__. -->
-- `msbuild corral\boogie\source\boogie.sln` Ignroe the errors, they go away if you build using Visual Studio. 
+- `msbuild corral\boogie\source\boogie.sln` Ignroe the errors as they don't affect VeriSol. They go away if you (optionally) build using Visual Studio. 
 - `msbuild corral\cba.sln`
 - `dotnet build Sources\Soltoboogie.sln`
 
