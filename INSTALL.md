@@ -16,19 +16,27 @@ The following dependecies are needed to run VeriSol on a Solidity program. There
    
 ### Dependencies for running verifier
 
-   - __Boogie verifier__. Download and build the Boogie sources from [here](https://github.com/boogie-org/boogie
-), and denote _%BOOGIE_DIR%_ as the path to the folder containing **Boogie.exe**(and other dlls).
-   - __Corral verifier__. Download and build the Corral sources from [here](https://github.com/boogie-org/corral
-), and denote _%CORRAL_DIR%_ as the path to the folder containing **Corral.exe** (and other dlls).
-   - __Z3 theorem prover__. Unless you already have **z3.exe** installed as part of Boogie/Corral download, 
-   download **z3.exe** from [here](https://github.com/Z3Prover/z3), and place it in both _%BOOGIE_DIR%_ and _%CORRAL_DIR%_. We have only tested versions **4.8.0** or below.
+We use **Corral** as a git submodule. Corral in turn uses **Boogie** as a submodule. 
+Run a recursive git submodule update command from the root folder
+
+`git submodule update --recursive --init`
+
+Make sure that Corral and Corral\Boogie folders are populated. 
+Let us denote %CORRAL_DIR% as corral\bin\debug\ and %BOOGIE_DIR% as corral\boogie\binaries\ folders.
+
+   - __Z3 theorem prover__. Download **z3.exe** from [here](https://github.com/Z3Prover/z3), and place it in both %BOOGIE_DIR%  and %CORRAL_DIR%  directories. We have only tested versions **4.8.0** or below.
    
 ### Dependencies for viewing Corral defect traces in source code
-   - __Concurrency explorer__. Downlaod the sources and build the sources of **ConcurencyExplorer** from [here](https://github.com/LeeSanderson/Chess), and denote _%CONCURRENCY_EXPLORER_DIR%_ as the path containing **ConcurrencyExplorer.exe**.
+   - __Concurrency explorer__. There is a version of [ConcurrencyExplorer](https://github.com/LeeSanderson/Chess) in Corral\Tool\. Denote this as _%CONCURRENCY_EXPLORER_DIR%_.
+<!--Download the sources and build the sources of **ConcurencyExplorer** from [here](https://github.com/LeeSanderson/Chess), and denote _%CONCURRENCY_EXPLORER_DIR%_ as the path containing **ConcurrencyExplorer.exe**. -->
 
 ## Build VeriSol
 
-Open the __Sources\SolToBoogie.sln__ file in Visual Studio (2017) and perform __Build Solution__. 
+Perform the following commands from the root folder:
+<!-- Open the __Sources\SolToBoogie.sln__ file in Visual Studio (2017) and perform __Build Solution__. -->
+- `msbuild corral\boogie\source\boogie.sln` Ignroe the errors as they don't affect VeriSol. They go away if you (optionally) build using Visual Studio. 
+- `msbuild corral\cba.sln`
+- `dotnet build Sources\Soltoboogie.sln`
 
 ## Running VeriSol
 
@@ -62,15 +70,15 @@ If Corral generates a defect (look at output of Corral and **corral_out_trace.tx
 
 ## Regression script
 
-To run the regressions, build *SolToBoogie.sln*, install Corral, go to **%VERISOL_PATH%\test\regressions**, and run
+To run the regressions, run
 
-`dotnet %VERISOL_PATH%\Sources\SolToBoogieTest\bin\Debug\netcoreapp2.2\SolToBoogieTest.dll <Path to Corral.exe> %VERISOL_PATH%`
+`dotnet %VERISOL_PATH%\Sources\SolToBoogieTest\bin\Debug\netcoreapp2.2\SolToBoogieTest.dll %VERISOL_PATH%\test\`
 
 All regressions are expected to pass. 
 
 To run a subset of examples during testing, add an optional parameter to limit the above run to a subset of tests that match a prefix string *<prefix>*
 
-`dotnet %VERISOL_PATH%\Sources\SolToBoogieTest\bin\Debug\netcoreapp2.2\SolToBoogieTest.dll <Path to Corral.exe> %VERISOL_PATH% [<prefix>]`
+`dotnet %VERISOL_PATH%\Sources\SolToBoogieTest\bin\Debug\netcoreapp2.2\SolToBoogieTest.dll %VERISOL_PATH%\test\ [<prefix>]`
 
 > Instructions to run the regressions on Linux can be found [here](https://github.com/Microsoft/verisol/wiki/How-to-run-regressions-in-Linux). 
 
