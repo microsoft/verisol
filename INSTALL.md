@@ -27,7 +27,7 @@ Let us denote %CORRAL_DIR% as corral\bin\debug\ and %BOOGIE_DIR% as corral\boogi
    - __Z3 theorem prover__. Download **z3.exe** from [here](https://github.com/Z3Prover/z3), and place it in both %BOOGIE_DIR%  and %CORRAL_DIR%  directories. We have only tested versions **4.8.0** or below.
    
 ### Dependencies for viewing Corral defect traces in source code
-   - __Concurrency explorer__. There is a version of [ConcurrencyExplorer](https://github.com/LeeSanderson/Chess) in Corral\Tool\. Denote this as _%CONCURRENCY_EXPLORER_DIR%_.
+   - __Concurrency explorer__. There is a version of [ConcurrencyExplorer](https://github.com/LeeSanderson/Chess) in Corral\Tools\. Denote this as _%CONCURRENCY_EXPLORER_DIR%_.
 <!--Download the sources and build the sources of **ConcurencyExplorer** from [here](https://github.com/LeeSanderson/Chess), and denote _%CONCURRENCY_EXPLORER_DIR%_ as the path containing **ConcurrencyExplorer.exe**. -->
 
 ## Build VeriSol
