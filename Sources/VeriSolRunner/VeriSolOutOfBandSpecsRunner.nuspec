@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>$id$</id>
-    <version>$version$</version>
+    <version>1.0.1</version>
     <title>$title$</title>
     <authors>Microsoft, VeriSol</authors>
     <owners>$author$</owners>
@@ -16,7 +16,7 @@
     <tags>Smart contracts, Solidity, Formal Verification</tags>
   </metadata>
   <files>
-  <file src="bin\Debug\netcoreapp2.2\*.json" target="lib\netcoreapp2.2\" />
+  <file src="bin\Debug\netcoreapp2.2\publish\*.*" target="lib\netcoreapp2.2\" />
   <file src="bin\Debug\netcoreapp2.2\solc.exe" target="lib\solc\" />
   <file src="..\..\corral\bin\debug\*.*" target="lib\corral\" exclude="*.pdb"/>
   <file src="..\..\corral\boogie\binaries\*.*" target="lib\boogie\" exclude="*.pdb"/>
