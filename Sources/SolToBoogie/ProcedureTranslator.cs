@@ -1195,16 +1195,33 @@ namespace SolToBoogie
                 }
                 else if (unaryOperation.Operator.Equals("delete"))
                 {
-                    var typeStr = unaryOperation.SubExpression.TypeDescriptions.TypeString;
-                    if (typeStr.StartsWith("int") || typeStr.StartsWith("uint") || typeStr.Equals("bool") || typeStr.StartsWith("string "))
+                    var typeDescription = unaryOperation.SubExpression.TypeDescriptions;
+                    var isBasicType = typeDescription.IsInt() || typeDescription.IsUint()
+                                      || typeDescription.IsBool() || typeDescription.IsString();
+
+                    // var isArrayAccess = unaryOperation.SubExpression is IndexAccess;
+                    if (typeDescription.IsDynamicArray())
                     {
-                        //REFACTOR to define isInt, isUint, IsByte, IsString etc.
+                        BoogieExpr element = TranslateExpr(unaryOperation.SubExpression);
+                        BoogieExpr lengthMapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("Length"), element);
+                        BoogieExpr rhs = new BoogieLiteralExpr(BigInteger.Zero);
+                        var assignCmd = new BoogieAssignCmd(lengthMapSelect, rhs);
+                        currentStmtList.AddStatement(assignCmd);
+                    }
+                    else if (typeDescription.IsStaticArray())
+                    {
+                        // TODO: Handle static arrauy
+                        Console.WriteLine($"Warning!!: Currently not handling delete of static arrays");
+                    }
+                    // This handle cases like delete x with "x" a basic type or delete x[i] when x[i] being a basic type;
+                    else if (isBasicType)
+                    {
                         BoogieExpr rhs = null;
-                        if (typeStr.StartsWith("int") || typeStr.StartsWith("uint"))
+                        if (typeDescription.IsInt() || typeDescription.IsUint())
                             rhs = new BoogieLiteralExpr(BigInteger.Zero);
-                        else if (typeStr.Equals("bool"))
+                        else if (typeDescription.IsBool())
                             rhs = new BoogieLiteralExpr(false);
-                        else if (typeStr.StartsWith("string"))
+                        else if (typeDescription.IsString())
                         {
                             var emptyStr = "";
                             rhs = new BoogieLiteralExpr(new BigInteger(emptyStr.GetHashCode()));
@@ -1214,7 +1231,7 @@ namespace SolToBoogie
                     }
                     else
                     {
-                        Console.WriteLine($"Warning!!: Only handle delete for scalars, found {typeStr}");
+                        Console.WriteLine($"Warning!!: Only handle delete for scalars and arrays, found {typeDescription.TypeString}");
                     }
                 }
                 return false;
