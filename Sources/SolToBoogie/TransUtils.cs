@@ -6,9 +6,48 @@ namespace SolToBoogie
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Text;
+    using System.Text.RegularExpressions;
     using BoogieAST;
     using SolidityAST;
- 
+
+    public static class Extensions
+    {
+        public static bool IsInt(this TypeDescription typeDescription)
+        {
+            return typeDescription.TypeString.StartsWith("int", StringComparison.CurrentCulture);
+        }
+
+        public static bool IsUint(this TypeDescription typeDescription)
+        {
+            return typeDescription.TypeString.StartsWith("uint", StringComparison.CurrentCulture);
+        }
+
+        public static bool IsBool(this TypeDescription typeDescription)
+        {
+            return typeDescription.TypeString.StartsWith("bool", StringComparison.CurrentCulture);
+        }
+
+        public static bool IsString(this TypeDescription typeDescription)
+        {
+            return typeDescription.TypeString.StartsWith("string", StringComparison.CurrentCulture);
+        }
+
+        // TODO: Provide a better way to check for dynamic array type
+        public static bool IsDynamicArray(this TypeDescription typeDescription)
+        {
+            var match = Regex.Match(typeDescription.TypeString, @".*\[\]").Success;
+            return match; 
+        }
+
+        // TODO: Provide a better way to check for array type
+        public static bool IsStaticArray(this TypeDescription typeDescription)
+        {
+            var match = Regex.Match(typeDescription.TypeString, @".*\[\d+\]").Success;
+            return match;
+        }
+
+    }
+
     public static class TransUtils
     {
         public static BoogieType GetBoogieTypeFromSolidityTypeName(TypeName type)

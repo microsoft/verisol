@@ -1,0 +1,229 @@
+type Ref;
+type ContractName;
+const unique null: Ref;
+const unique A: ContractName;
+function ConstantToRef(x: int) returns (ret: Ref);
+function keccak256(x: int) returns (ret: int);
+function abiEncodePacked1(x: int) returns (ret: int);
+function abiEncodePacked2(x: int, y: int) returns (ret: int);
+var DType: [Ref]ContractName;
+var Alloc: [Ref]bool;
+var balance_ADDR: [Ref]int;
+var M_int_int: [Ref][int]int;
+var M_int_bool: [Ref][int]bool;
+var M_int_Ref: [Ref][int]Ref;
+var Length: [Ref]int;
+procedure {:inline 1} FreshRefGenerator() returns (newRef: Ref);
+implementation FreshRefGenerator() returns (newRef: Ref)
+{
+havoc newRef;
+assume ((Alloc[newRef]) == (false));
+Alloc[newRef] := true;
+assume ((newRef) != (null));
+}
+
+procedure {:inline 1} HavocAllocMany();
+implementation HavocAllocMany()
+{
+var oldAlloc: [Ref]bool;
+oldAlloc := Alloc;
+havoc Alloc;
+assume (forall  __i__0_0:Ref :: ((oldAlloc[__i__0_0]) ==> (Alloc[__i__0_0])));
+}
+
+procedure boogie_si_record_sol2Bpl_int(x: int);
+procedure boogie_si_record_sol2Bpl_ref(x: Ref);
+procedure boogie_si_record_sol2Bpl_bool(x: bool);
+
+axiom(forall  __i__0_0:int, __i__0_1:int :: (((__i__0_0) == (__i__0_1)) || ((ConstantToRef(__i__0_0)) != (ConstantToRef(__i__0_1)))));
+
+axiom(forall  __i__0_0:int, __i__0_1:int :: (((__i__0_0) == (__i__0_1)) || ((keccak256(__i__0_0)) != (keccak256(__i__0_1)))));
+
+axiom(forall  __i__0_0:int, __i__0_1:int :: (((__i__0_0) == (__i__0_1)) || ((abiEncodePacked1(__i__0_0)) != (abiEncodePacked1(__i__0_1)))));
+
+axiom(forall  __i__0_0:int, __i__0_1:int, __i__1_0:int, __i__1_1:int :: ((((__i__0_0) == (__i__0_1)) && ((__i__1_0) == (__i__1_1))) || ((abiEncodePacked2(__i__0_0, __i__1_0)) != (abiEncodePacked2(__i__0_1, __i__1_1)))));
+var l_A: [Ref]Ref;
+var aa_A: [Ref]Ref;
+var n_A: [Ref]Ref;
+var m_A: [Ref]Ref;
+var ui_A: [Ref]int;
+var i_A: [Ref]int;
+var s2_A: [Ref]int;
+var b_A: [Ref]bool;
+procedure {:inline 1} A_A_NoBaseCtor(this: Ref, msgsender_MSG: Ref, msgvalue_MSG: int);
+implementation A_A_NoBaseCtor(this: Ref, msgsender_MSG: Ref, msgvalue_MSG: int)
+{
+var s_s190: int;
+var b1_s190: int;
+var __var_1: int;
+var b2_s190: int;
+var __var_2: int;
+var __var_3: int;
+var __var_4: int;
+var __var_5: int;
+var __var_6: int;
+var __var_7: Ref;
+var __var_8: Ref;
+var __var_9: Ref;
+var __var_10: Ref;
+// start of initialization
+assume ((msgsender_MSG) != (null));
+ui_A[this] := 0;
+i_A[this] := 0;
+s2_A[this] := 1136571504;
+b_A[this] := false;
+// Make array/mapping vars distinct for l
+call __var_7 := FreshRefGenerator();
+l_A[this] := __var_7;
+assume ((Length[l_A[this]]) == (2));
+// Make array/mapping vars distinct for aa
+call __var_8 := FreshRefGenerator();
+aa_A[this] := __var_8;
+assume ((Length[aa_A[this]]) == (2));
+// Make array/mapping vars distinct for n
+call __var_9 := FreshRefGenerator();
+n_A[this] := __var_9;
+assume ((Length[n_A[this]]) == (3));
+// Make array/mapping vars distinct for m
+call __var_10 := FreshRefGenerator();
+m_A[this] := __var_10;
+assume ((Length[m_A[this]]) == (2));
+// end of initialization
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 14} (true);
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 15} (true);
+M_int_int[l_A[this]][0] := 1;
+call  {:cexpr "l[0]"} boogie_si_record_sol2Bpl_int(M_int_int[l_A[this]][0]);
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 16} (true);
+M_int_int[l_A[this]][1] := 2;
+call  {:cexpr "l[1]"} boogie_si_record_sol2Bpl_int(M_int_int[l_A[this]][1]);
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 17} (true);
+M_int_int[l_A[this]][1] := 0;
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 18} (true);
+assert ((M_int_int[l_A[this]][1]) == (0));
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 20} (true);
+M_int_bool[aa_A[this]][0] := true;
+call  {:cexpr "aa[0]"} boogie_si_record_sol2Bpl_bool(M_int_bool[aa_A[this]][0]);
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 21} (true);
+M_int_bool[aa_A[this]][0] := false;
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 22} (true);
+assert (!(M_int_bool[aa_A[this]][0]));
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 24} (true);
+M_int_int[n_A[this]][0] := 1235706812;
+call  {:cexpr "n[0]"} boogie_si_record_sol2Bpl_int(M_int_int[n_A[this]][0]);
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 25} (true);
+M_int_int[n_A[this]][1] := -1364472692;
+call  {:cexpr "n[1]"} boogie_si_record_sol2Bpl_int(M_int_int[n_A[this]][1]);
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 26} (true);
+s_s190 := 1136571504;
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 27} (true);
+M_int_int[n_A[this]][0] := 1136571504;
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 28} (true);
+__var_1 := s_s190;
+b1_s190 := keccak256(__var_1);
+call  {:cexpr "b1"} boogie_si_record_sol2Bpl_int(b1_s190);
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 29} (true);
+__var_2 := M_int_int[n_A[this]][0];
+b2_s190 := keccak256(__var_2);
+call  {:cexpr "b2"} boogie_si_record_sol2Bpl_int(b2_s190);
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 30} (true);
+assert ((b1_s190) == (b2_s190));
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 34} (true);
+n_A[this] := 1136571504;
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 35} (true);
+assert ((Length[n_A[this]]) == (0));
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 37} (true);
+i_A[this] := -(10);
+call  {:cexpr "i"} boogie_si_record_sol2Bpl_int(i_A[this]);
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 38} (true);
+i_A[this] := 0;
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 39} (true);
+assert ((i_A[this]) == (0));
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 42} (true);
+ui_A[this] := 10;
+call  {:cexpr "ui"} boogie_si_record_sol2Bpl_int(ui_A[this]);
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 43} (true);
+ui_A[this] := 0;
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 44} (true);
+assert ((ui_A[this]) == (0));
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 46} (true);
+s2_A[this] := 37321235;
+call  {:cexpr "s2"} boogie_si_record_sol2Bpl_int(s2_A[this]);
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 47} (true);
+s2_A[this] := 1136571504;
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 48} (true);
+__var_4 := s_s190;
+__var_3 := keccak256(__var_4);
+__var_6 := s2_A[this];
+__var_5 := keccak256(__var_6);
+assert ((__var_3) == (__var_5));
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 50} (true);
+b_A[this] := true;
+call  {:cexpr "b"} boogie_si_record_sol2Bpl_bool(b_A[this]);
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 51} (true);
+b_A[this] := false;
+assert {:first} {:sourceFile "/Users/diegog/Diego/Facu/Investigacion/Areas/SmartContracts/verisol/Test/regressions/DeleteScalar.sol"} {:sourceLine 52} (true);
+assert ((b_A[this]) == (false));
+}
+
+procedure {:constructor} {:public} {:inline 1} A_A(this: Ref, msgsender_MSG: Ref, msgvalue_MSG: int);
+implementation A_A(this: Ref, msgsender_MSG: Ref, msgvalue_MSG: int)
+{
+var s_s190: int;
+var b1_s190: int;
+var __var_1: int;
+var b2_s190: int;
+var __var_2: int;
+var __var_3: int;
+var __var_4: int;
+var __var_5: int;
+var __var_6: int;
+var __var_7: Ref;
+var __var_8: Ref;
+var __var_9: Ref;
+var __var_10: Ref;
+call A_A_NoBaseCtor(this, msgsender_MSG, msgvalue_MSG);
+}
+
+procedure BoogieEntry_A();
+implementation BoogieEntry_A()
+{
+var this: Ref;
+var msgsender_MSG: Ref;
+var msgvalue_MSG: int;
+var choice: int;
+assume ((DType[this]) == (A));
+call A_A(this, msgsender_MSG, msgvalue_MSG);
+while (true)
+{
+havoc msgsender_MSG;
+havoc msgvalue_MSG;
+havoc choice;
+}
+}
+
+procedure CorralChoice_A(this: Ref);
+implementation CorralChoice_A(this: Ref)
+{
+var msgsender_MSG: Ref;
+var msgvalue_MSG: int;
+var choice: int;
+havoc msgsender_MSG;
+havoc msgvalue_MSG;
+havoc choice;
+}
+
+procedure CorralEntry_A();
+implementation CorralEntry_A()
+{
+var this: Ref;
+var msgsender_MSG: Ref;
+var msgvalue_MSG: int;
+assume ((DType[this]) == (A));
+call A_A(this, msgsender_MSG, msgvalue_MSG);
+while (true)
+{
+call CorralChoice_A(this);
+}
+}
+
+
