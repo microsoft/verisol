@@ -16,6 +16,12 @@ namespace SolToBoogie
             // set of method@contract pairs whose translatin is skipped
         public BoogieAST Translate(AST solidityAST, HashSet<Tuple<string, string>> ignoredMethods, bool generateInlineAttributesInBpl)
         {
+
+            if (generateInlineAttributesInBpl)
+            {
+                Console.WriteLine($"Warning! Found /noInlineAttrs option...the generated Bpl file cannot be used for unbounded verification");
+            }
+
             SourceUnitList sourceUnits = solidityAST.GetSourceUnits();
 
             TranslatorContext context = new TranslatorContext(ignoredMethods, generateInlineAttributesInBpl);

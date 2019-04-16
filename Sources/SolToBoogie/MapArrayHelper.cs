@@ -94,7 +94,7 @@ namespace SolToBoogie
             }
             else
             {
-                throw new SystemException($"Unknown type string: {typeString}");
+                throw new SystemException($"Unknown type string during InferKeyTypeFromTypeString: {typeString}");
             }
         }
 
@@ -112,7 +112,7 @@ namespace SolToBoogie
             }
             else
             {
-                throw new SystemException($"Unknown type string: {typeString}");
+                throw new SystemException($"Unknown type string during InferValueTypeFromTypeString: {typeString}");
             }
         }
 

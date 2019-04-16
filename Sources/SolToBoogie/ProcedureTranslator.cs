@@ -408,8 +408,10 @@ namespace SolToBoogie
                         var lhs2 = new BoogieMapSelect(lhs0, qVar2);
                         var distinctQVars = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, qVar1, qVar2);
                         var distinctLhs = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, lhs1, lhs2);
+                        var triggers = new List<BoogieExpr>() { lhs1, lhs2};
+
                         var neqExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, distinctQVars, distinctLhs);
-                        var distinctQExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1, qVar2 }, new List<BoogieType>() { mapKeyType, mapKeyType }, neqExpr);
+                        var distinctQExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1, qVar2 }, new List<BoogieType>() { mapKeyType, mapKeyType }, neqExpr, triggers);
                         stmtList.AddStatement(new BoogieAssumeCmd(distinctQExpr));
                     }
                     else if (mapping.ValueType is UserDefinedTypeName userTypeName ||
@@ -1178,22 +1180,13 @@ namespace SolToBoogie
                 VeriSolAssert(!(unaryOperation.SubExpression is UnaryOperation));
 
                 BoogieExpr lhs = TranslateExpr(unaryOperation.SubExpression);
-                if (unaryOperation.Operator.Equals("++"))
+                if (unaryOperation.Operator.Equals("++") ||
+                    unaryOperation.Operator.Equals("--"))
                 {
-                    BoogieExpr rhs = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, lhs, new BoogieLiteralExpr(1));
+                    var oper = unaryOperation.Operator.Equals("++") ? BoogieBinaryOperation.Opcode.ADD : BoogieBinaryOperation.Opcode.SUB;
+                    BoogieExpr rhs = new BoogieBinaryOperation(oper, lhs, new BoogieLiteralExpr(1));
                     BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, rhs);
-                    currentStmtList = BoogieStmtList.MakeSingletonStmtList(assignCmd);
-                    //print the value
-                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
-                    callCmd.Attributes = new List<BoogieAttribute>();
-                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{unaryOperation.SubExpression.ToString()}\""));
-                    currentStmtList.AddStatement(callCmd);
-                }
-                else if (unaryOperation.Operator.Equals("--"))
-                {
-                    BoogieExpr rhs = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, lhs, new BoogieLiteralExpr(1));
-                    BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, rhs);
-                    currentStmtList = BoogieStmtList.MakeSingletonStmtList(assignCmd);
+                    currentStmtList.AddStatement(assignCmd); 
                     //print the value
                     var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
                     callCmd.Attributes = new List<BoogieAttribute>();
@@ -1218,7 +1211,7 @@ namespace SolToBoogie
                     else if (typeDescription.IsStaticArray())
                     {
                         // TODO: Handle static arrauy
-                        Console.WriteLine($"Warning!!: Currently not handling static arrays");
+                        Console.WriteLine($"Warning!!: Currently not handling delete of static arrays");
                     }
                     // This handle cases like delete x with "x" a basic type or delete x[i] when x[i] being a basic type;
                     else if (isBasicType)
@@ -2115,14 +2108,37 @@ namespace SolToBoogie
         {
             BoogieExpr expr = TranslateExpr(node.SubExpression);
 
-            BoogieUnaryOperation.Opcode op;
             switch (node.Operator)
             {
                 case "-":
-                    op = BoogieUnaryOperation.Opcode.NEG;
-                    break;
                 case "!":
-                    op = BoogieUnaryOperation.Opcode.NOT;
+                    var op = (node.Operator == "-" ? BoogieUnaryOperation.Opcode.NEG : BoogieUnaryOperation.Opcode.NOT);
+                    BoogieUnaryOperation unaryExpr = new BoogieUnaryOperation(op, expr);
+                    currentExpr = unaryExpr;
+                    break;
+                case "++":
+                case "--":
+                    var oper = (node.Operator == "++" ? BoogieBinaryOperation.Opcode.ADD : BoogieBinaryOperation.Opcode.SUB);
+                    BoogieExpr rhs = new BoogieBinaryOperation(oper, expr, new BoogieLiteralExpr(1));
+                    if (node.Prefix) // ++x, --x
+                    {
+                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(expr, rhs);
+                        currentStmtList.AddStatement(assignCmd);
+                        currentExpr = expr;
+                    } else // x++, x--
+                    {
+                        var boogieType = MapArrayHelper.InferExprTypeFromTypeString(node.SubExpression.TypeDescriptions.TypeString);
+                        var tempVar = MkNewLocalVariableWithType(boogieType);
+                        currentStmtList.AddStatement(new BoogieAssignCmd(tempVar, expr));
+                        currentExpr = tempVar;
+                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(expr, rhs);
+                        currentStmtList.AddStatement(assignCmd);
+                    }
+                    //print the value
+                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { expr }, new List<BoogieIdentifierExpr>());
+                    callCmd.Attributes = new List<BoogieAttribute>();
+                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.SubExpression.ToString()}\""));
+                    currentStmtList.AddStatement(callCmd);
                     break;
                 default:
                     op = BoogieUnaryOperation.Opcode.UNKNOWN;
@@ -2130,8 +2146,6 @@ namespace SolToBoogie
                     break;
             }
 
-            BoogieUnaryOperation unaryExpr = new BoogieUnaryOperation(op, expr);
-            currentExpr = unaryExpr;
 
             return false;
         }

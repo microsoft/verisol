@@ -62,7 +62,6 @@ namespace SolToBoogie
             if (splitArgs.Any(x => x.Equals("/noInlineAttrs")))
             {
                 genInlineAttributesInBpl = false;
-                Console.WriteLine($"Warning! Found /noInlineAttrs option...the generated Bpl file cannot be used for unbounded verification");
             }
 
             if (compilerOutput.ContainsError())

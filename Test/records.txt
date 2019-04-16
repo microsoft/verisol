@@ -56,7 +56,7 @@ ArrayInitialization.sol
 Arithmetics.sol
 IncDec.sol
 IntTypes.sol
-#LoopFor.sol
+LoopFor.sol
 ArrayFixedSize.sol
 MappingLowerDimRef.sol
 InternalFunctionCall.sol
@@ -98,3 +98,4 @@ abiLibrary.sol
 StateVarCall.sol
 tuples.sol
 Getters.sol
+Error.sol
