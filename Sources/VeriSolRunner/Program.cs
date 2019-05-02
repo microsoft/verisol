@@ -6,6 +6,7 @@ namespace VeriSolOutOfBandsSpecsRunner
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using System.Runtime.InteropServices;
     using Microsoft.Extensions.Logging;
 
@@ -17,20 +18,16 @@ namespace VeriSolOutOfBandsSpecsRunner
     {
         public static int Main(string[] args)
         {
-            if (args.Length < 6)
+            if (args.Length < 4)
             {
-                Console.WriteLine("Usage:  VeriSolOutOfBandsSpecsRunner <specification.sol> <contractName> <relative-path-from-specification-to-root-contract.sol> <path-to-corral> <path-to-solc> <recusion-bound>");
-                Console.WriteLine("\t An (experimental) utility to add formal specification and verification using VeriSol on a smart contract without changing contract sources");
-                Console.WriteLine("\t Currently only supports transaction-depth-bounded verification");
+                ShowUsage();
                 return 1;
             }
 
             string specFilePath = args[0];
             string contractName = args[1]; // contract Name, often C_VeriSol
             string contractPath = args[2];
-            string corralPath = args[3];
-            string solcPath = args[4];
-            int corralRecursionBound = int.Parse(args[5]); // need validation
+            int corralRecursionBound = int.Parse(args[3]); // need validation
             string solcName = GetSolcNameByOSPlatform();
 
             ILoggerFactory loggerFactory = new LoggerFactory().AddConsole(LogLevel.Information);
@@ -50,6 +47,29 @@ namespace VeriSolOutOfBandsSpecsRunner
             Console.WriteLine($"Ignored method/contract pairs ==> \n\t {string.Join(",", ignoredMethods.Select(x => x.Item1 + "@" + x.Item2))}");
 
 
+            var assemblyLocation = Assembly.GetExecutingAssembly().Location;
+            string solcPath = 
+                Path.Combine(
+                    Directory.GetParent(Path.GetDirectoryName(assemblyLocation)).FullName, 
+                    "solc", solcName);
+            if (!File.Exists(solcPath))
+            {
+                ShowUsage();
+                Console.WriteLine($"Cannot find {solcName} at {solcPath}");
+                return 1;
+            }
+
+            string corralPath = Path.Combine(
+                    Directory.GetParent(Path.GetDirectoryName(assemblyLocation)).FullName,
+                    "corral", "corral.exe");
+            if (!File.Exists(corralPath))
+            {
+                ShowUsage();
+                Console.WriteLine($"Cannot find Corral.exe at {corralPath}");
+                return 1;
+            }
+
+
             var verisolExecuter = 
                 new VeriSolExecuterWithSpecs(
                     specFilePath, 
@@ -62,6 +82,13 @@ namespace VeriSolOutOfBandsSpecsRunner
                     ignoredMethods,
                     logger);
             return verisolExecuter.Execute();
+        }
+
+        private static void ShowUsage()
+        {
+            Console.WriteLine("Usage:  VeriSolOutOfBandsSpecsRunner <specification.sol> <contractName> <relative-path-from-specification-to-root-contract.sol> <recusion-bound>");
+            Console.WriteLine("\t An (experimental) utility to add formal specification and verification using VeriSol on a smart contract without changing contract sources");
+            Console.WriteLine("\t Currently only supports transaction-depth-bounded verification");
         }
 
         private static string GetSolcNameByOSPlatform()
