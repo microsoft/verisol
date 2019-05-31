@@ -7,7 +7,7 @@ verification language, and then leveraging the verification toolchain for Boogie
 
 The following paper describes the design of VeriSol and application of smart contract verification for [Azure Blockchain](https://azure.microsoft.com/en-us/solutions/blockchain/).
 
-> __Formal Specification and Verification of Smart Contracts for Azure Blockchain__,  Yuepeng Wang, Shuvendu K. Lahiri, Shuo Chen, Rong Pan, Isil Dillig, Cody Born, Immad Naseer, https://arxiv.org/abs/1812.08829
+> [__Formal Specification and Verification of Smart Contracts for Azure Blockchain__](https://www.microsoft.com/en-us/research/publication/formal-specification-and-verification-of-smart-contracts-for-azure-blockchain/),  Yuepeng Wang, Shuvendu K. Lahiri, Shuo Chen, Rong Pan, Isil Dillig, Cody Born, Immad Naseer, https://arxiv.org/abs/1812.08829
 
 ## INSTALL
 
