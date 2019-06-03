@@ -1,7 +1,7 @@
 
 # VeriSol
 
-VeriSol (Verifier for Solidity) is a [Microsoft Research](https://www.microsoft.com/en-us/research/project/verisol-a-formal-verifier-for-solidity-based-smart-contracts/) project for prototyping a formal verification and analysis system for smart contracts developed in the popular [Solidity](https://solidity.readthedocs.io/) programming language. It is based on translating
+VeriSol (Verifier for Solidity) is a [Microsoft Research project](https://www.microsoft.com/en-us/research/project/verisol-a-formal-verifier-for-solidity-based-smart-contracts/) for prototyping a formal verification and analysis system for smart contracts developed in the popular [Solidity](https://solidity.readthedocs.io/) programming language. It is based on translating
 programs in Solidity language to programs in [Boogie](https://github.com/boogie-org/boogie) intermediate 
 verification language, and then leveraging the verification toolchain for Boogie programs. 
 
