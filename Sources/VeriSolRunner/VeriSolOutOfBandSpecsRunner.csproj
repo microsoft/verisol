@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk"  xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -12,10 +12,6 @@
     <ProjectReference Include="..\BoogieAST\BoogieAST.csproj" />
     <ProjectReference Include="..\SolToBoogie\SolToBoogie.csproj" />
   </ItemGroup>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="copy &quot;$(ProjectDir)\..\..\Tool\solc.exe&quot; &quot;$(OutDir)&quot;" />
-  </Target>
 
 
 </Project>
