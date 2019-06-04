@@ -11,7 +11,7 @@ The following dependecies are needed to run VeriSol on a Solidity program. There
    - Run the verifier
    - Viewing the Corral defect trace in Solidity source 
 
-### Depedencies for translating Solidity to Boogie 
+### Dependencies for translating Solidity to Boogie 
    - __Solidity compiler__. Download the Solc binary for Windows or Linux from [here](https://github.com/ethereum/solidity/releases/tag/v0.4.24). We have currently tested with version __0.4.24__. Place the executable (solc.exe for Windows, or solc-static-linux for Linux) in the **Tool** folder.
    
 ### Dependencies for running verifier
