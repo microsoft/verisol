@@ -2,7 +2,7 @@
 
 ## Dependencies
 
-> NOTE: We currently provide instructions for Windows. Instructions for Linux coming soon!
+> NOTE: We currently provide instructions for Windows. Instructions for Linux and OSX are [here](https://github.com/Microsoft/verisol/wiki)
 
 Install .NET Core 2.2 from [here](https://dotnet.microsoft.com/download/dotnet-core/2.2#sdk-2.2.106) (for Windows)
 
