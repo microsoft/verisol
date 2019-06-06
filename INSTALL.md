@@ -80,5 +80,4 @@ To run a subset of examples during testing, add an optional parameter to limit t
 
 `dotnet %VERISOL_PATH%\Sources\SolToBoogieTest\bin\Debug\netcoreapp2.2\SolToBoogieTest.dll %VERISOL_PATH% %VERISOL_PATH%\test\ [<prefix>]`
 
-> Instructions to run the regressions on Linux can be found [here](https://github.com/Microsoft/verisol/wiki/How-to-run-regressions-in-Linux). 
 
