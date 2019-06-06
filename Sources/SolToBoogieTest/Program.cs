@@ -60,7 +60,7 @@ namespace SolToBoogieTest
                         ).FullName
                         ).FullName
                         ).FullName;
-            return Path.Combine(new string[] {verisolRoot, "Corral", "bin", "debug", "Corral.exe"});
+            return Path.Combine(new string[] {verisolRoot, "corral", "bin", "debug", "corral.exe"});
         }
 
         private static string GetSolcNameByOSPlatform()
