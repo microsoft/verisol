@@ -57,6 +57,7 @@ Arithmetics.sol
 IncDec.sol
 IntTypes.sol
 LoopFor.sol
+LoopFor2.sol
 ArrayFixedSize.sol
 MappingLowerDimRef.sol
 InternalFunctionCall.sol
