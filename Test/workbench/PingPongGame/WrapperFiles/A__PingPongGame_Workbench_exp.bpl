@@ -282,8 +282,8 @@ call Player_Player_NoBaseCtor(this, msgsender_MSG, msgvalue_MSG, pingPongGameNam
 }
 
 procedure {:public} {:inline 1} Ping_Player(this: Ref, msgsender_MSG: Ref, msgvalue_MSG: int, currentPingPongTimes_s4422: int);
-//ensures ((State_Starter[msgsender_MSG]) == (1) || (State_Starter[msgsender_MSG]) == (2)); //shuvendu
-ensures ( (State_Starter[msgsender_MSG]) == (2)); //shuvendu
+//ensures ((State_Starter[msgsender_MSG]) == (1) || (State_Starter[msgsender_MSG]) == (2)); //manually added
+ensures ( (State_Starter[msgsender_MSG]) == (2)); //manually added
 
 implementation Ping_Player(this: Ref, msgsender_MSG: Ref, msgvalue_MSG: int, currentPingPongTimes_s4422: int)
 {
