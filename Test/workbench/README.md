@@ -9,8 +9,8 @@ The folder structure is usually:
    WrapperFiles\
       A__Sample_Workbench.sol // input file to VeriSol
       Sample.sol //a copy
-      A__Sample_Workbench_exp.sol //manually added specifications
-   FixedVersion\    // if a bug was fixed
+      A__Sample_Workbench_exp.bpl //manually added specifications in Boogie file (only for PingPongGame)
+   FixedVersion\    // if a bug was fixed (e.g. AssetTransfer)
       A__Sample_Workbench.sol // input file to VeriSol
       Sample.sol //fixed copy
 
