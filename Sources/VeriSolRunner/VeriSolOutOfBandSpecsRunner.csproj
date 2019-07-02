@@ -14,4 +14,14 @@
   </ItemGroup>
 
 
+   <ItemGroup>
+        <MySourceFiles Include="..\..\Tool\**\*.*;..\..\corral\bin\debug\**\*.*;..\..\corral\boogie\Binaries\**\*.*"/>
+   </ItemGroup> 
+
+  <Target Name="CopyFiles" AfterTargets="AfterBuild">
+        <Copy
+            SourceFiles="@(MySourceFiles)"
+            DestinationFolder="$(OutDir)"
+        />
+    </Target>
 </Project>

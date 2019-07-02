@@ -17,7 +17,7 @@ namespace SolToBoogie
         public BoogieAST Translate(AST solidityAST, HashSet<Tuple<string, string>> ignoredMethods, bool generateInlineAttributesInBpl)
         {
 
-            if (generateInlineAttributesInBpl)
+            if (!generateInlineAttributesInBpl)
             {
                 Console.WriteLine($"Warning! Found /noInlineAttrs option...the generated Bpl file cannot be used for unbounded verification");
             }
