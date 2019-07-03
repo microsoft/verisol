@@ -49,7 +49,7 @@ namespace VeriSolOutOfBandsSpecsRunner
             string solcPath = 
                 Path.Combine(
                     Directory.GetParent(Path.GetDirectoryName(assemblyLocation)).FullName, 
-                    "solc", solcName);
+                    solcName);
             if (!File.Exists(solcPath))
             {
                 ShowUsage();
@@ -59,7 +59,7 @@ namespace VeriSolOutOfBandsSpecsRunner
 
             string corralPath = Path.Combine(
                     Directory.GetParent(Path.GetDirectoryName(assemblyLocation)).FullName,
-                    "corral", "corral.exe");
+                    "corral.exe");
             if (!File.Exists(corralPath))
             {
                 ShowUsage();

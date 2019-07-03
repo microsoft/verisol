@@ -13,15 +13,28 @@
     <ProjectReference Include="..\SolToBoogie\SolToBoogie.csproj" />
   </ItemGroup>
 
-
    <ItemGroup>
-        <MySourceFiles Include="..\..\Tool\**\*.*;..\..\corral\bin\debug\**\*.*;..\..\corral\boogie\Binaries\**\*.*"/>
+        <SolcFiles Include="..\..\Tool\**\*.*"/>
+        <CorralFiles Include="..\..\corral\bin\debug\**\*.*"/>
+        <BoogieFiles Include="..\..\corral\boogie\Binaries\**\*.*"/>
    </ItemGroup> 
 
-  <Target Name="CopyFiles" AfterTargets="AfterBuild">
+  <Target Name="CopySolFiles" AfterTargets="AfterBuild">
         <Copy
-            SourceFiles="@(MySourceFiles)"
-            DestinationFolder="$(OutDir)"
+            SourceFiles="@(SolcFiles)"
+            DestinationFolder="$(OutDir)\solc\"
+        />
+    </Target>
+  <Target Name="CopyCorralFiles" AfterTargets="AfterBuild">
+        <Copy
+            SourceFiles="@(CorralFiles)"
+            DestinationFolder="$(OutDir)\corral\"
+        />
+    </Target>
+  <Target Name="CopyBoogieFiles" AfterTargets="AfterBuild">
+        <Copy
+            SourceFiles="@(BoogieFiles)"
+            DestinationFolder="$(OutDir)\boogie\"
         />
     </Target>
 
