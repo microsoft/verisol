@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 contract MappingLowerDimRef {
 
@@ -7,7 +7,7 @@ contract MappingLowerDimRef {
     function test() public {
         x[10][20] = 100;
         x[10][21] = 200;
-        mapping (uint => uint) y = x[10];
+        mapping (uint => uint) storage y = x[10];
         y[20] = 150;
         assert (y[20] == 150);
         assert (y[21] == 200);

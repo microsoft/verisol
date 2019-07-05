@@ -1,5 +1,6 @@
-# In the directory $ARG[0], finds .sol files and replaces 
+# In the directory $ARG[0], finds .sol files and fixes 
 # "pragma solidity" lines for compiler version 0.5.10
+
 use File::Find; 
 
 sub wanted 

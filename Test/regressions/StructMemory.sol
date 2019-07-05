@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 //Simplest struct with an array 
 //this version does not use any temporaries

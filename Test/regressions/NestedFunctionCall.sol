@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 contract A {
 
@@ -12,7 +12,7 @@ contract NestedFunction {
     A a;
     uint count = 0;
 
-    function NestedFunction() {
+    constructor () public {
     } 
 
     function foo(uint x) internal returns (uint ret) {

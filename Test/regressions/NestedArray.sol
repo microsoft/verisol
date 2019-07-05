@@ -1,7 +1,7 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 contract B{
-   function foo() returns (uint) {return 33;}
+   function foo() public returns (uint) {return 33;}
 }
 
 contract A {
