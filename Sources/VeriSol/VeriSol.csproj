@@ -17,6 +17,7 @@
    <ItemGroup>
         <SolcFiles Include="..\..\Tool\**\*.*"/>
         <CorralFiles Include="..\..\corral\bin\debug\**\*.*"/>
+        <ConcExplorerFiles Include="..\..\corral\tools\**\*.*"/>
         <BoogieFiles Include="..\..\corral\boogie\Binaries\**\*.*"/>
    </ItemGroup> 
 
@@ -36,6 +37,12 @@
         <Copy
             SourceFiles="@(BoogieFiles)"
             DestinationFolder="$(OutDir)\boogie\"
+        />
+    </Target>
+  <Target Name="CopyConcExplorerFiles" AfterTargets="AfterBuild">
+        <Copy
+            SourceFiles="@(ConcExplorerFiles)"
+            DestinationFolder="$(OutDir)\concurrencyExplorer\"
         />
     </Target>
 

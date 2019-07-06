@@ -12,6 +12,7 @@ namespace VeriSolRunner
     using System.Diagnostics;
     using System.IO;
     using System.Runtime.InteropServices;
+    using System.Reflection;
 
     internal class VeriSolExecutor
     {
@@ -91,24 +92,24 @@ namespace VeriSolRunner
             };
 
             var boogieArgString = string.Join(" ", boogieArgs);
-            Console.WriteLine($"\n-----------Running {BoogiePath} {boogieArgString} ....");
+            Console.WriteLine($"\n++ Running {BoogiePath} {boogieArgString} ....");
             var boogieOut = RunBinary(BoogiePath, boogieArgString);
             var boogieOutFile = "boogie.txt";
             using (var bFile = new StreamWriter(boogieOutFile))
             {
                 bFile.Write(boogieOut);
             }
-            Console.WriteLine($"Finished Boogie, output in {boogieOutFile}....\n");
+            Console.WriteLine($"\tFinished Boogie, output in {boogieOutFile}....\n");
 
             // compare Corral output against expected output
-            if (CompareCorralOutput("Program has no bugs", boogieOut))
+            if (CompareBoogieOutput(boogieOut))
             {
-                Console.WriteLine($"\n *** Proof found! Formal Verification successful!");
+                Console.WriteLine($"\t*** Proof found! Formal Verification successful!");
                 return true;
             }
             else
             {
-                Console.WriteLine($"\n *** Did not find a proof");
+                Console.WriteLine($"\t*** Did not find a proof");
                 return false;
             }
         }
@@ -130,32 +131,50 @@ namespace VeriSolRunner
             };
 
             var corralArgString = string.Join(" ", corralArgs);
-            Console.WriteLine($"\n-----------Running {CorralPath} {corralArgString} ....");
+            Console.WriteLine($"\n++ Running {CorralPath} {corralArgString} ....");
             var corralOut = RunBinary(CorralPath, corralArgString);
             var corralOutFile = "corral.txt";
             using (var bFile = new StreamWriter(corralOutFile))
             {
                 bFile.Write(corralOut);
             }
-            Console.WriteLine($"Finished Corral, output in {corralOutFile}....\n");
+            Console.WriteLine($"\tFinished Corral, output in {corralOutFile}....\n");
 
             // compare Corral output against expected output
             if (CompareCorralOutput("Program has no bugs", corralOut))
             {
-                Console.WriteLine($"\n *** Formal Verification successful upto {CorralRecursionLimit} transactions");
+                Console.WriteLine($"\t*** Formal Verification successful upto {CorralRecursionLimit} transactions");
                 return true;
             }
             else
             {
-                Console.WriteLine($"\n *** Found a counterexample");
-                Console.WriteLine(@"------Run %PATH-TO-CONCURRENCY-EXPLORER%\ConcurrencyExplorer.exe corral_out_trace.txt (on Windows to view trace)");
+                Console.WriteLine($"\t*** Found a counterexample (see corral_out_trace.txt)");
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    DisplayTraceUsingConcurrencyExplorer();
+                }
                 return false;
             }
         }
+
+        private static void DisplayTraceUsingConcurrencyExplorer()
+        {
+            var assemblyLocation = Assembly.GetExecutingAssembly().Location;
+            string concExplorerWindowsPath = Path.Combine(
+                Path.GetDirectoryName(assemblyLocation),
+                "concurrencyExplorer",
+                "ConcurrencyExplorer.exe");
+            if (!File.Exists(concExplorerWindowsPath))
+            {
+                throw new Exception($"Cannot find ConcurrencyExplorer.exe at {concExplorerWindowsPath}");
+            }
+            Console.WriteLine($"\t[To view traces on Windows] {concExplorerWindowsPath} corral_out_trace.txt ");
+        }
+
         private bool ExecuteSolToBoogie()
         {
             // compile the program
-            Console.WriteLine($"\n----- Running Solc on {SolidityFilePath}....");
+            Console.WriteLine($"\n++ Running Solc on {SolidityFilePath}....");
 
             SolidityCompiler compiler = new SolidityCompiler();
             CompilerOutput compilerOutput = compiler.Compile(SolcPath, SolidityFilePath);
@@ -173,7 +192,7 @@ namespace VeriSolRunner
             try
             {
                 BoogieTranslator translator = new BoogieTranslator();
-                Console.WriteLine($"\n----- Running SolToBoogie....");
+                Console.WriteLine($"\n++ Running SolToBoogie to translate Solidity to Boogie....");
                 BoogieAST boogieAST = translator.Translate(solidityAST, ignoreMethods, true);
 
                 // dump the Boogie program to a file
@@ -244,6 +263,20 @@ namespace VeriSolRunner
             return false;
         }
 
+        private bool CompareBoogieOutput(string actual)
+        {
+            if (actual == null)
+            {
+                return false;
+            }
+            // Boogie program verifier finished with x verified, 0 errors
+            if (actual.Contains("Boogie program verifier finished with ") &&
+                actual.Contains(" verified, 0 errors"))
+            {
+                return true;
+            }
+            return false;
+        }
 
     }
 }
