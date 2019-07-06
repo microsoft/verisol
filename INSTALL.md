@@ -46,6 +46,14 @@ where
 
   > For Windows, the tool output prints instructions to view the trace using *ConcurrencyExplorer.exe* binary. 
 
+### Example with refutation ###
+`dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll test\regressions\Error.sol AssertFalse /tryProof /tryRefutation:6`
+
+### Example with proof ###
+`dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll test\regressions\Mapping.sol Mapping /tryProof /tryRefutation:6`
+
+  > The support for proofs is rudimentary and relies on simple invariant inference (see [paper](https://www.microsoft.com/en-us/research/publication/formal-specification-and-verification-of-smart-contracts-for-azure-blockchain/)), and will continue improving with time given support for user-specified loop and contract invariants, and more invariant inference techniques. 
+
 ## Regression script
 
 To run the regressions, run
