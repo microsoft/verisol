@@ -56,9 +56,9 @@ where
 
 ## Regression script
 
-To run the regressions, run
-
-`dotnet %VERISOL_PATH%\Sources\SolToBoogieTest\bin\Debug\netcoreapp2.2\SolToBoogieTest.dll %VERISOL_PATH% %VERISOL_PATH%\test\`
+To run the regressions, let %VERISOL_PATH% (respectively, $VeriSolPath) denote path to the root of the installation on Windows (respectively, Linux/OSX), run:
+- (Windows) `dotnet %VERISOL_PATH%\Sources\SolToBoogieTest\bin\Debug\netcoreapp2.2\SolToBoogieTest.dll %VERISOL_PATH% %VERISOL_PATH%\test\`
+- (Linux/OSX) `dotnet $VeriSolPath/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/SolToBoogieTest.dll $VeriSolPath $VeriSolPath/Test`
 
 All regressions are expected to pass. 
 
