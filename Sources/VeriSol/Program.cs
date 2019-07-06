@@ -28,7 +28,8 @@ namespace VeriSolRunner
             int recursionBound;
             ILogger logger;
             HashSet<Tuple<string, string>> ignoredMethods;
-            ParseCommandLineArgs(args, out solidityFile, out entryPointContractName, out tryProofFlag, out tryRefutation, out recursionBound, out solcName, out logger, out ignoredMethods);
+            bool generateInlineAttribues;
+            ParseCommandLineArgs(args, out solidityFile, out entryPointContractName, out tryProofFlag, out tryRefutation, out recursionBound, out solcName, out logger, out ignoredMethods, out generateInlineAttribues);
 
             var assemblyLocation = Assembly.GetExecutingAssembly().Location;
             string solcPath = Path.Combine(
@@ -76,11 +77,12 @@ namespace VeriSolRunner
                     ignoredMethods,
                     tryRefutation,
                     tryProofFlag,
+                    generateInlineAttribues,
                     logger);
             return verisolExecuter.Execute();
         }
 
-        private static void ParseCommandLineArgs(string[] args, out string solidityFile, out string entryPointContractName, out bool tryProofFlag, out bool tryRefutation, out int recursionBound, out string solcName, out ILogger logger, out HashSet<Tuple<string, string>> ignoredMethods)
+        private static void ParseCommandLineArgs(string[] args, out string solidityFile, out string entryPointContractName, out bool tryProofFlag, out bool tryRefutation, out int recursionBound, out string solcName, out ILogger logger, out HashSet<Tuple<string, string>> ignoredMethods, out bool genInlineAttributesInBpl)
         {
             solidityFile = args[0];
             entryPointContractName = args[1];
@@ -111,6 +113,13 @@ namespace VeriSolRunner
             if (args.Any(x => x.StartsWith("/ignoreMethod:")))
             {
                 Console.WriteLine($"Ignored method/contract pairs ==> \n\t {string.Join(",", ignoredMethods.Select(x => x.Item1 + "@" + x.Item2))}");
+            }
+            genInlineAttributesInBpl = true;
+            if (args.Any(x => x.Equals("/noInlineAttrs")))
+            {
+                genInlineAttributesInBpl = false;
+                if (tryProofFlag)
+                    throw new Exception("/noInlineAttrs cannot be used when /tryProof is used");
             }
             if (args.Any(x => x.Equals("/break")))
             {

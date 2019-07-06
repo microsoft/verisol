@@ -25,22 +25,19 @@ namespace VeriSolRunner
         private string SolcName;
         private bool TryProof;
         private bool TryRefutation;
+        private bool GenInlineAttrs;
         private ILogger Logger;
         private readonly string outFileName = "__SolToBoogieTest_out.bpl";
         private readonly int CorralRecursionLimit;
         private readonly int CorralContextBound = 1; // always 1 for solidity
         private HashSet<Tuple<string, string>> ignoreMethods;
 
-        public VeriSolExecutor(string solidityFilePath, string contractName, string corralPath, string boogiePath, string solcPath, string solcName, int corralRecursionLimit, HashSet<Tuple<string, string>> ignoreMethods, bool tryRefutation, bool tryProofFlag, ILogger logger)
+        public VeriSolExecutor(string solidityFilePath, string contractName, string corralPath, string boogiePath, string solcPath, string solcName, int corralRecursionLimit, HashSet<Tuple<string, string>> ignoreMethods, bool tryRefutation, bool tryProofFlag, bool genInlineAttrs, ILogger logger)
         {
             this.SolidityFilePath = solidityFilePath;
             this.ContractName = contractName;
             this.SolidityFileDir = Path.GetDirectoryName(solidityFilePath);
             Console.WriteLine($"SpecFilesDir = {SolidityFileDir}");
-            //if (this.SolidityFileDir.TrimEnd().Equals(string.Empty))
-            //{
-            //    throw new Exception($"Specify the specFilePath as .\\{solidityFilePath} instead of {solidityFilePath}");
-            //}
             this.CorralPath = corralPath;
             this.BoogiePath = boogiePath;
             this.SolcPath = solcPath;
@@ -50,6 +47,7 @@ namespace VeriSolRunner
             this.Logger = logger;
             this.TryProof = tryProofFlag;
             this.TryRefutation = tryRefutation;
+            this.GenInlineAttrs = genInlineAttrs;
         }
 
         public int Execute()
@@ -193,7 +191,7 @@ namespace VeriSolRunner
             {
                 BoogieTranslator translator = new BoogieTranslator();
                 Console.WriteLine($"\n++ Running SolToBoogie to translate Solidity to Boogie....");
-                BoogieAST boogieAST = translator.Translate(solidityAST, ignoreMethods, true);
+                BoogieAST boogieAST = translator.Translate(solidityAST, ignoreMethods, GenInlineAttrs);
 
                 // dump the Boogie program to a file
                 var outFilePath = Path.Combine(SolidityFileDir, outFileName);
