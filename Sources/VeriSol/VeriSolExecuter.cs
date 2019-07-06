@@ -1,6 +1,6 @@
 ﻿
 
-namespace VeriSolOutOfBandsSpecsRunner
+namespace VeriSolRunner
 {
 
     using Microsoft.Extensions.Logging;
@@ -13,57 +13,108 @@ namespace VeriSolOutOfBandsSpecsRunner
     using System.IO;
     using System.Runtime.InteropServices;
 
-    internal class VeriSolExecuterWithSpecs
+    internal class VeriSolExecutor
     {
-        private string SpecFilePath;
-        private string SpecFileDir;
+        private string SolidityFilePath;
+        private string SolidityFileDir;
         private string ContractName;
-        private string ContractPath;
-        private string ContractDir;
         private string CorralPath;
+        private string BoogiePath;
         private string SolcPath;
         private string SolcName;
+        private bool TryProof;
+        private bool TryRefutation;
         private ILogger Logger;
         private readonly string outFileName = "__SolToBoogieTest_out.bpl";
         private readonly int CorralRecursionLimit;
         private readonly int CorralContextBound = 1; // always 1 for solidity
         private HashSet<Tuple<string, string>> ignoreMethods;
 
-        public VeriSolExecuterWithSpecs(string specFilePath, string contractName, string contractPath, string corralPath, string solcPath, string solcName, int corralRecursionLimit, HashSet<Tuple<string, string>> ignoreMethods, ILogger logger)
+        public VeriSolExecutor(string solidityFilePath, string contractName, string corralPath, string boogiePath, string solcPath, string solcName, int corralRecursionLimit, HashSet<Tuple<string, string>> ignoreMethods, bool tryRefutation, bool tryProofFlag, ILogger logger)
         {
-            this.SpecFilePath = specFilePath;
+            this.SolidityFilePath = solidityFilePath;
             this.ContractName = contractName;
-            this.SpecFileDir = Path.GetDirectoryName(specFilePath);
-            Console.WriteLine($"SpecFilesDir = {SpecFileDir}");
-            if (this.SpecFileDir.TrimEnd().Equals(string.Empty))
-            {
-                throw new Exception($"Specify the specFilePath as .\\{specFilePath} instead of {specFilePath}");
-            }
-            this.ContractPath = contractPath;
-            this.ContractDir = Path.GetDirectoryName(contractPath);
+            this.SolidityFileDir = Path.GetDirectoryName(solidityFilePath);
+            Console.WriteLine($"SpecFilesDir = {SolidityFileDir}");
+            //if (this.SolidityFileDir.TrimEnd().Equals(string.Empty))
+            //{
+            //    throw new Exception($"Specify the specFilePath as .\\{solidityFilePath} instead of {solidityFilePath}");
+            //}
             this.CorralPath = corralPath;
+            this.BoogiePath = boogiePath;
             this.SolcPath = solcPath;
             this.SolcName = solcName;
             this.CorralRecursionLimit = corralRecursionLimit;
             this.ignoreMethods = new HashSet<Tuple<string, string>>(ignoreMethods);
             this.Logger = logger;
+            this.TryProof = tryProofFlag;
+            this.TryRefutation = tryRefutation;
         }
 
         public int Execute()
         {
-            // copy contractDir folder to specFileDir
-            CopyTargetContractFolder();
-
-            // replace "private " with "internal " in all sol files [HACK!!!]
-            RewritePrivateVariables();
-
             // call SolToBoogie on specFilePath
             if (!ExecuteSolToBoogie())
             {
                 return 1;
             }
 
+            // try to prove first
+            if (TryProof && FindProof())
+            {
+                return 0;
+            }
+
             // run Corral on outFile
+            if (TryRefutation && !RunCorralForRefutation())
+            {
+                return 1;
+            }
+
+            return 0;
+        }
+
+        private bool FindProof()
+        {
+            var boogieArgs = new List<string>
+            {
+                //-doModSetAnalysis -inline:spec (was assert) -noinfer -contractInfer -proc:BoogieEntry_* out.bpl
+                //
+                $"-doModSetAnalysis",
+                $"-inline:assert",
+                $"-noinfer",
+                $"-contractInfer",
+                // main method
+                $"-proc:BoogieEntry_*",
+                // Boogie file
+                outFileName
+            };
+
+            var boogieArgString = string.Join(" ", boogieArgs);
+            Console.WriteLine($"\n-----------Running {BoogiePath} {boogieArgString} ....");
+            var boogieOut = RunBinary(BoogiePath, boogieArgString);
+            var boogieOutFile = "boogie.txt";
+            using (var bFile = new StreamWriter(boogieOutFile))
+            {
+                bFile.Write(boogieOut);
+            }
+            Console.WriteLine($"Finished Boogie, output in {boogieOutFile}....\n");
+
+            // compare Corral output against expected output
+            if (CompareCorralOutput("Program has no bugs", boogieOut))
+            {
+                Console.WriteLine($"\n *** Proof found! Formal Verification successful!");
+                return true;
+            }
+            else
+            {
+                Console.WriteLine($"\n *** Did not find a proof");
+                return false;
+            }
+        }
+
+        private bool RunCorralForRefutation()
+        {
             var corralArgs = new List<string>
             {
                 // recursion bound
@@ -72,112 +123,42 @@ namespace VeriSolOutOfBandsSpecsRunner
                 $"/k:{CorralContextBound}",
                 // main method
                 $"/main:CorralEntry_{ContractName}",
+                // printing info
+                $"/tryCTrace /printDataValues:1",
                 // Boogie file
                 outFileName
             };
 
             var corralArgString = string.Join(" ", corralArgs);
             Console.WriteLine($"\n-----------Running {CorralPath} {corralArgString} ....");
-            var corralOut = RunCorral(corralArgString);
-            Console.WriteLine($"Finished Corral....\n{corralOut}");
+            var corralOut = RunBinary(CorralPath, corralArgString);
+            var corralOutFile = "corral.txt";
+            using (var bFile = new StreamWriter(corralOutFile))
+            {
+                bFile.Write(corralOut);
+            }
+            Console.WriteLine($"Finished Corral, output in {corralOutFile}....\n");
 
             // compare Corral output against expected output
             if (CompareCorralOutput("Program has no bugs", corralOut))
             {
-                Console.WriteLine("\n-----Formal Verification successful!!");
-                return 0;
+                Console.WriteLine($"\n *** Formal Verification successful upto {CorralRecursionLimit} transactions");
+                return true;
             }
-
-            Console.WriteLine("\n-----Formal Verification unsuccessful!!");
-            return 1;
-        }
-
-        private void CopyTargetContractFolder()
-        {
-            // replicates the content of contractDir\* into specFileDir\
-            DirectoryCopy(ContractDir, SpecFileDir, true);
-        }
-
-        /// <summary>
-        /// https://docs.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
-        /// </summary>
-        private static void DirectoryCopy(string sourceDirName, string destDirName, bool copySubDirs)
-        {
-            // Get the subdirectories for the specified directory.
-            DirectoryInfo dir = new DirectoryInfo(sourceDirName);
-
-            if (!dir.Exists)
+            else
             {
-                throw new DirectoryNotFoundException(
-                    "Source directory does not exist or could not be found: "
-                    + sourceDirName);
-            }
-
-            DirectoryInfo[] dirs = dir.GetDirectories();
-            // If the destination directory doesn't exist, create it.
-            if (!Directory.Exists(destDirName))
-            {
-                Directory.CreateDirectory(destDirName);
-            }
-
-            // Get the files in the directory and copy them to the new location.
-            FileInfo[] files = dir.GetFiles();
-            foreach (FileInfo file in files)
-            {
-                string temppath = Path.Combine(destDirName, file.Name);
-                file.CopyTo(temppath, true);
-            }
-
-            // If copying subdirectories, copy them and their contents to new location.
-            if (copySubDirs)
-            {
-                foreach (DirectoryInfo subdir in dirs)
-                {
-                    string temppath = Path.Combine(destDirName, subdir.Name);
-                    DirectoryCopy(subdir.FullName, temppath, copySubDirs);
-                }
+                Console.WriteLine($"\n *** Found a counterexample");
+                Console.WriteLine(@"------Run %PATH-TO-CONCURRENCY-EXPLORER%\ConcurrencyExplorer.exe corral_out_trace.txt (on Windows to view trace)");
+                return false;
             }
         }
-
-        private void RewritePrivateVariables()
-        {
-            //recurse down to each Solidity file
-            var solidityFiles = Directory.EnumerateFiles(SpecFileDir, "*.sol", SearchOption.AllDirectories);
-
-            //replace "private " with "internal " in the file
-            foreach (var solFile in solidityFiles)
-            {
-                var tmpFile = solFile + ".tmp";
-                using (StreamReader sr = new StreamReader(solFile))
-                {
-                    using (StreamWriter sw = new StreamWriter(tmpFile))
-                    {
-                        string line;
-                        while ((line = sr.ReadLine()) != null)
-                        {
-                            // brute force
-                            string replacedLine =  line.Replace(" private ", " internal ");
-                            replacedLine = replacedLine.Replace(" private(", " internal("); // private(returns bool)
-                            replacedLine = replacedLine.Replace(" private{", " internal{"); // private{body}
-                            replacedLine = replacedLine.Replace(")private ", ")internal "); // )private {body}
-                            replacedLine = replacedLine.Replace(")private(", ")internal("); // )private(returns bool)
-                            replacedLine = replacedLine.Replace(")private{", ")internal{"); // )private{body}
-                            sw.WriteLine(replacedLine);
-                        }
-                    }
-                }
-                File.Delete(solFile);
-                File.Move(tmpFile, solFile);
-            }
-        }
-
         private bool ExecuteSolToBoogie()
         {
             // compile the program
-            Console.WriteLine($"\n----- Running Solc on {SpecFilePath}....");
+            Console.WriteLine($"\n----- Running Solc on {SolidityFilePath}....");
 
             SolidityCompiler compiler = new SolidityCompiler();
-            CompilerOutput compilerOutput = compiler.Compile(SolcPath, SpecFilePath);
+            CompilerOutput compilerOutput = compiler.Compile(SolcPath, SolidityFilePath);
 
             if (compilerOutput.ContainsError())
             {
@@ -186,7 +167,7 @@ namespace VeriSolOutOfBandsSpecsRunner
             }
 
             // build the Solidity AST from solc output
-            AST solidityAST = new AST(compilerOutput, Path.GetDirectoryName(SpecFilePath));
+            AST solidityAST = new AST(compilerOutput, Path.GetDirectoryName(SolidityFilePath));
 
             // translate Solidity to Boogie
             try
@@ -196,7 +177,7 @@ namespace VeriSolOutOfBandsSpecsRunner
                 BoogieAST boogieAST = translator.Translate(solidityAST, ignoreMethods, true);
 
                 // dump the Boogie program to a file
-                var outFilePath = Path.Combine(SpecFileDir, outFileName);
+                var outFilePath = Path.Combine(SolidityFileDir, outFileName);
                 using (var outWriter = new StreamWriter(outFileName))
                 {
                     outWriter.WriteLine(boogieAST.GetRoot());
@@ -210,7 +191,7 @@ namespace VeriSolOutOfBandsSpecsRunner
             return true;
         }
 
-        private string RunCorral(string corralArguments)
+        private string RunBinary(string binaryPath, string binaryArguments)
         {
             Process p = new Process();
             p.StartInfo.UseShellExecute = false;
@@ -220,18 +201,18 @@ namespace VeriSolOutOfBandsSpecsRunner
             p.StartInfo.CreateNoWindow = true;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                p.StartInfo.FileName = CorralPath;
-                p.StartInfo.Arguments = corralArguments;
+                p.StartInfo.FileName = binaryPath;
+                p.StartInfo.Arguments = binaryArguments;
             }
             else
             {
                 p.StartInfo.FileName = "mono";
-                p.StartInfo.Arguments = $"{CorralPath} {corralArguments}";
+                p.StartInfo.Arguments = $"{binaryPath} {binaryArguments}";
                 Console.WriteLine(p.StartInfo.Arguments);
             }
             p.Start();
 
-            string corralOutput = p.StandardOutput.ReadToEnd();
+            string outputBinary = p.StandardOutput.ReadToEnd();
             string errorMsg = p.StandardError.ReadToEnd();
             if (!String.IsNullOrEmpty(errorMsg))
             {
@@ -243,7 +224,7 @@ namespace VeriSolOutOfBandsSpecsRunner
             // TODO: should set up a timeout here
             // but it seems there is a problem if we execute corral using mono
 
-            return corralOutput;
+            return outputBinary;
         }
 
         private bool CompareCorralOutput(string expected, string actual)

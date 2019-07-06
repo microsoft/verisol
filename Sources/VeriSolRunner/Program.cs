@@ -1,5 +1,5 @@
 ﻿
-namespace VeriSolOutOfBandsSpecsRunner
+namespace VeriSolRunner
 {
     using System;
     using System.Collections.Generic;
