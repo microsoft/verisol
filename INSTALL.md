@@ -20,6 +20,8 @@ corral\boogie\binaries\ folders.
 
 ## Build VeriSol
 
+ > We use "\" to denote path separators for Windows. Use the appropriate separator "/" for Linux/OSX in instructions below. 
+
 Perform the following commands from the root folder:
 <!-- Open the __Sources\SolToBoogie.sln__ file in Visual Studio (2017) and perform __Build Solution__. -->
 <!-- - `msbuild corral\boogie\source\boogie.sln` Ignroe the errors as they don't affect VeriSol. They go away if you (optionally) build using Visual Studio. -->
@@ -58,7 +60,7 @@ where
 
 To run the regressions, let %VERISOL_PATH% (respectively, $VeriSolPath) denote path to the root of the installation on Windows (respectively, Linux/OSX), run:
 - (Windows) `dotnet %VERISOL_PATH%\Sources\SolToBoogieTest\bin\Debug\netcoreapp2.2\SolToBoogieTest.dll %VERISOL_PATH% %VERISOL_PATH%\test\`
-- (Linux/OSX) `dotnet $VeriSolPath/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/SolToBoogieTest.dll $VeriSolPath $VeriSolPath/Test`
+<!-- - (Linux/OSX) `dotnet $VeriSolPath/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/SolToBoogieTest.dll $VeriSolPath $VeriSolPath/Test` -->
 
 All regressions are expected to pass. 
 
