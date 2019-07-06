@@ -1,6 +1,6 @@
 ﻿
 
-namespace VeriSolOutOfBandsSpecsRunner
+namespace VeriSolRunner
 {
 
     using Microsoft.Extensions.Logging;
