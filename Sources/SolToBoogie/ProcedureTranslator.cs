@@ -1121,7 +1121,8 @@ namespace SolToBoogie
             BoogieExpr guard = TranslateExpr(node.Condition);
             BoogieStmtList body = TranslateStatement(node.Body);
 
-            BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, body);
+            var (invariants, newBody) = ExtractInvariants(body);
+            BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, body, invariants);
 
             currentStmtList.AddStatement(whileCmd);
             return false;
@@ -1138,11 +1139,39 @@ namespace SolToBoogie
             stmtList.AppendStmtList(initStmt);
 
             body.AppendStmtList(loopStmt);
-            BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, body);
+            var (invariants, newBody) = ExtractInvariants(body);
+            BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, body, invariants);
             stmtList.AddStatement(whileCmd);
 
             currentStmtList.AppendStmtList(stmtList);
             return false;
+        }
+
+        /// <summary>
+        /// TODO: Remove the Invariant_VeriSol calls from body
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        private Tuple<List<BoogieExpr>, BoogieStmtList> ExtractInvariants(BoogieStmtList body)
+        {
+            List<BoogieExpr> invariantExprs = new List<BoogieExpr>();
+            foreach (var bigBlock in body.BigBlocks)
+            {
+                foreach (var stmt in bigBlock.SimpleCmds)
+                {
+                    var callCmd = stmt as BoogieCallCmd;
+                    if (callCmd == null)
+                    {
+                        continue;
+                    }
+                    if (callCmd.Callee.Equals("Invariant_VeriSol"))
+                    {
+                        Debug.Assert(callCmd.Ins.Count == 4, "Found VeriSol.Invariant(..) with unexpected number of args");
+                        invariantExprs.Add(callCmd.Ins[3]);
+                    }
+                }
+            }
+            return Tuple.Create<List<BoogieExpr>, BoogieStmtList> (invariantExprs, body);
         }
 
         public override bool Visit(DoWhileStatement node)
@@ -1153,7 +1182,8 @@ namespace SolToBoogie
             BoogieStmtList stmtList = new BoogieStmtList();
             stmtList.AppendStmtList(body);
 
-            BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, body);
+            var (invariants, newBody) = ExtractInvariants(body);
+            BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, body, invariants);
             stmtList.AddStatement(whileCmd);
 
             currentStmtList.AppendStmtList(stmtList);
