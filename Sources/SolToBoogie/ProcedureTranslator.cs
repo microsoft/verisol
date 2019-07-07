@@ -985,21 +985,21 @@ namespace SolToBoogie
             if (lhsType != null && !isTupleAssignment)
             {
                 //REFACTOR!
-                if (lhsType.TypeString.StartsWith("uint") || lhsType.TypeString.StartsWith("int") || lhsType.TypeString.StartsWith("string ") || lhsType.TypeString.StartsWith("bytes"))
-                {
-                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { lhs[0] }, new List<BoogieIdentifierExpr>());
-                    callCmd.Attributes = new List<BoogieAttribute>();
-                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
-                    currentStmtList.AddStatement(callCmd);
-                }
-                if (lhsType.TypeString.Equals("address"))
+                if (lhsType.TypeString.Equals("address") || lhsType.IsDynamicArray() || lhsType.IsStaticArray())
                 {
                     var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_ref", new List<BoogieExpr>() { lhs[0] }, new List<BoogieIdentifierExpr>());
                     callCmd.Attributes = new List<BoogieAttribute>();
                     callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
                     currentStmtList.AddStatement(callCmd);
                 }
-                if (lhsType.TypeString.Equals("bool"))
+                else if (lhsType.TypeString.StartsWith("uint") || lhsType.TypeString.StartsWith("int") || lhsType.TypeString.StartsWith("string ") || lhsType.TypeString.StartsWith("bytes"))
+                {
+                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { lhs[0] }, new List<BoogieIdentifierExpr>());
+                    callCmd.Attributes = new List<BoogieAttribute>();
+                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
+                    currentStmtList.AddStatement(callCmd);
+                }
+                else if (lhsType.TypeString.Equals("bool"))
                 {
                     var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_bool", new List<BoogieExpr>() { lhs[0] }, new List<BoogieIdentifierExpr>());
                     callCmd.Attributes = new List<BoogieAttribute>();
