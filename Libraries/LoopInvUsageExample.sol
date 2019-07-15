@@ -1,7 +1,6 @@
 pragma solidity ^0.4.24;
-import "./../../Libraries/VeriSolContracts.sol";
-//import "./VeriSolContracts.sol";
-//import "github.com/microsoft/verisol/blob/master/Libraries/VeriSolContracts.sol";
+import "./VeriSolContracts.sol";
+
 
 contract LoopFor {
 
