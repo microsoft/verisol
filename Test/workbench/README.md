@@ -19,7 +19,9 @@ The folder structure is usually:
       - A__Sample_Workbench.sol // input file to VeriSol
       - Sample.sol //fixed copy
 
-Command to VeriSol: COMING SOON!
+Command to VeriSol: 
+
+runall.cmd
 
 
 

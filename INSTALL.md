@@ -1,78 +1,67 @@
 # Installing and running VeriSol
 
+ > We use "\\" to denote path separators for Windows. Substitute theseparator "/" for Linux/OSX in instructions below. 
+
+
 ## Dependencies
 
-> NOTE: We currently provide instructions for Windows. Instructions for Linux and OSX are [here](https://github.com/Microsoft/verisol/wiki)
-
-Install .NET Core 2.2 from [here](https://dotnet.microsoft.com/download/dotnet-core/2.2#sdk-2.2.106) (for Windows)
-
-The following dependecies are needed to run VeriSol on a Solidity program. There are two categories of dependencies:
-   - Translating Solidity to Boogie program
-   - Run the verifier
-   - Viewing the Corral defect trace in Solidity source 
-
-### Dependencies for translating Solidity to Boogie 
-   - __Solidity compiler__. Download the Solc binary for Windows or Linux from [here](https://github.com/ethereum/solidity/releases/tag/v0.4.24). We have currently tested with version __0.4.24__. Place the executable (solc.exe for Windows, or solc-static-linux for Linux) in the **Tool** folder.
-   
-### Dependencies for running verifier
-
-We use **Corral** as a git submodule. Corral in turn uses **Boogie** as a submodule. 
-Run a recursive git submodule update command from the root folder
-
+- Install **.NET Core** (version **2.2**) for Windows/Linux/OSX from [here](https://dotnet.microsoft.com/download/dotnet-core/2.2#sdk-2.2.106) 
+- Install **Solidity compiler** (version **0.4.24**) binaries for Windows/Linux/OSX from [here](https://github.com/ethereum/solidity/releases/tag/v0.4.24) into the **Tool** folder.
+   - (Windows) Download `solc.exe`
+   - (Linux) Download the executable `solc-static-linux` use command `chmod +x solc-static-linux` to grant execution permission.
+   - (OSX) Download the executable `solc-mac`. use command `chmod +x solc-mac` to grant execution permission (if necessary)
+- We use **Corral** and **Boogie** verifiers. Corral is present as a submodule, which in turn uses Boogie as a submodule. Run a recursive git submodule update command from the root folder
 `git submodule update --recursive --init`
+Make sure that Corral and Corral\Boogie folders are populated. Let us denote %CORRAL_DIR% as corral\bin\debug\ and %BOOGIE_DIR% as 
+corral\boogie\binaries\ folders. 
+   - (Windows) Follow instructions for [building Corral on Windows](https://github.com/boogie-org/corral#building-and-running-corral-on-windows) and [building Boogie on Windows](https://github.com/boogie-org/boogie#windows)
+   - (Linux/OSX) Follow the [building Corral on Linux](https://github.com/boogie-org/corral#building-and-running-corral-on-linux-using-mono) and [building Boogie on Linux/OSX](https://github.com/boogie-org/boogie#linuxosx). Note the dependency on [Mono](https://www.mono-project.com). 
+   - At this point, there should be a copy (Windows) or symbolic link (Linux/OSX) of [Z3 theorem prover](https://github.com/Z3Prover/z3) **z3.exe** present in both %CORRAL_DIR% and %BOOGIE_DIR% folders. 
 
-Make sure that Corral and Corral\Boogie folders are populated. 
-Let us denote %CORRAL_DIR% as corral\bin\debug\ and %BOOGIE_DIR% as corral\boogie\binaries\ folders.
-
-   - __Z3 theorem prover__. Download **z3.exe** from [here](https://github.com/Z3Prover/z3), and place it in both %BOOGIE_DIR%  and %CORRAL_DIR%  directories. We have only tested versions **4.8.0** or below.
-   
-### Dependencies for viewing Corral defect traces in source code
-   - __Concurrency explorer__. There is a version of [ConcurrencyExplorer](https://github.com/LeeSanderson/Chess) in Corral\Tools\. Denote this as _%CONCURRENCY_EXPLORER_DIR%_.
-<!--Download the sources and build the sources of **ConcurencyExplorer** from [here](https://github.com/LeeSanderson/Chess), and denote _%CONCURRENCY_EXPLORER_DIR%_ as the path containing **ConcurrencyExplorer.exe**. -->
+### (Optional) 
+   - For Windows, we currently use  [ConcurrencyExplorer](https://github.com/LeeSanderson/Chess) in Corral\Tools\ to view traces (for Windows). It is unclear if one can build the sources of *ConcurencyExplorer* for Linux/OSX from [here](https://github.com/LeeSanderson/Chess). If that works, copy the *ConcurrencyExplorer.exe* binary to Corral\Tools\.
 
 ## Build VeriSol
 
 Perform the following commands from the root folder:
 <!-- Open the __Sources\SolToBoogie.sln__ file in Visual Studio (2017) and perform __Build Solution__. -->
-- `msbuild corral\boogie\source\boogie.sln` Ignroe the errors as they don't affect VeriSol. They go away if you (optionally) build using Visual Studio. 
-- `msbuild corral\cba.sln`
-- `dotnet build Sources\Soltoboogie.sln`
+<!-- - `msbuild corral\boogie\source\boogie.sln` Ignroe the errors as they don't affect VeriSol. They go away if you (optionally) build using Visual Studio. -->
+<!-- - `msbuild corral\cba.sln` -->
+`dotnet build Sources\Soltoboogie.sln`
 
 ## Running VeriSol
 
-### Translate Solidity to Boogie
 Assuming the root folder of this repository is *VERISOL_PATH*, run 
 
-`dotnet %VERISOL_PATH%\Sources\SolToBoogie\bin\Debug\netcoreapp2.2\SolToBoogie.dll a.sol %VERISOL_PATH% out.bpl`
+`dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll`
 
-For pretty print viewing, run
+to view options and their meanings. 
 
- `%BOOGIE_DIR%\boogie.exe out.bpl /noVerify /doModSetAnalysis /print:pretty.bpl`
+A common usage:
 
+`dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll foo.sol Bar /tryProof /tryRefutation:6`
 
-### Run verifier
-See the paper [here](https://arxiv.org/abs/1812.08829) for details of what these verification terms mean.
+where 
+   - *foo.sol* is the top-level Solidity file
+   - *Bar* is the name of the top-level contract to analyze
+   - */tryProof* attempts to find proof of correctness of the specifications in foo.sol
+   - */tryRefutation:6* attempts to find a violation of specifications in foo.sol up to *6* transactions to *Bar*.
 
-*Sound verification* of the Boogie program (unbounded verification using invariant inference)
+  > For Windows, the tool output prints instructions to view the trace using *ConcurrencyExplorer.exe* binary. 
 
-`%BOOGIE_DIR%\Boogie.exe -doModSetAnalysis -inline:assert -noinfer -contractInfer -proc:BoogieEntry_* out.bpl`
+### Example with refutation ###
+`dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll test\regressions\Error.sol AssertFalse /tryProof /tryRefutation:6`
 
-*Transaction-bounded verification* of the Boogie program (using Corral), with unrolling depth (replace **4** with desired depth) for a top-level contract (replace **Foo** with the contract name):
+### Example with verification ###
+`dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll test\regressions\Mapping.sol Mapping /tryProof /tryRefutation:6`
 
-`%CORRAL_DIR%\corral.exe /recursionBound:4 /k:1 /main:CorralEntry_Foo /tryCTrace out.bpl /printDataValues:1`
-
-If Corral throws an exception, try adding "/trackAllVars " to the list of parameters above.  
-
-### View traces from Corral
-If Corral generates a defect (look at output of Corral and **corral_out_trace.txt** file in the same folder), view it using ConcurrencyExplorer: 
-
-`%CONCURRENCY_EXPLORER_DIR%\ConcurrencyExplorer.exe corral_out_trace.txt`
+  > The support for proofs for examples that require non-trivial loop and contract invariants is rudimentary and relies on simple automatic invariant inference (see [paper](https://www.microsoft.com/en-us/research/publication/formal-specification-and-verification-of-smart-contracts-for-azure-blockchain/)). The completeness of verification will continue to improve with time given support for user-specified loop and contract invariants, and more automatic or user-directed invariant inference techniques. 
 
 ## Regression script
 
-To run the regressions, run
-
-`dotnet %VERISOL_PATH%\Sources\SolToBoogieTest\bin\Debug\netcoreapp2.2\SolToBoogieTest.dll %VERISOL_PATH% %VERISOL_PATH%\test\`
+To run the regressions, let %VERISOL_PATH% denote path to the root of the installation on Windows, run:
+-  `dotnet %VERISOL_PATH%\Sources\SolToBoogieTest\bin\Debug\netcoreapp2.2\SolToBoogieTest.dll %VERISOL_PATH% %VERISOL_PATH%\test\`
+<!-- - (Linux/OSX) `dotnet $VeriSolPath/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/SolToBoogieTest.dll $VeriSolPath $VeriSolPath/Test` -->
 
 All regressions are expected to pass. 
 
