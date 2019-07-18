@@ -38,7 +38,7 @@ namespace SolToBoogie
             {
                 return BoogieType.Ref;
             }
-            else if (typeString.Equals("address"))
+            else if (typeString.Equals("address") || typeString.Equals("address payable"))
             {
                 return BoogieType.Ref;
             }
