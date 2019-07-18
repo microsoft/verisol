@@ -1,4 +1,7 @@
-pragma solidity >=0.4.24 <0.6.0;
+pragma solidity >=0.5.0 <0.6.0;
+// this example does not work wiht 0.4.24 as storage
+// TypeError: Storage location can only be given for array or struct types.
+//        mapping (uint => uint) storage y = x[10]; 
 
 contract MappingLowerDimRef {
 

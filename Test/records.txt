@@ -7,7 +7,7 @@ Inheritance.sol
 InheritWithConstructorArgs.sol
 TypeCast.sol
 AddressCast.sol
-MappingReference.sol
+#MappingReference.sol #not backwards compat with 0.4.24
 InheritInitializer.sol
 StaticDispatching.sol
 Event.sol
@@ -60,7 +60,7 @@ IntTypes.sol
 LoopFor.sol
 LoopFor2.sol
 ArrayFixedSize.sol
-MappingLowerDimRef.sol
+#MappingLowerDimRef.sol #Not backward compat with 0.4.24
 InternalFunctionCall.sol
 LoopBreak.sol
 MappingNested.sol
