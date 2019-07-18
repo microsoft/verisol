@@ -124,7 +124,7 @@ namespace SolToBoogie
             // procedure name
             string procName = node.Name + "_" + currentContract.Name;
 
-            if (node.IsConstructor)
+            if (node.IsConstructorForContract(currentContract.Name))
             {
                 procName += "_NoBaseCtor";
             }
@@ -143,7 +143,7 @@ namespace SolToBoogie
             // attributes
             List<BoogieAttribute> attributes = new List<BoogieAttribute>();
             if ((node.Visibility == EnumVisibility.PUBLIC || node.Visibility == EnumVisibility.EXTERNAL)
-                && !node.IsConstructor)
+                && !node.IsConstructorForContract(currentContract.Name))
             {
                 attributes.Add(new BoogieAttribute("public"));
             }
@@ -212,7 +212,7 @@ namespace SolToBoogie
                 }
 
                 // initialization statements
-                if (node.IsConstructor)
+                if (node.IsConstructorForContract(currentContract.Name))
                 {
                     BoogieStmtList initStmts = GenerateInitializationStmts(currentContract);
                     initStmts.AppendStmtList(procBody);
@@ -226,7 +226,7 @@ namespace SolToBoogie
             }
 
             // generate real constructors
-            if (node.IsConstructor)
+            if (node.IsConstructorForContract(currentContract.Name))
             {
                 GenerateConstructorWithBaseCalls(node, inParams);
             }
@@ -596,7 +596,7 @@ namespace SolToBoogie
         // generate actual constructor procedures that invoke constructors without base in linearized order
         private void GenerateConstructorWithBaseCalls(FunctionDefinition ctor, List<BoogieVariable> inParams)
         {
-            VeriSolAssert(ctor.IsConstructor, $"{ctor.Name} is not a constructor");
+            VeriSolAssert(ctor.IsConstructorForContract(currentContract.Name), $"{ctor.Name} is not a constructor");
 
             ContractDefinition contract = context.GetContractByFunction(ctor);
             string procName = contract.Name + "_" + contract.Name;
