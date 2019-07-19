@@ -1,8 +1,8 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 contract C {
 
-    constructor () {}
+    constructor () public {}
     function foo(uint x) public returns (uint ret) {
         ret = x + 1;
     }
@@ -12,7 +12,7 @@ contract C {
 contract CreateContract {
 
 
-    function CreateContract() {}
+    constructor () public {}
     function testCreateContract() public {
         C c = new C();
         uint r = c.foo(1);

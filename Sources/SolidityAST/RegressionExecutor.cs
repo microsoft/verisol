@@ -53,7 +53,7 @@ namespace SolidityAST
                 else
                 {
                     ++failedCount;
-                    logger.LogError($"Failed - {filename}");
+                    logger.LogInformation($"Failed - {filename}");
                 }
             }
 

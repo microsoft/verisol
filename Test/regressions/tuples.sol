@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 contract A {
    function testTuple() public pure{
@@ -30,6 +30,6 @@ contract A {
    function returnTupleByName() private pure returns (uint a, uint b){
       a = 5;
       b = 55;
-      return; 
+      return (a,b); 
    }
 }

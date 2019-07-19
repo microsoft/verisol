@@ -1,9 +1,9 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 contract A {
     uint public a;
     
-    function A(uint _a) public {
+    constructor (uint _a) public {
         a = _a;
     }
 }

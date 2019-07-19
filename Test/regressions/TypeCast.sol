@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 contract A {
     function foo() public returns (uint) {
@@ -18,10 +18,10 @@ contract B {
         address x = address(0x5); 
         address y = address(a); 
         address z = address(new A());
-        assert (z != 0x0);        
+        assert (z != address(0x0));        
 
         //annoying case that survived
         myaddr = address(new A());
-        assert (myaddr != 0x0);                
+        assert (myaddr != address(0x0));                
     }
 }

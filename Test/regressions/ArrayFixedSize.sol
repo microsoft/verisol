@@ -1,10 +1,10 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 contract ArrayFixedSize {
 
     uint[2] a;
 
-    constructor() {}
+    constructor() public {}
 
     function test() public {
         a[0] = 1;

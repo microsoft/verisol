@@ -34,6 +34,8 @@ namespace SolToBoogieTest
 
         private static Dictionary<string, bool> filesToRun = new Dictionary<string, bool>();
 
+        public enum BatchExeResult { Success, SolcError, SolToBoogieError, CorralError, OtherException };
+
         public RegressionExecutor(string solcPath, string corralPath, string testDirectory, string configDirectory, string recordsDir, ILogger logger, string testPrefix = "")
         {
             this.solcPath = solcPath;
@@ -72,28 +74,49 @@ namespace SolToBoogieTest
 
                 logger.LogInformation($"Running {filename}");
 
-                bool success = false;
+                BatchExeResult batchExeResult = BatchExeResult.SolcError;
                 string expectedCorralOutput = "", currentCorralOutput = "";
                 try
                 {
-                    success = Execute(filename, out expectedCorralOutput, out currentCorralOutput);
+                    batchExeResult = Execute(filename, out expectedCorralOutput, out currentCorralOutput);
                 }
                 catch (Exception exception)
                 {
                     logger.LogCritical(exception, $"Exception occurred in {filename}");
+                    batchExeResult = BatchExeResult.OtherException;
                 }
 
-                if (success)
+                if (batchExeResult == BatchExeResult.Success)
                 {
                     ++passedCount;
                     logger.LogInformation($"Passed - {filename}");
                 }
+                else if (batchExeResult == BatchExeResult.SolcError)
+                {
+                    ++failedCount;
+                    logger.LogError($"Failed (Solc failed) - {filename}");
+                }
+                else if (batchExeResult == BatchExeResult.OtherException)
+                {
+                    ++failedCount;
+                    logger.LogError($"Failed (Other exception) - {filename}");
+                }
+                else if (batchExeResult == BatchExeResult.SolToBoogieError)
+                {
+                    ++failedCount;
+                    logger.LogError($"Failed (VeriSol translation error) - {filename}");
+                }
+                else if (batchExeResult == BatchExeResult.CorralError)
+                {
+                    ++failedCount;
+                    logger.LogError($"Failed (Corral regression failed) - {filename}");
+                    logger.LogError($"\t Expected - {expectedCorralOutput}");
+                    logger.LogError($"\t Corral detailed Output - {currentCorralOutput}");
+                }
                 else
                 {
                     ++failedCount;
-                    logger.LogError($"Failed - {filename}");
-                    logger.LogError($"\t Expected - {expectedCorralOutput}");
-                    logger.LogError($"\t Corral detailed Output - {currentCorralOutput}");
+                    logger.LogError($"Failed (Tool error: unexpected failure code) - {filename}");
                 }
             }
 
@@ -102,8 +125,9 @@ namespace SolToBoogieTest
             return (failedCount == 0);
         }
 
-        public bool Execute(string filename, out string expected, out string current)
+        public BatchExeResult Execute(string filename, out string expected, out string current)
         {
+            BatchExeResult result = BatchExeResult.SolcError;
             string filePath = Path.Combine(testDirectory, filename);
 
             // compile the program
@@ -133,8 +157,9 @@ namespace SolToBoogieTest
             } catch (Exception e)
             {
                 Console.WriteLine($"VeriSol translation error: {e.Message}");
+                result = BatchExeResult.SolToBoogieError;
                 expected = current = null;
-                return false;
+                return result;
             }
 
             // read the corral configuration from Json
@@ -145,7 +170,8 @@ namespace SolToBoogieTest
             string corralOutput = RunCorral(corralConfig);
             expected = corralConfig.ExpectedResult;
             current = corralOutput;
-            return CompareCorralOutput(corralConfig.ExpectedResult, corralOutput);
+            result = CompareCorralOutput(corralConfig.ExpectedResult, corralOutput);
+            return result;
         }
 
         private string RunCorral(CorralConfiguration corralConfig)
@@ -186,11 +212,11 @@ namespace SolToBoogieTest
             return corralOutput;
         }
 
-        private bool CompareCorralOutput(string expected, string actual)
+        private BatchExeResult CompareCorralOutput(string expected, string actual)
         {
             if (actual == null)
             {
-                return false;
+                return BatchExeResult.CorralError;
             }
             string[] actualList = actual.Split("Boogie verification time");
             if (actualList.Length == 2)
@@ -201,10 +227,10 @@ namespace SolToBoogieTest
                 // if (actualList[0].TrimEnd().EndsWith(expected))
                 if (actualList[0].Contains(expected))
                 {
-                    return true;
+                    return BatchExeResult.Success;
                 }
             }
-            return false;
+            return BatchExeResult.CorralError;
         }
 
         private string GenerateCorralArguments(CorralConfiguration corralConfig)

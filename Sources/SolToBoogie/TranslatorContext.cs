@@ -250,7 +250,7 @@ namespace SolToBoogie
 
         public void AddConstructorToContract(ContractDefinition contract, FunctionDefinition ctor)
         {
-            Debug.Assert(ctor.IsConstructor, $"{ctor.Name} is not a constructor");
+            Debug.Assert(ctor.IsConstructorForContract(contract.Name), $"{ctor.Name} is not a constructor");
             Debug.Assert(!ContractToConstructorMap.ContainsKey(contract), $"Multiple constructors are defined");
             ContractToConstructorMap[contract] = ctor;
         }
