@@ -419,6 +419,8 @@ namespace SolidityAST
 
         public bool IsConstructor { get; set; }
 
+        public bool IsConstructorForContract(string contractName) { return IsConstructor || string.IsNullOrEmpty(Name) || Name.Equals(contractName); }
+
         public bool IsDeclaredConst { get; set; }
 
         public List<ModifierInvocation> Modifiers { get; set; }
@@ -463,6 +465,7 @@ namespace SolidityAST
             StringBuilder builder = new StringBuilder();
             if (IsConstructor && string.IsNullOrEmpty(Name))
             {
+                //will be dead code in solc 0.5.x
                 builder.Append("constructor ");
             }
             else

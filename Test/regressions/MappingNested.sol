@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 contract MappingNested {
 
@@ -7,7 +7,7 @@ contract MappingNested {
     uint[] p;
   
 
-    constructor() {
+    constructor() public {
         m[10][20] = 11;
         m[20][10] = 21;
         assert (m[10][20] == 11);

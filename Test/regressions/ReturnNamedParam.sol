@@ -1,8 +1,8 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 contract ReturnNamedParam {
 
-    function ReturnNamedParam() public {}
+    constructor () public {}
 
     function foo() public returns (uint r) {
         return 1;

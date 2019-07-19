@@ -1,15 +1,15 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 contract Consts {
 
-    function Consts() public {
+    constructor () public {
         uint a;
         address b;
         address c;
 
         a = 10;
-        b = 0x10;
-        c = 0x12;
+        b = address(0x10);
+        c = address(0x12);
 
         assert(b != c);
     }

@@ -1,7 +1,7 @@
 // Example from solidity tutorial
 // https://solidity.readthedocs.io/en/v0.4.24/types.html
 
-pragma solidity ^0.4.11;
+pragma solidity >=0.4.24 <0.6.0;
 
 contract CrowdFunding {
     // Defines a new type with two fields.

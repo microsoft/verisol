@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 
 contract A {
@@ -13,12 +13,12 @@ contract Mapping {
     mapping (string => A) lll;
     mapping (string => address) llll;
 
-    function Mapping() {
+    constructor () public {
         assert (m[10] == 0);
         assert (!n[4]);
         assert (l["a"] == 0);
         assert (!ll["a"]);
-        assert (lll["a"] == address(0x0));
+        assert (address(lll["a"]) == address(0x0));
         assert (llll["a"] == address(0x0));
     }
     function test() public {

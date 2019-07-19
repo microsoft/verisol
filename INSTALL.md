@@ -6,7 +6,7 @@
 ## Dependencies
 
 - Install **.NET Core** (version **2.2**) for Windows/Linux/OSX from [here](https://dotnet.microsoft.com/download/dotnet-core/2.2#sdk-2.2.106) 
-- Install **Solidity compiler** (version **0.4.24**) binaries for Windows/Linux/OSX from [here](https://github.com/ethereum/solidity/releases/tag/v0.4.24) into the **Tool** folder.
+- Install **Solidity compiler** (version **0.5.10**) binaries for Windows/Linux/OSX from [here](https://github.com/ethereum/solidity/releases/tag/v0.5.10) into the **Tool** folder.
    - (Windows) Download `solc.exe`
    - (Linux) Download the executable `solc-static-linux` use command `chmod +x solc-static-linux` to grant execution permission.
    - (OSX) Download the executable `solc-mac`. use command `chmod +x solc-mac` to grant execution permission (if necessary)
@@ -16,7 +16,8 @@ Make sure that Corral and Corral\Boogie folders are populated. Let us denote %CO
 corral\boogie\binaries\ folders. 
    - (Windows) Follow instructions for [building Corral on Windows](https://github.com/boogie-org/corral#building-and-running-corral-on-windows) and [building Boogie on Windows](https://github.com/boogie-org/boogie#windows)
    - (Linux/OSX) Follow the [building Corral on Linux](https://github.com/boogie-org/corral#building-and-running-corral-on-linux-using-mono) and [building Boogie on Linux/OSX](https://github.com/boogie-org/boogie#linuxosx). Note the dependency on [Mono](https://www.mono-project.com). 
-   - At this point, there should be a copy (Windows) or symbolic link (Linux/OSX) of [Z3 theorem prover](https://github.com/Z3Prover/z3) **z3.exe** present in both %CORRAL_DIR% and %BOOGIE_DIR% folders. 
+   - You need to build Boogie separately to generate **Boogie.exe** (not generated as part of the Corral build)
+   - At this point, there should be a copy (Windows) or symbolic link (Linux/OSX) of [Z3 theorem prover](https://github.com/Z3Prover/z3/releases) **z3.exe** present in both %CORRAL_DIR% and %BOOGIE_DIR% folders. 
 
 ### (Optional) 
    - For Windows, we currently use  [ConcurrencyExplorer](https://github.com/LeeSanderson/Chess) in Corral\Tools\ to view traces (for Windows). It is unclear if one can build the sources of *ConcurencyExplorer* for Linux/OSX from [here](https://github.com/LeeSanderson/Chess). If that works, copy the *ConcurrencyExplorer.exe* binary to Corral\Tools\.
@@ -65,7 +66,7 @@ To run the regressions, let %VERISOL_PATH% denote path to the root of the instal
 
 All regressions are expected to pass. 
 
-To run a subset of examples during testing, add an optional parameter to limit the above run to a subset of tests that match a prefix string *<prefix>*
+To run a subset of examples during testing, add an optional parameter to limit the above run to a subset of tests that match a prefix string *<prefix>* (e.g. using Array will only run regresssions with Array in their prefix)
 
 `dotnet %VERISOL_PATH%\Sources\SolToBoogieTest\bin\Debug\netcoreapp2.2\SolToBoogieTest.dll %VERISOL_PATH% %VERISOL_PATH%\test\ [<prefix>]`
 

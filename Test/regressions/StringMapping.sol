@@ -1,10 +1,10 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 contract Mapping {
 
     mapping (string => uint) m;
 
-    constructor(string s) public {        
+    constructor(string memory s) public {        
         m[s] = 21;    // string memory
         assert (m[s] == 21);
 

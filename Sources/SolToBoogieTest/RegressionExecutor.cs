@@ -94,29 +94,29 @@ namespace SolToBoogieTest
                 else if (batchExeResult == BatchExeResult.SolcError)
                 {
                     ++failedCount;
-                    logger.LogError($"Solc failed - {filename}");
+                    logger.LogError($"Failed (Solc failed) - {filename}");
                 }
                 else if (batchExeResult == BatchExeResult.OtherException)
                 {
                     ++failedCount;
-                    logger.LogError($"Other exception - {filename}");
+                    logger.LogError($"Failed (Other exception) - {filename}");
                 }
                 else if (batchExeResult == BatchExeResult.SolToBoogieError)
                 {
                     ++failedCount;
-                    logger.LogError($"VeriSol translation error - {filename}");
+                    logger.LogError($"Failed (VeriSol translation error) - {filename}");
                 }
                 else if (batchExeResult == BatchExeResult.CorralError)
                 {
                     ++failedCount;
-                    logger.LogError($"Corral regression failed - {filename}");
+                    logger.LogError($"Failed (Corral regression failed) - {filename}");
                     logger.LogError($"\t Expected - {expectedCorralOutput}");
                     logger.LogError($"\t Corral detailed Output - {currentCorralOutput}");
                 }
                 else
                 {
                     ++failedCount;
-                    logger.LogError($"Tool error: unexpected failure code");
+                    logger.LogError($"Failed (Tool error: unexpected failure code) - {filename}");
                 }
             }
 

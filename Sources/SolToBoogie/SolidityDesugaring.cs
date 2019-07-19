@@ -41,7 +41,7 @@ namespace SolToBoogie
             Debug.Assert(currentContract != null);
             currentFunction = node;
 
-            if (node.IsConstructor && string.IsNullOrEmpty(node.Name))
+            if (node.IsConstructorForContract(currentContract.Name) && string.IsNullOrEmpty(node.Name))
             {
                 node.Name = currentContract.Name;
             }

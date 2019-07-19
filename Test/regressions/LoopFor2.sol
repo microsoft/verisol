@@ -1,9 +1,9 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 contract LoopFor2 {
     uint[100] b;
     uint[100] c;
 
-    function LoopFor2() public {
+    constructor () public {
       b[0] = c[0];
     }
     function testUnboundedForLoop(uint n) public {
