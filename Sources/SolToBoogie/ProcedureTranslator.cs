@@ -36,6 +36,9 @@ namespace SolToBoogie
         // to generate inline attributes 
         private bool genInlineAttrsInBpl;
 
+        // to collect contract invariants
+        private List<BoogieExpr> contractInvariants = null;
+
         public ProcedureTranslator(TranslatorContext context, bool _genInlineAttrsInBpl = true)
         {
             this.context = context;
@@ -219,10 +222,21 @@ namespace SolToBoogie
                     procBody = initStmts;
                 }
 
-                List<BoogieVariable> localVars = boogieToLocalVarsMap[currentBoogieProc];
+                // is it a VeriSol Contract Invariant function?
+                List<BoogieExpr> contractInvs = null;
+                if (IsVeriSolContractInvariantFunction(node, procBody, out contractInvs))
+                {
+                    //add contract invs as loop invariants to outer loop
+                    Debug.Assert(contractInvariants == null, $"More than one function defining the contract invariant for contract {currentContract.Name}");
+                    contractInvariants = contractInvs;
+                }
+                else
+                {
+                    List<BoogieVariable> localVars = boogieToLocalVarsMap[currentBoogieProc];
+                    BoogieImplementation impelementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
+                    context.Program.AddDeclaration(impelementation);
+                }
 
-                BoogieImplementation impelementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
-                context.Program.AddDeclaration(impelementation);
             }
 
             // generate real constructors
@@ -232,6 +246,20 @@ namespace SolToBoogie
             }
 
             return false;
+        }
+
+        private bool IsVeriSolContractInvariantFunction(FunctionDefinition node, BoogieStmtList procBody, out List<BoogieExpr> contractInvs)
+        {
+            contractInvs = null;
+            if (node.Visibility != EnumVisibility.PRIVATE ||
+                node.StateMutability != EnumStateMutability.VIEW ||
+                node.Parameters.Parameters.Count != 0)
+            {
+                return false;
+            }
+
+            contractInvs = ExtractContractInvariants(procBody);
+            return contractInvs.Count > 0;
         }
 
         public override bool Visit(ModifierDefinition node)
@@ -1121,7 +1149,7 @@ namespace SolToBoogie
             BoogieExpr guard = TranslateExpr(node.Condition);
             BoogieStmtList body = TranslateStatement(node.Body);
 
-            var (invariants, newBody) = ExtractInvariants(body);
+            var invariants = ExtractInvariants(body);
             BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, body, invariants);
 
             currentStmtList.AddStatement(whileCmd);
@@ -1139,7 +1167,7 @@ namespace SolToBoogie
             stmtList.AppendStmtList(initStmt);
 
             body.AppendStmtList(loopStmt);
-            var (invariants, newBody) = ExtractInvariants(body);
+            var invariants = ExtractInvariants(body);
             BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, body, invariants);
             stmtList.AddStatement(whileCmd);
 
@@ -1152,7 +1180,7 @@ namespace SolToBoogie
         /// </summary>
         /// <param name="body"></param>
         /// <returns></returns>
-        private Tuple<List<BoogieExpr>, BoogieStmtList> ExtractInvariants(BoogieStmtList body)
+        private List<BoogieExpr> ExtractInvariants(BoogieStmtList body)
         {
             List<BoogieExpr> invariantExprs = new List<BoogieExpr>();
             foreach (var bigBlock in body.BigBlocks)
@@ -1171,7 +1199,29 @@ namespace SolToBoogie
                     }
                 }
             }
-            return Tuple.Create<List<BoogieExpr>, BoogieStmtList> (invariantExprs, body);
+            return invariantExprs;
+        }
+
+        private List<BoogieExpr> ExtractContractInvariants(BoogieStmtList body)
+        {
+            List<BoogieExpr> invariantExprs = new List<BoogieExpr>();
+            foreach (var bigBlock in body.BigBlocks)
+            {
+                foreach (var stmt in bigBlock.SimpleCmds)
+                {
+                    var callCmd = stmt as BoogieCallCmd;
+                    if (callCmd == null)
+                    {
+                        continue;
+                    }
+                    if (callCmd.Callee.Equals("ContractInvariant_VeriSol"))
+                    {
+                        Debug.Assert(callCmd.Ins.Count == 4, "Found VeriSol.ContractInvariant(..) with unexpected number of args");
+                        invariantExprs.Add(callCmd.Ins[3]);
+                    }
+                }
+            }
+            return invariantExprs;
         }
 
         public override bool Visit(DoWhileStatement node)
@@ -1182,7 +1232,7 @@ namespace SolToBoogie
             BoogieStmtList stmtList = new BoogieStmtList();
             stmtList.AppendStmtList(body);
 
-            var (invariants, newBody) = ExtractInvariants(body);
+            var invariants = ExtractInvariants(body);
             BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, body, invariants);
             stmtList.AddStatement(whileCmd);
 
@@ -1275,6 +1325,8 @@ namespace SolToBoogie
 
         // updated in visitors of different expressions
         private BoogieExpr currentExpr;
+
+        public List<BoogieExpr> ContractInvariants { get => contractInvariants;}
 
         private BoogieExpr TranslateExpr(Expression expr)
         {
