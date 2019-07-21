@@ -37,13 +37,14 @@ namespace SolToBoogie
         private bool genInlineAttrsInBpl;
 
         // to collect contract invariants
-        private List<BoogieExpr> contractInvariants = null;
+        private Dictionary<string, List<BoogieExpr>> contractInvariants = null;
 
         public ProcedureTranslator(TranslatorContext context, bool _genInlineAttrsInBpl = true)
         {
             this.context = context;
             boogieToLocalVarsMap = new Dictionary<string, List<BoogieVariable>>();
             genInlineAttrsInBpl = _genInlineAttrsInBpl;
+            contractInvariants = new Dictionary<string, List<BoogieExpr>>();
         }
 
         public override bool Visit(ContractDefinition node)
@@ -227,8 +228,8 @@ namespace SolToBoogie
                 if (IsVeriSolContractInvariantFunction(node, procBody, out contractInvs))
                 {
                     //add contract invs as loop invariants to outer loop
-                    Debug.Assert(contractInvariants == null, $"More than one function defining the contract invariant for contract {currentContract.Name}");
-                    contractInvariants = contractInvs;
+                    Debug.Assert(!contractInvariants.ContainsKey(currentContract.Name), $"More than one function defining the contract invariant for contract {currentContract.Name}");
+                    contractInvariants[currentContract.Name] = contractInvs;
                 }
                 else
                 {
@@ -1326,7 +1327,7 @@ namespace SolToBoogie
         // updated in visitors of different expressions
         private BoogieExpr currentExpr;
 
-        public List<BoogieExpr> ContractInvariants { get => contractInvariants;}
+        public Dictionary<string, List<BoogieExpr>> ContractInvariants { get => contractInvariants;}
 
         private BoogieExpr TranslateExpr(Expression expr)
         {

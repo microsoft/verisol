@@ -13,12 +13,12 @@ namespace SolToBoogie
     public class HarnessGenerator
     {
         private TranslatorContext context;
-        private List<BoogieExpr> contractInvariants;
+        private Dictionary<string, List<BoogieExpr>> contractInvariants;
 
-        public HarnessGenerator(TranslatorContext context, List<BoogieExpr> _contractInvariants)
+        public HarnessGenerator(TranslatorContext context, Dictionary<string, List<BoogieExpr>> _contractInvariants)
         {
             this.context = context;
-            this.contractInvariants = new List<BoogieExpr>(_contractInvariants);
+            this.contractInvariants = _contractInvariants;
         }
 
         public void Generate()
@@ -213,9 +213,9 @@ namespace SolToBoogie
             }
 
             // add the contract invariant if present
-            if (contractInvariants != null)
+            if (contractInvariants.ContainsKey(contract.Name))
             {
-                contractInvariants.ForEach(x => candidateInvs.Add(new BoogieLoopInvCmd(x)));
+                contractInvariants[contract.Name].ForEach(x => candidateInvs.Add(new BoogieLoopInvCmd(x)));
             }
 
             return new BoogieWhileCmd(new BoogieLiteralExpr(true), body, candidateInvs);
