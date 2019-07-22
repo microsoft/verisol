@@ -1632,6 +1632,9 @@ namespace SolToBoogie
             }
             var boogieExprs = arguments.ConvertAll(x => TranslateExpr(x));
             var funcName = $"abiEncodePacked{arguments.Count}";
+            // hack
+            if(arguments[0].TypeDescriptions.TypeString=="address")
+                funcName = funcName + "R";
             var abiEncodeFuncCall = new BoogieFuncCallExpr(funcName, boogieExprs);
             currentStmtList.AddStatement(new BoogieAssignCmd(lhs, abiEncodeFuncCall));
             return;

@@ -92,6 +92,10 @@ namespace SolToBoogie
                 Match match = arrayRegex.Match(typeString);
                 return BoogieType.Int;
             }
+            else if(typeString=="bytes calldata")
+            {
+                return BoogieType.Ref;
+            }
             else
             {
                 throw new SystemException($"Unknown type string during InferKeyTypeFromTypeString: {typeString}");
@@ -109,6 +113,10 @@ namespace SolToBoogie
             {
                 Match match = arrayRegex.Match(typeString);
                 return InferExprTypeFromTypeString(match.Groups[1].Value);
+            }
+            else if (typeString == "bytes calldata")
+            {
+                return BoogieType.Ref;
             }
             else
             {
