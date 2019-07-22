@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 contract EventTests {
 
@@ -6,7 +6,7 @@ contract EventTests {
     event EventBar(address indexed addr);
 
     function foo(uint _a) public {
-        EventFoo(msg.sender, _a);
+        emit EventFoo(msg.sender, _a);
     }
 
     function bar() public {

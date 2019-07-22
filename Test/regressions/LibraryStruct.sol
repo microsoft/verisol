@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 //simple library with no internal state
 
@@ -19,7 +19,7 @@ contract C {
         assert(aa.x == 22);
     }
    
-    function bar(Lib.A xx) private {
+    function bar(Lib.A memory xx) private {
         xx.x = 22;
     }
 

@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <HighEntropyVA>true</HighEntropyVA> 
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.1.1" />
+    <ProjectReference Include="..\SolidityAST\SolidityAST.csproj" />
+    <ProjectReference Include="..\BoogieAST\BoogieAST.csproj" />
+    <ProjectReference Include="..\SolToBoogie\SolToBoogie.csproj" />
+  </ItemGroup>
+
+   <ItemGroup>
+        <SolcFiles Include="..\..\Tool\**\*.*"/>
+        <CorralFiles Include="..\..\corral\bin\debug\**\*.*"/>
+        <ConcExplorerFiles Include="..\..\corral\tools\**\*.*"/>
+        <BoogieFiles Include="..\..\corral\boogie\Binaries\**\*.*"/>
+   </ItemGroup> 
+
+  <Target Name="CopySolFiles" AfterTargets="AfterBuild">
+        <Copy
+            SourceFiles="@(SolcFiles)"
+            DestinationFolder="$(OutDir)\solc\"
+        />
+    </Target>
+  <Target Name="CopyCorralFiles" AfterTargets="AfterBuild">
+        <Copy
+            SourceFiles="@(CorralFiles)"
+            DestinationFolder="$(OutDir)\corral\"
+        />
+    </Target>
+  <Target Name="CopyBoogieFiles" AfterTargets="AfterBuild">
+        <Copy
+            SourceFiles="@(BoogieFiles)"
+            DestinationFolder="$(OutDir)\boogie\"
+        />
+    </Target>
+  <Target Name="CopyConcExplorerFiles" AfterTargets="AfterBuild">
+        <Copy
+            SourceFiles="@(ConcExplorerFiles)"
+            DestinationFolder="$(OutDir)\concurrencyExplorer\"
+        />
+    </Target>
+
+</Project>

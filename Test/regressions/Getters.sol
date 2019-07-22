@@ -1,8 +1,8 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 contract A {
     uint public x;
-    constructor () {x = 11;}
+    constructor () public {x = 11;}
 }
 
 contract B {

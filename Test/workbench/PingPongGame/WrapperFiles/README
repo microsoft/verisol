@@ -1,0 +1,9 @@
+To verify using Boogie.
+
+Boogie.exe -doModSetAnalysis -inline:spec -noinfer -proc:BoogieEntry_Starter_Azure* A__PingPongGame_Workbench_exp.bpl
+
+//don't use contractInfer
+
+//Smoke test: to see a counterexample
+1. replace -inline:spec with -inline:assert //fails as there is a recursive call > depth 1
+2. comment the ensures 

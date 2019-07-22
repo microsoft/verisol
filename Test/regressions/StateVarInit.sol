@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 contract A {
       uint x;
@@ -7,10 +7,10 @@ contract A {
       address z;
       bool w;
 
-      constructor() {
+      constructor() public {
           assert(x == 0);
           assert(x128 == 0);
-          assert(z == 0x0);
+          assert(z == address(0x0));
           assert(!w);
 
           string memory yval = "";

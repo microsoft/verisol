@@ -1,10 +1,10 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 contract EmptyContract {
 
     uint a;
 
-    function EmptyContract() public {
+    constructor () public {
         a = 1;
     }
 

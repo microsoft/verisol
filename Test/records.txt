@@ -7,13 +7,15 @@ Inheritance.sol
 InheritWithConstructorArgs.sol
 TypeCast.sol
 AddressCast.sol
-MappingReference.sol
+#not backwards compat with 0.4.24
+MappingReference.sol 
 InheritInitializer.sol
 StaticDispatching.sol
 Event.sol
 InheritanceMultiple.sol
 #StructNested.sol
 #ArrayParamAlias.sol
+ArrayParamCopy.sol
 #LoopNestedFor.sol
 EnumType.sol
 EnumParam.sol
@@ -57,8 +59,10 @@ Arithmetics.sol
 IncDec.sol
 IntTypes.sol
 LoopFor.sol
+LoopFor2.sol
 ArrayFixedSize.sol
-MappingLowerDimRef.sol
+#Not backward compat with 0.4.24
+MappingLowerDimRef.sol 
 InternalFunctionCall.sol
 LoopBreak.sol
 MappingNested.sol

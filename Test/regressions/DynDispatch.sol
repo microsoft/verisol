@@ -1,20 +1,20 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 // An example inspired by the virtual dispatch bug in PoA.sol and Tests.sol
 
 contract A {
   uint x;
-  function A() {x = 0;}
-  function Foo() returns (uint) {
+  constructor () public {x = 0;}
+  function Foo() public returns (uint) {
       return 33;
   }
-  function Bar() {
+  function Bar() public {
       uint t = Foo(); //should invoke either A or B's Foo, but not C
   }
 }
 
 contract B is A {
-  function B()  public  {
+  constructor ()  public  {
        uint t;
        t = Foo(); // should only invoke from B
        x = t; 
@@ -32,7 +32,7 @@ contract B is A {
 contract C {
    B b;
 
-   function C(address a) 
+   constructor (address a) public
    { 
       uint t;
       address c = a;

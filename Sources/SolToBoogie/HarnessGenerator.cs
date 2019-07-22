@@ -234,7 +234,7 @@ namespace SolToBoogie
             List<FunctionDefinition> publicFuncDefs = new List<FunctionDefinition>();
             foreach (FunctionDefinition funcDef in funcDefs)
             {
-                if (funcDef.IsConstructor) continue;
+                if (funcDef.IsConstructorForContract(contract.Name)) continue;
                 if (funcDef.Visibility == EnumVisibility.PUBLIC || funcDef.Visibility == EnumVisibility.EXTERNAL)
                 {
                     if (funcDef.StateMutability == EnumStateMutability.VIEW || funcDef.StateMutability == EnumStateMutability.PURE)
