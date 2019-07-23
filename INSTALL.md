@@ -51,10 +51,10 @@ where
   > For Windows, the tool output prints instructions to view the trace using *ConcurrencyExplorer.exe* binary. 
 
 ### Example with refutation ###
-`dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll test\regressions\Error.sol AssertFalse /tryProof /tryRefutation:6`
+`dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll Test\regressions\Error.sol AssertFalse /tryProof /tryRefutation:6`
 
 ### Example with verification ###
-`dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll test\regressions\Mapping.sol Mapping /tryProof /tryRefutation:6`
+`dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll Test\regressions\Mapping.sol Mapping /tryProof /tryRefutation:6`
 
   > The support for proofs for examples that require non-trivial loop and contract invariants is rudimentary and relies on simple automatic invariant inference (see [paper](https://www.microsoft.com/en-us/research/publication/formal-specification-and-verification-of-smart-contracts-for-azure-blockchain/)). The completeness of verification will continue to improve with time given support for user-specified loop and contract invariants, and more automatic or user-directed invariant inference techniques. 
 
