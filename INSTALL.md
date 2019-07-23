@@ -28,7 +28,7 @@ Perform the following commands from the root folder:
 <!-- Open the __Sources\SolToBoogie.sln__ file in Visual Studio (2017) and perform __Build Solution__. -->
 <!-- - `msbuild corral\boogie\source\boogie.sln` Ignroe the errors as they don't affect VeriSol. They go away if you (optionally) build using Visual Studio. -->
 <!-- - `msbuild corral\cba.sln` -->
-`dotnet build Sources\Soltoboogie.sln`
+`dotnet build Sources\SolToBoogie.sln`
 
 ## Running VeriSol
 
@@ -40,7 +40,7 @@ to view options and their meanings.
 
 A common usage:
 
-`dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll foo.sol Bar /tryProof /tryRefutation:6`
+`dotnet %VERISOL_PATH%\Sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll foo.sol Bar /tryProof /tryRefutation:6`
 
 where 
    - *foo.sol* is the top-level Solidity file
