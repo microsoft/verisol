@@ -144,7 +144,7 @@ namespace SolToBoogie
 
 
             var assumesForParamsAndReturn = currentStmtList;
-            currentStmtList = null;
+            currentStmtList = new BoogieStmtList();
 
 
             // attributes
@@ -753,8 +753,6 @@ namespace SolToBoogie
         
         public override bool Visit(ParameterList node)
         {
-            Debug.Assert(currentStmtList != null);
-
             currentParamList = new List<BoogieVariable>();
             var retParamCount = 0;
             foreach (VariableDeclaration parameter in node.Parameters)
