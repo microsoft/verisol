@@ -76,7 +76,7 @@ namespace SolToBoogie
             sourceUnits.Accept(procTranslator);
 
             // generate harness for each contract
-            HarnessGenerator harnessGenerator = new HarnessGenerator(context);
+            HarnessGenerator harnessGenerator = new HarnessGenerator(context, procTranslator.ContractInvariants);
             harnessGenerator.Generate();
 
             return new BoogieAST(context.Program);

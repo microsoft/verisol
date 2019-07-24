@@ -914,11 +914,14 @@ namespace BoogieAST
 
         public BoogieStmtList Body { get; set; }
 
-        public BoogieWhileCmd(BoogieExpr guard, BoogieStmtList body)
+        public BoogieWhileCmd(BoogieExpr guard, BoogieStmtList body, List<BoogieExpr> invariants = null)
         {
             this.Guard = guard;
             this.Body = body;
-            this.Invariants = new List<BoogiePredicateCmd>();
+            this.Invariants =
+                invariants == null ?
+                new List<BoogiePredicateCmd>() :
+                invariants.Select(x => new BoogieLoopInvCmd(x)).ToList<BoogiePredicateCmd>();
         }
 
         public BoogieWhileCmd(BoogieExpr guard, BoogieStmtList body, List<BoogiePredicateCmd> invariants)
