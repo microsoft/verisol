@@ -1117,12 +1117,12 @@ namespace SolToBoogie
             return false;
         }
 
-        private void AddAssumeForUints(string name, TypeDescription typeDesc)
+        private void AddAssumeForUints(BoogieExpr boogieExpr, TypeDescription typeDesc)
         {
             // Add positive number assume for uints
-            if (typeDesc.IsUint())
+            if (typeDesc!=null && typeDesc.IsUint())
             {
-                var ge0 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, new BoogieIdentifierExpr(name), new BoogieLiteralExpr(BigInteger.Zero));
+                var ge0 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, boogieExpr, new BoogieLiteralExpr(BigInteger.Zero));
                 var assumePositiveCmd = new BoogieAssumeCmd(ge0);
                 currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(assumePositiveCmd));
             }
@@ -1228,6 +1228,7 @@ namespace SolToBoogie
                     callCmd.Attributes = new List<BoogieAttribute>();
                     callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{unaryOperation.SubExpression.ToString()}\""));
                     currentStmtList.AddStatement(callCmd);
+                    AddAssumeForUints(lhs, unaryOperation.TypeDescriptions);
                 }
                 else if (unaryOperation.Operator.Equals("delete"))
                 {
@@ -1316,9 +1317,10 @@ namespace SolToBoogie
                 VeriSolAssert(currentExpr != null);
             }
 
-            if(expr.TypeDescriptions!=null && currentExpr is BoogieIdentifierExpr)
+            // TODO: Many times the type is unknown...
+            if(expr.TypeDescriptions!=null) //  && currentExpr is BoogieIdentifierExpr)
             {
-                AddAssumeForUints((currentExpr as BoogieIdentifierExpr).Name, expr.TypeDescriptions);
+                AddAssumeForUints(currentExpr, expr.TypeDescriptions);
             }
 
             return currentExpr;
@@ -1598,7 +1600,7 @@ namespace SolToBoogie
             var newBoogieVar =  MkNewLocalVariableWithType(boogieTypeCall);
 
             Debug.Assert(currentStmtList != null);
-            AddAssumeForUints(newBoogieVar.Name, node.TypeDescriptions);
+            AddAssumeForUints(newBoogieVar, node.TypeDescriptions);
 
             return newBoogieVar;
         }
@@ -2192,7 +2194,7 @@ namespace SolToBoogie
                         currentStmtList.AddStatement(new BoogieAssignCmd(tempVar, expr));
 
                         // Add assume tempVar>=0 for uint
-                        AddAssumeForUints(tempVar.Name, node.SubExpression.TypeDescriptions);
+                        AddAssumeForUints(tempVar, node.SubExpression.TypeDescriptions);
 
 
                         currentExpr = tempVar;
