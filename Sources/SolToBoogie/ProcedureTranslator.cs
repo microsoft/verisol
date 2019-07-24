@@ -1620,7 +1620,7 @@ namespace SolToBoogie
             var boogieExpr = TranslateExpr(expression);
             var keccakExpr = new BoogieFuncCallExpr("keccak256", new List<BoogieExpr>() { boogieExpr });
             currentStmtList.AddStatement(new BoogieAssignCmd(lhs, keccakExpr));
-            BoogieExpr nonZeroHashExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GT, lhs, new BoogieLiteralExpr(BigInteger.Zero));
+            BoogieExpr nonZeroHashExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, lhs, new BoogieLiteralExpr(BigInteger.Zero));
             currentStmtList.AddStatement(new BoogieAssumeCmd(nonZeroHashExpr));
             return;
         }
