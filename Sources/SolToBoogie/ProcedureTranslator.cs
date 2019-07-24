@@ -132,6 +132,8 @@ namespace SolToBoogie
 
             // input parameters
             List<BoogieVariable> inParams = TransUtils.GetDefaultInParams();
+            // initialize statement list to include assumption about parameter types
+            currentStmtList = new BoogieStmtList();
             // get all formal input parameters
             node.Parameters.Accept(this);
             inParams.AddRange(currentParamList);
@@ -139,6 +141,11 @@ namespace SolToBoogie
             // output parameters
             node.ReturnParameters.Accept(this);
             List<BoogieVariable> outParams = currentParamList;
+
+
+            var assumesForParamsAndReturn = currentStmtList;
+            currentStmtList = null;
+
 
             // attributes
             List<BoogieAttribute> attributes = new List<BoogieAttribute>();
@@ -175,6 +182,10 @@ namespace SolToBoogie
 
                 BoogieStmtList procBody = new BoogieStmtList();
                 currentPostlude = new BoogieStmtList();
+
+
+                // Add possible assume statements from parameters
+                procBody.AppendStmtList(assumesForParamsAndReturn);
 
                 // if (node.Modifiers.Count == 1)
                 for (int i = 0; i < node.Modifiers.Count; ++i)
@@ -742,6 +753,8 @@ namespace SolToBoogie
         
         public override bool Visit(ParameterList node)
         {
+            Debug.Assert(currentStmtList != null);
+
             currentParamList = new List<BoogieVariable>();
             var retParamCount = 0;
             foreach (VariableDeclaration parameter in node.Parameters)
@@ -757,7 +770,8 @@ namespace SolToBoogie
                     name = TransUtils.GetCanonicalLocalVariableName(parameter);
                 }
                 BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(parameter.TypeName);
-                currentParamList.Add(new BoogieFormalParam(new BoogieTypedIdent(name, type)));
+                var boogieParam = new BoogieFormalParam(new BoogieTypedIdent(name, type));
+                currentParamList.Add(boogieParam);
             }
             return false;
         }
@@ -826,7 +840,8 @@ namespace SolToBoogie
             {
                 string name = TransUtils.GetCanonicalLocalVariableName(varDecl);
                 BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(varDecl.TypeName);
-                boogieToLocalVarsMap[currentBoogieProc].Add(new BoogieLocalVariable(new BoogieTypedIdent(name, type)));
+                var boogieVariable = new BoogieLocalVariable(new BoogieTypedIdent(name, type));
+                 boogieToLocalVarsMap[currentBoogieProc].Add(boogieVariable);
             }
 
             // handle the initial value of variable declaration
@@ -890,6 +905,9 @@ namespace SolToBoogie
                 // we do it even when lhs is identifier to keep translation simple
                 var tmpVars = new List<BoogieIdentifierExpr>();
 
+                var oldStmtList = currentStmtList;
+                currentStmtList = new BoogieStmtList();
+
                 if (!isTupleAssignment) {
                     tmpVars.Add(lhs[0] is BoogieIdentifierExpr ? lhs[0] as BoogieIdentifierExpr : MkNewLocalVariableForFunctionReturn(funcCall));
                 } else {
@@ -897,6 +915,9 @@ namespace SolToBoogie
                     tmpVars.AddRange(lhsTypes.ConvertAll(x => MkNewLocalVariableWithType(x)));
                 }
 
+                var tmpVariableAssumes = currentStmtList;
+                currentStmtList = oldStmtList;
+        
                 // a Boolean to decide is we needed to use tmpVar
                 bool usedTmpVar = true;
 
@@ -944,6 +965,12 @@ namespace SolToBoogie
                     {
                         currentStmtList.AddStatement(new BoogieAssignCmd(lhs[i], tmpVars[i]));
                     }
+                }
+                foreach(var block in tmpVariableAssumes.BigBlocks)
+                {
+                    foreach(var stmt in block.SimpleCmds)
+                       currentStmtList.AddStatement(stmt);
+
                 }
             }
             else
@@ -1007,8 +1034,6 @@ namespace SolToBoogie
                     currentStmtList.AddStatement(callCmd);
                 }
             }
-
-
 
             return false;
         }
@@ -1090,6 +1115,17 @@ namespace SolToBoogie
                 currentStmtList.AddStatement(new BoogieReturnCmd());
             }
             return false;
+        }
+
+        private void AddAssumeForUints(string name, TypeDescription typeDesc)
+        {
+            // Add positive number assume for uints
+            if (typeDesc.IsUint())
+            {
+                var ge0 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, new BoogieIdentifierExpr(name), new BoogieLiteralExpr(BigInteger.Zero));
+                var assumePositiveCmd = new BoogieAssumeCmd(ge0);
+                currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(assumePositiveCmd));
+            }
         }
 
         public override bool Visit(Throw node)
@@ -1279,6 +1315,12 @@ namespace SolToBoogie
                 expr.Accept(this);
                 VeriSolAssert(currentExpr != null);
             }
+
+            if(expr.TypeDescriptions!=null && currentExpr is BoogieIdentifierExpr)
+            {
+                AddAssumeForUints((currentExpr as BoogieIdentifierExpr).Name, expr.TypeDescriptions);
+            }
+
             return currentExpr;
         }
 
@@ -1551,7 +1593,14 @@ namespace SolToBoogie
         private BoogieIdentifierExpr MkNewLocalVariableForFunctionReturn(FunctionCall node)
         {
             var boogieTypeCall = MapArrayHelper.InferExprTypeFromTypeString(node.TypeDescriptions.TypeString);
-            return MkNewLocalVariableWithType(boogieTypeCall);
+
+
+            var newBoogieVar =  MkNewLocalVariableWithType(boogieTypeCall);
+
+            Debug.Assert(currentStmtList != null);
+            AddAssumeForUints(newBoogieVar.Name, node.TypeDescriptions);
+
+            return newBoogieVar;
         }
 
         private BoogieIdentifierExpr MkNewLocalVariableWithType(BoogieType boogieTypeCall)
@@ -1560,6 +1609,7 @@ namespace SolToBoogie
             boogieToLocalVarsMap[currentBoogieProc].Add(tmpVar);
 
             var tmpVarExpr = new BoogieIdentifierExpr(tmpVar.Name);
+
             return tmpVarExpr;
         }
 
@@ -1806,6 +1856,13 @@ namespace SolToBoogie
             return;
         }
         #endregion
+
+        private void AddUnsignedTypeAssumeCmd(BoogieIdentifierExpr v)
+        {
+            var predicate = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, v, new BoogieLiteralExpr(0));
+            BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(predicate);
+            currentStmtList.AddStatement(assumeCmd);
+        }
 
         private bool IsExternalFunctionCall(FunctionCall node)
         {
@@ -2133,6 +2190,11 @@ namespace SolToBoogie
                         var boogieType = MapArrayHelper.InferExprTypeFromTypeString(node.SubExpression.TypeDescriptions.TypeString);
                         var tempVar = MkNewLocalVariableWithType(boogieType);
                         currentStmtList.AddStatement(new BoogieAssignCmd(tempVar, expr));
+
+                        // Add assume tempVar>=0 for uint
+                        AddAssumeForUints(tempVar.Name, node.SubExpression.TypeDescriptions);
+
+
                         currentExpr = tempVar;
                         BoogieAssignCmd assignCmd = new BoogieAssignCmd(expr, rhs);
                         currentStmtList.AddStatement(assignCmd);
