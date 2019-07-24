@@ -415,7 +415,9 @@ namespace SolToBoogie
                         stmtList.AddStatement(new BoogieAssumeCmd(distinctQExpr));
                     }
                     else if (mapping.ValueType is UserDefinedTypeName userTypeName ||
-                        mapping.ValueType.ToString().Equals("address"))
+                        mapping.ValueType.ToString().Equals("address") ||
+                        mapping.ValueType.ToString().StartsWith("bytes")
+                        )
                     {
                         stmtList.AddStatement(new BoogieCommentCmd($"Initialize address/contract mapping {varDecl.Name}"));
 
@@ -423,10 +425,15 @@ namespace SolToBoogie
                         BoogieMapSelect lhs;
                         GetBoogieTypesFromMapping(varDecl, mapping, out mapKeyType, out lhs);
                         var qVar = QVarGenerator.NewQVar(0, 0);
+                        BoogieExpr zeroExpr = new BoogieIdentifierExpr("null");
+
+                        if (mapping.ValueType.ToString().StartsWith("bytes"))
+                            zeroExpr = new BoogieLiteralExpr(BigInteger.Zero);
+
                         var bodyExpr = new BoogieBinaryOperation(
                             BoogieBinaryOperation.Opcode.EQ,
                             new BoogieMapSelect(lhs, qVar),
-                            new BoogieIdentifierExpr("null"));
+                            zeroExpr);
                         var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar }, new List<BoogieType>() { mapKeyType }, bodyExpr);
                         stmtList.AddStatement(new BoogieAssumeCmd(qExpr));
                     }
