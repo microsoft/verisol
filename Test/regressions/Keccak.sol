@@ -17,4 +17,11 @@ contract A {
         assert (sa != sd); //not really true as there can be hash collision
     }
 
+    function testNonZeroHash() public 
+    {
+        string storage s = t;
+        bytes32 sb = keccak256(bytes(s));
+        assert(sb!=0);
+    }
+
 }
