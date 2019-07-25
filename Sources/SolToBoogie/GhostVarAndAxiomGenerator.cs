@@ -36,6 +36,9 @@ namespace SolToBoogie
             context.Program.AddDeclaration(GenerateKeccakFunction());
             context.Program.AddDeclaration(GenerateAbiEncodedFunctionOneArg());
             context.Program.AddDeclaration(GenerateAbiEncodedFunctionTwoArgs());
+            context.Program.AddDeclaration(GenerateAbiEncodedFunctionOneArgRef());
+            context.Program.AddDeclaration(GenerateAbiEncodedFunctionTwoArgsOneRef());
+
         }
 
         private BoogieFunction GenerateKeccakFunction()
@@ -72,6 +75,32 @@ namespace SolToBoogie
                 new List<BoogieVariable>() { outVar },
                 null);
         }
+
+        private BoogieFunction GenerateAbiEncodedFunctionOneArgRef()
+        {
+            //function for Int to Int
+            var inVar1 = new BoogieFormalParam(new BoogieTypedIdent("x", BoogieType.Ref));
+            var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", BoogieType.Int));
+            return new BoogieFunction(
+                "abiEncodePacked1R",
+                new List<BoogieVariable>() { inVar1 },
+                new List<BoogieVariable>() { outVar },
+                null);
+        }
+        private BoogieFunction GenerateAbiEncodedFunctionTwoArgsOneRef()
+        {
+            //function for Int*Int to Int
+            var inVar1 = new BoogieFormalParam(new BoogieTypedIdent("x", BoogieType.Ref));
+            var inVar2 = new BoogieFormalParam(new BoogieTypedIdent("y", BoogieType.Int));
+            var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", BoogieType.Int));
+            return new BoogieFunction(
+                "abiEncodePacked2R",
+                new List<BoogieVariable>() { inVar1, inVar2 },
+                new List<BoogieVariable>() { outVar },
+                null);
+        }
+
+
         private BoogieFunction GenerateConstToRefFunction()
         {
             //function for Int to Ref
@@ -289,6 +318,10 @@ namespace SolToBoogie
             context.Program.AddDeclaration(GenerateKeccakAxiom());
             context.Program.AddDeclaration(GenerateAbiEncodePackedAxiomOneArg());
             context.Program.AddDeclaration(GenerateAbiEncodePackedAxiomTwoArgs());
+
+            context.Program.AddDeclaration(GenerateAbiEncodePackedAxiomOneArgRef());
+            context.Program.AddDeclaration(GenerateAbiEncodePackedAxiomTwoArgsOneRef());
+
         }
 
         private BoogieAxiom GenerateConstToRefAxiom()
@@ -366,6 +399,49 @@ namespace SolToBoogie
 
             return new BoogieAxiom(qExpr);
         }
+
+
+        private BoogieAxiom GenerateAbiEncodePackedAxiomOneArgRef()
+        {
+
+            var qVar1 = QVarGenerator.NewQVar(0, 0);
+            var qVar2 = QVarGenerator.NewQVar(0, 1);
+            var eqVar12 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, qVar1, qVar2);
+            var qVar1Func = new BoogieFuncCallExpr("abiEncodePacked1R", new List<BoogieExpr>() { qVar1 });
+            var qVar2Func = new BoogieFuncCallExpr("abiEncodePacked1R", new List<BoogieExpr>() { qVar2 });
+            var eqFunc12 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, qVar1Func, qVar2Func);
+            var bodyExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, eqVar12, eqFunc12);
+            var triggers = new List<BoogieExpr>() { qVar1Func, qVar2Func };
+
+            // forall q1:int, q2:int :: q1 == q2 || abiEncodePacked(q1) != abiEncodePacked(q2) 
+            var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1, qVar2 }, new List<BoogieType>() { BoogieType.Ref, BoogieType.Ref}, bodyExpr, triggers);
+
+            return new BoogieAxiom(qExpr);
+        }
+
+        private BoogieAxiom GenerateAbiEncodePackedAxiomTwoArgsOneRef()
+        {
+            var qVar11 = QVarGenerator.NewQVar(0, 0);
+            var qVar12 = QVarGenerator.NewQVar(0, 1);
+            var qVar21 = QVarGenerator.NewQVar(1, 0);
+            var qVar22 = QVarGenerator.NewQVar(1, 1);
+            var eqVar1 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, qVar11, qVar12);
+            var eqVar2 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, qVar21, qVar22);
+            var qVar1Func = new BoogieFuncCallExpr("abiEncodePacked2R", new List<BoogieExpr>() { qVar11, qVar21 });
+            var qVar2Func = new BoogieFuncCallExpr("abiEncodePacked2R", new List<BoogieExpr>() { qVar12, qVar22 });
+            var triggers = new List<BoogieExpr>() { qVar1Func, qVar2Func };
+
+            var eqFunc12 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, qVar1Func, qVar2Func);
+            var eqArgs = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, eqVar1, eqVar2);
+            var bodyExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, eqArgs, eqFunc12);
+
+            // forall q1:int, q2:int, q1', q2' :: (q1 == q1' && q2 == q2') || abiEncodePacked(q1, q2) != abiEncodePacked(q1', q2') 
+            var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar11, qVar12, qVar21, qVar22 },
+                new List<BoogieType>() { BoogieType.Ref, BoogieType.Ref, BoogieType.Int, BoogieType.Int }, bodyExpr, triggers);
+
+            return new BoogieAxiom(qExpr);
+        }
+
 
         private void GenerateMemoryVariables()
         {
