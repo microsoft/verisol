@@ -61,13 +61,14 @@ contract ERC20 is IERC20 {
 
         _transfer(msg.sender, recipient, amount); 
 
+/*
         assert (
                 (msg.sender == recipient && _balances[msg.sender] == old_balance_sender && _balances[recipient] == old_balance_recipient) ||
                 (msg.sender != recipient && _balances[msg.sender] == old_balance_sender - amount && _balances[recipient] == old_balance_recipient + amount)
                );
         // weaker spec without the aliasing
         assert (old_balance_sender + old_balance_recipient == _balances[msg.sender] + _balances[recipient]);
-
+*/
         return true;
     }
 
@@ -99,5 +100,10 @@ contract ERC20 is IERC20 {
     function contractInvariant() private view {
         VeriSol.ContractInvariant(_totalSupply == VeriSol.SumMapping(_balances));
     }
+
+    function checkInvariant() public  {
+        assert(_totalSupply == VeriSol.SumMapping(_balances));
+    }
+
 }
 
