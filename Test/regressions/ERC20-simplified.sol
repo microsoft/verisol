@@ -14,7 +14,7 @@ import "./VeriSolContracts.sol";
  * 
  */
 contract ERC20 is IERC20 {
-    // using SafeMath for uint256;
+    // using SafeMath for uint256; //VeriSol issue #71
 
     mapping (address => uint256) private _balances;
 
@@ -56,19 +56,12 @@ contract ERC20 is IERC20 {
      */
     function transfer(address recipient, uint256 amount) public returns (bool) {
 
-        uint old_balance_sender = _balances[msg.sender];
-        uint old_balance_recipient = _balances[recipient];
-
         _transfer(msg.sender, recipient, amount); 
 
-/*
-        assert (
-                (msg.sender == recipient && _balances[msg.sender] == old_balance_sender && _balances[recipient] == old_balance_recipient) ||
-                (msg.sender != recipient && _balances[msg.sender] == old_balance_sender - amount && _balances[recipient] == old_balance_recipient + amount)
-               );
-        // weaker spec without the aliasing
-        assert (old_balance_sender + old_balance_recipient == _balances[msg.sender] + _balances[recipient]);
-*/
+        assert (VeriSol.Old(_balances[msg.sender] + _balances[recipient]) == _balances[msg.sender] + _balances[recipient]);
+        assert (_balances[msg.sender] == VeriSol.Old(_balances[msg.sender] - amount);
+        assert (_balances[recipient]  == VeriSol.Old(_balances[recipient] + amount);
+
         return true;
     }
 
@@ -96,13 +89,12 @@ contract ERC20 is IERC20 {
         // emit Transfer(sender, recipient, amount); //issue #154 in VeriSol
     }
 
+    function checkInvariant() public  {
+        assert(_totalSupply == VeriSol.SumMapping(_balances));
+    }
 
     function contractInvariant() private view {
         VeriSol.ContractInvariant(_totalSupply == VeriSol.SumMapping(_balances));
-    }
-
-    function checkInvariant() public  {
-        assert(_totalSupply == VeriSol.SumMapping(_balances));
     }
 
 }

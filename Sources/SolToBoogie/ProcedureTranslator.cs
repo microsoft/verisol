@@ -120,6 +120,9 @@ namespace SolToBoogie
 
         public override bool Visit(FunctionDefinition node)
         {
+            // ignore functions from VeriSol library
+            if (currentContract.Name.Equals("VeriSol")) return true;
+
             // VeriSolAssert(node.IsConstructor || node.Modifiers.Count <= 1, "Multiple Modifiers are not supported yet");
             VeriSolAssert(currentContract != null);
 
@@ -1683,6 +1686,8 @@ namespace SolToBoogie
                     {
                         if (member.MemberName.Equals("SumMapping"))
                             return "_SumMapping_VeriSol";
+                        if (member.MemberName.Equals("Old"))
+                            return "old"; //map it old(..) in Boogie
                         else
                             return null;
                     }
