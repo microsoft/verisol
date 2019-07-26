@@ -19,7 +19,8 @@ namespace SolToBoogie
 
         public static bool IsUint(this TypeDescription typeDescription)
         {
-            return typeDescription.TypeString.StartsWith("uint", StringComparison.CurrentCulture);
+            return !typeDescription.IsDynamicArray() && !typeDescription.IsStaticArray()
+                && typeDescription.TypeString.StartsWith("uint", StringComparison.CurrentCulture);
         }
 
         public static bool IsBool(this TypeDescription typeDescription)
