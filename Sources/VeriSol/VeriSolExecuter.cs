@@ -166,7 +166,10 @@ namespace VeriSolRunner
             {
                 throw new Exception($"Cannot find ConcurrencyExplorer.exe at {concExplorerWindowsPath}");
             }
-            Console.WriteLine($"\t[To view traces on Windows] {concExplorerWindowsPath} corral_out_trace.txt ");
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Console.WriteLine($"\t{concExplorerWindowsPath} corral_out_trace.txt ");
+            }
         }
 
         private bool ExecuteSolToBoogie()

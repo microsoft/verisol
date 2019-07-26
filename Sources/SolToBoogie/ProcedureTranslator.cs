@@ -51,6 +51,10 @@ namespace SolToBoogie
         {
             currentContract = node;
 
+            if (currentContract.ContractKind == EnumContractKind.LIBRARY &&
+                currentContract.Name.Equals("VeriSol"))
+                return true;
+
             // generate default empty constructor if there is no constructor explicitly defined
             if (!context.IsConstructorDefined(node))
             {
@@ -121,7 +125,9 @@ namespace SolToBoogie
         public override bool Visit(FunctionDefinition node)
         {
             // ignore functions from VeriSol library
-            if (currentContract.Name.Equals("VeriSol")) return true;
+            if (currentContract.ContractKind == EnumContractKind.LIBRARY && 
+                currentContract.Name.Equals("VeriSol"))
+                return true;
 
             // VeriSolAssert(node.IsConstructor || node.Modifiers.Count <= 1, "Multiple Modifiers are not supported yet");
             VeriSolAssert(currentContract != null);
