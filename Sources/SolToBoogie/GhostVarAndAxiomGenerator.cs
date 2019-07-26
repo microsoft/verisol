@@ -36,6 +36,7 @@ namespace SolToBoogie
             context.Program.AddDeclaration(GenerateKeccakFunction());
             context.Program.AddDeclaration(GenerateAbiEncodedFunctionOneArg());
             context.Program.AddDeclaration(GenerateAbiEncodedFunctionTwoArgs());
+            context.Program.AddDeclaration(GenerateVeriSolSumFunction());
         }
 
         private BoogieFunction GenerateKeccakFunction()
@@ -83,6 +84,18 @@ namespace SolToBoogie
                 new List<BoogieVariable>() { outVar },
                 null);
         }
+        private BoogieFunction GenerateVeriSolSumFunction()
+        {
+            //function for [Ref]int to int
+            var inVar = new BoogieFormalParam(new BoogieTypedIdent("x", new BoogieMapType(BoogieType.Ref, BoogieType.Int)));
+            var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", BoogieType.Int));
+            return new BoogieFunction(
+                "_SumMapping_VeriSol",
+                new List<BoogieVariable>() { inVar },
+                new List<BoogieVariable>() { outVar },
+                null);
+        }
+
 
         private void GenerateTypes()
         {
@@ -289,6 +302,7 @@ namespace SolToBoogie
             context.Program.AddDeclaration(GenerateKeccakAxiom());
             context.Program.AddDeclaration(GenerateAbiEncodePackedAxiomOneArg());
             context.Program.AddDeclaration(GenerateAbiEncodePackedAxiomTwoArgs());
+            GenerateVeriSolSumAxioms().ForEach(x => context.Program.AddDeclaration(x));
         }
 
         private BoogieAxiom GenerateConstToRefAxiom()
@@ -308,7 +322,6 @@ namespace SolToBoogie
 
             return new BoogieAxiom(qExpr);
         }
-
         private BoogieAxiom GenerateKeccakAxiom()
         {
 
@@ -343,7 +356,6 @@ namespace SolToBoogie
 
             return new BoogieAxiom(qExpr);
         }
-
         private BoogieAxiom GenerateAbiEncodePackedAxiomTwoArgs()
         {
             var qVar11 = QVarGenerator.NewQVar(0, 0);
@@ -366,6 +378,30 @@ namespace SolToBoogie
 
             return new BoogieAxiom(qExpr);
         }
+        private List<BoogieAxiom> GenerateVeriSolSumAxioms()
+        {
+            // axiom(forall m:[Ref]int :: (exists _a: Ref::m[_a] != 0) || _SumMapping_VeriSol(m) == 0);
+            var qVar1 = QVarGenerator.NewQVar(0, 0);
+            var qVar2 = QVarGenerator.NewQVar(0, 1);
+            var ma = new BoogieMapSelect(qVar1, qVar2);
+            var maEq0 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, ma, new BoogieLiteralExpr(System.Numerics.BigInteger.Zero));
+            var existsMaNeq0 = new BoogieQuantifiedExpr(false,
+                new List<BoogieIdentifierExpr>() { qVar2 },
+                new List<BoogieType>() { BoogieType.Ref },
+                maEq0,
+                null);
+
+            var sumM = new BoogieFuncCallExpr("_SumMapping_VeriSol", new List<BoogieExpr>() { qVar1 });
+            var sumMEq0 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, sumM, new BoogieLiteralExpr(System.Numerics.BigInteger.Zero));
+            var maEq0SumEq0 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, existsMaNeq0, sumMEq0);
+            var axiom1 = new BoogieQuantifiedExpr(true,
+                new List<BoogieIdentifierExpr>() { qVar1},
+                new List<BoogieType>() { new BoogieMapType(BoogieType.Ref, BoogieType.Int)},
+                maEq0SumEq0,
+                null);
+            return new List<BoogieAxiom>() { new BoogieAxiom(axiom1) };
+        }
+
 
         private void GenerateMemoryVariables()
         {

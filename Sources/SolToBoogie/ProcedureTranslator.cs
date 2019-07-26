@@ -1580,6 +1580,11 @@ namespace SolToBoogie
 
                 currentExpr = tmpVarExpr;
             }
+            else if (IsVeriSolCodeContractFunction(node))
+            {
+                // we cannot use temporaries as we are translating a specification
+                currentExpr = TranslateVeriSolCodeContractFuncCall(node);
+            }
             else if (context.HasEventNameInContract(currentContract, functionName))
             {
                 // generate empty statement list to ignore the event call                
@@ -1631,6 +1636,59 @@ namespace SolToBoogie
 
             }
             return false;
+        }
+
+        private BoogieExpr TranslateVeriSolCodeContractFuncCall(FunctionCall node)
+        {
+            var verisolFunc = GetVeriSolCodeContractFunction(node);
+            Debug.Assert(verisolFunc != null, $"Unknown VeriSol code contracts function {node.ToString()}");
+            var boogieExprs = node.Arguments.ConvertAll(x => TranslateExpr(x));
+            // HACK for Sum
+            if (verisolFunc.Equals("_SumMapping_VeriSol"))
+            {
+                //has to be M_ref_int[mapp[this]] instead of mapp[this]
+                var mapName = MapArrayHelper.GetMemoryMapName(BoogieType.Ref, BoogieType.Int);
+                boogieExprs[0] = new BoogieMapSelect(new BoogieIdentifierExpr(mapName), boogieExprs[0]);
+            }
+            return new BoogieFuncCallExpr(verisolFunc, boogieExprs);
+        }
+
+        private bool IsVeriSolCodeContractFunction(FunctionCall node)
+        {
+            if (node.Expression is MemberAccess member)
+            {
+                if (member.Expression is Identifier ident)
+                {
+                    if (ident.Name.Equals("VeriSol"))
+                    {
+                        // ignore the specifiction functions
+                        if (member.MemberName.Equals("Invariant") ||
+                            member.MemberName.Equals("ContractInvariant"))
+                            return false;
+                        else
+                            return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private string GetVeriSolCodeContractFunction(FunctionCall node)
+        {
+            if (node.Expression is MemberAccess member)
+            {
+                if (member.Expression is Identifier ident)
+                {
+                    if (ident.Name.Equals("VeriSol"))
+                    {
+                        if (member.MemberName.Equals("SumMapping"))
+                            return "_SumMapping_VeriSol";
+                        else
+                            return null;
+                    }
+                }
+            }
+            return null;
         }
 
         private BoogieIdentifierExpr MkNewLocalVariableForFunctionReturn(FunctionCall node)
