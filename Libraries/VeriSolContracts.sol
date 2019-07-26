@@ -13,6 +13,13 @@ pragma solidity >=0.4.24<0.6.0;
  * 
  */
 library VeriSol {
+
+   /*
+    ********************************************************************
+    *  Specification mechanisms
+    ********************************************************************
+    */
+
     /**
      * Loop invariant
      *
@@ -43,13 +50,31 @@ library VeriSol {
     function ContractInvariant(bool b) internal pure {
     }
 
+
+   /*
+    ********************************************************************
+    *  New functions for extending assertion language
+    ********************************************************************
+    */
+
     /**
      * A new in-built function that returns the sum of all values of a mapping
      * 
      */  
     function SumMapping(mapping (address => uint256) storage a) internal pure returns (uint256){
-       return 0;
+       return 0; // The body is ignored
     }
 
+    /**
+     * A new in-built function that returns the sum of all values of a mapping
+     * 
+     */  
+    function Old(uint x) internal pure returns (uint){
+       return 0; // The body is ignored
+    }
+    function Old(address x) internal pure returns (address){
+       return address(0x0); // The body is ignored
+    }
+    
 
 }
