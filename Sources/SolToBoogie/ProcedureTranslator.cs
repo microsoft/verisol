@@ -332,7 +332,7 @@ namespace SolToBoogie
             {
                 if (varDecl.TypeName is ElementaryTypeName elementaryType)
                 {
-                    if (elementaryType.TypeDescriptions.TypeString.Equals("address"))
+                    if (elementaryType.TypeDescriptions.TypeString.Equals("address") || elementaryType.TypeDescriptions.TypeString.Equals("address payable"))
                     {
                         string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
                         BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
@@ -444,7 +444,9 @@ namespace SolToBoogie
                         stmtList.AddStatement(new BoogieAssumeCmd(distinctQExpr));
                     }
                     else if (mapping.ValueType is UserDefinedTypeName userTypeName ||
-                        mapping.ValueType.ToString().Equals("address"))
+                        mapping.ValueType.ToString().Equals("address") ||
+                        mapping.ValueType.ToString().Equals("address payable")
+                        )
                     {
                         stmtList.AddStatement(new BoogieCommentCmd($"Initialize address/contract mapping {varDecl.Name}"));
 
@@ -1014,7 +1016,7 @@ namespace SolToBoogie
             if (lhsType != null && !isTupleAssignment)
             {
                 //REFACTOR!
-                if (lhsType.TypeString.Equals("address") || lhsType.IsDynamicArray() || lhsType.IsStaticArray())
+                if (lhsType.TypeString.Equals("address") || lhsType.TypeString.Equals("address payable") || lhsType.IsDynamicArray() || lhsType.IsStaticArray())
                 {
                     var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_ref", new List<BoogieExpr>() { lhs[0] }, new List<BoogieIdentifierExpr>());
                     callCmd.Attributes = new List<BoogieAttribute>();
@@ -2157,7 +2159,7 @@ namespace SolToBoogie
             }
             else if (node.Expression is ElementaryTypeNameExpression elemType) // cast to elementary types
             {
-                if (elemType.TypeName.Equals("address"))
+                if (elemType.TypeName.Equals("address") || elemType.TypeName.Equals("address payable"))
                 {
                     //try to do a best-effort to detect address(0) 
                     if (exprToCast is BoogieLiteralExpr blit)

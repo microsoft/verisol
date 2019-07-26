@@ -42,4 +42,14 @@ library VeriSol {
      */
     function ContractInvariant(bool b) internal pure {
     }
+
+    /**
+     * A new in-built function that returns the sum of all values of a mapping
+     * 
+     */  
+    function SumMapping(mapping (address => uint256) storage a) internal pure returns (uint256){
+       return 0;
+    }
+
+
 }

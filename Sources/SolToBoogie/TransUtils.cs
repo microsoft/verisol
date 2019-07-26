@@ -129,6 +129,7 @@ namespace SolToBoogie
                     case "string":
                         return BoogieType.Int;
                     case "address":
+                    case "address payable":
                         return BoogieType.Ref;
                     case "bytes32":
                     case "bytes":
@@ -296,6 +297,10 @@ namespace SolToBoogie
                         {
                             typeString = typeString.Substring(0, typeString.IndexOf(" storage"));
                         }
+                        if (typeString.Contains(" payable"))
+                        {
+                            typeString = typeString.Substring(0, typeString.IndexOf(" payable")); //address payable
+                        }
                         builder.Append(typeString).Append(", ");
                     }
                     builder.Length -= 2;
@@ -321,7 +326,7 @@ namespace SolToBoogie
             {
                 return "int";
             }
-            else if (typeString.Equals("address"))
+            else if (typeString.Equals("address") || typeString.Equals("address payable"))
             {
                 return "address";
             }

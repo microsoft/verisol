@@ -21,7 +21,8 @@ namespace SolToBoogie
             {
                 if (stateVar.TypeName is ElementaryTypeName elementaryType)
                 {
-                    if (elementaryType.TypeDescriptions.TypeString.Equals("address"))
+                    if (elementaryType.TypeDescriptions.TypeString.Equals("address") ||
+                        elementaryType.TypeDescriptions.TypeString.Equals("address payable"))
                     {
                         addressVariables.Add(stateVar);
                     }
