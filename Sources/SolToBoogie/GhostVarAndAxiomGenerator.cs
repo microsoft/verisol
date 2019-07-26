@@ -399,7 +399,22 @@ namespace SolToBoogie
                 new List<BoogieType>() { new BoogieMapType(BoogieType.Ref, BoogieType.Int)},
                 maEq0SumEq0,
                 null);
-            return new List<BoogieAxiom>() { new BoogieAxiom(axiom1) };
+
+
+            // axiom(forall m:[Ref]int, _a: Ref, _b: int :: _SumMapping_VeriSol(m[_a:= _b]) == _SumMapping_VeriSol(m) - m[_a] + _b);
+            var qVar3 = QVarGenerator.NewQVar(0, 2);
+            var subExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, sumM, ma);
+            var addExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, subExpr, qVar3);
+            var updExpr = new BoogieMapUpdate(qVar1, qVar2, qVar3);
+            var sumUpdExpr = new BoogieFuncCallExpr("_SumMapping_VeriSol", new List<BoogieExpr>() {updExpr});
+            var sumUpdEqExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, sumUpdExpr, addExpr);
+            var axiom2 = new BoogieQuantifiedExpr(true,
+                new List<BoogieIdentifierExpr>() { qVar1, qVar2, qVar3 },
+                new List<BoogieType>() { new BoogieMapType(BoogieType.Ref, BoogieType.Int), BoogieType.Ref, BoogieType.Int },
+                sumUpdEqExpr,
+                null);
+
+            return new List<BoogieAxiom>() { new BoogieAxiom(axiom1), new BoogieAxiom(axiom2) };
         }
 
 

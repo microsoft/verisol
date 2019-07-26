@@ -1052,6 +1052,47 @@ namespace BoogieAST
         }
     }
 
+    public class BoogieMapUpdate : BoogieExpr
+    {
+        public BoogieExpr BaseExpr { get; set; }
+
+        public List<BoogieExpr> Arguments { get; set; }
+
+        public BoogieExpr Value { get; set; }
+
+        public BoogieMapUpdate(BoogieExpr baseExpr, List<BoogieExpr> arguments, BoogieExpr value)
+        {
+            Debug.Assert(arguments != null && arguments.Count > 0);
+            this.BaseExpr = baseExpr;
+            this.Arguments = arguments;
+            this.Value = value;
+        }
+
+        public BoogieMapUpdate(BoogieExpr baseExpr, BoogieExpr indexExpr, BoogieExpr value)
+        {
+            this.BaseExpr = baseExpr; ;
+            this.Arguments = new List<BoogieExpr>();
+            this.Arguments.Add(indexExpr);
+            this.Value = value;
+        }
+
+        public override string ToString()
+        {
+            Debug.Assert(Arguments.Count >= 1);
+            StringBuilder builder = new StringBuilder();
+            builder.Append(BaseExpr).Append("[");
+            foreach (BoogieExpr argument in Arguments)
+            {
+                builder.Append(argument).Append(", ");
+            }
+            builder.Length -= 2;
+            builder.Append(" := ");
+            builder.Append(Value + "]");
+            return builder.ToString();
+        }
+    }
+
+
     public class BoogieUnaryOperation : BoogieExpr
     {
         public enum Opcode
