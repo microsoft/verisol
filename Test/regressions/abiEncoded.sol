@@ -24,4 +24,21 @@ contract AbiContract {
        assert(keccak256(abi.encodePacked(a, b)) == keccak256(abi.encodePacked(a, b))); //not supported yet
     }
 
+    function encodeAddress(address addr, uint b) public 
+    {
+       bytes32 x = keccak256(abi.encodePacked(addr));
+       bytes32 y = keccak256(abi.encodePacked(addr));
+       assert(x = y);
+       assert(keccak256(abi.encodePacked(addr)) == keccak256(abi.encodePacked(addr))); //not supported yet
+    }
+
+    function encodeAddress2(address addr, uint b) public 
+    {
+       bytes32 x = keccak256(abi.encodePacked(addr, b));
+       bytes32 y = keccak256(abi.encodePacked(addr, b));
+       assert(x == y);
+       assert(keccak256(abi.encodePacked(addr, b)) == keccak256(abi.encodePacked(addr, b))); //not supported yet
+    }
+
+
 }
