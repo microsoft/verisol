@@ -1,5 +1,5 @@
 pragma solidity >=0.4.24<0.6.0;
-import "./VeriSolContracts.sol";
+import "./../../Libraries/VeriSolContracts.sol";
 
 
 contract LoopFor {
