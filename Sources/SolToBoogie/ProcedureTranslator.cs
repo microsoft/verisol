@@ -124,11 +124,6 @@ namespace SolToBoogie
 
         public override bool Visit(FunctionDefinition node)
         {
-            // ignore functions from VeriSol library
-            if (currentContract.ContractKind == EnumContractKind.LIBRARY && 
-                currentContract.Name.Equals("VeriSol"))
-                return true;
-
             // VeriSolAssert(node.IsConstructor || node.Modifiers.Count <= 1, "Multiple Modifiers are not supported yet");
             VeriSolAssert(currentContract != null);
 

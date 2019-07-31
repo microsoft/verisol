@@ -70,11 +70,13 @@ library VeriSol {
      * 
      */  
     function Old(uint x) internal pure returns (uint){
-       return 0; // The body is ignored
+       return x; // The body is ignored
     }
+
+/*  Name clash on overloaded functions Issue #157
     function Old(address x) internal pure returns (address){
-       return address(0x0); // The body is ignored
+       return x; // The body is ignored
     }
-    
+*/    
 
 }
