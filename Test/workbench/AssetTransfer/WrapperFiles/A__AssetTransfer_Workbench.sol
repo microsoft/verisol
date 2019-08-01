@@ -1,4 +1,4 @@
-pragma solidity ^0.4.20; // Solidity compiler version supported by Azure Blockchain Workbench
+pragma solidity >=0.4.20; // Solidity compiler version supported by Azure Blockchain Workbench
 
 
 //---------------------------------------------
@@ -8,23 +8,23 @@ pragma solidity ^0.4.20; // Solidity compiler version supported by Azure Blockch
 
 import "./AssetTransfer.sol";
 contract WorkbenchBase {
-    event WorkbenchContractCreated(string applicationName, string workflowName, address originatingAddress);
-    event WorkbenchContractUpdated(string applicationName, string workflowName, string action, address originatingAddress);
+    event WorkbenchContractCreated(string applicationName, string  workflowName, address originatingAddress);
+    event WorkbenchContractUpdated(string applicationName, string  workflowName, string  action, address originatingAddress);
     
     string internal ApplicationName;
     string internal WorkflowName;
 
-    function WorkbenchBase(string applicationName, string workflowName) public {
+    constructor(string memory applicationName, string memory workflowName) public {
         ApplicationName = applicationName;
         WorkflowName = workflowName;
     }
 
     function ContractCreated() public {
-        WorkbenchContractCreated(ApplicationName, WorkflowName, msg.sender);
+        emit WorkbenchContractCreated(ApplicationName, WorkflowName, msg.sender);
     }
 
-    function ContractUpdated(string action) public {
-        WorkbenchContractUpdated(ApplicationName, WorkflowName, action, msg.sender);
+    function ContractUpdated(string memory action) public {
+        emit WorkbenchContractUpdated(ApplicationName, WorkflowName, action, msg.sender);
     }
 }
 
@@ -38,7 +38,7 @@ contract AssetTransfer_AzureBlockchainWorkBench is WorkbenchBase, AssetTransfer 
     // 
     // Constructor
     // 
-    function AssetTransfer_AzureBlockchainWorkBench(string description, uint256 price)
+    constructor(string memory description, uint256 price)
             WorkbenchBase("AssetTransfer", "AssetTransfer")
             AssetTransfer(description, price)
             public {
@@ -92,7 +92,7 @@ contract AssetTransfer_AzureBlockchainWorkBench is WorkbenchBase, AssetTransfer 
     }
 
 
-    function Transition_Active_Number_2_Modify (string description, uint256 price) public {
+    function Transition_Active_Number_2_Modify (string memory description, uint256 price) public {
 
         // Transition preconditions
         require(State == StateType.Active);
@@ -497,7 +497,7 @@ contract AssetTransfer_AzureBlockchainWorkBench is WorkbenchBase, AssetTransfer 
         assert(State == StateType.Active);
     }
 
-    function Modify(string description, uint256 price) public {
+    function Modify(string memory description, uint256 price) public {
 
         // Placeholder for function preconditions
 
