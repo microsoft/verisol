@@ -67,6 +67,9 @@ where
 ### Example of higly simplified ERC20 ###
 `dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll Test\regressions\ERC20-simplified.sol ERC20 /tryProof /tryRefutation:10`
 
+## VeriSol Code Contracts library
+The code contract library **VeriSolContracts.sol** is present [here](https://github.com/microsoft/verisol/blob/master/Test/regressions/Libraries/VeriSolContracts.sol). This allows adding loop invariants, contract invariants for proofs, and extending the assertion language.  
+
 ## Regression script
 
 To run the regressions, let %VERISOL_PATH% denote path to the root of the installation on Windows, run:
