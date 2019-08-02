@@ -50,6 +50,8 @@ where
 
   > For Windows, the tool output prints instructions to view the trace using *ConcurrencyExplorer.exe* binary. 
 
+  > Documentation of the error trace (and a more concise list of transactions with arguments) coming soon!!
+
 ### Example with refutation ###
 `dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll Test\regressions\Error.sol AssertFalse /tryProof /tryRefutation:6`
 
