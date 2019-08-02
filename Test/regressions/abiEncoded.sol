@@ -28,7 +28,7 @@ contract AbiContract {
     {
        bytes32 x = keccak256(abi.encodePacked(addr));
        bytes32 y = keccak256(abi.encodePacked(addr));
-       assert(x = y);
+       assert(x == y);
        assert(keccak256(abi.encodePacked(addr)) == keccak256(abi.encodePacked(addr))); //not supported yet
     }
 
