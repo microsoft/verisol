@@ -105,3 +105,5 @@ Getters.sol
 Error.sol
 Error2.sol
 Error3.sol
+LoopInvUsageExample.sol
+ContractInvUsageExample.sol

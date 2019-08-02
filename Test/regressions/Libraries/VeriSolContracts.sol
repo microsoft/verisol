@@ -62,7 +62,7 @@ library VeriSol {
     function SumMapping(mapping (address => uint256) storage a) external pure returns (uint256);
 
     /**
-     * A new in-built function that returns the sum of all values of a mapping
+     * Function to refer to the state of an expression at the entry to a method 
      * 
      */  
     function Old(uint x) external pure returns (uint);
