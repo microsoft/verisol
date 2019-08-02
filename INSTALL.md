@@ -56,6 +56,11 @@ where
 ### Example with verification ###
 `dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll Test\regressions\Mapping.sol Mapping /tryProof /tryRefutation:6`
 
+### Example with Loop Invariants ###
+`dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll Test\regressions\Mapping.sol LoopInvUsageExample.sol LoopFor /tryProof /tryRefutation:10`
+
+### Example with Contract Invariants ###
+`dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll Test\regressions\Mapping.sol ContractInvUsageExample.sol LoopFor /tryProof /tryRefutation:10`
 
 ## Regression script
 
