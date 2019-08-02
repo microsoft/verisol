@@ -108,3 +108,6 @@ Error2.sol
 Error3.sol
 LoopInvUsageExample.sol
 ContractInvUsageExample.sol
+DAO-Sim-Buggy.sol
+DAO-Sim-Fixed.sol
+ERC20-simplified.sol
