@@ -30,9 +30,8 @@ library VeriSol {
      * Using "Invariant" to avoid clash with a potential "invariant" keyword in Solidity
      * to directly support loop invariants https://github.com/ethereum/solidity/issues/6210
      */
-    function Invariant(bool b) internal pure {
-    }
-
+    function Invariant(bool b) external pure;
+     
     /**
      * Contract invariant
      * 
@@ -47,9 +46,8 @@ library VeriSol {
      * I should only refer to variables in global scope i.e. state variables.
      * 
      */
-    function ContractInvariant(bool b) internal pure {
-    }
-
+    function ContractInvariant(bool b) external pure;
+    
 
    /*
     ********************************************************************
@@ -61,22 +59,14 @@ library VeriSol {
      * A new in-built function that returns the sum of all values of a mapping
      * 
      */  
-    function SumMapping(mapping (address => uint256) storage a) internal pure returns (uint256){
-       return 0; // The body is ignored
-    }
+    function SumMapping(mapping (address => uint256) storage a) external pure returns (uint256);
 
     /**
      * A new in-built function that returns the sum of all values of a mapping
      * 
      */  
-    function Old(uint x) internal pure returns (uint){
-       return x; // The body is ignored
-    }
+    function Old(uint x) external pure returns (uint);
 
-/*  Name clash on overloaded functions Issue #157
-    function Old(address x) internal pure returns (address){
-       return x; // The body is ignored
-    }
-*/    
+    function Old(address x) external pure returns (address);
 
 }

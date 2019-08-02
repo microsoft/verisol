@@ -159,6 +159,11 @@ namespace SolToBoogie
             if (genInlineAttrsInBpl)
                 attributes.Add(new BoogieAttribute("inline", 1));
 
+            if (currentContract.ContractKind == EnumContractKind.LIBRARY &&
+                currentContract.Name.Equals("VeriSol"))
+            {
+                return false;
+            }
             BoogieProcedure procedure = new BoogieProcedure(procName, inParams, outParams, attributes);
             context.Program.AddDeclaration(procedure);
 
@@ -1156,8 +1161,9 @@ namespace SolToBoogie
             BoogieExpr guard = TranslateExpr(node.Condition);
             BoogieStmtList body = TranslateStatement(node.Body);
 
-            var invariants = ExtractInvariants(body);
-            BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, body, invariants);
+            BoogieStmtList newBody;
+            var invariants = ExtractInvariants(body, out newBody);
+            BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, newBody, invariants);
 
             currentStmtList.AddStatement(whileCmd);
             return false;
@@ -1174,8 +1180,10 @@ namespace SolToBoogie
             stmtList.AppendStmtList(initStmt);
 
             body.AppendStmtList(loopStmt);
-            var invariants = ExtractInvariants(body);
-            BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, body, invariants);
+
+            BoogieStmtList newBody;
+            var invariants = ExtractInvariants(body, out newBody);
+            BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, newBody, invariants);
             stmtList.AddStatement(whileCmd);
 
             currentStmtList.AppendStmtList(stmtList);
@@ -1187,8 +1195,9 @@ namespace SolToBoogie
         /// </summary>
         /// <param name="body"></param>
         /// <returns></returns>
-        private List<BoogieExpr> ExtractInvariants(BoogieStmtList body)
+        private List<BoogieExpr> ExtractInvariants(BoogieStmtList body, out BoogieStmtList bodyWithoutInvariants)
         {
+            bodyWithoutInvariants = new BoogieStmtList();
             List<BoogieExpr> invariantExprs = new List<BoogieExpr>();
             foreach (var bigBlock in body.BigBlocks)
             {
@@ -1197,12 +1206,16 @@ namespace SolToBoogie
                     var callCmd = stmt as BoogieCallCmd;
                     if (callCmd == null)
                     {
+                        bodyWithoutInvariants.AddStatement(stmt);
                         continue;
                     }
                     if (callCmd.Callee.Equals("Invariant_VeriSol"))
                     {
                         Debug.Assert(callCmd.Ins.Count == 4, "Found VeriSol.Invariant(..) with unexpected number of args");
                         invariantExprs.Add(callCmd.Ins[3]);
+                    } else
+                    {
+                        bodyWithoutInvariants.AddStatement(stmt);
                     }
                 }
             }
@@ -1237,10 +1250,13 @@ namespace SolToBoogie
             BoogieStmtList body = TranslateStatement(node.Body);
 
             BoogieStmtList stmtList = new BoogieStmtList();
-            stmtList.AppendStmtList(body);
 
-            var invariants = ExtractInvariants(body);
-            BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, body, invariants);
+            BoogieStmtList newBody;
+            var invariants = ExtractInvariants(body, out newBody);
+            stmtList.AppendStmtList(newBody);
+
+            BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, newBody, invariants);
+
             stmtList.AddStatement(whileCmd);
 
             currentStmtList.AppendStmtList(stmtList);
