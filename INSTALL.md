@@ -57,10 +57,13 @@ where
 `dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll Test\regressions\Mapping.sol Mapping /tryProof /tryRefutation:6`
 
 ### Example with Loop Invariants ###
-`dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll Test\regressions\Mapping.sol LoopInvUsageExample.sol LoopFor /tryProof /tryRefutation:10`
+`dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll Test\regressions\LoopInvUsageExample.sol LoopFor /tryProof /tryRefutation:10`
 
 ### Example with Contract Invariants ###
-`dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll Test\regressions\Mapping.sol ContractInvUsageExample.sol LoopFor /tryProof /tryRefutation:10`
+`dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll Test\regressions\ContractInvUsageExample.sol LoopFor /tryProof /tryRefutation:10`
+
+### Example of higly simplified ERC20 ###
+`dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll Test\regressions\ERC20-simplified.sol ERC20 /tryProof /tryRefutation:10`
 
 ## Regression script
 
