@@ -146,7 +146,7 @@ namespace VeriSolRunner
             }
             else
             {
-                Console.WriteLine($"\t*** Found a counterexample (see corral_out_trace.txt)");
+                Console.WriteLine($"\t*** Found a counterexample (see \"Execution trace:\" inside corral.txt)");
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     DisplayTraceUsingConcurrencyExplorer();
