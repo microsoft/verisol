@@ -257,6 +257,9 @@ namespace SolToBoogie
                 if (funcDef.IsConstructorForContract(contract.Name)) continue;
                 if (funcDef.Visibility == EnumVisibility.PUBLIC || funcDef.Visibility == EnumVisibility.EXTERNAL)
                 {
+                    // HACK: lets ignore "fallback_" named functions for DAO demo
+                    if (funcDef.Name.Equals("fallback"))
+                        continue;
                     publicFuncDefs.Add(funcDef);
                 }
             }

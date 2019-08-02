@@ -18,9 +18,6 @@ contract SimpleDAO {
         return balance;
     }
     function withdraw() public {
-        uint old_balance = balance;
-        uint old_credit_sender = credit[msg.sender];
-        require(old_credit_sender >= 0); 
         if (credit[msg.sender] > 0) {
             uint amount = credit[msg.sender];
             balance -= amount;
@@ -39,6 +36,7 @@ contract Mallory {
     constructor (address daoAddr) public {
         count = 0;
         dao = SimpleDAO(daoAddr);
+        require(dao.queryCredit(address(this)) == 0);
         balance = 1;
     }
     function fallback(uint amount) public {
