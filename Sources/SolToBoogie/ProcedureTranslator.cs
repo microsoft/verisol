@@ -51,6 +51,10 @@ namespace SolToBoogie
         {
             currentContract = node;
 
+            if (currentContract.ContractKind == EnumContractKind.LIBRARY &&
+                currentContract.Name.Equals("VeriSol"))
+                return true;
+
             // generate default empty constructor if there is no constructor explicitly defined
             if (!context.IsConstructorDefined(node))
             {
@@ -162,6 +166,11 @@ namespace SolToBoogie
             if (genInlineAttrsInBpl)
                 attributes.Add(new BoogieAttribute("inline", 1));
 
+            if (currentContract.ContractKind == EnumContractKind.LIBRARY &&
+                currentContract.Name.Equals("VeriSol"))
+            {
+                return false;
+            }
             BoogieProcedure procedure = new BoogieProcedure(procName, inParams, outParams, attributes);
             context.Program.AddDeclaration(procedure);
 
@@ -343,7 +352,7 @@ namespace SolToBoogie
             {
                 if (varDecl.TypeName is ElementaryTypeName elementaryType)
                 {
-                    if (elementaryType.TypeDescriptions.TypeString.Equals("address"))
+                    if (elementaryType.TypeDescriptions.TypeString.Equals("address") || elementaryType.TypeDescriptions.TypeString.Equals("address payable"))
                     {
                         string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
                         BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
@@ -456,6 +465,7 @@ namespace SolToBoogie
                     }
                     else if (mapping.ValueType is UserDefinedTypeName userTypeName ||
                         mapping.ValueType.ToString().Equals("address") ||
+                        mapping.ValueType.ToString().Equals("address payable") ||
                         mapping.ValueType.ToString().StartsWith("bytes")
                         )
                     {
@@ -1046,7 +1056,7 @@ namespace SolToBoogie
             if (lhsType != null && !isTupleAssignment)
             {
                 //REFACTOR!
-                if (lhsType.TypeString.Equals("address") || lhsType.IsDynamicArray() || lhsType.IsStaticArray())
+                if (lhsType.TypeString.Equals("address") || lhsType.TypeString.Equals("address payable") || lhsType.IsDynamicArray() || lhsType.IsStaticArray())
                 {
                     var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_ref", new List<BoogieExpr>() { lhs[0] }, new List<BoogieIdentifierExpr>());
                     callCmd.Attributes = new List<BoogieAttribute>();
@@ -1191,8 +1201,9 @@ namespace SolToBoogie
             BoogieExpr guard = TranslateExpr(node.Condition);
             BoogieStmtList body = TranslateStatement(node.Body);
 
-            var invariants = ExtractInvariants(body);
-            BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, body, invariants);
+            BoogieStmtList newBody;
+            var invariants = ExtractInvariants(body, out newBody);
+            BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, newBody, invariants);
 
             currentStmtList.AddStatement(whileCmd);
             return false;
@@ -1209,8 +1220,10 @@ namespace SolToBoogie
             stmtList.AppendStmtList(initStmt);
 
             body.AppendStmtList(loopStmt);
-            var invariants = ExtractInvariants(body);
-            BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, body, invariants);
+
+            BoogieStmtList newBody;
+            var invariants = ExtractInvariants(body, out newBody);
+            BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, newBody, invariants);
             stmtList.AddStatement(whileCmd);
 
             currentStmtList.AppendStmtList(stmtList);
@@ -1222,8 +1235,9 @@ namespace SolToBoogie
         /// </summary>
         /// <param name="body"></param>
         /// <returns></returns>
-        private List<BoogieExpr> ExtractInvariants(BoogieStmtList body)
+        private List<BoogieExpr> ExtractInvariants(BoogieStmtList body, out BoogieStmtList bodyWithoutInvariants)
         {
+            bodyWithoutInvariants = new BoogieStmtList();
             List<BoogieExpr> invariantExprs = new List<BoogieExpr>();
             foreach (var bigBlock in body.BigBlocks)
             {
@@ -1232,12 +1246,16 @@ namespace SolToBoogie
                     var callCmd = stmt as BoogieCallCmd;
                     if (callCmd == null)
                     {
+                        bodyWithoutInvariants.AddStatement(stmt);
                         continue;
                     }
                     if (callCmd.Callee.Equals("Invariant_VeriSol"))
                     {
                         Debug.Assert(callCmd.Ins.Count == 4, "Found VeriSol.Invariant(..) with unexpected number of args");
                         invariantExprs.Add(callCmd.Ins[3]);
+                    } else
+                    {
+                        bodyWithoutInvariants.AddStatement(stmt);
                     }
                 }
             }
@@ -1272,10 +1290,13 @@ namespace SolToBoogie
             BoogieStmtList body = TranslateStatement(node.Body);
 
             BoogieStmtList stmtList = new BoogieStmtList();
-            stmtList.AppendStmtList(body);
 
-            var invariants = ExtractInvariants(body);
-            BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, body, invariants);
+            BoogieStmtList newBody;
+            var invariants = ExtractInvariants(body, out newBody);
+            stmtList.AppendStmtList(newBody);
+
+            BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, newBody, invariants);
+
             stmtList.AddStatement(whileCmd);
 
             currentStmtList.AppendStmtList(stmtList);
@@ -1627,6 +1648,11 @@ namespace SolToBoogie
 
                 currentExpr = tmpVarExpr;
             }
+            else if (IsVeriSolCodeContractFunction(node))
+            {
+                // we cannot use temporaries as we are translating a specification
+                currentExpr = TranslateVeriSolCodeContractFuncCall(node);
+            }
             else if (context.HasEventNameInContract(currentContract, functionName))
             {
                 // generate empty statement list to ignore the event call                
@@ -1678,6 +1704,61 @@ namespace SolToBoogie
 
             }
             return false;
+        }
+
+        private BoogieExpr TranslateVeriSolCodeContractFuncCall(FunctionCall node)
+        {
+            var verisolFunc = GetVeriSolCodeContractFunction(node);
+            Debug.Assert(verisolFunc != null, $"Unknown VeriSol code contracts function {node.ToString()}");
+            var boogieExprs = node.Arguments.ConvertAll(x => TranslateExpr(x));
+            // HACK for Sum
+            if (verisolFunc.Equals("_SumMapping_VeriSol"))
+            {
+                //has to be M_ref_int[mapp[this]] instead of mapp[this]
+                var mapName = MapArrayHelper.GetMemoryMapName(BoogieType.Ref, BoogieType.Int);
+                boogieExprs[0] = new BoogieMapSelect(new BoogieIdentifierExpr(mapName), boogieExprs[0]);
+            }
+            return new BoogieFuncCallExpr(verisolFunc, boogieExprs);
+        }
+
+        private bool IsVeriSolCodeContractFunction(FunctionCall node)
+        {
+            if (node.Expression is MemberAccess member)
+            {
+                if (member.Expression is Identifier ident)
+                {
+                    if (ident.Name.Equals("VeriSol"))
+                    {
+                        // ignore the specifiction functions
+                        if (member.MemberName.Equals("Invariant") ||
+                            member.MemberName.Equals("ContractInvariant"))
+                            return false;
+                        else
+                            return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private string GetVeriSolCodeContractFunction(FunctionCall node)
+        {
+            if (node.Expression is MemberAccess member)
+            {
+                if (member.Expression is Identifier ident)
+                {
+                    if (ident.Name.Equals("VeriSol"))
+                    {
+                        if (member.MemberName.Equals("SumMapping"))
+                            return "_SumMapping_VeriSol";
+                        if (member.MemberName.Equals("Old"))
+                            return "old"; //map it old(..) in Boogie
+                        else
+                            return null;
+                    }
+                }
+            }
+            return null;
         }
 
         private BoogieIdentifierExpr MkNewLocalVariableForFunctionReturn(FunctionCall node)
@@ -2224,7 +2305,7 @@ namespace SolToBoogie
             }
             else if (node.Expression is ElementaryTypeNameExpression elemType) // cast to elementary types
             {
-                if (elemType.TypeName.Equals("address"))
+                if (elemType.TypeName.Equals("address") || elemType.TypeName.Equals("address payable"))
                 {
                     //try to do a best-effort to detect address(0) 
                     if (exprToCast is BoogieLiteralExpr blit)

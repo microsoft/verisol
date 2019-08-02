@@ -146,7 +146,7 @@ namespace VeriSolRunner
             }
             else
             {
-                Console.WriteLine($"\t*** Found a counterexample (see corral_out_trace.txt)");
+                Console.WriteLine($"\t*** Found a counterexample (see \"Execution trace:\" inside corral.txt)");
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     DisplayTraceUsingConcurrencyExplorer();
@@ -166,7 +166,10 @@ namespace VeriSolRunner
             {
                 throw new Exception($"Cannot find ConcurrencyExplorer.exe at {concExplorerWindowsPath}");
             }
-            Console.WriteLine($"\t[To view traces on Windows] {concExplorerWindowsPath} corral_out_trace.txt ");
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Console.WriteLine($"\t{concExplorerWindowsPath} corral_out_trace.txt ");
+            }
         }
 
         private bool ExecuteSolToBoogie()

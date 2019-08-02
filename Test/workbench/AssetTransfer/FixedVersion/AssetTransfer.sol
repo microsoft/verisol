@@ -1,4 +1,4 @@
-pragma solidity ^0.4.20;
+pragma solidity >=0.4.20;
 
 contract AssetTransfer /* is WorkbenchBase('AssetTransfer', 'AssetTransfer') */
 {
@@ -13,7 +13,7 @@ contract AssetTransfer /* is WorkbenchBase('AssetTransfer', 'AssetTransfer') */
     address public InstanceInspector;
     address public InstanceAppraiser;
 
-    function AssetTransfer(string description, uint256 price) public
+    constructor (string memory description, uint256 price) public
     {
         InstanceOwner = msg.sender;
         AskingPrice = price;
@@ -33,7 +33,7 @@ contract AssetTransfer /* is WorkbenchBase('AssetTransfer', 'AssetTransfer') */
         // ContractUpdated('Terminate');
     }
 
-    function Modify(string description, uint256 price) public
+    function Modify(string memory description, uint256 price) public
     {
         if (State != StateType.Active)
         {
@@ -51,7 +51,7 @@ contract AssetTransfer /* is WorkbenchBase('AssetTransfer', 'AssetTransfer') */
 
     function MakeOffer(address inspector, address appraiser, uint256 offerPrice) public
     {
-        if (inspector == 0x0 || appraiser == 0x0 || offerPrice == 0)
+        if (inspector == address(0x0) || appraiser == address(0x0) || offerPrice == 0)
         {
             revert();
         }
@@ -99,7 +99,7 @@ contract AssetTransfer /* is WorkbenchBase('AssetTransfer', 'AssetTransfer') */
             revert();
         }
 
-        InstanceBuyer = 0x0;
+        InstanceBuyer = address(0x0);
         State = StateType.Active;
         // ContractUpdated('Reject');
     }
@@ -144,7 +144,7 @@ contract AssetTransfer /* is WorkbenchBase('AssetTransfer', 'AssetTransfer') */
             }
             else if (State == StateType.BuyerAccepted)
             {
-                State = StateType.SellerAccepted;
+                State = StateType.Accepted;
             }
         }
         // ContractUpdated('Accept');
@@ -176,7 +176,7 @@ contract AssetTransfer /* is WorkbenchBase('AssetTransfer', 'AssetTransfer') */
             revert();
         }
 
-        InstanceBuyer = 0x0;
+        InstanceBuyer = address(0x0);
         OfferPrice = 0;
         State = StateType.Active;
         // ContractUpdated('RescindOffer');

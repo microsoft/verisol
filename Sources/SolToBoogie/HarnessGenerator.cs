@@ -25,6 +25,12 @@ namespace SolToBoogie
         {
             foreach (ContractDefinition contract in context.ContractDefinitions)
             {
+                if (contract.ContractKind == EnumContractKind.LIBRARY &&
+                    contract.Name.Equals("VeriSol"))
+                {
+                    continue;
+                }
+
                 Dictionary<int, BoogieExpr> houdiniVarMap = HoudiniHelper.GenerateHoudiniVarMapping(contract, context);
                 GenerateHoudiniVarsForContract(contract, houdiniVarMap);
                 GenerateBoogieHarnessForContract(contract, houdiniVarMap);
@@ -34,6 +40,12 @@ namespace SolToBoogie
 
             foreach (ContractDefinition contract in context.ContractDefinitions)
             {
+                if (contract.ContractKind == EnumContractKind.LIBRARY &&
+                    contract.Name.Equals("VeriSol"))
+                {
+                    continue;
+                }
+
                 GenerateCorralChoiceProcForContract(contract);
                 GenerateCorralHarnessForContract(contract);
             }
