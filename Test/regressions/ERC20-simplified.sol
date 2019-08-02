@@ -10,7 +10,6 @@ import "./Libraries/VeriSolContracts.sol";
  * A highly simplified Token to express basic specifications
  * 
  * - totalSupply() equals the Sum({balanceOf(a) | a is an address })
- * - allowance[a][b] <= balanceOf(a)
  * 
  */
 contract ERC20 is IERC20 {

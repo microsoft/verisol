@@ -4,8 +4,8 @@ import "./Libraries/VeriSolContracts.sol";
 
 contract LoopFor {
 
-    uint x;
-    uint y;
+    int x;
+    int y;
 
     function ContractInvariant () private view {
         VeriSol.ContractInvariant(x == y);
@@ -13,7 +13,7 @@ contract LoopFor {
     }
 
     // test Loop invariant with for loop
-    constructor(uint n) public {
+    constructor(int n) public {
         require (n >= 0);
         x = n;
         y = x;
