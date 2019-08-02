@@ -103,3 +103,5 @@ StateVarCall.sol
 tuples.sol
 Getters.sol
 Error.sol
+Error2.sol
+Error3.sol
