@@ -69,6 +69,7 @@ where
 
 ### Example of higly simplified TheDAO attack ###
 `dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll Test\regressions\DAO-Sim-Buggy.sol Mallory /tryProof /tryRefutation:10`
+
 `dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll Test\regressions\DAO-Sim-Fixed.sol Mallory /tryProof /tryRefutation:10`
 
 ## VeriSol Code Contracts library
