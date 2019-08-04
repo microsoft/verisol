@@ -13,6 +13,7 @@ namespace VeriSolRunner
     using System.IO;
     using System.Runtime.InteropServices;
     using System.Reflection;
+    using System.Text.RegularExpressions;
 
     internal class VeriSolExecutor
     {
@@ -28,6 +29,7 @@ namespace VeriSolRunner
         private bool GenInlineAttrs;
         private ILogger Logger;
         private readonly string outFileName = "__SolToBoogieTest_out.bpl";
+        private readonly string corralTraceFileName = "corral_out_trace.txt";
         private readonly int CorralRecursionLimit;
         private readonly int CorralContextBound = 1; // always 1 for solidity
         private HashSet<Tuple<string, string>> ignoreMethods;
@@ -146,7 +148,12 @@ namespace VeriSolRunner
             }
             else
             {
-                Console.WriteLine($"\t*** Found a counterexample (see \"Execution trace:\" inside corral.txt)");
+                Console.WriteLine($"\t*** Found a counterexample:");
+
+                DisplayTraceOnConsole();
+
+                Console.WriteLine($"\tSee full execution trace inside {corralOutFile}");
+
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     DisplayTraceUsingConcurrencyExplorer();
@@ -155,7 +162,7 @@ namespace VeriSolRunner
             }
         }
 
-        private static void DisplayTraceUsingConcurrencyExplorer()
+        private void DisplayTraceUsingConcurrencyExplorer()
         {
             var assemblyLocation = Assembly.GetExecutingAssembly().Location;
             string concExplorerWindowsPath = Path.Combine(
@@ -168,8 +175,27 @@ namespace VeriSolRunner
             }
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Console.WriteLine($"\t{concExplorerWindowsPath} corral_out_trace.txt ");
+                Console.WriteLine($"\t{concExplorerWindowsPath} {corralTraceFileName}");
             }
+        }
+
+        private void DisplayTraceOnConsole()
+        {
+            var functionCalls = new List<string>();
+
+            string corralTrace = File.ReadAllText(corralTraceFileName);
+            string[] tracePerChoice = corralTrace.Split($"CALL CorralChoice_{ContractName}");  
+
+            foreach(string choiceTrace in tracePerChoice)
+            {
+                Match nameMatch = Regex.Match(choiceTrace, @"(?<=\ )\S*?(?=_)");
+                functionCalls.Add(nameMatch.Value);
+            }
+
+            foreach(string functionName in functionCalls)
+            {
+                Console.WriteLine($"\t{functionName}");
+            }           
         }
 
         private bool ExecuteSolToBoogie()
