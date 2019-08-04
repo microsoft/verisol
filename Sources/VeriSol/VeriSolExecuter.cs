@@ -181,21 +181,14 @@ namespace VeriSolRunner
 
         private void DisplayTraceOnConsole()
         {
-            var functionCalls = new List<string>();
-
             string corralTrace = File.ReadAllText(corralTraceFileName);
             string[] tracePerChoice = corralTrace.Split($"CALL CorralChoice_{ContractName}");  
 
             foreach(string choiceTrace in tracePerChoice)
             {
-                Match nameMatch = Regex.Match(choiceTrace, @"(?<=\ )\S*?(?=_)");
-                functionCalls.Add(nameMatch.Value);
-            }
-
-            foreach(string functionName in functionCalls)
-            {
-                Console.WriteLine($"\t{functionName}");
-            }           
+                Match functionNameMatch = Regex.Match(choiceTrace, @"(?<=\ )\S*?(?=_)");
+                Console.WriteLine($"\t{functionNameMatch.Value}");
+            }          
         }
 
         private bool ExecuteSolToBoogie()
