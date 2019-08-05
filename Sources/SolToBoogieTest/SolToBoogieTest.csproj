@@ -15,7 +15,7 @@
 
    <ItemGroup>
         <SolcFiles Include="..\..\Tool\**\*.*"/>
-        <CorralFiles Include="..\..\corral\bin\debug\**\*.*"/>
+        <CorralFiles Include="..\..\corral\bin\Debug\**\*.*"/>
         <BoogieFiles Include="..\..\corral\boogie\Binaries\**\*.*"/>
    </ItemGroup> 
 
