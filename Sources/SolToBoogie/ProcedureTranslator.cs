@@ -146,6 +146,40 @@ namespace SolToBoogie
             node.Parameters.Accept(this);
             inParams.AddRange(currentParamList);
 
+            //////////////////////
+            ///// Generate Boogie cmd to print function argument values to corral.txt:
+            // TODO: omitting default parameters "this", "msg.sender", "msg.value"
+            foreach (VariableDeclaration param in node.Parameters.Parameters)
+            {
+                //BoogieExpr parExpr = new BoogieIdentifierExpr(param.Name);
+                var parType = param.TypeDescriptions != null ? param.TypeDescriptions : null;
+
+                if (parType.TypeString.Equals("address") || parType.TypeString.Equals("address payable") || parType.IsDynamicArray() || parType.IsStaticArray())
+                {
+                    var parExpr = MkNewLocalVariableWithType(BoogieType.Ref);
+                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_ref", new List<BoogieExpr>() { parExpr }, new List<BoogieIdentifierExpr>());
+                    callCmd.Attributes = new List<BoogieAttribute>();
+                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{param.Name}\""));
+                    currentStmtList.AddStatement(callCmd);
+                }
+                else if (parType.TypeString.StartsWith("uint") || parType.TypeString.StartsWith("int") || parType.TypeString.StartsWith("string ") || parType.TypeString.StartsWith("bytes"))
+                {
+                    var parExpr = MkNewLocalVariableWithType(BoogieType.Int);
+                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { parExpr }, new List<BoogieIdentifierExpr>());
+                    callCmd.Attributes = new List<BoogieAttribute>();
+                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{param.Name}\""));
+                    currentStmtList.AddStatement(callCmd);
+                }
+                else if (parType.TypeString.Equals("bool"))
+                {
+                    var parExpr = MkNewLocalVariableWithType(BoogieType.Bool);
+                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_bool", new List<BoogieExpr>() { parExpr }, new List<BoogieIdentifierExpr>());
+                    callCmd.Attributes = new List<BoogieAttribute>();
+                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{param.Name}\""));
+                    currentStmtList.AddStatement(callCmd);
+                }
+            }
+
             // output parameters
             node.ReturnParameters.Accept(this);
             List<BoogieVariable> outParams = currentParamList;
@@ -191,7 +225,6 @@ namespace SolToBoogie
                 boogieToLocalVarsMap[currentBoogieProc] = new List<BoogieVariable>();
 
                 // TODO: each local array variable should be distinct and 0 initialized
-
 
                 BoogieStmtList procBody = new BoogieStmtList();
                 currentPostlude = new BoogieStmtList();
@@ -257,7 +290,6 @@ namespace SolToBoogie
                     BoogieImplementation impelementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
                     context.Program.AddDeclaration(impelementation);
                 }
-
             }
 
             // generate real constructors
