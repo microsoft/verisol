@@ -36,6 +36,7 @@ MethodDecl.sol
 DoWhileLoop.sol
 DynDispatch.sol
 ConstructorLinearized.sol
+InheritanceMultipleWithLinearization.sol
 MappingInitialize.sol
 ExternalFunctionCall.sol
 Throw.sol
