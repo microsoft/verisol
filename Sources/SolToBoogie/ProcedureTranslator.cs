@@ -124,7 +124,8 @@ namespace SolToBoogie
 
         private BoogieCallCmd GenerateBoogieCallCmd(TypeDescription type, BoogieExpr value, string name)
         {
-            if (type.TypeString.Equals("address") || type.TypeString.Equals("address payable") || type.TypeString.StartsWith("contract "))
+            if (type.TypeString.Equals("address") || type.TypeString.Equals("address payable") || type.TypeString.StartsWith("contract ") ||
+                type.IsDynamicArray() || type.IsStaticArray())
             {
                 // Skipping dynamic and static array types:
                 var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_ref", new List<BoogieExpr>() { value }, new List<BoogieIdentifierExpr>());
@@ -148,6 +149,18 @@ namespace SolToBoogie
             }
 
             return null;
+        }
+
+        private BoogieCallCmd InvokeGenerateBoogieCallCmd(TypeDescription type, BoogieExpr value, string name)
+        {
+            if (type.IsDynamicArray() || type.IsStaticArray())
+            {
+                return null; 
+            }
+            else
+            {
+                return GenerateBoogieCallCmd(type, value, name);
+            }
         }
 
         public override bool Visit(FunctionDefinition node)
@@ -175,9 +188,10 @@ namespace SolToBoogie
             inParams.AddRange(currentParamList);
 
             // Generate Boogie cmd to print function argument values to corral.txt for counterexample:
-            // Default parameters "this", "msg.sender" (ignoring "msg.value"):
+            // Add default parameters "this", "msg.sender" (ignoring "msg.value"):
             TypeDescription addrType = new TypeDescription();
             addrType.TypeString = "address";
+            //var callCmd = InvokeGenerateBoogieCallCmd(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
             var callCmd = GenerateBoogieCallCmd(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
             if (callCmd != null)
             {
@@ -196,8 +210,15 @@ namespace SolToBoogie
                 BoogieVariable parVar = inParams[parIndex + 3];
                 string parName = param.Name;
                 var parExpr = new BoogieIdentifierExpr(parVar.Name);
-                callCmd = GenerateBoogieCallCmd(parType, parExpr, parName);
-                callCmd = GenerateBoogieCallCmd(parType, parExpr, parName);
+                // Do not print info for array type arguments:
+                if (parType.IsDynamicArray() || parType.IsStaticArray())
+                {
+                    continue;
+                }
+                else
+                {
+                    callCmd = GenerateBoogieCallCmd(parType, parExpr, parName);
+                }
                 if (callCmd != null)
                 {
                     currentStmtList.AddStatement(callCmd);
