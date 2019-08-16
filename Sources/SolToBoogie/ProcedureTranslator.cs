@@ -124,8 +124,10 @@ namespace SolToBoogie
 
         private BoogieCallCmd GenerateBoogieCallCmd(TypeDescription type, BoogieExpr value, string name)
         {
-            if (type.TypeString.Equals("address") || type.TypeString.Equals("address payable") || type.TypeString.StartsWith("contract ") ||
-                type.IsDynamicArray() || type.IsStaticArray())
+            if (type.IsDynamicArray() || type.IsStaticArray())
+                return null;
+
+            if (type.TypeString.Equals("address") || type.TypeString.Equals("address payable") || type.TypeString.StartsWith("contract "))
             {
                 // Skipping dynamic and static array types:
                 var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_ref", new List<BoogieExpr>() { value }, new List<BoogieIdentifierExpr>());
@@ -210,15 +212,7 @@ namespace SolToBoogie
                 BoogieVariable parVar = inParams[parIndex + 3];
                 string parName = param.Name;
                 var parExpr = new BoogieIdentifierExpr(parVar.Name);
-                // Do not print info for array type arguments:
-                if (parType.IsDynamicArray() || parType.IsStaticArray())
-                {
-                    continue;
-                }
-                else
-                {
-                    callCmd = GenerateBoogieCallCmd(parType, parExpr, parName);
-                }
+                callCmd = GenerateBoogieCallCmd(parType, parExpr, parName);
                 if (callCmd != null)
                 {
                     currentStmtList.AddStatement(callCmd);
