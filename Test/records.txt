@@ -48,6 +48,7 @@ ConstructorSpecifier.sol
 AssertTrue.sol
 CreateContract.sol
 ConstructorModifier.sol
+ConstructorModifier_fail.sol
 #StructType.sol
 #StructOfFixedSizeArray.sol
 Branch.sol
@@ -66,6 +67,7 @@ ArrayFixedSize.sol
 #Not backward compat with 0.4.24
 MappingLowerDimRef.sol 
 InternalFunctionCall.sol
+InternalFunctionCall_fail.sol
 LoopBreak.sol
 MappingNested.sol
 #LoopWhile.sol
