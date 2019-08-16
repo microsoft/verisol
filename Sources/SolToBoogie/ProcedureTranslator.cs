@@ -122,6 +122,49 @@ namespace SolToBoogie
             return false;
         }
 
+        private BoogieCallCmd GenerateBoogieCallCmd(TypeDescription type, BoogieExpr value, string name)
+        {
+            if (type.IsDynamicArray() || type.IsStaticArray())
+                return null;
+
+            if (type.TypeString.Equals("address") || type.TypeString.Equals("address payable") || type.TypeString.StartsWith("contract "))
+            {
+                // Skipping dynamic and static array types:
+                var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_ref", new List<BoogieExpr>() { value }, new List<BoogieIdentifierExpr>());
+                callCmd.Attributes = new List<BoogieAttribute>();
+                callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{name}\""));
+                return callCmd;
+            }
+            else if (type.TypeString.StartsWith("uint") || type.TypeString.StartsWith("int") || type.TypeString.StartsWith("string ") || type.TypeString.StartsWith("bytes"))
+            {
+                var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { value }, new List<BoogieIdentifierExpr>());
+                callCmd.Attributes = new List<BoogieAttribute>();
+                callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{name}\""));
+                return callCmd;
+            }
+            else if (type.TypeString.Equals("bool"))
+            {
+                var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_bool", new List<BoogieExpr>() { value }, new List<BoogieIdentifierExpr>());
+                callCmd.Attributes = new List<BoogieAttribute>();
+                callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{name}\""));
+                return callCmd;
+            }
+
+            return null;
+        }
+
+        private BoogieCallCmd InvokeGenerateBoogieCallCmd(TypeDescription type, BoogieExpr value, string name)
+        {
+            if (type.IsDynamicArray() || type.IsStaticArray())
+            {
+                return null; 
+            }
+            else
+            {
+                return GenerateBoogieCallCmd(type, value, name);
+            }
+        }
+
         public override bool Visit(FunctionDefinition node)
         {
             // VeriSolAssert(node.IsConstructor || node.Modifiers.Count <= 1, "Multiple Modifiers are not supported yet");
@@ -145,6 +188,36 @@ namespace SolToBoogie
             // get all formal input parameters
             node.Parameters.Accept(this);
             inParams.AddRange(currentParamList);
+
+            // Generate Boogie cmd to print function argument values to corral.txt for counterexample:
+            // Add default parameters "this", "msg.sender" (ignoring "msg.value"):
+            TypeDescription addrType = new TypeDescription();
+            addrType.TypeString = "address";
+            //var callCmd = InvokeGenerateBoogieCallCmd(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
+            var callCmd = GenerateBoogieCallCmd(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
+            if (callCmd != null)
+            {
+                currentStmtList.AddStatement(callCmd);
+            }
+            callCmd = GenerateBoogieCallCmd(addrType, new BoogieIdentifierExpr(inParams[1].Name), "msg.sender");
+            if (callCmd != null)
+            {
+                currentStmtList.AddStatement(callCmd);
+            }
+
+            foreach (VariableDeclaration param in node.Parameters.Parameters)
+            {
+                var parType = param.TypeDescriptions != null ? param.TypeDescriptions : null;
+                int parIndex = node.Parameters.Parameters.IndexOf(param);
+                BoogieVariable parVar = inParams[parIndex + 3];
+                string parName = param.Name;
+                var parExpr = new BoogieIdentifierExpr(parVar.Name);
+                callCmd = GenerateBoogieCallCmd(parType, parExpr, parName);
+                if (callCmd != null)
+                {
+                    currentStmtList.AddStatement(callCmd);
+                }
+            }
 
             // output parameters
             node.ReturnParameters.Accept(this);
@@ -188,10 +261,10 @@ namespace SolToBoogie
             else
             {
                 // local variables and function body
+                // TODO: move to earlier
                 boogieToLocalVarsMap[currentBoogieProc] = new List<BoogieVariable>();
 
                 // TODO: each local array variable should be distinct and 0 initialized
-
 
                 BoogieStmtList procBody = new BoogieStmtList();
                 currentPostlude = new BoogieStmtList();
@@ -210,7 +283,7 @@ namespace SolToBoogie
                         if (node.Modifiers[i].Arguments != null)
                             arguments.AddRange(node.Modifiers[i].Arguments.ConvertAll(TranslateExpr));
                         string callee = node.Modifiers[i].ModifierName.ToString() + "_pre";
-                        BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, null);
+                        callCmd = new BoogieCallCmd(callee, arguments, null);
                         procBody.AddStatement(callCmd);
                     }
 
@@ -221,7 +294,7 @@ namespace SolToBoogie
                         if (node.Modifiers[i].Arguments != null)
                             arguments.AddRange(node.Modifiers[i].Arguments.ConvertAll(TranslateExpr));
                         string callee = node.Modifiers[i].ModifierName.ToString() + "_post";
-                        BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, null);
+                        callCmd = new BoogieCallCmd(callee, arguments, null);
                         currentPostlude.AddStatement(callCmd);
                     }
                 }
@@ -257,7 +330,6 @@ namespace SolToBoogie
                     BoogieImplementation impelementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
                     context.Program.AddDeclaration(impelementation);
                 }
-
             }
 
             // generate real constructors
@@ -1055,26 +1127,9 @@ namespace SolToBoogie
 
             if (lhsType != null && !isTupleAssignment)
             {
-                //REFACTOR!
-                if (lhsType.TypeString.Equals("address") || lhsType.TypeString.Equals("address payable") || lhsType.IsDynamicArray() || lhsType.IsStaticArray())
+                var callCmd = GenerateBoogieCallCmd(lhsType, lhs[0], node.LeftHandSide.ToString());
+                if (callCmd != null)
                 {
-                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_ref", new List<BoogieExpr>() { lhs[0] }, new List<BoogieIdentifierExpr>());
-                    callCmd.Attributes = new List<BoogieAttribute>();
-                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
-                    currentStmtList.AddStatement(callCmd);
-                }
-                else if (lhsType.TypeString.StartsWith("uint") || lhsType.TypeString.StartsWith("int") || lhsType.TypeString.StartsWith("string ") || lhsType.TypeString.StartsWith("bytes"))
-                {
-                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { lhs[0] }, new List<BoogieIdentifierExpr>());
-                    callCmd.Attributes = new List<BoogieAttribute>();
-                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
-                    currentStmtList.AddStatement(callCmd);
-                }
-                else if (lhsType.TypeString.Equals("bool"))
-                {
-                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_bool", new List<BoogieExpr>() { lhs[0] }, new List<BoogieIdentifierExpr>());
-                    callCmd.Attributes = new List<BoogieAttribute>();
-                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.LeftHandSide.ToString()}\""));
                     currentStmtList.AddStatement(callCmd);
                 }
             }
