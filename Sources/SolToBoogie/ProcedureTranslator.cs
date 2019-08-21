@@ -165,35 +165,11 @@ namespace SolToBoogie
             }
         }
 
-        public override bool Visit(FunctionDefinition node)
+        private void PrintArguments(FunctionDefinition node, List<BoogieVariable> inParams, BoogieStmtList currentStmtList)
         {
-            // VeriSolAssert(node.IsConstructor || node.Modifiers.Count <= 1, "Multiple Modifiers are not supported yet");
-            VeriSolAssert(currentContract != null);
-
-            currentFunction = node;
-
-            // procedure name
-            string procName = node.Name + "_" + currentContract.Name;
-
-            if (node.IsConstructorForContract(currentContract.Name))
-            {
-                procName += "_NoBaseCtor";
-            }
-            currentBoogieProc = procName;
-
-            // input parameters
-            List<BoogieVariable> inParams = TransUtils.GetDefaultInParams();
-            // initialize statement list to include assumption about parameter types
-            currentStmtList = new BoogieStmtList();
-            // get all formal input parameters
-            node.Parameters.Accept(this);
-            inParams.AddRange(currentParamList);
-
-            // Generate Boogie cmd to print function argument values to corral.txt for counterexample:
             // Add default parameters "this", "msg.sender" (ignoring "msg.value"):
             TypeDescription addrType = new TypeDescription();
             addrType.TypeString = "address";
-            //var callCmd = InvokeGenerateBoogieCallCmd(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
             var callCmd = GenerateBoogieCallCmd(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
             if (callCmd != null)
             {
@@ -218,15 +194,40 @@ namespace SolToBoogie
                     currentStmtList.AddStatement(callCmd);
                 }
             }
+        }
+        public override bool Visit(FunctionDefinition node)
+        {
+            // VeriSolAssert(node.IsConstructor || node.Modifiers.Count <= 1, "Multiple Modifiers are not supported yet");
+            VeriSolAssert(currentContract != null);
+
+            currentFunction = node;
+
+            // procedure name
+            string procName = node.Name + "_" + currentContract.Name;
+
+            if (node.IsConstructorForContract(currentContract.Name))
+            {
+                procName += "_NoBaseCtor";
+            }
+            currentBoogieProc = procName;
+
+            // input parameters
+            List<BoogieVariable> inParams = TransUtils.GetDefaultInParams();
+            // initialize statement list to include assumption about parameter types
+            currentStmtList = new BoogieStmtList();
+            // get all formal input parameters
+            node.Parameters.Accept(this);
+            inParams.AddRange(currentParamList);
+
+            // Print function argument values to corral.txt for counterexample:
+            PrintArguments(node, inParams, currentStmtList);
 
             // output parameters
             node.ReturnParameters.Accept(this);
             List<BoogieVariable> outParams = currentParamList;
 
-
             var assumesForParamsAndReturn = currentStmtList;
             currentStmtList = new BoogieStmtList();
-
 
             // attributes
             List<BoogieAttribute> attributes = new List<BoogieAttribute>();
@@ -283,7 +284,7 @@ namespace SolToBoogie
                         if (node.Modifiers[i].Arguments != null)
                             arguments.AddRange(node.Modifiers[i].Arguments.ConvertAll(TranslateExpr));
                         string callee = node.Modifiers[i].ModifierName.ToString() + "_pre";
-                        callCmd = new BoogieCallCmd(callee, arguments, null);
+                        var callCmd = new BoogieCallCmd(callee, arguments, null);
                         procBody.AddStatement(callCmd);
                     }
 
@@ -294,7 +295,7 @@ namespace SolToBoogie
                         if (node.Modifiers[i].Arguments != null)
                             arguments.AddRange(node.Modifiers[i].Arguments.ConvertAll(TranslateExpr));
                         string callee = node.Modifiers[i].ModifierName.ToString() + "_post";
-                        callCmd = new BoogieCallCmd(callee, arguments, null);
+                        var callCmd = new BoogieCallCmd(callee, arguments, null);
                         currentPostlude.AddStatement(callCmd);
                     }
                 }
@@ -749,13 +750,15 @@ namespace SolToBoogie
             }
             else
             {
-
                 // no local variables for constructor
                 List<BoogieVariable> localVars = new List<BoogieVariable>();
                 BoogieStmtList ctorBody = new BoogieStmtList();
 
                 List<int> baseContractIds = new List<int>(contract.LinearizedBaseContracts);
                 baseContractIds.Reverse();
+
+                // Print function argument values to corral.txt for counterexample:
+                PrintArguments(ctor, inParams, ctorBody);
 
                 //Note that the current derived contract appears as a baseContractId 
                 foreach (int id in baseContractIds)
@@ -829,7 +832,7 @@ namespace SolToBoogie
                 localVars.AddRange(boogieToLocalVarsMap[currentBoogieProc]);
                 BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, ctorBody);
                 context.Program.AddDeclaration(implementation);
-            }
+            }           
         }
 
         // get the inheritance specifier of `baseContract' in contract definition `contract' if it specifies arguments
