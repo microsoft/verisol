@@ -122,7 +122,7 @@ namespace SolToBoogie
             return false;
         }
 
-        private BoogieCallCmd GenerateBoogieCallCmd(TypeDescription type, BoogieExpr value, string name)
+        private BoogieCallCmd InstrumentForPriningData(TypeDescription type, BoogieExpr value, string name)
         {
             if (type.IsDynamicArray() || type.IsStaticArray())
                 return null;
@@ -151,18 +151,6 @@ namespace SolToBoogie
             }
 
             return null;
-        }
-
-        private BoogieCallCmd InvokeGenerateBoogieCallCmd(TypeDescription type, BoogieExpr value, string name)
-        {
-            if (type.IsDynamicArray() || type.IsStaticArray())
-            {
-                return null; 
-            }
-            else
-            {
-                return GenerateBoogieCallCmd(type, value, name);
-            }
         }
 
         public override bool Visit(FunctionDefinition node)
@@ -194,12 +182,12 @@ namespace SolToBoogie
             TypeDescription addrType = new TypeDescription();
             addrType.TypeString = "address";
             //var callCmd = InvokeGenerateBoogieCallCmd(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
-            var callCmd = GenerateBoogieCallCmd(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
+            var callCmd = InstrumentForPriningData(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
             if (callCmd != null)
             {
                 currentStmtList.AddStatement(callCmd);
             }
-            callCmd = GenerateBoogieCallCmd(addrType, new BoogieIdentifierExpr(inParams[1].Name), "msg.sender");
+            callCmd = InstrumentForPriningData(addrType, new BoogieIdentifierExpr(inParams[1].Name), "msg.sender");
             if (callCmd != null)
             {
                 currentStmtList.AddStatement(callCmd);
@@ -212,7 +200,7 @@ namespace SolToBoogie
                 BoogieVariable parVar = inParams[parIndex + 3];
                 string parName = param.Name;
                 var parExpr = new BoogieIdentifierExpr(parVar.Name);
-                callCmd = GenerateBoogieCallCmd(parType, parExpr, parName);
+                callCmd = InstrumentForPriningData(parType, parExpr, parName);
                 if (callCmd != null)
                 {
                     currentStmtList.AddStatement(callCmd);
@@ -1127,7 +1115,7 @@ namespace SolToBoogie
 
             if (lhsType != null && !isTupleAssignment)
             {
-                var callCmd = GenerateBoogieCallCmd(lhsType, lhs[0], node.LeftHandSide.ToString());
+                var callCmd = InstrumentForPriningData(lhsType, lhs[0], node.LeftHandSide.ToString());
                 if (callCmd != null)
                 {
                     currentStmtList.AddStatement(callCmd);

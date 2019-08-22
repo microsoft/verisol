@@ -74,6 +74,9 @@ namespace SolToBoogie
         // M -> BoogieImplementation(B) for Modifier M {Stmt A; _; Stmt B}
         public Dictionary<string, BoogieImplementation> ModifierToBoogiePostImpl { get; private set;}
 
+        // Options flags
+        public TranslatorFlags TranslateFlags { get; private set; }
+
         // num of fresh identifiers, should be incremented when making new fresh id
         private int freshIdentifierCount = 0;
 
@@ -83,7 +86,7 @@ namespace SolToBoogie
         // do we generate inline attributes (required for unbounded verification)
         private bool genInlineAttrInBpl;
 
-        public TranslatorContext(HashSet<Tuple<string, string>> ignoreMethods, bool _genInlineAttrInBpl)
+        public TranslatorContext(HashSet<Tuple<string, string>> ignoreMethods, bool _genInlineAttrInBpl, TranslatorFlags _translateFlags = null)
         {
             Program = new BoogieProgram();
             ContractDefinitions = new HashSet<ContractDefinition>();
@@ -110,6 +113,7 @@ namespace SolToBoogie
             ModifierToBoogiePostImpl = new Dictionary<string, BoogieImplementation>();
             IgnoreMethods = ignoreMethods;
             genInlineAttrInBpl = _genInlineAttrInBpl;
+            TranslateFlags = _translateFlags;
         }
 
         public bool HasASTNodeId(int id)

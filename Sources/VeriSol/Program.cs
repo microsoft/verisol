@@ -9,6 +9,7 @@ namespace VeriSolRunner
     using System.Reflection;
     using System.Runtime.InteropServices;
     using Microsoft.Extensions.Logging;
+    using SolToBoogie;
 
     /// <summary>
     /// Top level application to run VeriSol to target proofs as well as scalable counterexamples
@@ -28,8 +29,17 @@ namespace VeriSolRunner
             int recursionBound;
             ILogger logger;
             HashSet<Tuple<string, string>> ignoredMethods;
-            bool generateInlineAttribues;
-            ParseCommandLineArgs(args, out solidityFile, out entryPointContractName, out tryProofFlag, out tryRefutation, out recursionBound, out solcName, out logger, out ignoredMethods, out generateInlineAttribues);
+            TranslatorFlags translatorFlags = new TranslatorFlags();
+            ParseCommandLineArgs(args,
+                out solidityFile,
+                out entryPointContractName,
+                out tryProofFlag,
+                out tryRefutation,
+                out recursionBound,
+                out solcName,
+                out logger,
+                out ignoredMethods,
+                ref translatorFlags);
 
             var assemblyLocation = Assembly.GetExecutingAssembly().Location;
             string solcPath = Path.Combine(
@@ -77,15 +87,18 @@ namespace VeriSolRunner
                     ignoredMethods,
                     tryRefutation,
                     tryProofFlag,
-                    generateInlineAttribues,
-                    logger);
+                    logger,
+                    translatorFlags);
             return verisolExecuter.Execute();
         }
 
-        private static void ParseCommandLineArgs(string[] args, out string solidityFile, out string entryPointContractName, out bool tryProofFlag, out bool tryRefutation, out int recursionBound, out string solcName, out ILogger logger, out HashSet<Tuple<string, string>> ignoredMethods, out bool genInlineAttributesInBpl)
+        private static void ParseCommandLineArgs(string[] args, out string solidityFile, out string entryPointContractName, out bool tryProofFlag, out bool tryRefutation, out int recursionBound, out string solcName, out ILogger logger, out HashSet<Tuple<string, string>> ignoredMethods, ref TranslatorFlags translatorFlags)
         {
             solidityFile = args[0];
+            Debug.Assert(solidityFile.Contains("/"), $"Illegal solidity file name {solidityFile}");
             entryPointContractName = args[1];
+            Debug.Assert(entryPointContractName.Contains("/"), $"Illegal contract name {entryPointContractName}");
+
             tryProofFlag = args.Any(x => x.Equals("/tryProof"));
             tryRefutation = false;
             recursionBound = 2;
@@ -114,10 +127,10 @@ namespace VeriSolRunner
             {
                 Console.WriteLine($"Ignored method/contract pairs ==> \n\t {string.Join(",", ignoredMethods.Select(x => x.Item1 + "@" + x.Item2))}");
             }
-            genInlineAttributesInBpl = true;
+            translatorFlags.GenerateInlineAttributes = true;
             if (args.Any(x => x.Equals("/noInlineAttrs")))
             {
-                genInlineAttributesInBpl = false;
+                translatorFlags.GenerateInlineAttributes = false;
                 if (tryProofFlag)
                     throw new Exception("/noInlineAttrs cannot be used when /tryProof is used");
             }
