@@ -138,7 +138,22 @@ namespace VeriSolRunner
             {
                 Debugger.Launch();
             }
-
+            if (args.Any(x => x.Equals("/OmitSourceLineInfo")))
+            {
+                translatorFlags.NoSourceLineInfoFlag = true;
+            }
+            if (args.Any(x => x.Equals("/OmitDataValuesInTrace")))
+            {
+                translatorFlags.NoDataValuesInfoFlag = true;
+            }
+            if (args.Any(x => x.Equals("/OmitUnsignedSemantics")))
+            {
+                translatorFlags.NoUnsignedAssumesFlag = true;
+            }
+            if (args.Any(x => x.Equals("/OmitAxioms")))
+            {
+                translatorFlags.NoAxiomsFlag = true;
+            }
         }
 
         private static void ShowUsage()

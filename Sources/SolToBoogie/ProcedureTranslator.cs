@@ -903,16 +903,19 @@ namespace SolToBoogie
             node.Accept(this);
             VeriSolAssert(currentStmtList != null);
 
+            BoogieStmtList annotatedStmtList = new BoogieStmtList();
             // add source file path and line number
-
-            List<BoogieAttribute> attributes = new List<BoogieAttribute>()
+            if (!context.TranslateFlags.NoSourceLineInfoFlag)
             {
+                List<BoogieAttribute> attributes = new List<BoogieAttribute>()
+                {
                 new BoogieAttribute("first"),
                 new BoogieAttribute("sourceFile", "\"" + srcFileLineInfo.Item1 + "\""),
                 new BoogieAttribute("sourceLine", srcFileLineInfo.Item2)
-            };
-            BoogieAssertCmd annotationCmd = new BoogieAssertCmd(new BoogieLiteralExpr(true), attributes);
-            BoogieStmtList annotatedStmtList = BoogieStmtList.MakeSingletonStmtList(annotationCmd);
+                };
+                BoogieAssertCmd annotationCmd = new BoogieAssertCmd(new BoogieLiteralExpr(true), attributes);
+                annotatedStmtList = BoogieStmtList.MakeSingletonStmtList(annotationCmd);
+            }
             annotatedStmtList.AppendStmtList(currentStmtList);
 
             currentStmtList = oldCurrentStmtList; // pop the stack of currentStmtList
