@@ -326,6 +326,9 @@ namespace SolToBoogie
 
         private void GenerateAxioms()
         {
+            if (context.TranslateFlags.NoAxiomsFlag)
+                return;
+
             context.Program.AddDeclaration(GenerateConstToRefAxiom());
             context.Program.AddDeclaration(GenerateKeccakAxiom());
             context.Program.AddDeclaration(GenerateAbiEncodePackedAxiomOneArg());
