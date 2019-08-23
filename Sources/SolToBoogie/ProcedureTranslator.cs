@@ -1213,6 +1213,10 @@ namespace SolToBoogie
 
         private void AddAssumeForUints(BoogieExpr boogieExpr, TypeDescription typeDesc)
         {
+            // skip based on a flag
+            if (context.TranslateFlags.NoUnsignedAssumesFlag)
+                return;
+
             // Add positive number assume for uints
             if (typeDesc!=null && typeDesc.IsUint())
             {
