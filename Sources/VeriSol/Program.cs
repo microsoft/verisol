@@ -95,9 +95,9 @@ namespace VeriSolRunner
         private static void ParseCommandLineArgs(string[] args, out string solidityFile, out string entryPointContractName, out bool tryProofFlag, out bool tryRefutation, out int recursionBound, out string solcName, out ILogger logger, out HashSet<Tuple<string, string>> ignoredMethods, ref TranslatorFlags translatorFlags)
         {
             solidityFile = args[0];
-            Debug.Assert(solidityFile.Contains("/"), $"Illegal solidity file name {solidityFile}");
+            Debug.Assert(!solidityFile.Contains("/"), $"Illegal solidity file name {solidityFile}");
             entryPointContractName = args[1];
-            Debug.Assert(entryPointContractName.Contains("/"), $"Illegal contract name {entryPointContractName}");
+            Debug.Assert(!entryPointContractName.Contains("/"), $"Illegal contract name {entryPointContractName}");
 
             tryProofFlag = args.Any(x => x.Equals("/tryProof"));
             tryRefutation = false;
@@ -138,19 +138,19 @@ namespace VeriSolRunner
             {
                 Debugger.Launch();
             }
-            if (args.Any(x => x.Equals("/OmitSourceLineInfo")))
+            if (args.Any(x => x.Equals("/omitSourceLineInfo")))
             {
                 translatorFlags.NoSourceLineInfoFlag = true;
             }
-            if (args.Any(x => x.Equals("/OmitDataValuesInTrace")))
+            if (args.Any(x => x.Equals("/omitDataValuesInTrace")))
             {
                 translatorFlags.NoDataValuesInfoFlag = true;
             }
-            if (args.Any(x => x.Equals("/OmitUnsignedSemantics")))
+            if (args.Any(x => x.Equals("/omitUnsignedSemantics")))
             {
                 translatorFlags.NoUnsignedAssumesFlag = true;
             }
-            if (args.Any(x => x.Equals("/OmitAxioms")))
+            if (args.Any(x => x.Equals("/omitAxioms")))
             {
                 translatorFlags.NoAxiomsFlag = true;
             }
