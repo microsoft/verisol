@@ -15,12 +15,14 @@ namespace SolToBoogie
             NoDataValuesInfoFlag = false;
             NoAxiomsFlag = false;
             NoUnsignedAssumesFlag = false;
+            NoHarness = false; 
             GenerateInlineAttributes = true;
         }
         public bool NoSourceLineInfoFlag { get; set; }
         public bool NoDataValuesInfoFlag{ get; set; }
         public bool NoAxiomsFlag { get; set; }
         public bool NoUnsignedAssumesFlag { get; set; }
+        public bool NoHarness { get; set; }
         public bool GenerateInlineAttributes{ get; set; }
     }
 }

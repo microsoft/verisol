@@ -154,6 +154,26 @@ namespace VeriSolRunner
             {
                 translatorFlags.NoAxiomsFlag = true;
             }
+            if (args.Any(x => x.Equals("/omitHarness")))
+            {
+                translatorFlags.NoHarness = true;
+            }
+
+            // don't perform verification for some of these omitFlags
+            if (tryProofFlag || tryRefutation)
+            {
+                Debug.Assert(!translatorFlags.NoHarness &&
+                    !translatorFlags.NoAxiomsFlag &&
+                    !translatorFlags.NoUnsignedAssumesFlag &&
+                    !translatorFlags.NoDataValuesInfoFlag &&
+                    !translatorFlags.NoSourceLineInfoFlag,
+                    "Cannot perform verification when any of " +
+                    "/omitSourceLineInfo, " +
+                    "/omitDataValuesInTrace, " +
+                    "/omitAxioms, " +
+                    "/omitHarness, " +
+                    "/omitUnsignedSemantics are specified");
+            }
         }
 
         private static void ShowUsage()
