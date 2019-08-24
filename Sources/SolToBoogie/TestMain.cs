@@ -76,7 +76,9 @@ namespace SolToBoogie
                 try
                 {
                     BoogieTranslator translator = new BoogieTranslator();
-                    BoogieAST boogieAST = translator.Translate(solidityAST, ignoredMethods, genInlineAttributesInBpl);
+                    var translatorFlags = new TranslatorFlags();
+                    translatorFlags.GenerateInlineAttributes = genInlineAttributesInBpl;
+                    BoogieAST boogieAST = translator.Translate(solidityAST, ignoredMethods, translatorFlags);
 
                     using (var outWriter = new StreamWriter(outFile))
                     {

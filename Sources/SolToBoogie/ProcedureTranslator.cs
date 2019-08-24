@@ -122,8 +122,12 @@ namespace SolToBoogie
             return false;
         }
 
-        private BoogieCallCmd GenerateBoogieCallCmd(TypeDescription type, BoogieExpr value, string name)
+        private BoogieCallCmd InstrumentForPriningData(TypeDescription type, BoogieExpr value, string name)
         {
+            // don't emit the instrumentation 
+            if (context.TranslateFlags.NoDataValuesInfoFlag)
+                return null;
+
             if (type.IsDynamicArray() || type.IsStaticArray())
                 return null;
 
@@ -151,18 +155,6 @@ namespace SolToBoogie
             }
 
             return null;
-        }
-
-        private BoogieCallCmd InvokeGenerateBoogieCallCmd(TypeDescription type, BoogieExpr value, string name)
-        {
-            if (type.IsDynamicArray() || type.IsStaticArray())
-            {
-                return null; 
-            }
-            else
-            {
-                return GenerateBoogieCallCmd(type, value, name);
-            }
         }
 
         public override bool Visit(FunctionDefinition node)
@@ -194,12 +186,12 @@ namespace SolToBoogie
             TypeDescription addrType = new TypeDescription();
             addrType.TypeString = "address";
             //var callCmd = InvokeGenerateBoogieCallCmd(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
-            var callCmd = GenerateBoogieCallCmd(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
+            var callCmd = InstrumentForPriningData(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
             if (callCmd != null)
             {
                 currentStmtList.AddStatement(callCmd);
             }
-            callCmd = GenerateBoogieCallCmd(addrType, new BoogieIdentifierExpr(inParams[1].Name), "msg.sender");
+            callCmd = InstrumentForPriningData(addrType, new BoogieIdentifierExpr(inParams[1].Name), "msg.sender");
             if (callCmd != null)
             {
                 currentStmtList.AddStatement(callCmd);
@@ -212,7 +204,7 @@ namespace SolToBoogie
                 BoogieVariable parVar = inParams[parIndex + 3];
                 string parName = param.Name;
                 var parExpr = new BoogieIdentifierExpr(parVar.Name);
-                callCmd = GenerateBoogieCallCmd(parType, parExpr, parName);
+                callCmd = InstrumentForPriningData(parType, parExpr, parName);
                 if (callCmd != null)
                 {
                     currentStmtList.AddStatement(callCmd);
@@ -915,16 +907,19 @@ namespace SolToBoogie
             node.Accept(this);
             VeriSolAssert(currentStmtList != null);
 
+            BoogieStmtList annotatedStmtList = new BoogieStmtList();
             // add source file path and line number
-
-            List<BoogieAttribute> attributes = new List<BoogieAttribute>()
+            if (!context.TranslateFlags.NoSourceLineInfoFlag)
             {
+                List<BoogieAttribute> attributes = new List<BoogieAttribute>()
+                {
                 new BoogieAttribute("first"),
                 new BoogieAttribute("sourceFile", "\"" + srcFileLineInfo.Item1 + "\""),
                 new BoogieAttribute("sourceLine", srcFileLineInfo.Item2)
-            };
-            BoogieAssertCmd annotationCmd = new BoogieAssertCmd(new BoogieLiteralExpr(true), attributes);
-            BoogieStmtList annotatedStmtList = BoogieStmtList.MakeSingletonStmtList(annotationCmd);
+                };
+                BoogieAssertCmd annotationCmd = new BoogieAssertCmd(new BoogieLiteralExpr(true), attributes);
+                annotatedStmtList = BoogieStmtList.MakeSingletonStmtList(annotationCmd);
+            }
             annotatedStmtList.AppendStmtList(currentStmtList);
 
             currentStmtList = oldCurrentStmtList; // pop the stack of currentStmtList
@@ -1127,7 +1122,7 @@ namespace SolToBoogie
 
             if (lhsType != null && !isTupleAssignment)
             {
-                var callCmd = GenerateBoogieCallCmd(lhsType, lhs[0], node.LeftHandSide.ToString());
+                var callCmd = InstrumentForPriningData(lhsType, lhs[0], node.LeftHandSide.ToString());
                 if (callCmd != null)
                 {
                     currentStmtList.AddStatement(callCmd);
@@ -1218,6 +1213,10 @@ namespace SolToBoogie
 
         private void AddAssumeForUints(BoogieExpr boogieExpr, TypeDescription typeDesc)
         {
+            // skip based on a flag
+            if (context.TranslateFlags.NoUnsignedAssumesFlag)
+                return;
+
             // Add positive number assume for uints
             if (typeDesc!=null && typeDesc.IsUint())
             {
@@ -1384,12 +1383,15 @@ namespace SolToBoogie
                     var oper = unaryOperation.Operator.Equals("++") ? BoogieBinaryOperation.Opcode.ADD : BoogieBinaryOperation.Opcode.SUB;
                     BoogieExpr rhs = new BoogieBinaryOperation(oper, lhs, new BoogieLiteralExpr(1));
                     BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, rhs);
-                    currentStmtList.AddStatement(assignCmd); 
+                    currentStmtList.AddStatement(assignCmd);
                     //print the value
-                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
-                    callCmd.Attributes = new List<BoogieAttribute>();
-                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{unaryOperation.SubExpression.ToString()}\""));
-                    currentStmtList.AddStatement(callCmd);
+                    if (!context.TranslateFlags.NoDataValuesInfoFlag)
+                    {
+                        var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { lhs }, new List<BoogieIdentifierExpr>());
+                        callCmd.Attributes = new List<BoogieAttribute>();
+                        callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{unaryOperation.SubExpression.ToString()}\""));
+                        currentStmtList.AddStatement(callCmd);
+                    }
                     AddAssumeForUints(lhs, unaryOperation.TypeDescriptions);
                 }
                 else if (unaryOperation.Operator.Equals("delete"))
@@ -2428,10 +2430,13 @@ namespace SolToBoogie
                         currentStmtList.AddStatement(assignCmd);
                     }
                     //print the value
-                    var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { expr }, new List<BoogieIdentifierExpr>());
-                    callCmd.Attributes = new List<BoogieAttribute>();
-                    callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.SubExpression.ToString()}\""));
-                    currentStmtList.AddStatement(callCmd);
+                    if (!context.TranslateFlags.NoDataValuesInfoFlag)
+                    {
+                        var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { expr }, new List<BoogieIdentifierExpr>());
+                        callCmd.Attributes = new List<BoogieAttribute>();
+                        callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{node.SubExpression.ToString()}\""));
+                        currentStmtList.AddStatement(callCmd);
+                    }
                     break;
                 default:
                     op = BoogieUnaryOperation.Opcode.UNKNOWN;
