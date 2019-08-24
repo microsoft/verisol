@@ -1713,6 +1713,11 @@ namespace SolToBoogie
             else if (context.HasEventNameInContract(currentContract, functionName))
             {
                 // generate empty statement list to ignore the event call                
+                List<BoogieAttribute> attributes = new List<BoogieAttribute>()
+                {
+                new BoogieAttribute("EventEmitted", "\"" + functionName + "_" + currentContract.Name + "\""),
+                };
+                currentStmtList.AddStatement(new BoogieAssertCmd(new BoogieLiteralExpr(true), attributes));
             }
             else if (functionName.Equals("call"))
             {
