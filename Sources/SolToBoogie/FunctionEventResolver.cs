@@ -64,6 +64,13 @@ namespace SolToBoogie
                             string signature = TransUtils.ComputeFunctionSignature(function);
                             context.AddFunctionToDynamicType(signature, contract, function);
                         }
+                        // Events
+                        // TODO: Do we need to lookup by signature?
+                        HashSet<EventDefinition> events = context.GetEventDefintionsInContract(baseContract);
+                        foreach (var evt in events)
+                        {
+                            context.AddEventToContract(contract, evt);
+                        }
                     }
                 }
             }

@@ -74,6 +74,9 @@ namespace SolToBoogie
         // M -> BoogieImplementation(B) for Modifier M {Stmt A; _; Stmt B}
         public Dictionary<string, BoogieImplementation> ModifierToBoogiePostImpl { get; private set;}
 
+        // Options flags
+        public TranslatorFlags TranslateFlags { get; private set; }
+
         // num of fresh identifiers, should be incremented when making new fresh id
         private int freshIdentifierCount = 0;
 
@@ -83,7 +86,7 @@ namespace SolToBoogie
         // do we generate inline attributes (required for unbounded verification)
         private bool genInlineAttrInBpl;
 
-        public TranslatorContext(HashSet<Tuple<string, string>> ignoreMethods, bool _genInlineAttrInBpl)
+        public TranslatorContext(HashSet<Tuple<string, string>> ignoreMethods, bool _genInlineAttrInBpl, TranslatorFlags _translateFlags = null)
         {
             Program = new BoogieProgram();
             ContractDefinitions = new HashSet<ContractDefinition>();
@@ -110,6 +113,7 @@ namespace SolToBoogie
             ModifierToBoogiePostImpl = new Dictionary<string, BoogieImplementation>();
             IgnoreMethods = ignoreMethods;
             genInlineAttrInBpl = _genInlineAttrInBpl;
+            TranslateFlags = _translateFlags;
         }
 
         public bool HasASTNodeId(int id)
@@ -151,6 +155,15 @@ namespace SolToBoogie
             }
             return new HashSet<FunctionDefinition>();
         }
+        public HashSet<EventDefinition> GetEventDefintionsInContract(ContractDefinition contract)
+        {
+            if (ContractToEventsMap.ContainsKey(contract))
+            {
+                return ContractToEventsMap[contract];
+            }
+            return new HashSet<EventDefinition>();
+        }
+
 
         public void AddContract(ContractDefinition contract)
         {
@@ -276,11 +289,8 @@ namespace SolToBoogie
                 ContractToEventsMap[contract] = new HashSet<EventDefinition>();
             }
 
-            Debug.Assert(!ContractToEventsMap[contract].Contains(eventDef), $"Duplicated event definition: {eventDef.Name}");
+            Debug.Assert(!ContractToEventsMap[contract].Contains(eventDef), $"Duplicated event definition: {eventDef.Name} in {contract.Name}");
             ContractToEventsMap[contract].Add(eventDef);
-
-            Debug.Assert(!EventToContractMap.ContainsKey(eventDef), $"Duplicated event: {eventDef.Name}");
-            EventToContractMap[eventDef] = contract;
         }
 
         public bool HasEventNameInContract(ContractDefinition contract, string eventName)
@@ -299,11 +309,6 @@ namespace SolToBoogie
             return false;
         }
 
-        public ContractDefinition GetContractByEvent(EventDefinition eventDef)
-        {
-            Debug.Assert(EventToContractMap.ContainsKey(eventDef));
-            return EventToContractMap[eventDef];
-        }
 
         public void AddFunctionToContract(ContractDefinition contract, FunctionDefinition funcDef)
         {

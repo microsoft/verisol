@@ -13,6 +13,7 @@ MappingReference.sol
 InheritInitializer.sol
 StaticDispatching.sol
 Event.sol
+EventInBase.sol
 InheritanceMultiple.sol
 #StructNested.sol
 #ArrayParamAlias.sol
