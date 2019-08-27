@@ -155,6 +155,15 @@ namespace SolToBoogie
             }
             return new HashSet<FunctionDefinition>();
         }
+        public HashSet<EventDefinition> GetEventDefintionsInContract(ContractDefinition contract)
+        {
+            if (ContractToEventsMap.ContainsKey(contract))
+            {
+                return ContractToEventsMap[contract];
+            }
+            return new HashSet<EventDefinition>();
+        }
+
 
         public void AddContract(ContractDefinition contract)
         {
@@ -280,11 +289,8 @@ namespace SolToBoogie
                 ContractToEventsMap[contract] = new HashSet<EventDefinition>();
             }
 
-            Debug.Assert(!ContractToEventsMap[contract].Contains(eventDef), $"Duplicated event definition: {eventDef.Name}");
+            Debug.Assert(!ContractToEventsMap[contract].Contains(eventDef), $"Duplicated event definition: {eventDef.Name} in {contract.Name}");
             ContractToEventsMap[contract].Add(eventDef);
-
-            Debug.Assert(!EventToContractMap.ContainsKey(eventDef), $"Duplicated event: {eventDef.Name}");
-            EventToContractMap[eventDef] = contract;
         }
 
         public bool HasEventNameInContract(ContractDefinition contract, string eventName)
@@ -303,11 +309,6 @@ namespace SolToBoogie
             return false;
         }
 
-        public ContractDefinition GetContractByEvent(EventDefinition eventDef)
-        {
-            Debug.Assert(EventToContractMap.ContainsKey(eventDef));
-            return EventToContractMap[eventDef];
-        }
 
         public void AddFunctionToContract(ContractDefinition contract, FunctionDefinition funcDef)
         {
