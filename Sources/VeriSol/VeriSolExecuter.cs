@@ -14,6 +14,7 @@ namespace VeriSolRunner
     using System.Runtime.InteropServices;
     using System.Reflection;
     using System.Text.RegularExpressions;
+    using System.Linq;
 
     internal class VeriSolExecutor
     {
@@ -30,6 +31,7 @@ namespace VeriSolRunner
         private ILogger Logger;
         private readonly string outFileName = "__SolToBoogieTest_out.bpl";
         private readonly string corralTraceFileName = "corral_out_trace.txt";
+        private readonly string counterexampleFileName = "corral_counterex.txt";
         private readonly int CorralRecursionLimit;
         private readonly int CorralContextBound = 1; // always 1 for solidity
         private HashSet<Tuple<string, string>> ignoreMethods;
@@ -179,6 +181,235 @@ namespace VeriSolRunner
             }
         }
 
+        private string[] FilterCorralTrace(string[] trace)
+        {
+            // Only get lines that contain ".sol":
+            return trace.Where(s => s.Contains(".sol")).ToArray();
+        }
+
+        // Problem: processing one line of corral.txt file at a time doesn't work, since CALL
+        // and its arguments could be located on diff lines
+        // TODO: preprocess corral.txt: append arguments to the lines where their call is; since 
+        // the line number for the arguments doesn't matter, this should be OK
+        private string[] PreprocessCorralTrace(string[] corralTrace)
+        {
+            string[] resTrace = null;
+            string curFuncName = null;
+            string curUnfinishedLine = null;
+            
+            foreach (string line in corralTrace)
+            {
+                string[] splitLine = line.Split("Trace: Thread=1  ");
+                curUnfinishedLine = splitLine[0];
+                string rest = splitLine[1];
+                // Strip braces from the "rest" string:
+                if (rest.Length > 2)
+                {
+                    if (rest.StartsWith("(") && rest.EndsWith(")"))
+                    {
+                        rest = rest.Substring(1, rest.Length - 2);
+                    }
+                }
+
+                // Split the rest of the line to get separate CALLs/RETURNs/args etc.
+                string[] restSplit = splitLine[1].Split(", ");
+                if (restSplit.Length  == 1 && !restSplit[0].StartsWith("ASSERTION FAILS") && !restSplit[0].StartsWith("CALL ") &&
+                        !restSplit[0].StartsWith("RETURN") && !restSplit[0].StartsWith("this = T@Ref!val"))
+                {
+                    // Skip the lines like: "(x = 1)", "()", "(Done)", 
+                    //curLine = null;
+                    curFuncName = null;
+                    curUnfinishedLine = null;
+                }
+                else
+                {
+                    if (restSplit[0].StartsWith("this = ") && curFuncName != null)
+                    {
+                        // These are arguments for a function CALL from the previous line:
+                        // Append the arguments to the previous line and emit the trace line into the resulting trace:
+                        curUnfinishedLine = curUnfinishedLine + ", " + splitLine[1];
+                        resTrace.Append(curUnfinishedLine);
+                        //curLine = null;
+                        curFuncName = null;
+                        curUnfinishedLine = null;
+                    }
+                    else
+                    {
+                        // restSplit should be included into the resulting trace, unless it's unfinished:
+                        ///////////////stopped here:
+                        // Find the rightmost CALL element in restSplit and check if it has argument list:
+                        int lastCallInd = Array.FindLastIndex(restSplit, elem => elem.StartsWith("CALL "));
+                        // TODO: assuming that no other elements except first argument start with "this = T@Ref!val":
+                        int lastArgsInd = Array.FindLastIndex(restSplit, elem => elem.StartsWith("this = T@Ref!val"));
+                        if (lastCallInd > lastArgsInd)
+                        {
+                            // This line is unfinished - do not append it to the result:
+                            curUnfinishedLine = curUnfinishedLine + ", " + splitLine[1];
+                            string lastCallElem = restSplit[lastCallInd];
+                            curFuncName = lastCallElem.Substring("CALL ".Length + 1, lastCallElem.Length - 1);
+                        }
+                        else
+                        {
+                            // All calls have arguments, append the line to the result:
+                            curUnfinishedLine = curUnfinishedLine + ", " + splitLine[1];
+                            resTrace.Append(curUnfinishedLine);
+                            //curLine = null;
+                            curFuncName = null;
+                            curUnfinishedLine = null;
+                        }
+                    }
+                }
+
+            }
+
+            return resTrace;
+        }
+        private string GetArgsInSingleLine(string[] inputArray)
+        {
+            // Skip any elements that are not arguments (for example: FreshGenerator calls/returns)
+            string res = String.Empty;
+            bool argsFound = false;
+            foreach (string elem in inputArray)
+            {
+                if (elem.StartsWith("this =") && !argsFound)
+                {
+                    argsFound = true;
+                    res = res + elem + ", ";
+                }
+                else if (elem.Contains("=") && argsFound)
+                {
+                    res = res + elem + ", ";
+                }
+                else if (argsFound)
+                {
+                    return res;
+                }
+            }
+            return res;
+        }
+        private void ProcessCall(string input, string output)
+        {
+            // Example: "CALL withdraw_SimpleDAO"
+            string[] inputSplit = input.Split(", ");
+            string functionName = input.Substring("CALL ".Length + 1, inputSplit[0].Length);
+            if (functionName.StartsWith("Corral_Choice")) return;
+            string[] nameSplit = functionName.Split("_");
+            if (nameSplit[0] == nameSplit[1] && nameSplit.Length == 1)
+            {
+                //top level constructor "XX_XX":
+                output = output + "CALL " + nameSplit[0] + "::Constructor" + "(";
+                // TODO: refactor next 10 lines into a method and use it in both branches of "if":
+                var rest = inputSplit.ToList().GetRange(1, inputSplit.Length - 1).ToArray();
+                string args = GetArgsInSingleLine(rest);
+                if (args == String.Empty)
+                {
+                    //TODO: ERROR: not expected (arguments are supposed to be on the same line)
+                }
+                else
+                {
+                    output = output + args + ")";
+                }
+            }
+            else
+            {
+                // Regular function call: FunctionName_ConstractName
+                // Example: CALL Modifier::plusOne(this = T@Ref!val!0, msg.sender = T@Ref!val!3)
+                output = output + "CALL " + "nameSplit[1]" + "::" +  nameSplit[0] + "(";
+                var rest = inputSplit.ToList().GetRange(1, inputSplit.Length - 1).ToArray();
+                string args = GetArgsInSingleLine(rest);
+                if (args == String.Empty)
+                {
+                    //TODO: ERROR: not expected, print message (arguments are supposed to be on the same line)
+                }
+                else
+                {
+                    output = output + args + ")";
+                }
+            }
+        }
+
+        private void ProcessReturn(string input, string output)
+        {
+            // Example: RETURN from Modifier::plusOne
+        }
+
+        private void ProcessArgs(string input, string output)
+        {
+
+        }
+
+        private void ProcessTraceElement(string input, string output)
+        {
+            if (input.StartsWith("CALL"))
+            {
+                ProcessCall(input, output);
+            }
+            else if (input.StartsWith("RETURN"))
+            {
+                ProcessReturn(input, output);
+                return;
+            }
+            else if (input.StartsWith("this = T@Ref!val"))
+            {
+                ProcessArgs(input, output);
+                return;
+            }
+            else if (input.StartsWith("ASSERTION FAILS"))
+            {
+                //TODO: print out assertion failure
+            }
+            else
+            {
+                // TODO: ERROR: not expected, print message
+            }
+        }
+
+        private void PrintCounterexample()
+        {
+            string[] corralTrace = File.ReadAllLines(corralTraceFileName);
+            // Find relevant trace lines in the full trace:
+            corralTrace = FilterCorralTrace(corralTrace);
+            // Preprocess the trace to:
+            // - append the line with function argument values to the line with the function call;
+            // - clean up the trace from the irrelevant lines
+            corralTrace = PreprocessCorralTrace(corralTrace);
+            
+            using (var outWriter = new StreamWriter(counterexampleFileName))
+            {
+                foreach (string corralLine in corralTrace)
+                {
+                    string[] splitRes = corralLine.Split("Trace: Thread=1  ");                  
+                    string counterexLine = splitRes[0];
+                    string rest = splitRes[1];
+                    // Strip braces from the "rest" string:
+                    if (rest.Length > 2)
+                    {
+                        if (rest.StartsWith("(") && rest.EndsWith(")"))
+                        {
+                            rest = rest.Substring(1, rest.Length - 2);
+                        }
+                    }
+                    string[] restSplit = splitRes[1].Split(", ");
+ 
+                    if (restSplit.Length  > 1)
+                    {
+                        // multiple calls and returns on the same line, or arguments on a separate line:
+                        foreach (string resi in restSplit)
+                        {
+                            ProcessTraceElement(resi, counterexLine);
+                        }
+                    }
+                    else
+                    {
+                        ProcessTraceElement(restSplit[0], counterexLine);
+                    }
+                   
+                    outWriter.WriteLine(counterexLine);
+                }
+
+                //TODO: write the result into a file "corral_counterex.txt": 
+            }
+        }
         private void DisplayTraceOnConsole()
         {
             string corralTrace = File.ReadAllText(corralTraceFileName);
