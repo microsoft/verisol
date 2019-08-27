@@ -150,6 +150,8 @@ namespace VeriSolRunner
             }
             else
             {
+                PrintCounterexample();
+
                 Console.WriteLine($"\t*** Found a counterexample:");
 
                 DisplayTraceOnConsole();
@@ -184,12 +186,12 @@ namespace VeriSolRunner
         private string[] FilterCorralTrace(string[] trace)
         {
             // Only get lines that contain ".sol":
-            return trace.Where(s => s.Contains(".sol")).ToArray();
+            return trace.Where(s => s.Contains("Trace: Thread=1")).ToArray();
         }
 
         // Problem: processing one line of corral.txt file at a time doesn't work, since CALL
         // and its arguments could be located on diff lines
-        // TODO: preprocess corral.txt: append arguments to the lines where their call is; since 
+        // Preprocess corral.txt: append arguments to the lines where their call is; since 
         // the line number for the arguments doesn't matter, this should be OK
         private string[] PreprocessCorralTrace(string[] corralTrace)
         {
@@ -220,6 +222,7 @@ namespace VeriSolRunner
                     //curLine = null;
                     curFuncName = null;
                     curUnfinishedLine = null;
+                    continue;
                 }
                 else
                 {
@@ -232,6 +235,7 @@ namespace VeriSolRunner
                         //curLine = null;
                         curFuncName = null;
                         curUnfinishedLine = null;
+                        continue;
                     }
                     else
                     {
@@ -247,6 +251,7 @@ namespace VeriSolRunner
                             curUnfinishedLine = curUnfinishedLine + ", " + splitLine[1];
                             string lastCallElem = restSplit[lastCallInd];
                             curFuncName = lastCallElem.Substring("CALL ".Length + 1, lastCallElem.Length - 1);
+                            continue;
                         }
                         else
                         {
@@ -287,80 +292,95 @@ namespace VeriSolRunner
             }
             return res;
         }
-        private void ProcessCall(string input, string output)
+        private void ProcessCall(string input, string output, string curFunctionName)
         {
             // Example: "CALL withdraw_SimpleDAO"
-            string[] inputSplit = input.Split(", ");
-            string functionName = input.Substring("CALL ".Length + 1, inputSplit[0].Length);
+            string functionName = input.Substring("CALL ".Length + 1, input.Length - 1);
             if (functionName.StartsWith("Corral_Choice")) return;
             string[] nameSplit = functionName.Split("_");
             if (nameSplit[0] == nameSplit[1] && nameSplit.Length == 1)
             {
                 //top level constructor "XX_XX":
+                Debug.Assert(curFunctionName == null);
                 output = output + "CALL " + nameSplit[0] + "::Constructor" + "(";
-                // TODO: refactor next 10 lines into a method and use it in both branches of "if":
-                var rest = inputSplit.ToList().GetRange(1, inputSplit.Length - 1).ToArray();
-                string args = GetArgsInSingleLine(rest);
-                if (args == String.Empty)
-                {
-                    //TODO: ERROR: not expected (arguments are supposed to be on the same line)
-                }
-                else
-                {
-                    output = output + args + ")";
-                }
+                curFunctionName = nameSplit[0] + "::Constructor";
             }
             else
             {
                 // Regular function call: FunctionName_ConstractName
                 // Example: CALL Modifier::plusOne(this = T@Ref!val!0, msg.sender = T@Ref!val!3)
-                output = output + "CALL " + "nameSplit[1]" + "::" +  nameSplit[0] + "(";
-                var rest = inputSplit.ToList().GetRange(1, inputSplit.Length - 1).ToArray();
-                string args = GetArgsInSingleLine(rest);
-                if (args == String.Empty)
+                if (curFunctionName == null)
                 {
-                    //TODO: ERROR: not expected, print message (arguments are supposed to be on the same line)
-                }
-                else
+                    // Top level function call:
+                    output = output + "CALL " + nameSplit[1] + "::" + nameSplit[0] + "(";
+                    curFunctionName = nameSplit[1] + "::" + nameSplit[0];
+                }               
+            }
+        }
+
+        private void ProcessReturn(string input, string output, string curFunctionName)
+        {
+            // Example: RETURN from Modifier::plusOne
+            string functionName = input.Substring("RETURN from ".Length + 1, input.Length - 1);
+            string[] nameSplit = functionName.Split("_");
+            if (nameSplit[0] == nameSplit[1] && nameSplit.Length == 1)
+            {
+                // Return from the top level constructor:
+                Debug.Assert(curFunctionName == nameSplit[0] + "::Constructor");
+                output = output + "RETURN from " + nameSplit[1] + "::" + nameSplit[0];
+                curFunctionName = null;
+            }
+            else
+            {
+                string name = nameSplit[1] + "::" + nameSplit[0];
+                if (curFunctionName != null && curFunctionName == name)
                 {
-                    output = output + args + ")";
+                    // Return from the Top level function:
+                    output = output + "RETURN from " + name;
+                    curFunctionName = null;
                 }
             }
         }
 
-        private void ProcessReturn(string input, string output)
-        {
-            // Example: RETURN from Modifier::plusOne
-        }
-
-        private void ProcessArgs(string input, string output)
-        {
-
-        }
-
-        private void ProcessTraceElement(string input, string output)
+        private void ProcessCallReturnAssert(string input, string output, string curFunctionName)
         {
             if (input.StartsWith("CALL"))
             {
-                ProcessCall(input, output);
+                ProcessCall(input, output, curFunctionName);
             }
             else if (input.StartsWith("RETURN"))
             {
-                ProcessReturn(input, output);
-                return;
-            }
-            else if (input.StartsWith("this = T@Ref!val"))
-            {
-                ProcessArgs(input, output);
+                ProcessReturn(input, output, curFunctionName);
                 return;
             }
             else if (input.StartsWith("ASSERTION FAILS"))
             {
-                //TODO: print out assertion failure
+                // Example: "ASSERTION FAILS <assertion>"
+                output = output + input;
             }
             else
             {
                 // TODO: ERROR: not expected, print message
+            }
+        }
+        private void ProcessArgs(string[] elements, int ind, string output)
+        {
+            // Append all arguments from "elements" into "output"
+            // starting from index "ind"
+            // Arguments end when one of the following elements found:
+            // "this = T@Ref!val...", "CALL...", "RETURN..."
+            output = output + elements[ind];
+            // Number of arguments is always more then 1:
+            for (int i = ind + 1; i < elements.Count(); i++)
+            {
+                if (elements[i].StartsWith("CALL") || elements[i].StartsWith("RETURN") || elements[i].StartsWith("this = T@Ref!val"))
+                {
+                    return;
+                }
+                else
+                {
+                    output = output + elements[i];
+                }
             }
         }
 
@@ -369,16 +389,17 @@ namespace VeriSolRunner
             string[] corralTrace = File.ReadAllLines(corralTraceFileName);
             // Find relevant trace lines in the full trace:
             corralTrace = FilterCorralTrace(corralTrace);
-            // Preprocess the trace to:
+            // Preprocess the trace:
             // - append the line with function argument values to the line with the function call;
             // - clean up the trace from the irrelevant lines
             corralTrace = PreprocessCorralTrace(corralTrace);
+            string curFunctionName = null;
             
             using (var outWriter = new StreamWriter(counterexampleFileName))
             {
                 foreach (string corralLine in corralTrace)
                 {
-                    string[] splitRes = corralLine.Split("Trace: Thread=1  ");                  
+                    string[] splitRes = corralLine.Split("Trace: Thread=1  ");
                     string counterexLine = splitRes[0];
                     string rest = splitRes[1];
                     // Strip braces from the "rest" string:
@@ -390,24 +411,20 @@ namespace VeriSolRunner
                         }
                     }
                     string[] restSplit = splitRes[1].Split(", ");
- 
-                    if (restSplit.Length  > 1)
+                    foreach (string resi in restSplit)
                     {
-                        // multiple calls and returns on the same line, or arguments on a separate line:
-                        foreach (string resi in restSplit)
+                        if (resi.StartsWith("CALL") || resi.StartsWith("RETURN") || resi.StartsWith("ASSERTION FAILS"))
                         {
-                            ProcessTraceElement(resi, counterexLine);
+                            ProcessCallReturnAssert(resi, counterexLine, curFunctionName);
                         }
+                        else if (resi.StartsWith("this = T@Ref!val"))
+                        {
+                            ProcessArgs(restSplit, Array.IndexOf(restSplit, resi), counterexLine);
+                        }
+                        else continue;
                     }
-                    else
-                    {
-                        ProcessTraceElement(restSplit[0], counterexLine);
-                    }
-                   
                     outWriter.WriteLine(counterexLine);
-                }
-
-                //TODO: write the result into a file "corral_counterex.txt": 
+                }            
             }
         }
         private void DisplayTraceOnConsole()
