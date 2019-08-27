@@ -242,6 +242,28 @@ namespace SolToBoogie
             return builder.ToString();
         }
 
+        public static string ComputeEventSignature(EventDefinition eventDef)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append(eventDef.Name).Append("(");
+            ParameterList parameterList = eventDef.Parameters;
+            Debug.Assert(parameterList != null && parameterList.Parameters != null);
+            if (parameterList.Parameters.Count > 0)
+            {
+                foreach (VariableDeclaration varDecl in parameterList.Parameters)
+                {
+                    // use TypeDescriptions.TypeString instead of TypeName
+                    // when a nested struct/Enum is declared TypeName may not have the contractprefix (Foo.EnumType), 
+                    // but TypeDescriptions has the entire prefix. This is useful as a function may be declared as (EnumType a)
+                    // and the TypeName does not have the context. 
+                    builder.Append(varDecl.TypeDescriptions.TypeString).Append(", ");
+                }
+                builder.Length -= 2;
+            }
+            builder.Append(")");
+            return builder.ToString();
+        }
+
         public static string InferFunctionSignature(TranslatorContext context, FunctionCall node)
         {
             Debug.Assert(node.Arguments != null);

@@ -90,7 +90,7 @@ contract ERC20 is IERC20 {
 
         _balances[sender] = SafeMath.sub(_balances[sender], amount);
         _balances[recipient] = SafeMath.add(_balances[recipient], amount);
-        // emit Transfer(sender, recipient, amount); //issue #154 in VeriSol
+        emit Transfer(sender, recipient, amount); 
     }
 
     function checkInvariant() public  {
