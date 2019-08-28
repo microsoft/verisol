@@ -174,6 +174,10 @@ namespace SolToBoogie
                 currentStmtList.AddStatement(callCmd);
             }
 
+            // when we call this for an implicit constructor, we don't have a node, which
+            // implies there are no parameters
+            if (node == null)
+                return;
             foreach (VariableDeclaration param in node.Parameters.Parameters)
             {
                 var parType = param.TypeDescriptions != null ? param.TypeDescriptions : null;
@@ -680,6 +684,15 @@ namespace SolToBoogie
             List<BoogieVariable> ctorLocalVars = new List<BoogieVariable>();
             BoogieStmtList ctorBody = new BoogieStmtList();
 
+            // add the printing for argument
+            // Print function argument values to corral.txt for counterexample:
+            PrintArguments(null, inParams, ctorBody);
+
+            // print sourcefile, and line of the contract start for
+            // forcing Corral to print values consistently
+            if (!context.TranslateFlags.NoSourceLineInfoFlag)
+                ctorBody.AddStatement(InstrumentSourceFileAndLineInfo(contract));
+
             List<int> baseContractIds = new List<int>(contract.LinearizedBaseContracts);
             baseContractIds.Reverse();
             foreach (int id in baseContractIds)
@@ -902,10 +915,6 @@ namespace SolToBoogie
             //push the current Statement
             var oldCurrentStmtList = currentStmtList; 
 
-            var srcFileLineInfo = TransUtils.GenerateSourceInfoAnnotation(node, context);
-            currentSourceFile = srcFileLineInfo.Item1;
-            currentSourceLine = srcFileLineInfo.Item2;
-
             //new scope
             currentStmtList = new BoogieStmtList(); // reset before starting to translate a Statement
             node.Accept(this);
@@ -915,13 +924,7 @@ namespace SolToBoogie
             // add source file path and line number
             if (!context.TranslateFlags.NoSourceLineInfoFlag)
             {
-                List<BoogieAttribute> attributes = new List<BoogieAttribute>()
-                {
-                new BoogieAttribute("first"),
-                new BoogieAttribute("sourceFile", "\"" + srcFileLineInfo.Item1 + "\""),
-                new BoogieAttribute("sourceLine", srcFileLineInfo.Item2)
-                };
-                BoogieAssertCmd annotationCmd = new BoogieAssertCmd(new BoogieLiteralExpr(true), attributes);
+                BoogieAssertCmd annotationCmd = InstrumentSourceFileAndLineInfo(node);
                 annotatedStmtList = BoogieStmtList.MakeSingletonStmtList(annotationCmd);
             }
             annotatedStmtList.AppendStmtList(currentStmtList);
@@ -929,6 +932,22 @@ namespace SolToBoogie
             currentStmtList = oldCurrentStmtList; // pop the stack of currentStmtList
 
             return annotatedStmtList;
+        }
+
+        private BoogieAssertCmd InstrumentSourceFileAndLineInfo(ASTNode node)
+        {
+            var srcFileLineInfo = TransUtils.GenerateSourceInfoAnnotation(node, context);
+            currentSourceFile = srcFileLineInfo.Item1;
+            currentSourceLine = srcFileLineInfo.Item2;
+
+            List<BoogieAttribute> attributes = new List<BoogieAttribute>()
+                {
+                new BoogieAttribute("first"),
+                new BoogieAttribute("sourceFile", "\"" + srcFileLineInfo.Item1 + "\""),
+                new BoogieAttribute("sourceLine", srcFileLineInfo.Item2)
+                };
+            BoogieAssertCmd annotationCmd = new BoogieAssertCmd(new BoogieLiteralExpr(true), attributes);
+            return annotationCmd;
         }
 
         public override bool Visit(Block node)
