@@ -122,7 +122,7 @@ namespace SolToBoogie
             return false;
         }
 
-        private BoogieCallCmd InstrumentForPriningData(TypeDescription type, BoogieExpr value, string name)
+        private BoogieCallCmd InstrumentForPrintingData(TypeDescription type, BoogieExpr value, string name)
         {
             // don't emit the instrumentation 
             if (context.TranslateFlags.NoDataValuesInfoFlag)
@@ -157,6 +157,37 @@ namespace SolToBoogie
             return null;
         }
 
+
+        private void PrintArguments(FunctionDefinition node, List<BoogieVariable> inParams, BoogieStmtList currentStmtList)
+        {
+            // Add default parameters "this", "msg.sender" (ignoring "msg.value"):
+            TypeDescription addrType = new TypeDescription();
+            addrType.TypeString = "address";
+            var callCmd = InstrumentForPrintingData(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
+            if (callCmd != null)
+            {
+                currentStmtList.AddStatement(callCmd);
+            }
+            callCmd = InstrumentForPrintingData(addrType, new BoogieIdentifierExpr(inParams[1].Name), "msg.sender");
+            if (callCmd != null)
+            {
+                currentStmtList.AddStatement(callCmd);
+            }
+
+            foreach (VariableDeclaration param in node.Parameters.Parameters)
+            {
+                var parType = param.TypeDescriptions != null ? param.TypeDescriptions : null;
+                int parIndex = node.Parameters.Parameters.IndexOf(param);
+                BoogieVariable parVar = inParams[parIndex + 3];
+                string parName = param.Name;
+                var parExpr = new BoogieIdentifierExpr(parVar.Name);
+                callCmd = InstrumentForPrintingData(parType, parExpr, parName);
+                if (callCmd != null)
+                {
+                    currentStmtList.AddStatement(callCmd);
+                }
+            }
+        }
         public override bool Visit(FunctionDefinition node)
         {
             // VeriSolAssert(node.IsConstructor || node.Modifiers.Count <= 1, "Multiple Modifiers are not supported yet");
@@ -181,44 +212,15 @@ namespace SolToBoogie
             node.Parameters.Accept(this);
             inParams.AddRange(currentParamList);
 
-            // Generate Boogie cmd to print function argument values to corral.txt for counterexample:
-            // Add default parameters "this", "msg.sender" (ignoring "msg.value"):
-            TypeDescription addrType = new TypeDescription();
-            addrType.TypeString = "address";
-            //var callCmd = InvokeGenerateBoogieCallCmd(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
-            var callCmd = InstrumentForPriningData(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
-            if (callCmd != null)
-            {
-                currentStmtList.AddStatement(callCmd);
-            }
-            callCmd = InstrumentForPriningData(addrType, new BoogieIdentifierExpr(inParams[1].Name), "msg.sender");
-            if (callCmd != null)
-            {
-                currentStmtList.AddStatement(callCmd);
-            }
-
-            foreach (VariableDeclaration param in node.Parameters.Parameters)
-            {
-                var parType = param.TypeDescriptions != null ? param.TypeDescriptions : null;
-                int parIndex = node.Parameters.Parameters.IndexOf(param);
-                BoogieVariable parVar = inParams[parIndex + 3];
-                string parName = param.Name;
-                var parExpr = new BoogieIdentifierExpr(parVar.Name);
-                callCmd = InstrumentForPriningData(parType, parExpr, parName);
-                if (callCmd != null)
-                {
-                    currentStmtList.AddStatement(callCmd);
-                }
-            }
+            // Print function argument values to corral.txt for counterexample:
+            PrintArguments(node, inParams, currentStmtList);
 
             // output parameters
             node.ReturnParameters.Accept(this);
             List<BoogieVariable> outParams = currentParamList;
 
-
             var assumesForParamsAndReturn = currentStmtList;
             currentStmtList = new BoogieStmtList();
-
 
             // attributes
             List<BoogieAttribute> attributes = new List<BoogieAttribute>();
@@ -275,7 +277,7 @@ namespace SolToBoogie
                         if (node.Modifiers[i].Arguments != null)
                             arguments.AddRange(node.Modifiers[i].Arguments.ConvertAll(TranslateExpr));
                         string callee = node.Modifiers[i].ModifierName.ToString() + "_pre";
-                        callCmd = new BoogieCallCmd(callee, arguments, null);
+                        var callCmd = new BoogieCallCmd(callee, arguments, null);
                         procBody.AddStatement(callCmd);
                     }
 
@@ -286,7 +288,7 @@ namespace SolToBoogie
                         if (node.Modifiers[i].Arguments != null)
                             arguments.AddRange(node.Modifiers[i].Arguments.ConvertAll(TranslateExpr));
                         string callee = node.Modifiers[i].ModifierName.ToString() + "_post";
-                        callCmd = new BoogieCallCmd(callee, arguments, null);
+                        var callCmd = new BoogieCallCmd(callee, arguments, null);
                         currentPostlude.AddStatement(callCmd);
                     }
                 }
@@ -741,13 +743,15 @@ namespace SolToBoogie
             }
             else
             {
-
                 // no local variables for constructor
                 List<BoogieVariable> localVars = new List<BoogieVariable>();
                 BoogieStmtList ctorBody = new BoogieStmtList();
 
                 List<int> baseContractIds = new List<int>(contract.LinearizedBaseContracts);
                 baseContractIds.Reverse();
+
+                // Print function argument values to corral.txt for counterexample:
+                PrintArguments(ctor, inParams, ctorBody);
 
                 //Note that the current derived contract appears as a baseContractId 
                 foreach (int id in baseContractIds)
@@ -821,7 +825,7 @@ namespace SolToBoogie
                 localVars.AddRange(boogieToLocalVarsMap[currentBoogieProc]);
                 BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, ctorBody);
                 context.Program.AddDeclaration(implementation);
-            }
+            }           
         }
 
         // get the inheritance specifier of `baseContract' in contract definition `contract' if it specifies arguments
@@ -1122,7 +1126,7 @@ namespace SolToBoogie
 
             if (lhsType != null && !isTupleAssignment)
             {
-                var callCmd = InstrumentForPriningData(lhsType, lhs[0], node.LeftHandSide.ToString());
+                var callCmd = InstrumentForPrintingData(lhsType, lhs[0], node.LeftHandSide.ToString());
                 if (callCmd != null)
                 {
                     currentStmtList.AddStatement(callCmd);
