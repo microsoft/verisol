@@ -29,6 +29,7 @@ namespace VeriSolRunner
             int recursionBound;
             ILogger logger;
             HashSet<Tuple<string, string>> ignoredMethods;
+            bool printTransactionSequence = false;
             TranslatorFlags translatorFlags = new TranslatorFlags();
             ParseCommandLineArgs(args,
                 out solidityFile,
@@ -39,6 +40,7 @@ namespace VeriSolRunner
                 out solcName,
                 out logger,
                 out ignoredMethods,
+                out printTransactionSequence, 
                 ref translatorFlags);
 
             var assemblyLocation = Assembly.GetExecutingAssembly().Location;
@@ -88,11 +90,12 @@ namespace VeriSolRunner
                     tryRefutation,
                     tryProofFlag,
                     logger,
+                    printTransactionSequence,
                     translatorFlags);
             return verisolExecuter.Execute();
         }
 
-        private static void ParseCommandLineArgs(string[] args, out string solidityFile, out string entryPointContractName, out bool tryProofFlag, out bool tryRefutation, out int recursionBound, out string solcName, out ILogger logger, out HashSet<Tuple<string, string>> ignoredMethods, ref TranslatorFlags translatorFlags)
+        private static void ParseCommandLineArgs(string[] args, out string solidityFile, out string entryPointContractName, out bool tryProofFlag, out bool tryRefutation, out int recursionBound, out string solcName, out ILogger logger, out HashSet<Tuple<string, string>> ignoredMethods,  out bool printTransactionSeq, ref TranslatorFlags translatorFlags)
         {
             solidityFile = args[0];
             Debug.Assert(!solidityFile.Contains("/"), $"Illegal solidity file name {solidityFile}");
@@ -174,6 +177,8 @@ namespace VeriSolRunner
                     "/omitHarness, " +
                     "/omitUnsignedSemantics are specified");
             }
+
+            printTransactionSeq = args.Any(x => x.Equals("/printTransactionSequence"));
         }
 
         private static void ShowUsage()
@@ -190,6 +195,7 @@ namespace VeriSolRunner
             Console.WriteLine("\t\t\t\t a wild card '*' can be used for method, would mean all the methods of the contract");
             Console.WriteLine("\t\t /noInlineAttrs          \tdo not generate any {:inline x} attributes, to speed Corral (cannot use with /tryProof)");
             Console.WriteLine("\t\t /outBpl:<out.bpl>       \tpersist the output Boogie file");
+            Console.WriteLine("\t\t /printTransactionSequence \tprints the transaction sequence on console (default false)");
         }
 
         private static string GetSolcNameByOSPlatform()

@@ -52,7 +52,7 @@ contract ERC20 is IERC20 {
 
         _transfer(msg.sender, recipient, amount); 
 
-        assert ( msg.sender == recipient ||  _balances[msg.sender] == oldBalanceSender - amount);
+        assert (/* msg.sender == recipient ||  */ _balances[msg.sender] == oldBalanceSender - amount);
         
         return true;
     }

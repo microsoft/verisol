@@ -36,8 +36,9 @@ namespace VeriSolRunner
         private readonly int CorralContextBound = 1; // always 1 for solidity
         private HashSet<Tuple<string, string>> ignoreMethods;
         private TranslatorFlags translatorFlags;
+        private bool printTransactionSequence = false; 
 
-        public VeriSolExecutor(string solidityFilePath, string contractName, string corralPath, string boogiePath, string solcPath, string solcName, int corralRecursionLimit, HashSet<Tuple<string, string>> ignoreMethods, bool tryRefutation, bool tryProofFlag, ILogger logger, TranslatorFlags _translatorFlags = null)
+        public VeriSolExecutor(string solidityFilePath, string contractName, string corralPath, string boogiePath, string solcPath, string solcName, int corralRecursionLimit, HashSet<Tuple<string, string>> ignoreMethods, bool tryRefutation, bool tryProofFlag, ILogger logger, bool _printTransactionSequence, TranslatorFlags _translatorFlags = null)
         {
             this.SolidityFilePath = solidityFilePath;
             this.ContractName = contractName;
@@ -52,6 +53,7 @@ namespace VeriSolRunner
             this.Logger = logger;
             this.TryProof = tryProofFlag;
             this.TryRefutation = tryRefutation;
+            this.printTransactionSequence = _printTransactionSequence;
             //this.GenInlineAttrs = genInlineAttrs;
             this.translatorFlags = _translatorFlags;
         }
@@ -152,13 +154,17 @@ namespace VeriSolRunner
             }
             else
             {
-                PrintCounterexample();
+                Console.WriteLine($"\t*** Found a counterexample");
 
-                Console.WriteLine($"\t*** Found a counterexample:");
+                if (printTransactionSequence)
+                {
+                    Console.WriteLine("\t-----Transaction Sequence for Defect ------");
+                    PrintCounterexample();
+                    Console.WriteLine("\t---------------");
+                }
+                // DisplayTraceOnConsole();
 
-                DisplayTraceOnConsole();
-
-                Console.WriteLine($"\tSee full execution trace inside {corralOutFile}");
+                Console.WriteLine($"\n\tSee full execution trace inside {corralOutFile}");
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
@@ -197,11 +203,17 @@ namespace VeriSolRunner
         // the line number for the arguments doesn't matter, this should be OK
         private string[] PreprocessCorralTrace(string[] corralTrace)
         {
-            string[] resTrace = null;
+            List<string> resTrace = new List<string>();
             string curFuncName = null;
             string curUnfinishedLine = null;
-            
-            foreach (string line in corralTrace)
+
+            // TODO: CHECK IF WE ARE REMOVING relevant LINES
+            // skip lines that do not start with {CALL, RETURN, ASSERTION}
+            // skip lines that start with {CALL CorralChoice_}
+            List<string> tmpTrace = corralTrace.Where(x => (x.Contains("CALL ") || x.Contains("RETURN ") || x.Contains("ASSERTION FAILS "))).ToList();
+            tmpTrace = tmpTrace.Where(x => !x.Contains("CALL CorralChoice_")).ToList();
+
+            foreach (string line in tmpTrace)
             {
                 string[] splitLine = line.Split("Trace: Thread=1  ");
                 curUnfinishedLine = splitLine[0];
@@ -216,7 +228,7 @@ namespace VeriSolRunner
                 }
 
                 // Split the rest of the line to get separate CALLs/RETURNs/args etc.
-                string[] restSplit = splitLine[1].Split(", ");
+                string[] restSplit = rest.Split(", ");
                 if (restSplit.Length  == 1 && !restSplit[0].StartsWith("ASSERTION FAILS") && !restSplit[0].StartsWith("CALL ") &&
                         !restSplit[0].StartsWith("RETURN") && !restSplit[0].StartsWith("this = T@Ref!val"))
                 {
@@ -233,7 +245,7 @@ namespace VeriSolRunner
                         // These are arguments for a function CALL from the previous line:
                         // Append the arguments to the previous line and emit the trace line into the resulting trace:
                         curUnfinishedLine = curUnfinishedLine + ", " + splitLine[1];
-                        resTrace.Append(curUnfinishedLine);
+                        resTrace.Add(curUnfinishedLine);
                         //curLine = null;
                         curFuncName = null;
                         curUnfinishedLine = null;
@@ -252,14 +264,14 @@ namespace VeriSolRunner
                             // This line is unfinished - do not append it to the result:
                             curUnfinishedLine = curUnfinishedLine + ", " + splitLine[1];
                             string lastCallElem = restSplit[lastCallInd];
-                            curFuncName = lastCallElem.Substring("CALL ".Length + 1, lastCallElem.Length - 1);
+                            curFuncName = lastCallElem.Substring("CALL ".Length + 1);
                             continue;
                         }
                         else
                         {
                             // All calls have arguments, append the line to the result:
                             curUnfinishedLine = curUnfinishedLine + ", " + splitLine[1];
-                            resTrace.Append(curUnfinishedLine);
+                            resTrace.Add(curUnfinishedLine);
                             //curLine = null;
                             curFuncName = null;
                             curUnfinishedLine = null;
@@ -269,8 +281,64 @@ namespace VeriSolRunner
 
             }
 
-            return resTrace;
+            return resTrace.ToArray();
         }
+
+        private string[] PreprocessCorralTraceForDemo(string[] corralTrace)
+        {
+            List<string> resTrace = new List<string>();
+
+            // TODO: CHECK IF WE ARE REMOVING relevant LINES
+            // skip lines that do not start with {CALL, RETURN, ASSERTION}
+            // skip lines that start with {CALL CorralChoice_}
+            List<string> tmpTrace = corralTrace.Where(x => (x.Contains("CALL ") || x.Contains("RETURN ") || x.Contains("ASSERTION FAILS "))).ToList();
+            tmpTrace = tmpTrace.Where(x => !x.Contains("CALL CorralChoice_")).ToList();
+
+            string foundBottomCallOnStack = null;
+            foreach (string line in tmpTrace)
+            {
+                string[] splitLine = line.Split("Trace: Thread=1  ");
+                string curUnfinishedLine = splitLine[0];
+                string rest = splitLine[1];
+                // Strip braces from the "rest" string:
+                if (rest.Length > 2)
+                {
+                    if (rest.StartsWith("(") && rest.EndsWith(")"))
+                    {
+                        rest = rest.Substring(1, rest.Length - 2);
+                    }
+                }
+
+                // Split the rest of the line to get separate CALLs/RETURNs/args etc.
+                string[] restSplit = rest.Split(", ");
+                List<string> args = new List<string>();
+                if (foundBottomCallOnStack == null)
+                {
+                    if (restSplit[0].StartsWith("CALL "))
+                    {
+                        foundBottomCallOnStack = restSplit[0].Substring("CALL ".Length);
+                        for(int i = 1; i < restSplit.Length; ++i)
+                        {
+                            if (restSplit[i].StartsWith("CALL "))
+                                break;
+                            args.Add(restSplit[i]);
+                        }
+                        resTrace.Add($"{curUnfinishedLine} {foundBottomCallOnStack} ({string.Join(", ", args)})");
+                    } 
+                } else if(rest.Contains("RETURN from " + foundBottomCallOnStack))
+                {
+                    foundBottomCallOnStack = null;
+                } else if (rest.Contains("ASSERTION FAIL"))
+                {
+                    resTrace.Add($"{curUnfinishedLine} {rest.Substring(1)}");
+                }
+            }
+
+            resTrace.ForEach(x => Console.WriteLine($"\t{x}"));
+
+            return resTrace.ToArray();
+        }
+
         private string GetArgsInSingleLine(string[] inputArray)
         {
             // Skip any elements that are not arguments (for example: FreshGenerator calls/returns)
@@ -388,20 +456,26 @@ namespace VeriSolRunner
 
         private void PrintCounterexample()
         {
-            string[] corralTrace = File.ReadAllLines(corralTraceFileName);
+            string[] corralTrace = File.ReadAllLines("corral.txt");
             // Find relevant trace lines in the full trace:
             corralTrace = FilterCorralTrace(corralTrace);
             // Preprocess the trace:
             // - append the line with function argument values to the line with the function call;
             // - clean up the trace from the irrelevant lines
-            corralTrace = PreprocessCorralTrace(corralTrace);
+            corralTrace = PreprocessCorralTraceForDemo(corralTrace);
+            PrintCounterexampleHelper(corralTrace);
+            }
+
+        private void PrintCounterexampleHelper(string[] corralTrace)
+        {
+            return;
             string curFunctionName = null;
-            
+
             using (var outWriter = new StreamWriter(counterexampleFileName))
             {
                 foreach (string corralLine in corralTrace)
                 {
-                    string[] splitRes = corralLine.Split("Trace: Thread=1  ");
+                    string[] splitRes = corralLine.Split(":");
                     string counterexLine = splitRes[0];
                     string rest = splitRes[1];
                     // Strip braces from the "rest" string:
@@ -426,9 +500,10 @@ namespace VeriSolRunner
                         else continue;
                     }
                     outWriter.WriteLine(counterexLine);
-                }            
+                }
             }
         }
+
         private void DisplayTraceOnConsole()
         {
             string corralTrace = File.ReadAllText(corralTraceFileName);
