@@ -330,7 +330,7 @@ namespace VeriSolRunner
                     foundBottomCallOnStack = null;
                 } else if (rest.Contains("ASSERTION FAIL"))
                 {
-                    resTrace.Add($"{curUnfinishedLine} {rest.Substring(1)}");
+                    resTrace.Add($"{curUnfinishedLine} {"ASSERTION fails!"}");
                 }
             }
 
