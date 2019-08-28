@@ -468,6 +468,7 @@ namespace VeriSolRunner
 
         private void PrintCounterexampleHelper(string[] corralTrace)
         {
+            File.WriteAllLines(counterexampleFileName, corralTrace);
             return;
             string curFunctionName = null;
 
