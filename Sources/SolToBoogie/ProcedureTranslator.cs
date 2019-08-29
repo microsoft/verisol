@@ -160,10 +160,21 @@ namespace SolToBoogie
 
         private void PrintArguments(FunctionDefinition node, List<BoogieVariable> inParams, BoogieStmtList currentStmtList)
         {
-            // Add default parameters "this", "msg.sender" (ignoring "msg.value"):
+            // Print dummy first parameter (as a delimeter for parsing corral.txt):
             TypeDescription addrType = new TypeDescription();
+            addrType.TypeString = "bool";
+            // There's no BoogieLiteralExpr that accepts ref type:
+            //BoogieConstant nullConst = new BoogieConstant(new BoogieTypedIdent("null", BoogieType.Ref), true);
+            var callCmd = InstrumentForPrintingData(addrType, new BoogieLiteralExpr(false), "_verisolFirstArg");
+            if (callCmd != null)
+            {
+                currentStmtList.AddStatement(callCmd);
+            }
+
+            // Add default parameters "this", "msg.sender" (ignoring "msg.value"):
+            addrType = new TypeDescription();
             addrType.TypeString = "address";
-            var callCmd = InstrumentForPrintingData(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
+            callCmd = InstrumentForPrintingData(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
             if (callCmd != null)
             {
                 currentStmtList.AddStatement(callCmd);
@@ -177,7 +188,18 @@ namespace SolToBoogie
             // when we call this for an implicit constructor, we don't have a node, which
             // implies there are no parameters
             if (node == null)
+            {
+                // Print dummy last parameter (as a delimeter for parsing corral.txt):
+                addrType = new TypeDescription();
+                addrType.TypeString = "bool";
+                callCmd = InstrumentForPrintingData(addrType, new BoogieLiteralExpr(true), "_verisolLastArg");
+                if (callCmd != null)
+                {
+                    currentStmtList.AddStatement(callCmd);
+                }
                 return;
+            }
+                
             foreach (VariableDeclaration param in node.Parameters.Parameters)
             {
                 var parType = param.TypeDescriptions != null ? param.TypeDescriptions : null;
@@ -190,6 +212,14 @@ namespace SolToBoogie
                 {
                     currentStmtList.AddStatement(callCmd);
                 }
+            }
+            // Print dummy last parameter (as a delimeter for parsing corral.txt):
+            addrType = new TypeDescription();
+            addrType.TypeString = "bool";
+            callCmd = InstrumentForPrintingData(addrType, new BoogieLiteralExpr(true), "_verisolLastArg");
+            if (callCmd != null)
+            {
+                currentStmtList.AddStatement(callCmd);
             }
         }
         public override bool Visit(FunctionDefinition node)
