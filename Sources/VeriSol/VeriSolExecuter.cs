@@ -216,7 +216,8 @@ namespace VeriSolRunner
                         strSplit[1] = strSplit[1].Substring(1, strSplit[1].Length - 2);
                     }
                 }
-                res.Add(Tuple.Create(strSplit[0], strSplit[1]));
+                var tuples = strSplit[1].Split(", ").ToList();
+                tuples.ForEach(x => res.Add(Tuple.Create(strSplit[0], x)));
             }
             return res;
         }
@@ -494,46 +495,63 @@ namespace VeriSolRunner
             Stack<string> argStack = new Stack<string>();
             string currentArgs = "";
             bool collectArgs = false;
-            string[] res = null;
+            List<string> resultArray = null;
 
+            // this is a list of (line#, element)
+            // element \in {CALL foo, RETURM from foo, x = e, ASSERTION FAILS, ...}
             for (int i = 0; i < trace.Count(); i++)
             {
-                string[] splitElem = trace[i].Item2.Split(", ");
-                foreach (var elem in splitElem)
+                var elem = trace[i].Item2;
+                if (elem.StartsWith("CALL CorralChoice_"))
                 {
-                   if (elem.StartsWith("CALL CorralChoice_"))
-                   {
-                        continue;
-                   }
-                   else if (elem.StartsWith("CALL "))
-                   {
-
-                   }
-                   else if (elem.StartsWith("RETURN from"))
-                   {
-
-                   }
-                   else if (elem.StartsWith("_verisolFirstArg"))
-                   {
-
-                   }
-                   else if (elem.StartsWith("_verisolLastArg"))
-                   {
-
-                   }
-                   else if (elem.StartsWith("ASSERTION FAILS"))
-                   {
-
-                   }
-                   else
-                   {
-                        //Assuming function argument (except dummy first and last):
-                   }
+                    continue;
                 }
-                
+                else if (elem.StartsWith("RETURN from CorralChoice_"))
+                {
+                    continue;
+                }
+                else if (elem.StartsWith("CALL "))
+                {
+                    var func = elem.Substring("CALL ".Length);
+                    callStack.Push(func);
+                    currentArgs = "";
+                }
+                else if (elem.StartsWith("RETURN from "))
+                {
+                    var func = elem.Substring("RETURN from ".Length);
+                    Debug.Assert(callStack.Count > 0, "Call stack cannot be empty");
+                    Debug.Assert(func == callStack.Peek(), $"Top of stack {callStack.Peek()} does not match with return {func}");
+                    callStack.Pop();
+                }
+                else if (elem.StartsWith("_verisolFirstArg"))
+                {
+                    collectArgs = true;
+                }
+                else if (elem.StartsWith("_verisolLastArg"))
+                {
+                    Debug.Assert(callStack.Count > 0, "callstack cannot be empty");
+                    collectArgs = false;
+                    resultArray.Add($"{trace[i].Item1}: {callStack.Peek()} ({currentArgs})");
+                }
+                else if (elem.StartsWith("ASSERTION FAILS"))
+                {
+                    resultArray.Add($"{trace[i].Item1}: ASSERTION FAILS!");
+                }
+                else if (elem.Contains("="))
+                {
+                    if (collectArgs)
+                    {
+                        currentArgs += ", " + elem;
+                    }
+                }
+                else
+                {
+                    Debug.Assert(false, $"This should be unreachable, found a new class of statement {elem}");
+                }
             }
-            
-            File.WriteAllLines(counterexampleFileName, res);
+
+            resultArray.ForEach(x => Console.WriteLine(x));
+            //File.WriteAllLines(counterexampleFileName, resultArray);
             return;
 
 
