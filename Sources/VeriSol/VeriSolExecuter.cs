@@ -206,6 +206,7 @@ namespace VeriSolRunner
             foreach (string line in corralTrace)
             {
                 var strSplit = line.Split("Trace: Thread = 1  ");
+                // This should never happen; TODO: Debug.Assert(false)?
                 if (strSplit.Count() == 0) continue;
                 // Strip braces from the 2nd string:
                 if (strSplit[1].Length > 2)
@@ -493,6 +494,7 @@ namespace VeriSolRunner
             Stack<string> argStack = new Stack<string>();
             string currentArgs = "";
             bool collectArgs = false;
+            string[] res = null;
 
             for (int i = 0; i < trace.Count(); i++)
             {
@@ -530,8 +532,9 @@ namespace VeriSolRunner
                 }
                 
             }
-            //File.WriteAllLines(counterexampleFileName, corralTrace);
-            //return;
+            
+            File.WriteAllLines(counterexampleFileName, res);
+            return;
 
 
             /*                old code
