@@ -193,10 +193,32 @@ namespace VeriSolRunner
 
         private string[] FilterCorralTrace(string[] trace)
         {
-            // Only get lines that contain ".sol":
-            return trace.Where(s => s.Contains("Trace: Thread=1")).ToArray();
+            // Only get lines that contain "Trace: Thread=1":
+            var res = trace.Where(s => s.Contains("Trace: Thread=1"));
+            // Remove irrelevant lines: "()", "(Done)", "(x = 0)":
+            res = res.Where(x => x.Contains("CALL ") || x.Contains("RETURN ") || x.Contains("ASSERTION FAILS ") || x.Contains("_verisolFirstArg"));
+            return res.ToArray();
         }
 
+        private List<Tuple<string, string>> ConvertTrace(string[] corralTrace)
+        {
+            var res = new List<Tuple<string, string>>();
+            foreach (string line in corralTrace)
+            {
+                var strSplit = line.Split("Trace: Thread = 1  ");
+                if (strSplit.Count() == 0) continue;
+                // Strip braces from the 2nd string:
+                if (strSplit[1].Length > 2)
+                {
+                    if (strSplit[1].StartsWith("(") && strSplit[1].EndsWith(")"))
+                    {
+                        strSplit[1] = strSplit[1].Substring(1, strSplit[1].Length - 2);
+                    }
+                }
+                res.Add(Tuple.Create(strSplit[0], strSplit[1]));
+            }
+            return res;
+        }
         // Problem: processing one line of corral.txt file at a time doesn't work, since CALL
         // and its arguments could be located on diff lines
         // Preprocess corral.txt: append arguments to the lines where their call is; since 
@@ -459,17 +481,60 @@ namespace VeriSolRunner
             string[] corralTrace = File.ReadAllLines("corral.txt");
             // Find relevant trace lines in the full trace:
             corralTrace = FilterCorralTrace(corralTrace);
-            // Preprocess the trace:
-            // - append the line with function argument values to the line with the function call;
-            // - clean up the trace from the irrelevant lines
-            corralTrace = PreprocessCorralTraceForDemo(corralTrace);
-            PrintCounterexampleHelper(corralTrace);
-            }
+            // Convert array of strings into a list of tuples:
+            var tracePrime = ConvertTrace(corralTrace);
+            //corralTrace = PreprocessCorralTraceForDemo(corralTrace);
+            PrintCounterexampleHelper(tracePrime);
+        }
 
-        private void PrintCounterexampleHelper(string[] corralTrace)
+        private void PrintCounterexampleHelper(List<Tuple<string, string>> trace)
         {
-            File.WriteAllLines(counterexampleFileName, corralTrace);
-            return;
+            Stack<string> callStack = new Stack<string>();
+            Stack<string> argStack = new Stack<string>();
+            string currentArgs = "";
+            bool collectArgs = false;
+
+            for (int i = 0; i < trace.Count(); i++)
+            {
+                string[] splitElem = trace[i].Item2.Split(", ");
+                foreach (var elem in splitElem)
+                {
+                   if (elem.StartsWith("CALL CorralChoice_"))
+                   {
+                        continue;
+                   }
+                   else if (elem.StartsWith("CALL "))
+                   {
+
+                   }
+                   else if (elem.StartsWith("RETURN from"))
+                   {
+
+                   }
+                   else if (elem.StartsWith("_verisolFirstArg"))
+                   {
+
+                   }
+                   else if (elem.StartsWith("_verisolLastArg"))
+                   {
+
+                   }
+                   else if (elem.StartsWith("ASSERTION FAILS"))
+                   {
+
+                   }
+                   else
+                   {
+                        //Assuming function argument (except dummy first and last):
+                   }
+                }
+                
+            }
+            //File.WriteAllLines(counterexampleFileName, corralTrace);
+            //return;
+
+
+            /*                old code
             string curFunctionName = null;
 
             using (var outWriter = new StreamWriter(counterexampleFileName))
@@ -503,6 +568,7 @@ namespace VeriSolRunner
                     outWriter.WriteLine(counterexLine);
                 }
             }
+            */////////////////////////////////////////////////////////////////
         }
 
         private void DisplayTraceOnConsole()
