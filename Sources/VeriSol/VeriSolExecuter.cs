@@ -205,7 +205,7 @@ namespace VeriSolRunner
             var res = new List<Tuple<string, string>>();
             foreach (string line in corralTrace)
             {
-                var strSplit = line.Split("Trace: Thread = 1  ");
+                var strSplit = line.Split("Trace: Thread=1  ");
                 // This should never happen; TODO: Debug.Assert(false)?
                 if (strSplit.Count() == 0) continue;
                 // Strip braces from the 2nd string:
@@ -495,7 +495,7 @@ namespace VeriSolRunner
             Stack<string> argStack = new Stack<string>();
             string currentArgs = "";
             bool collectArgs = false;
-            List<string> resultArray = null;
+            List<string> resultArray = new List<string>();
 
             // this is a list of (line#, element)
             // element \in {CALL foo, RETURM from foo, x = e, ASSERTION FAILS, ...}
@@ -520,7 +520,7 @@ namespace VeriSolRunner
                 {
                     var func = elem.Substring("RETURN from ".Length);
                     Debug.Assert(callStack.Count > 0, "Call stack cannot be empty");
-                    Debug.Assert(func == callStack.Peek(), $"Top of stack {callStack.Peek()} does not match with return {func}");
+                    Debug.Assert(func.TrimEnd().Equals(callStack.Peek().TrimEnd()), $"Top of stack {callStack.Peek()} does not match with return {func}");
                     callStack.Pop();
                 }
                 else if (elem.StartsWith("_verisolFirstArg"))
@@ -531,9 +531,12 @@ namespace VeriSolRunner
                 {
                     Debug.Assert(callStack.Count > 0, "callstack cannot be empty");
                     collectArgs = false;
-                    resultArray.Add($"{trace[i].Item1}: {callStack.Peek()} ({currentArgs})");
+                    if (callStack.Count == 1)
+                    {
+                        resultArray.Add($"{trace[i].Item1}: {callStack.Peek()} ({currentArgs})");
+                    }
                 }
-                else if (elem.StartsWith("ASSERTION FAILS"))
+                else if (elem.StartsWith("(ASSERTION FAILS"))
                 {
                     resultArray.Add($"{trace[i].Item1}: ASSERTION FAILS!");
                 }
