@@ -12,13 +12,15 @@
     <ProjectReference Include="..\SolidityAST\SolidityAST.csproj" />
     <ProjectReference Include="..\BoogieAST\BoogieAST.csproj" />
     <ProjectReference Include="..\SolToBoogie\SolToBoogie.csproj" />
+    <ProjectReference Include="..\..\corral\cba-NetCore.csproj" />
+    <ProjectReference Include="..\..\corral\boogie\Source\BoogieDriver\BoogieDriver-NetCore.csproj" />
   </ItemGroup>
 
    <ItemGroup>
         <SolcFiles Include="..\..\Tool\**\*.*"/>
         <CorralFiles Include="..\..\corral\bin\debug\**\*.*"/>
         <ConcExplorerFiles Include="..\..\corral\tools\**\*.*"/>
-        <BoogieFiles Include="..\..\corral\boogie\Binaries\**\*.*"/>
+        <BoogieFiles Include="..\..\corral\boogie\Source\BoogieDriver\**\*.*"/>
    </ItemGroup> 
 
   <Target Name="CopySolFiles" AfterTargets="AfterBuild">
