@@ -162,6 +162,8 @@ namespace VeriSolRunner
                     PrintCounterexample();
                     Console.WriteLine("\t---------------");
                 }
+
+                Console.WriteLine($"\n\tAlso, see the counterexample in {counterexampleFileName}");
                 // DisplayTraceOnConsole();
 
                 Console.WriteLine($"\n\tSee full execution trace inside {corralOutFile}");
@@ -386,6 +388,35 @@ namespace VeriSolRunner
             }
             return res;
         }
+        
+        private string ConvertFunctionName(string origName)
+        {
+            string[] nameSplit = origName.Split("_");
+            if (nameSplit.Count() > 2)
+            {
+                // More than one underscore in the name: leave it as it is:
+                return origName;
+            }
+            else if (nameSplit.Count() == 2)
+            {
+                if (nameSplit[0] == nameSplit[1])
+                {
+                    // Top level constructor name "XX_XX":
+                    return nameSplit[0] + "::Constructor";
+                }
+                else
+                {
+                    // Regular function call: functionName_ConstractName
+                    return nameSplit[1] + "::" + nameSplit[0];
+                }
+            }
+            else
+            {
+                Debug.Assert(false, $"Unreachable: Function name {origName} does not contain underscores");
+                return String.Empty;
+            }
+        }
+
         private void ProcessCall(string input, string output, string curFunctionName)
         {
             // Example: "CALL withdraw_SimpleDAO"
@@ -492,7 +523,7 @@ namespace VeriSolRunner
         private void PrintCounterexampleHelper(List<Tuple<string, string>> trace)
         {
             Stack<string> callStack = new Stack<string>();
-            Stack<string> argStack = new Stack<string>();
+            //Stack<string> argStack = new Stack<string>();
             string currentArgs = "";
             bool collectArgs = false;
             List<string> resultArray = new List<string>();
@@ -533,7 +564,7 @@ namespace VeriSolRunner
                     collectArgs = false;
                     if (callStack.Count == 1)
                     {
-                        resultArray.Add($"{trace[i].Item1}: {callStack.Peek()} ({currentArgs})");
+                        resultArray.Add($"{trace[i].Item1}: {ConvertFunctionName(callStack.Peek())} ({currentArgs.Substring(", ".Length)})");
                     }
                 }
                 else if (elem.StartsWith("(ASSERTION FAILS"))
@@ -542,9 +573,21 @@ namespace VeriSolRunner
                 }
                 else if (elem.Contains("="))
                 {
+
                     if (collectArgs)
                     {
-                        currentArgs += ", " + elem;
+                        // Replace "T@Ref!val!0" with "address!0"
+                        string[] splitElem = elem.Split(" = ");
+                        Debug.Assert(splitElem.Count() == 2);
+                        string[] rhsSplit = splitElem[1].Split("!");
+                        if (rhsSplit.Count() > 0 && rhsSplit[0].Equals("T@Ref"))
+                        {
+                            currentArgs += ", " + elem.Replace("T@Ref!val", "address");
+                        }
+                        else
+                        {
+                            currentArgs += ", " + elem;
+                        }                       
                     }
                 }
                 else
@@ -554,45 +597,8 @@ namespace VeriSolRunner
             }
 
             resultArray.ForEach(x => Console.WriteLine(x));
-            //File.WriteAllLines(counterexampleFileName, resultArray);
+            File.WriteAllLines(counterexampleFileName, resultArray);
             return;
-
-
-            /*                old code
-            string curFunctionName = null;
-
-            using (var outWriter = new StreamWriter(counterexampleFileName))
-            {
-                foreach (string corralLine in corralTrace)
-                {
-                    string[] splitRes = corralLine.Split(":");
-                    string counterexLine = splitRes[0];
-                    string rest = splitRes[1];
-                    // Strip braces from the "rest" string:
-                    if (rest.Length > 2)
-                    {
-                        if (rest.StartsWith("(") && rest.EndsWith(")"))
-                        {
-                            rest = rest.Substring(1, rest.Length - 2);
-                        }
-                    }
-                    string[] restSplit = splitRes[1].Split(", ");
-                    foreach (string resi in restSplit)
-                    {
-                        if (resi.StartsWith("CALL") || resi.StartsWith("RETURN") || resi.StartsWith("ASSERTION FAILS"))
-                        {
-                            ProcessCallReturnAssert(resi, counterexLine, curFunctionName);
-                        }
-                        else if (resi.StartsWith("this = T@Ref!val"))
-                        {
-                            ProcessArgs(restSplit, Array.IndexOf(restSplit, resi), counterexLine);
-                        }
-                        else continue;
-                    }
-                    outWriter.WriteLine(counterexLine);
-                }
-            }
-            */////////////////////////////////////////////////////////////////
         }
 
         private void DisplayTraceOnConsole()
