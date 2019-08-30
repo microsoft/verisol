@@ -10,14 +10,13 @@
    - (Windows) Download `solc.exe`
    - (Linux) Download the executable `solc-static-linux` use command `chmod +x solc-static-linux` to grant execution permission.
    - (OSX) Download the executable `solc-mac`. use command `chmod +x solc-mac` to grant execution permission (if necessary)
+- Install [Z3 theorem prover](https://github.com/Z3Prover/z3/releases) binary **z3.exe** for Windows/Linux/OSX into the **Tool** folder
+
+
 - We use **Corral** and **Boogie** verifiers. Corral is present as a submodule, which in turn uses Boogie as a submodule. Run a recursive git submodule update command from the root folder
 `git submodule update --recursive --init`
-Make sure that Corral and Corral\Boogie folders are populated. Let us denote %CORRAL_DIR% as corral\bin\debug\ and %BOOGIE_DIR% as 
-corral\boogie\binaries\ folders. 
-   - (Windows) Follow instructions for [building Corral on Windows](https://github.com/boogie-org/corral#building-and-running-corral-on-windows) and [building Boogie on Windows](https://github.com/boogie-org/boogie#windows)
-   - (Linux/OSX) Follow the [building Corral on Linux](https://github.com/boogie-org/corral#building-and-running-corral-on-linux-using-mono) and [building Boogie on Linux/OSX](https://github.com/boogie-org/boogie#linuxosx). Note the dependency on [Mono](https://www.mono-project.com). 
-   - You need to build Boogie separately to generate **Boogie.exe** (not generated as part of the Corral build)
-   - At this point, there should be a copy (Windows) or symbolic link (Linux/OSX) of [Z3 theorem prover](https://github.com/Z3Prover/z3/releases) **z3.exe** present in both %CORRAL_DIR% and %BOOGIE_DIR% folders. 
+Make sure that Corral and Corral\Boogie folders are populated. 
+
 
 ### (Optional) 
    - For Windows, we currently use  [ConcurrencyExplorer](https://github.com/LeeSanderson/Chess) in Corral\Tools\ to view traces (for Windows). It is unclear if one can build the sources of *ConcurencyExplorer* for Linux/OSX from [here](https://github.com/LeeSanderson/Chess). If that works, copy the *ConcurrencyExplorer.exe* binary to Corral\Tools\.
@@ -48,7 +47,7 @@ where
    - */tryProof* attempts to find proof of correctness of the specifications in foo.sol
    - */tryRefutation:6* attempts to find a violation of specifications in foo.sol up to *6* transactions to *Bar*.
 
-  > For Windows, the tool output prints instructions to view the trace using *ConcurrencyExplorer.exe* binary. 
+  > For Windows, the tool output prints instructions to step through the trace using *ConcurrencyExplorer.exe* binary. 
 
   > Documentation of the error trace (and a more concise list of transactions with arguments) coming soon!!
 
