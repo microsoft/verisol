@@ -13,20 +13,17 @@
 - Install [Z3 theorem prover](https://github.com/Z3Prover/z3/releases) binary **z3.exe** for Windows/Linux/OSX into the **Tool** folder
 
 
-- We use **Corral** and **Boogie** verifiers. Corral is present as a submodule, which in turn uses Boogie as a submodule. Run a recursive git submodule update command from the root folder
+- We use **corral** and **boogie** verifiers. Corral is present as a submodule, which in turn uses Boogie as a submodule. Run a recursive git submodule update command from the root folder
 `git submodule update --recursive --init`
-Make sure that Corral and Corral\Boogie folders are populated. 
+Make sure that corral and borral\boogie folders are populated. 
 
 
 ### (Optional) 
-   - For Windows, we currently use  [ConcurrencyExplorer](https://github.com/LeeSanderson/Chess) in Corral\Tools\ to view traces (for Windows). It is unclear if one can build the sources of *ConcurencyExplorer* for Linux/OSX from [here](https://github.com/LeeSanderson/Chess). If that works, copy the *ConcurrencyExplorer.exe* binary to Corral\Tools\.
+   - For Windows, we currently use  [ConcurrencyExplorer](https://github.com/LeeSanderson/Chess) in Corral\Tools\ to step through traces. It is unclear if one can build the sources of *ConcurencyExplorer* for Linux/OSX from [here](https://github.com/LeeSanderson/Chess). If that works, copy the *ConcurrencyExplorer.exe* binary to Corral\Tools\.
 
 ## Build VeriSol
 
 Perform the following commands from the root folder:
-<!-- Open the __Sources\SolToBoogie.sln__ file in Visual Studio (2017) and perform __Build Solution__. -->
-<!-- - `msbuild corral\boogie\source\boogie.sln` Ignroe the errors as they don't affect VeriSol. They go away if you (optionally) build using Visual Studio. -->
-<!-- - `msbuild corral\cba.sln` -->
 `dotnet build Sources\SolToBoogie.sln`
 
 ## Running VeriSol
