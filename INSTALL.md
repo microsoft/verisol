@@ -10,7 +10,7 @@
    - (Windows) Download `solc.exe`
    - (Linux) Download the executable `solc-static-linux` use command `chmod +x solc-static-linux` to grant execution permission.
    - (OSX) Download the executable `solc-mac`. use command `chmod +x solc-mac` to grant execution permission (if necessary)
-- Install [Z3 theorem prover](https://github.com/Z3Prover/z3/releases) binary **z3.exe** for Windows/Linux/OSX into the **Tool** folder
+- Install [Z3 theorem prover](https://github.com/Z3Prover/z3/releases) binary **z3.exe** for Windows/Linux/OSX into the **Tool** folder (We recommend 4.8.4)
 
 
 - We use **corral** and **boogie** verifiers. Corral is present as a submodule, which in turn uses Boogie as a submodule. Run a recursive git submodule update command from the root folder
