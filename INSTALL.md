@@ -15,7 +15,7 @@
 
 - We use **corral** and **boogie** verifiers. Corral is present as a submodule, which in turn uses Boogie as a submodule. Run a recursive git submodule update command from the root folder
 `git submodule update --recursive --init`
-Make sure that corral and borral\boogie folders are populated. 
+Make sure that corral and corral\boogie folders are populated. 
 
 
 ### (Optional) 
