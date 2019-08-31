@@ -18,9 +18,10 @@
 
    <ItemGroup>
         <SolcFiles Include="..\..\Tool\**\*.*"/>
-        <CorralFiles Include="..\..\corral\bin\debug\**\*.*"/>
+        <CorralFiles Include="..\..\corral\bin\debug\netcoreapp*\*"/>
         <ConcExplorerFiles Include="..\..\corral\tools\**\*.*"/>
         <BoogieFiles Include="..\..\corral\boogie\Source\BoogieDriver\**\*.*"/>
+        <Z3Files Include="..\..\Tool\z3.exe"/>
    </ItemGroup> 
 
   <Target Name="CopySolFiles" AfterTargets="AfterBuild">
@@ -45,6 +46,18 @@
         <Copy
             SourceFiles="@(ConcExplorerFiles)"
             DestinationFolder="$(OutDir)\concurrencyExplorer\"
+        />
+    </Target>
+  <Target Name="CopyZ3ForCorral" AfterTargets="AfterBuild">
+        <Copy
+            SourceFiles="@(Z3Files)"
+            DestinationFolder="$(OutDir)\corral\"
+        />
+    </Target>
+  <Target Name="CopyZ3ForBoogie" AfterTargets="AfterBuild">
+        <Copy
+            SourceFiles="@(Z3Files)"
+            DestinationFolder="$(OutDir)\boogie\"
         />
     </Target>
 
