@@ -186,17 +186,9 @@ namespace SolToBoogieTest
             p.StartInfo.RedirectStandardOutput = true;
             p.StartInfo.RedirectStandardError = true;
             p.StartInfo.CreateNoWindow = true;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                p.StartInfo.FileName = corralPath;
-                p.StartInfo.Arguments = corralArguments;
-            }
-            else
-            {
-                p.StartInfo.FileName = "mono";
-                p.StartInfo.Arguments = $"{corralPath} {corralArguments}";
-                Console.WriteLine(p.StartInfo.Arguments);
-            }
+            p.StartInfo.FileName = "dotnet";
+            p.StartInfo.Arguments = $"{corralPath} {corralArguments}";
+            Console.WriteLine(p.StartInfo.Arguments);
             p.Start();
 
             string corralOutput = p.StandardOutput.ReadToEnd();

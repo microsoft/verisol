@@ -45,22 +45,8 @@ namespace SolToBoogieTest
 
         private static string GetCorralPathFromAssemblyPath(string location)
         {
-            // from .\sources\soltoboogietest\bin\debug\netcoreapp2.2\ to .\corral\bin\debug\corral.exe
-            var verisolRoot =
-                Directory.GetParent(
-                Directory.GetParent(
-                Directory.GetParent(
-                    Directory.GetParent(
-                    Directory.GetParent(
-                    Directory.GetParent(
-                        location
-                        ).FullName
-                        ).FullName
-                        ).FullName
-                        ).FullName
-                        ).FullName
-                        ).FullName;
-            return Path.Combine(new string[] {verisolRoot, "corral", "bin", "Debug", "corral.exe"});
+            // from .\sources\soltoboogietest\bin\debug\netcoreapp2.2\ to .\sources\soltoboogietest\bin\debug\netcoreapp2.2\corral\
+            return Path.Combine(new string[] {Directory.GetParent(location).FullName, "corral", "corral.dll"});
         }
 
         private static string GetSolcNameByOSPlatform()
