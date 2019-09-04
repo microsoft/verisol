@@ -16,7 +16,7 @@
 - We use **corral** and **boogie** verifiers. Corral is present as a submodule, which in turn uses Boogie as a submodule. Run a recursive git submodule update command from the root folder
 `git submodule update --recursive --init`
 Make sure that corral and corral\boogie folders are populated. 
-
+ 
 
 ### (Optional) 
    - For Windows, we currently use  [ConcurrencyExplorer](https://github.com/LeeSanderson/Chess) in Corral\Tools\ to step through traces. It is unclear if one can build the sources of *ConcurencyExplorer* for Linux/OSX from [here](https://github.com/LeeSanderson/Chess). If that works, copy the *ConcurrencyExplorer.exe* binary to Corral\Tools\.
@@ -36,7 +36,7 @@ to view options and their meanings.
 
 A common usage:
 
-`dotnet %VERISOL_PATH%\Sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll foo.sol Bar /tryProof /tryRefutation:6`
+`dotnet %VERISOL_PATH%\Sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll foo.sol Bar /tryProof /tryRefutation:6 /printTransactionSequence`
 
 where 
    - *foo.sol* is the top-level Solidity file
