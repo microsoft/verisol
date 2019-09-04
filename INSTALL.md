@@ -10,24 +10,20 @@
    - (Windows) Download `solc.exe`
    - (Linux) Download the executable `solc-static-linux` use command `chmod +x solc-static-linux` to grant execution permission.
    - (OSX) Download the executable `solc-mac`. use command `chmod +x solc-mac` to grant execution permission (if necessary)
-- We use **Corral** and **Boogie** verifiers. Corral is present as a submodule, which in turn uses Boogie as a submodule. Run a recursive git submodule update command from the root folder
+- Install [Z3 theorem prover](https://github.com/Z3Prover/z3/releases) binary **z3.exe** for Windows/Linux/OSX into the **Tool** folder (We recommend 4.8.4)
+
+
+- We use **corral** and **boogie** verifiers. Corral is present as a submodule, which in turn uses Boogie as a submodule. Run a recursive git submodule update command from the root folder
 `git submodule update --recursive --init`
-Make sure that Corral and Corral\Boogie folders are populated. Let us denote %CORRAL_DIR% as corral\bin\debug\ and %BOOGIE_DIR% as 
-corral\boogie\binaries\ folders. 
-   - (Windows) Follow instructions for [building Corral on Windows](https://github.com/boogie-org/corral#building-and-running-corral-on-windows) and [building Boogie on Windows](https://github.com/boogie-org/boogie#windows)
-   - (Linux/OSX) Follow the [building Corral on Linux](https://github.com/boogie-org/corral#building-and-running-corral-on-linux-using-mono) and [building Boogie on Linux/OSX](https://github.com/boogie-org/boogie#linuxosx). Note the dependency on [Mono](https://www.mono-project.com). 
-   - You need to build Boogie separately to generate **Boogie.exe** (not generated as part of the Corral build)
-   - At this point, there should be a copy (Windows) or symbolic link (Linux/OSX) of [Z3 theorem prover](https://github.com/Z3Prover/z3/releases) **z3.exe** present in both %CORRAL_DIR% and %BOOGIE_DIR% folders. 
+Make sure that corral and corral\boogie folders are populated. 
+
 
 ### (Optional) 
-   - For Windows, we currently use  [ConcurrencyExplorer](https://github.com/LeeSanderson/Chess) in Corral\Tools\ to view traces (for Windows). It is unclear if one can build the sources of *ConcurencyExplorer* for Linux/OSX from [here](https://github.com/LeeSanderson/Chess). If that works, copy the *ConcurrencyExplorer.exe* binary to Corral\Tools\.
+   - For Windows, we currently use  [ConcurrencyExplorer](https://github.com/LeeSanderson/Chess) in Corral\Tools\ to step through traces. It is unclear if one can build the sources of *ConcurencyExplorer* for Linux/OSX from [here](https://github.com/LeeSanderson/Chess). If that works, copy the *ConcurrencyExplorer.exe* binary to Corral\Tools\.
 
 ## Build VeriSol
 
 Perform the following commands from the root folder:
-<!-- Open the __Sources\SolToBoogie.sln__ file in Visual Studio (2017) and perform __Build Solution__. -->
-<!-- - `msbuild corral\boogie\source\boogie.sln` Ignroe the errors as they don't affect VeriSol. They go away if you (optionally) build using Visual Studio. -->
-<!-- - `msbuild corral\cba.sln` -->
 `dotnet build Sources\SolToBoogie.sln`
 
 ## Running VeriSol
@@ -49,7 +45,7 @@ where
    - */tryRefutation:6* attempts to find a violation of specifications in foo.sol up to *6* transactions to *Bar*.
    - */printTransactionSequence* prints the transaction sequence of a defect on console (default false)
 
-  > For Windows, the tool output prints instructions to view the trace using *ConcurrencyExplorer.exe* binary. 
+  > For Windows, the tool output prints instructions to step through the trace using *ConcurrencyExplorer.exe* binary. 
 
 ### Example with refutation ###
 `dotnet %VERISOL_PATH%\sources\VeriSol\bin\Debug\netcoreapp2.2\VeriSol.dll Test\regressions\Error.sol AssertFalse /tryProof /tryRefutation:6`

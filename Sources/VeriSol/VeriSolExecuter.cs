@@ -144,7 +144,7 @@ namespace VeriSolRunner
             {
                 bFile.Write(corralOut);
             }
-            Console.WriteLine($"\tFinished Corral, output in {corralOutFile}....\n");
+            Console.WriteLine($"\tFinished corral, output in {corralOutFile}....\n");
 
             // compare Corral output against expected output
             if (CompareCorralOutput("Program has no bugs", corralOut))
@@ -395,17 +395,9 @@ namespace VeriSolRunner
             p.StartInfo.RedirectStandardOutput = true;
             p.StartInfo.RedirectStandardError = true;
             p.StartInfo.CreateNoWindow = true;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                p.StartInfo.FileName = binaryPath;
-                p.StartInfo.Arguments = binaryArguments;
-            }
-            else
-            {
-                p.StartInfo.FileName = "mono";
-                p.StartInfo.Arguments = $"{binaryPath} {binaryArguments}";
-                Console.WriteLine(p.StartInfo.Arguments);
-            }
+            p.StartInfo.FileName = "dotnet";
+            p.StartInfo.Arguments = $"{binaryPath} {binaryArguments}";
+            Console.WriteLine(p.StartInfo.Arguments);
             p.Start();
 
             string outputBinary = p.StandardOutput.ReadToEnd();

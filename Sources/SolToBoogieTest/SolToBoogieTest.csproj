@@ -14,28 +14,21 @@
   </ItemGroup>
 
    <ItemGroup>
-        <SolcFiles Include="..\..\Tool\**\*.*"/>
-        <CorralFiles Include="..\..\corral\bin\Debug\**\*.*"/>
-        <BoogieFiles Include="..\..\corral\boogie\Binaries\**\*.*"/>
+        <CorralFiles Include="..\..\corral\bin\debug\netcoreapp*\*"/>
+        <Z3Files Include="..\..\Tool\z3.exe"/>
    </ItemGroup> 
-
-  <Target Name="CopySolFiles" AfterTargets="AfterBuild">
-        <Copy
-            SourceFiles="@(SolcFiles)"
-            DestinationFolder="$(OutDir)\solc\"
-        />
-    </Target>
   <Target Name="CopyCorralFiles" AfterTargets="AfterBuild">
         <Copy
             SourceFiles="@(CorralFiles)"
             DestinationFolder="$(OutDir)\corral\"
         />
     </Target>
-  <Target Name="CopyBoogieFiles" AfterTargets="AfterBuild">
+  <Target Name="CopyZ3ForCorral" AfterTargets="AfterBuild">
         <Copy
-            SourceFiles="@(BoogieFiles)"
-            DestinationFolder="$(OutDir)\boogie\"
+            SourceFiles="@(Z3Files)"
+            DestinationFolder="$(OutDir)\corral\"
         />
     </Target>
+
 
 </Project>
