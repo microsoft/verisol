@@ -188,7 +188,6 @@ namespace SolToBoogieTest
             p.StartInfo.CreateNoWindow = true;
             p.StartInfo.FileName = "dotnet";
             p.StartInfo.Arguments = $"{corralPath} {corralArguments}";
-            Console.WriteLine(p.StartInfo.Arguments);
             p.Start();
 
             string corralOutput = p.StandardOutput.ReadToEnd();
