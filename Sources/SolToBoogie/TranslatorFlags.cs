@@ -17,6 +17,7 @@ namespace SolToBoogie
             NoUnsignedAssumesFlag = false;
             NoHarness = false; 
             GenerateInlineAttributes = true;
+            ModelReverts = true;
         }
         /// <summary>
         /// Omit printing sourceFile/sourceLine information
@@ -43,5 +44,9 @@ namespace SolToBoogie
         /// can be expensive for recursive procedure analysis by Corral
         /// </summary>
         public bool GenerateInlineAttributes{ get; set; }
+        /// <summary>
+        /// Model revery logic when an exception happens.
+        /// </summary>
+        public bool ModelReverts { get; set; }
     }
 }

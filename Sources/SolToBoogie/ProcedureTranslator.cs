@@ -1229,11 +1229,50 @@ namespace SolToBoogie
                 currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(assumePositiveCmd));
             }
         }
+        
+        private void havocReturnVars(BoogieStmtList list)
+        {
+            var retParamCount = 0;
+            List<BoogieIdentifierExpr> varsToHavoc = new List<BoogieIdentifierExpr>();
+            foreach (var retVarDecl in currentFunction.ReturnParameters.Parameters)
+            {
+                string retVarName = String.IsNullOrEmpty(retVarDecl.Name)
+                    ? $"__ret_{retParamCount}_"
+                    : TransUtils.GetCanonicalLocalVariableName(retVarDecl);
+                BoogieIdentifierExpr retVar = new BoogieIdentifierExpr(retVarName);
+                varsToHavoc.Add(retVar);
+            }
+
+            if (varsToHavoc.Count != 0)
+            {
+                Console.Write(varsToHavoc.Count);
+                BoogieHavocCmd havocRets = new BoogieHavocCmd(varsToHavoc);
+                list.AddStatement(havocRets);
+            }
+        }
+        
+        private void emitRevertLogic(BoogieStmtList revertLogic)
+        {
+            havocReturnVars(revertLogic);
+
+            BoogieAssignCmd setRevert = new BoogieAssignCmd(new BoogieIdentifierExpr("revert"), new BoogieLiteralExpr(true));
+            revertLogic.AddStatement(setRevert);
+
+            revertLogic.AddStatement(new BoogieReturnCmd());
+        }
 
         public override bool Visit(Throw node)
         {
-            BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(new BoogieLiteralExpr(false));
-            currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(assumeCmd));
+            if (!context.TranslateFlags.ModelReverts)
+            {
+                BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(new BoogieLiteralExpr(false));
+                currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(assumeCmd));
+            }
+            else
+            {
+                emitRevertLogic(currentStmtList);
+            }
+
             return false;
         }
 
@@ -1679,14 +1718,35 @@ namespace SolToBoogie
             {
                 VeriSolAssert(node.Arguments.Count == 1 || node.Arguments.Count == 2);
                 BoogieExpr predicate = TranslateExpr(node.Arguments[0]);
-                BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(predicate);
-                currentStmtList.AddStatement(assumeCmd);
+                
+                if (!context.TranslateFlags.ModelReverts)
+                {
+                    BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(predicate);
+                    currentStmtList.AddStatement(assumeCmd);
+                }
+                else
+                {
+                    BoogieStmtList revertLogic = new BoogieStmtList();
+                    
+                    emitRevertLogic(revertLogic);
+
+                    BoogieIfCmd requierCheck = new BoogieIfCmd(predicate, revertLogic, null);
+                    
+                    currentStmtList.AddStatement(requierCheck);
+                }
             }
             else if (functionName.Equals("revert"))
             {
                 VeriSolAssert(node.Arguments.Count == 0 || node.Arguments.Count == 1);
-                BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(new BoogieLiteralExpr(false));
-                currentStmtList.AddStatement(assumeCmd);
+                if (!context.TranslateFlags.ModelReverts)
+                {
+                    BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(new BoogieLiteralExpr(false));
+                    currentStmtList.AddStatement(assumeCmd);
+                }
+                else
+                {
+                    emitRevertLogic(currentStmtList);
+                }
             }
             else if (IsImplicitFunc(node))
             {

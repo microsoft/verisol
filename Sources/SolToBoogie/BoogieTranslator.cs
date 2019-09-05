@@ -77,6 +77,12 @@ namespace SolToBoogie
             ProcedureTranslator procTranslator = new ProcedureTranslator(context, generateInlineAttributesInBpl);
             sourceUnits.Accept(procTranslator);
 
+            if (context.TranslateFlags.ModelReverts)
+            {
+                RevertLogicGenerator reverGenerator = new RevertLogicGenerator(context);
+                reverGenerator.Generate();
+            }
+
             // generate harness for each contract
             if (!context.TranslateFlags.NoHarness)
             {

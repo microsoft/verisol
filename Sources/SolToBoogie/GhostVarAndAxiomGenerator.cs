@@ -175,6 +175,13 @@ namespace SolToBoogie
             BoogieTypedIdent arrayLengthId = new BoogieTypedIdent("Length", type);
             BoogieGlobalVariable arrayLength = new BoogieGlobalVariable(arrayLengthId);
             context.Program.AddDeclaration(arrayLength);
+
+            if (context.TranslateFlags.ModelReverts)
+            {
+                BoogieTypedIdent revertId = new BoogieTypedIdent("revert", BoogieType.Bool);
+                BoogieGlobalVariable revert = new BoogieGlobalVariable(revertId);
+                context.Program.AddDeclaration(revert);
+            }
         }
 
         private void GenerateGlobalImplementations()
