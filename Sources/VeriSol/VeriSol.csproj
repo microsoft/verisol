@@ -18,9 +18,9 @@
 
    <ItemGroup>
         <SolcFiles Include="..\..\Tool\**\*.*"/>
-        <CorralFiles Include="..\..\corral\bin\debug\netcoreapp2.2\**\*.*"/>
+        <CorralFiles Include="..\..\corral\bin\debug\netcoreapp2.2\corral.runtimeconfig.json"/>
         <ConcExplorerFiles Include="..\..\corral\tools\**\*.*"/>
-        <BoogieFiles Include="..\..\corral\boogie\Source\BoogieDriver\**\*.*"/>
+        <BoogieFiles Include="..\..\corral\boogie\Source\BoogieDriver\bin\debug\netcoreapp2.2\BoogieDriver.*"/>
         <Z3Files Include="..\..\Tool\z3.exe"/>
    </ItemGroup> 
 
@@ -39,6 +39,18 @@
   <Target Name="CopyZ3" AfterTargets="AfterBuild">
         <Copy
             SourceFiles="@(Z3Files)"
+            DestinationFolder="$(OutDir)\"
+        />
+    </Target>
+  <Target Name="CopyCorralConfig" AfterTargets="AfterBuild">
+        <Copy
+            SourceFiles="@(CorralFiles)"
+            DestinationFolder="$(OutDir)\"
+        />
+    </Target>
+  <Target Name="CopyBoogieConfig" AfterTargets="AfterBuild">
+        <Copy
+            SourceFiles="@(BoogieFiles)"
             DestinationFolder="$(OutDir)\"
         />
     </Target>
