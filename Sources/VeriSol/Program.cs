@@ -57,7 +57,6 @@ namespace VeriSolRunner
 
             string corralPath = Path.Combine(
                     Path.GetDirectoryName(assemblyLocation),
-                    "corral",
                     "corral.dll");
             if (!File.Exists(corralPath))
             {
@@ -68,7 +67,6 @@ namespace VeriSolRunner
 
             string boogiePath = Path.Combine(
                     Path.GetDirectoryName(assemblyLocation),
-                    "boogie",
                     "BoogieDriver.dll");
             if (!File.Exists(boogiePath))
             {

@@ -397,7 +397,6 @@ namespace VeriSolRunner
             p.StartInfo.CreateNoWindow = true;
             p.StartInfo.FileName = "dotnet";
             p.StartInfo.Arguments = $"{binaryPath} {binaryArguments}";
-            Console.WriteLine(p.StartInfo.Arguments);
             p.Start();
 
             string outputBinary = p.StandardOutput.ReadToEnd();

@@ -11,22 +11,24 @@
     <ProjectReference Include="..\SolidityAST\SolidityAST.csproj" />
     <ProjectReference Include="..\BoogieAST\BoogieAST.csproj" />
     <ProjectReference Include="..\SolToBoogie\SolToBoogie.csproj" />
+    <ProjectReference Include="..\..\corral\cba-NetCore.csproj" />
+    <ProjectReference Include="..\..\corral\boogie\Source\BoogieDriver\BoogieDriver-NetCore.csproj" />
   </ItemGroup>
 
    <ItemGroup>
-        <CorralFiles Include="..\..\corral\bin\debug\netcoreapp*\*"/>
+        <CorralFiles Include="..\..\corral\bin\debug\netcoreapp2.2\corral.runtimeconfig.json"/>
         <Z3Files Include="..\..\Tool\z3.exe"/>
    </ItemGroup> 
-  <Target Name="CopyCorralFiles" AfterTargets="AfterBuild">
-        <Copy
-            SourceFiles="@(CorralFiles)"
-            DestinationFolder="$(OutDir)\corral\"
-        />
-    </Target>
-  <Target Name="CopyZ3ForCorral" AfterTargets="AfterBuild">
+  <Target Name="CopyZ3" AfterTargets="AfterBuild">
         <Copy
             SourceFiles="@(Z3Files)"
-            DestinationFolder="$(OutDir)\corral\"
+            DestinationFolder="$(OutDir)\"
+        />
+    </Target>
+  <Target Name="CopyCorralConfig" AfterTargets="AfterBuild">
+        <Copy
+            SourceFiles="@(CorralFiles)"
+            DestinationFolder="$(OutDir)\"
         />
     </Target>
 
