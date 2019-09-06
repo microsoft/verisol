@@ -14,7 +14,7 @@
   </ItemGroup>
 
    <ItemGroup>
-        <CorralFiles Include="..\..\corral\bin\debug\netcoreapp*\*"/>
+        <CorralFiles Include="..\..\corral\bin\debug\netcoreapp2.2\*.*"/>
         <Z3Files Include="..\..\Tool\z3.exe"/>
    </ItemGroup> 
   <Target Name="CopyCorralFiles" AfterTargets="AfterBuild">
