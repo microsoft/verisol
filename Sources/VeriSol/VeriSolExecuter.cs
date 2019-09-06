@@ -234,7 +234,7 @@ namespace VeriSolRunner
             if (nameSplit.Count() > 2)
             {
                 // More than one underscore in the name: leave it as it is:
-                Console.WriteLine($"Name {origName} has more than one underscore and will not be converted into a user-friendly format");
+                //Console.WriteLine($"Name {origName} has more than one underscore and will not be converted into a user-friendly format");
                 return origName;
             }
             else if (nameSplit.Count() == 2)
