@@ -32,7 +32,7 @@ steps:
 - task: DotNetCoreInstaller@0
   inputs:
     packageType: sdk
-    version: 2.2.203 # https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/tool/dotnet-core-tool-installer?view=azure-devops
+    version: 2.2.* # https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/tool/dotnet-core-tool-installer?view=azure-devops
 - task: DotNetCoreCLI@2
   displayName: Build
   inputs:
@@ -47,7 +47,7 @@ steps:
      ls -R  $(Build.SourcesDirectory)/Sources/SolToBoogieTest/
   displayName: 'inspect corral folder directory'
 - script:
-   dotnet $(Build.SourcesDirectory)/Sources/VeriSol/bin/Debug/netcoreapp2.2/VeriSol.dll Test/regressions/DAO-Sim-Buggy.sol Mallory
+   dotnet $(Build.SourcesDirectory)/Sources/VeriSol/bin/Debug/netcoreapp2.2/VeriSol.dll Test/regressions/DAO-Sim-Buggy.sol Mallory /tryProof /tryRefutation:10 /printTransactionSequence
    #dotnet $(Build.SourcesDirectory)/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/SolToBoogieTest.dll $(Build.SourcesDirectory) $(Build.SourcesDirectory)/Test/ UInt
   displayName: 'Run regression tests'
 #- task: DotNetCoreCLI@2
