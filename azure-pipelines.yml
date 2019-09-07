@@ -42,11 +42,11 @@ steps:
 #  inputs:
 #    command: restore
 #    projects: '**/*.csproj'
-- task: DotNetCoreCLI@2
-  displayName: Build
-  inputs:
-    command: build
-    projects: '**/SolToBoogie.sln'    
+#- task: DotNetCoreCLI@2
+#  displayName: Build
+#  inputs:
+#    command: build
+#    projects: '**/SolToBoogie.sln'    
 - task: DotNetCoreCLI@2
   inputs:
     command: run 
