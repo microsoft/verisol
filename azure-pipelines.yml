@@ -43,10 +43,13 @@ steps:
   inputs:
     command: build
     projects: '**/SolToBoogie.sln'    
-#- script:
-#     ln -s $(Build.SourcesDirectory)/Tool/z3 $(Build.SourcesDirectory)/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/z3.exe
-     # ln -s $(Build.SourcesDirectory)/Tool/z3 $(Build.SourcesDirectory)/Sources/VeriSol/bin/Debug/netcoreapp2.2/z3.exe
-#  displayName: 'Create z3 symbolic link'
+- script:
+     ln -s $(Build.SourcesDirectory)/Tool/z3 $(Build.SourcesDirectory)/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/z3.exe
+  displayName: 'Create z3 symbolic link'
+- script: |
+     ls -R $(Build.SourcesDirectory)/corral/
+     ls -R  $(Build.SourcesDirectory)/Sources/SolToBoogieTest/
+  displayName: 'inspect corral folder directory'
 - script:
    dotnet $(Build.SourcesDirectory)/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/SolToBoogieTest.dll $(Build.SourcesDirectory) $(Build.SourcesDirectory)/Test/ UInt
   displayName: 'Run regression tests'
@@ -54,6 +57,3 @@ steps:
 #  inputs:
 #    command: run 
 #    arguments: '--project $(Build.SourcesDirectory)/Sources/SolToBoogieTest/SolToBoogieTest.csproj $(Build.SourcesDirectory) $(Build.SourcesDirectory)/Test/ UInt'
-- script:
-     ls -R $(Build.SourcesDirectory)/corral/
-  displayName: 'inspect corral folder directory'
