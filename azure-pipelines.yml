@@ -42,12 +42,15 @@ steps:
 #  inputs:
 #    command: restore
 #    projects: '**/*.csproj'
-- task: DotNetCoreCLI@2
-  displayName: Build
-  inputs:
-    command: build
-    projects: '**/SolToBoogie.sln'    
+#- task: DotNetCoreCLI@2
+#  displayName: Build
+#  inputs:
+#    command: build
+#    projects: '**/SolToBoogie.sln'    
 - task: DotNetCoreCLI@2
   inputs:
     command: run 
     arguments: '--project $(Build.SourcesDirectory)/Sources/SolToBoogieTest/SolToBoogieTest.csproj $(Build.SourcesDirectory) $(Build.SourcesDirectory)/Test/ '
+- script:
+     ls -la $(Build.SourcesDirectory)/corral/bin/debug/netcoreapp2.2/*
+  displayName: 'inspect directory'
