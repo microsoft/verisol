@@ -25,12 +25,6 @@
             DestinationFolder="$(OutDir)\"
         />
     </Target>
-  <Target Name="CopyCorralConfig" AfterTargets="AfterBuild">
-        <Copy
-            SourceFiles="@(CorralFiles)"
-            DestinationFolder="$(OutDir)\"
-        />
-    </Target>
 
 
 </Project>
