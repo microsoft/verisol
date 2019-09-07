@@ -20,7 +20,9 @@
         <SolcFiles Include="..\..\Tool\solc*"/>
         <CorralFiles Include="..\..\corral\bin\Debug\netcoreapp2.2\corral.runtimeconfig.json"/>
         <ConcExplorerFiles Include="..\..\corral\tools\**\*.*"/>
-        <BoogieFiles Include="..\..\corral\boogie\Source\BoogieDriver\bin\Debug\netcoreapp2.2\BoogieDriver.*"/>
+        <BoogieFile1 Include="..\..\corral\boogie\Source\BoogieDriver\bin\Debug\netcoreapp2.2\BoogieDriver.runtimeconfig.json"/>
+        <BoogieFile2 Include="..\..\corral\boogie\Source\BoogieDriver\bin\Debug\netcoreapp2.2\BoogieDriver.deps.json"/>
+        <BoogieFile3 Include="..\..\corral\boogie\Source\BoogieDriver\bin\Debug\netcoreapp2.2\BoogieDriver.runtimeconfig.dev.json"/>
         <Z3Files Include="..\..\Tool\z3*"/>
    </ItemGroup> 
 
@@ -48,9 +50,21 @@
             DestinationFolder="$(OutDir)\"
         />
     </Target>
-  <Target Name="CopyBoogieConfig" AfterTargets="AfterBuild">
+  <Target Name="CopyBoogieConfig1" AfterTargets="AfterBuild">
         <Copy
-            SourceFiles="@(BoogieFiles)"
+            SourceFiles="@(BoogieFile1)"
+            DestinationFolder="$(OutDir)\"
+        />
+    </Target>
+  <Target Name="CopyBoogieConfig2" AfterTargets="AfterBuild">
+        <Copy
+            SourceFiles="@(BoogieFile2)"
+            DestinationFolder="$(OutDir)\"
+        />
+    </Target>
+  <Target Name="CopyBoogieConfig3" AfterTargets="AfterBuild">
+        <Copy
+            SourceFiles="@(BoogieFile3)"
             DestinationFolder="$(OutDir)\"
         />
     </Target>
