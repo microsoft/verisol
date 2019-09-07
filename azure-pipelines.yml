@@ -41,6 +41,7 @@ steps:
 - script: |
      ln -s $(Build.SourcesDirectory)/Tool/z3 $(Build.SourcesDirectory)/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/z3.exe
      ln -s $(Build.SourcesDirectory)/Tool/z3 $(Build.SourcesDirectory)/Sources/VeriSol/bin/Debug/netcoreapp2.2/z3.exe
+     ln -s $(Build.SourcesDirectory)/Tool/z3 $(Build.SourcesDirectory)/corral/bin/Debug/netcoreapp2.2/z3.exe
   displayName: 'Create z3 symbolic link'
 - script: |
      ls -R $(Build.SourcesDirectory)/corral/
