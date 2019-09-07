@@ -46,8 +46,12 @@ steps:
      ls -R $(Build.SourcesDirectory)/corral/
      ls -R  $(Build.SourcesDirectory)/Sources/SolToBoogieTest/
   displayName: 'inspect corral folder directory'
-- script:
-   dotnet $(Build.SourcesDirectory)/Sources/VeriSol/bin/Debug/netcoreapp2.2/VeriSol.dll Test/regressions/DAO-Sim-Buggy.sol Mallory /tryProof /tryRefutation:10 /printTransactionSequence
+- script: |
+   dotnet $(Build.SourcesDirectory)/Sources/VeriSol/bin/Debug/netcoreapp2.2/VeriSol.dll Test/regressions/DAO-Sim-Buggy.sol Mallory /tryProof
+   type boogie.txt
+   dotnet $(Build.SourcesDirectory)/corral/bin/Debug/netcoreapp2.2/corral.dll /recursionBound:10 /k:1 /main:CorralEntry_Mallory /tryCTrace /printDataValues:1 __SolToBoogieTest_out.bpl
+   type corral.txt
+   #dotnet $(Build.SourcesDirectory)/Sources/VeriSol/bin/Debug/netcoreapp2.2/VeriSol.dll Test/regressions/DAO-Sim-Buggy.sol Mallory /tryProof /tryRefutation:10 /printTransactionSequence
    #dotnet $(Build.SourcesDirectory)/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/SolToBoogieTest.dll $(Build.SourcesDirectory) $(Build.SourcesDirectory)/Test/ UInt
   displayName: 'Run regression tests'
 #- task: DotNetCoreCLI@2
