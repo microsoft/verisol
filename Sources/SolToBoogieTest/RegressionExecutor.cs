@@ -47,7 +47,7 @@ namespace SolToBoogieTest
             this.testPrefix = testPrefix;
         }
 
-        public bool BatchExecute()
+        public int BatchExecute()
         {
             string[] filePaths = Directory.GetFiles(testDirectory);
             int passedCount = 0;
@@ -122,7 +122,7 @@ namespace SolToBoogieTest
 
             logger.LogInformation($"{passedCount} passed {failedCount} failed");
             DeleteTemporaryFiles();
-            return (failedCount == 0);
+            return (failedCount == 0)? 0 : 1;
         }
 
         public BatchExeResult Execute(string filename, out string expected, out string current)
