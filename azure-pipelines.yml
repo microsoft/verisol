@@ -26,7 +26,8 @@ steps:
     wget https://github.com/Z3Prover/z3/releases/download/z3-4.8.4/z3-4.8.4.d6df51951f4c-x64-ubuntu-14.04.zip
     unzip z3*.zip
     cp z3-4.8.4.d6df51951f4c-x64-ubuntu-14.04/bin/z3* $(Build.SourcesDirectory)/Tool/
-  displayName: 'Download z3'
+    ln -s z3-4.8.4.d6df51951f4c-x64-ubuntu-14.04/bin/z3 $(Build.SourcesDirectory)/Tool/z3.exe 
+    displayName: 'Download z3'
 
 - script: |
    wget https://github.com/ethereum/solidity/releases/download/v0.5.10/solc-static-linux
@@ -50,7 +51,7 @@ steps:
 - task: DotNetCoreCLI@2
   inputs:
     command: run 
-    arguments: '--project $(Build.SourcesDirectory)/Sources/SolToBoogieTest/SolToBoogieTest.csproj $(Build.SourcesDirectory) $(Build.SourcesDirectory)/Test/'
+    arguments: '--project $(Build.SourcesDirectory)/Sources/SolToBoogieTest/SolToBoogieTest.csproj $(Build.SourcesDirectory) $(Build.SourcesDirectory)/Test/ UInt'
 - script:
      ls -R $(Build.SourcesDirectory)/corral/
   displayName: 'inspect corral folder directory'
