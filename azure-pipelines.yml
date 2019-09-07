@@ -50,4 +50,4 @@ steps:
 - task: DotNetCoreCLI@2
   inputs:
     command: run 
-    arguments: '--project $(Build.SourcesDirectory)/Sources/SolToBoogieTest/SolToBoogieTest.csproj $(Build.SourcesDirectory) $(Build.SourcesDirectory)/test/ '
+    arguments: '--project $(Build.SourcesDirectory)/Sources/SolToBoogieTest/SolToBoogieTest.csproj $(Build.SourcesDirectory) $(Build.SourcesDirectory)/Test/ '
