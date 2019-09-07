@@ -49,5 +49,5 @@ steps:
     projects: '**/SolToBoogie.sln'    
 - task: DotNetCoreCLI@2
   inputs:
-    command: $(Build.SourcesDirectory)/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/SolToBoogieTest.dll
-    arguments: '$(Build.SourcesDirectory) $(Build.SourcesDirectory)/test/ '
+    command: run 
+    arguments: '--project $(Build.SourcesDirectory)/Sources/SolToBoogieTest/SolToBoogieTest.csproj $(Build.SourcesDirectory) $(Build.SourcesDirectory)/test/ '
