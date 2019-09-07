@@ -16,7 +16,7 @@
   </ItemGroup>
 
    <ItemGroup>
-        <CorralFiles Include="..\..\corral\bin\debug\netcoreapp2.2\corral.runtimeconfig.json"/>
+        <CorralFiles Include="..\..\corral\bin\debug\netcoreapp2.2\corral*"/>
         <Z3Files Include="..\..\Tool\z3*"/>
    </ItemGroup> 
   <Target Name="CopyZ3" AfterTargets="AfterBuild">
