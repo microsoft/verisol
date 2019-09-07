@@ -51,3 +51,6 @@ steps:
   inputs:
     command: run 
     arguments: '--project $(Build.SourcesDirectory)/Sources/SolToBoogieTest/SolToBoogieTest.csproj $(Build.SourcesDirectory) $(Build.SourcesDirectory)/Test/ '
+- script:
+     ls -la $(Build.SourcesDirectory)/corral/bin/debug/netcoreapp2.2/*
+  displayName: 'inspect directory'
