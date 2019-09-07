@@ -95,6 +95,7 @@ namespace VeriSolRunner
 
         private static void ParseCommandLineArgs(string[] args, out string solidityFile, out string entryPointContractName, out bool tryProofFlag, out bool tryRefutation, out int recursionBound, out string solcName, out ILogger logger, out HashSet<Tuple<string, string>> ignoredMethods,  out bool printTransactionSeq, ref TranslatorFlags translatorFlags)
         {
+            Console.WriteLine($"Command line args ==> {string.Join(",", args.ToList())}");
             solidityFile = args[0];
             // Debug.Assert(!solidityFile.Contains("/"), $"Illegal solidity file name {solidityFile}"); //the file name can be foo/bar/baz.sol
             entryPointContractName = args[1];
