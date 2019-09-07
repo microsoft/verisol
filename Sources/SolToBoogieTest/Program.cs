@@ -9,13 +9,13 @@ namespace SolToBoogieTest
 
     class Program
     {
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
             if (args.Length < 2 || args.Length > 3)
             {
                 Console.WriteLine("Usage: SolToBoogieTest <verisol-root> <test-dir> [<test-prefix>]");
                 Console.WriteLine("\t: if <test-prefix> is specified, we only run subset of tests that have the string as prefix");
-                return;
+                return 1;
             }
 
             string workingDirectory = args[0];
@@ -40,7 +40,7 @@ namespace SolToBoogieTest
                 Console.WriteLine($"Warning!!! only running tests that have a prefix {testPrefix}....");
             }
             RegressionExecutor executor = new RegressionExecutor(solcPath, corralPath, regressionDir, configDir, recordsDir, logger, testPrefix);
-            executor.BatchExecute();
+            return executor.BatchExecute();
         }
 
         private static string GetCorralPathFromAssemblyPath(string location)
