@@ -18,9 +18,9 @@
 
    <ItemGroup>
         <SolcFiles Include="..\..\Tool\solc*"/>
-        <CorralFiles Include="..\..\corral\bin\debug\netcoreapp2.2\corral.runtimeconfig.json"/>
+        <CorralFiles Include="..\..\corral\bin\Debug\netcoreapp2.2\corral.runtimeconfig.json"/>
         <ConcExplorerFiles Include="..\..\corral\tools\**\*.*"/>
-        <BoogieFiles Include="..\..\corral\boogie\Source\BoogieDriver\bin\debug\netcoreapp2.2\BoogieDriver.*"/>
+        <BoogieFiles Include="..\..\corral\boogie\Source\BoogieDriver\bin\Debug\netcoreapp2.2\BoogieDriver.*"/>
         <Z3Files Include="..\..\Tool\z3*"/>
    </ItemGroup> 
 
