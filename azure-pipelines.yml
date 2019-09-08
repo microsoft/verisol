@@ -11,12 +11,6 @@ pool:
 steps:
 - checkout: self
   submodules: recursive
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
-- script: 
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
 - script: |
     wget https://github.com/Z3Prover/z3/releases/download/z3-4.8.4/z3-4.8.4.d6df51951f4c-x64-ubuntu-14.04.zip
     unzip z3*.zip
@@ -29,7 +23,8 @@ steps:
   displayName: 'get solc linux'
 
 # do this before all your .NET Core tasks
-- task: DotNetCoreInstaller@0
+- task: UseDotNet@2
+  displayName: 'Use .NET Core sdk'
   inputs:
     packageType: sdk
     version: 2.2.203 # https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/tool/dotnet-core-tool-installer?view=azure-devops
@@ -41,19 +36,21 @@ steps:
 - script: |
      ln -s $(Build.SourcesDirectory)/Tool/z3 $(Build.SourcesDirectory)/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/z3.exe
      ln -s $(Build.SourcesDirectory)/Tool/z3 $(Build.SourcesDirectory)/Sources/VeriSol/bin/Debug/netcoreapp2.2/z3.exe
-     #ln -s $(Build.SourcesDirectory)/Tool/z3 $(Build.SourcesDirectory)/corral/bin/Debug/netcoreapp2.2/z3.exe
-  displayName: 'Create z3 symbolic link'
+  displayName: 'Create z3 symbolic links for linux/mac'
 - script: |
      ls -R $(Build.SourcesDirectory)/corral/
      ls -R  $(Build.SourcesDirectory)/Sources/SolToBoogieTest/
+     # these steps needed since *.csproj Copy command are not reliable and need to be executed twice
      cp $(Build.SourcesDirectory)/corral/bin/Debug/netcoreapp2.2/corral* $(Build.SourcesDirectory)/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/
      cp $(Build.SourcesDirectory)/corral/bin/Debug/netcoreapp2.2/corral* $(Build.SourcesDirectory)/Sources/VeriSol/bin/Debug/netcoreapp2.2/
-  displayName: 'copy corral dependencies'
+  displayName: 'inspect dirs and copy corral dependencies'
 - script: |
-     dotnet $(Build.SourcesDirectory)/Sources/VeriSol/bin/Debug/netcoreapp2.2/VeriSol.dll Test/regressions/DAO-Sim-Buggy.sol Mallory /tryProof
-     cat boogie.txt
-     #dotnet $(Build.SourcesDirectory)/corral/bin/Debug/netcoreapp2.2/corral.dll /recursionBound:10 /k:1 /main:CorralEntry_Mallory /tryCTrace /printDataValues:1 __SolToBoogieTest_out.bpl
      dotnet $(Build.SourcesDirectory)/Sources/VeriSol/bin/Debug/netcoreapp2.2/VeriSol.dll Test/regressions/DAO-Sim-Buggy.sol Mallory /tryProof /tryRefutation:10 /printTransactionSequence
+     cat boogie.txt
      cat corral.txt
-     dotnet $(Build.SourcesDirectory)/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/SolToBoogieTest.dll $(Build.SourcesDirectory) $(Build.SourcesDirectory)/Test/ UInt
-  displayName: 'Run VeriSol and regression tests'
+     dotnet $(Build.SourcesDirectory)/Sources/VeriSol/bin/Debug/netcoreapp2.2/VeriSol.dll Test/regressions/ERC20-simplified.sol ERC20 /tryProof /tryRefutation:10 /printTransactionSequence
+     cat boogie.txt
+   displayName: 'Run VeriSol on some examples'
+- script: | 
+     dotnet $(Build.SourcesDirectory)/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/SolToBoogieTest.dll $(Build.SourcesDirectory) $(Build.SourcesDirectory)/Test/
+  displayName: 'Run regression tests'
