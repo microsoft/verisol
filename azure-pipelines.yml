@@ -50,7 +50,7 @@ steps:
      cat corral.txt
      dotnet $(Build.SourcesDirectory)/Sources/VeriSol/bin/Debug/netcoreapp2.2/VeriSol.dll Test/regressions/ERC20-simplified.sol ERC20 /tryProof /tryRefutation:10 /printTransactionSequence
      cat boogie.txt
-   displayName: 'Run VeriSol on some examples'
+  displayName: 'Run VeriSol on some examples'
 - script: | 
      dotnet $(Build.SourcesDirectory)/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/SolToBoogieTest.dll $(Build.SourcesDirectory) $(Build.SourcesDirectory)/Test/
   displayName: 'Run regression tests'
