@@ -19,15 +19,15 @@
         <CorralFiles Include="..\..\corral\bin\Debug\netcoreapp2.2\corral.runtimeconfig.json"/>
         <Z3Files Include="..\..\Tool\z3*"/>
    </ItemGroup> 
-  <Target Name="CopyZ3" AfterTargets="AfterBuild">
-        <Copy
-            SourceFiles="@(Z3Files)"
-            DestinationFolder="$(OutDir)\"
-        />
-    </Target>
   <Target Name="CopyCorralConfig" AfterTargets="AfterBuild">
         <Copy
             SourceFiles="@(CorralFiles)"
+            DestinationFolder="$(OutDir)\"
+        />
+    </Target>
+  <Target Name="CopyZ3" AfterTargets="AfterBuild">
+        <Copy
+            SourceFiles="@(Z3Files)"
             DestinationFolder="$(OutDir)\"
         />
     </Target>

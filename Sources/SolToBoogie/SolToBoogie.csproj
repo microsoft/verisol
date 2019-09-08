@@ -16,8 +16,6 @@
 
    <ItemGroup>
         <SolcFiles Include="..\..\Tool\**\*.*"/>
-        <CorralFiles Include="..\..\corral\bin\debug\**\*.*"/>
-        <BoogieFiles Include="..\..\corral\boogie\Binaries\**\*.*"/>
    </ItemGroup> 
 
   <Target Name="CopySolFiles" AfterTargets="AfterBuild">

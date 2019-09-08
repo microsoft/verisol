@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <HighEntropyVA>true</HighEntropyVA> 
+    <BoogieDriverDir>..\..\corral\boogie\Source\BoogieDriver\bin\Debug\netcoreapp2.2</BoogieDriverDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,9 +21,7 @@
         <SolcFiles Include="..\..\Tool\solc*"/>
         <CorralFiles Include="..\..\corral\bin\Debug\netcoreapp2.2\corral.runtimeconfig.json"/>
         <ConcExplorerFiles Include="..\..\corral\tools\**\*.*"/>
-        <BoogieFile1 Include="..\..\corral\boogie\Source\BoogieDriver\bin\Debug\netcoreapp2.2\BoogieDriver.runtimeconfig.json"/>
-        <BoogieFile2 Include="..\..\corral\boogie\Source\BoogieDriver\bin\Debug\netcoreapp2.2\BoogieDriver.deps.json"/>
-        <BoogieFile3 Include="..\..\corral\boogie\Source\BoogieDriver\bin\Debug\netcoreapp2.2\BoogieDriver.runtimeconfig.dev.json"/>
+        <BoogieFiles Include="$(BoogieDriverDir)\BoogieDriver.runtimeconfig.json;$(BoogieDriverDir)\BoogieDriver.deps.json;$(BoogieDriverDir)\BoogieDriver.runtimeconfig.dev.json"/>
         <Z3Files Include="..\..\Tool\z3*"/>
    </ItemGroup> 
 
@@ -50,21 +49,9 @@
             DestinationFolder="$(OutDir)\"
         />
     </Target>
-  <Target Name="CopyBoogieConfig1" AfterTargets="AfterBuild">
+  <Target Name="CopyBoogieConfigs" AfterTargets="AfterBuild">
         <Copy
-            SourceFiles="@(BoogieFile1)"
-            DestinationFolder="$(OutDir)\"
-        />
-    </Target>
-  <Target Name="CopyBoogieConfig2" AfterTargets="AfterBuild">
-        <Copy
-            SourceFiles="@(BoogieFile2)"
-            DestinationFolder="$(OutDir)\"
-        />
-    </Target>
-  <Target Name="CopyBoogieConfig3" AfterTargets="AfterBuild">
-        <Copy
-            SourceFiles="@(BoogieFile3)"
+            SourceFiles="@(BoogieFiles)"
             DestinationFolder="$(OutDir)\"
         />
     </Target>
