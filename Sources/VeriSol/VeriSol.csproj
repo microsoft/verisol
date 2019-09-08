@@ -5,6 +5,7 @@
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <HighEntropyVA>true</HighEntropyVA> 
     <BoogieDriverDir>..\..\corral\boogie\Source\BoogieDriver\bin\Debug\netcoreapp2.2</BoogieDriverDir>
+    <VeriSolPublishDir>..\..\Binaries\</VeriSolPublishDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,40 +20,47 @@
 
    <ItemGroup>
         <SolcFiles Include="..\..\Tool\solc*"/>
-        <CorralFiles Include="..\..\corral\bin\Debug\netcoreapp2.2\corral.runtimeconfig.json"/>
-        <ConcExplorerFiles Include="..\..\corral\tools\**\*.*"/>
-        <BoogieFiles Include="$(BoogieDriverDir)\BoogieDriver.runtimeconfig.json;$(BoogieDriverDir)\BoogieDriver.deps.json;$(BoogieDriverDir)\BoogieDriver.runtimeconfig.dev.json"/>
+        <CorralFiles Include="..\..\corral\bin\Debug\netcoreapp2.2\**\*.*"/>
+        <ConcExplorerFiles Include="..\..\corral\tools\**\*.*"/> 
+        <BoogieFiles Include="$(BoogieDriverDir)\**\*.*"/>
         <Z3Files Include="..\..\Tool\z3*"/>
+        <VeriSolDlls Include="$(OutDir)\**\*.*"/>
    </ItemGroup> 
 
   <Target Name="CopySolFiles" AfterTargets="AfterBuild">
         <Copy
             SourceFiles="@(SolcFiles)"
-            DestinationFolder="$(OutDir)\"
+            DestinationFolder="$(VeriSolPublishDir)\"
         />
     </Target>
   <Target Name="CopyConcExplorerFiles" AfterTargets="AfterBuild">
         <Copy
             SourceFiles="@(ConcExplorerFiles)"
-            DestinationFolder="$(OutDir)\concurrencyExplorer\"
+            DestinationFolder="$(VeriSolPublishDir)\concurrencyExplorer\"
         />
     </Target>
   <Target Name="CopyZ3" AfterTargets="AfterBuild">
         <Copy
             SourceFiles="@(Z3Files)"
-            DestinationFolder="$(OutDir)\"
+            DestinationFolder="$(VeriSolPublishDir)\"
         />
     </Target>
   <Target Name="CopyCorralConfig" AfterTargets="AfterBuild">
         <Copy
             SourceFiles="@(CorralFiles)"
-            DestinationFolder="$(OutDir)\"
+            DestinationFolder="$(VeriSolPublishDir)\"
         />
     </Target>
   <Target Name="CopyBoogieConfigs" AfterTargets="AfterBuild">
         <Copy
             SourceFiles="@(BoogieFiles)"
-            DestinationFolder="$(OutDir)\"
+            DestinationFolder="$(VeriSolPublishDir)\"
+        />
+    </Target>
+  <Target Name="CopyVeriSolFiles" AfterTargets="AfterBuild">
+        <Copy
+            SourceFiles="@(VeriSolDlls)"
+            DestinationFolder="$(VeriSolPublishDir)\"
         />
     </Target>
 </Project>
