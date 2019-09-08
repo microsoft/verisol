@@ -51,6 +51,7 @@ steps:
      cp $(Build.SourcesDirectory)/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/* $(Build.BinariesDirectory)/
      # cp $(Build.SourcesDirectory)/corral/bin/Debug/netcoreapp2.2/corral* $(Build.SourcesDirectory)/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/
      # cp $(Build.SourcesDirectory)/corral/bin/Debug/netcoreapp2.2/corral* $(Build.SourcesDirectory)/Sources/VeriSol/bin/Debug/netcoreapp2.2/
+     ls -R $(Build.BinariesDirectory)
   displayName: 'inspect dirs and copy corral and boogie dependencies'
 - script: |
      dotnet $(Build.BinariesDirectory)/VeriSol.dll Test/regressions/DAO-Sim-Buggy.sol Mallory /tryProof /tryRefutation:10 /printTransactionSequence

@@ -46,7 +46,6 @@ namespace VeriSolRunner
             var assemblyLocation = Assembly.GetExecutingAssembly().Location;
             string solcPath = Path.Combine(
                     Path.GetDirectoryName(assemblyLocation),
-                    "solc",
                     solcName);
             if (!File.Exists(solcPath))
             {

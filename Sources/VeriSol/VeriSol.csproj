@@ -28,7 +28,7 @@
   <Target Name="CopySolFiles" AfterTargets="AfterBuild">
         <Copy
             SourceFiles="@(SolcFiles)"
-            DestinationFolder="$(OutDir)\solc\"
+            DestinationFolder="$(OutDir)\"
         />
     </Target>
   <Target Name="CopyConcExplorerFiles" AfterTargets="AfterBuild">
