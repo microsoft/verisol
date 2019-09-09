@@ -37,7 +37,6 @@ steps:
 - script: |
      ls -R $(Build.SourcesDirectory)/corral/
      ls -R  $(Build.SourcesDirectory)/Sources/SolToBoogieTest/
-     # these steps needed since *.csproj Copy command are not reliable and need to be executed twice
      ls -R $(Build.SourcesDirectory)/Binaries
   displayName: 'inspect dirs and copy corral and boogie dependencies'
 - script: |
