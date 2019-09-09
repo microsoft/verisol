@@ -24,18 +24,6 @@
         <Z3Files Include="..\..\Tool\z3*"/>
         <SolToBoogieTestDlls Include="$(OutDir)\**\*.*"/>
    </ItemGroup> 
-  <Target Name="CopyCorralConfig" AfterTargets="AfterBuild">
-        <Copy
-            SourceFiles="@(CorralFiles)"
-            DestinationFolder="$(OutDir)\"
-        />
-    </Target>
-  <Target Name="CopyZ3" AfterTargets="AfterBuild">
-        <Copy
-            SourceFiles="@(Z3Files)"
-            DestinationFolder="$(OutDir)\"
-        />
-    </Target>
   <Target Name="CopySolToBoogieTestDlls" AfterTargets="Publish">
         <Copy
             SourceFiles="@(SolToBoogieTestDlls)"

@@ -37,31 +37,31 @@
         <VeriSolDlls Include="$(OutDir)\**\*.*"/>
    </ItemGroup> 
 
-  <Target Name="CopySolFiles" AfterTargets="AfterBuild">
+  <Target Name="CopySolFiles" AfterTargets="Publish">
         <Copy
             SourceFiles="@(SolcFiles)"
             DestinationFolder="$(VeriSolPublishDir)\"
         />
     </Target>
-  <Target Name="CopyConcExplorerFiles" AfterTargets="AfterBuild">
+  <Target Name="CopyConcExplorerFiles" AfterTargets="Publish">
         <Copy
             SourceFiles="@(ConcExplorerFiles)"
             DestinationFolder="$(VeriSolPublishDir)\concurrencyExplorer\"
         />
     </Target>
-  <Target Name="CopyZ3" AfterTargets="AfterBuild">
+  <Target Name="CopyZ3" AfterTargets="Publish">
         <Copy
             SourceFiles="@(Z3Files)"
             DestinationFolder="$(VeriSolPublishDir)\"
         />
     </Target> 
-  <Target Name="CopyCorralConfig" AfterTargets="AfterBuild">
+  <Target Name="CopyCorralConfig" AfterTargets="Publish">
         <Copy
             SourceFiles="@(CorralFiles)"
             DestinationFolder="$(VeriSolPublishDir)\"
         />
     </Target>
-  <Target Name="CopyBoogieConfigs" AfterTargets="AfterBuild">
+  <Target Name="CopyBoogieConfigs" AfterTargets="Publish">
         <Copy
             SourceFiles="@(BoogieFiles)"
             DestinationFolder="$(VeriSolPublishDir)\"
