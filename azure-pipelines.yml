@@ -20,7 +20,6 @@ steps:
 - script: |
     wget https://github.com/ethereum/solidity/releases/download/v0.5.10/solc-static-linux
     chmod +x solc-static-linux
-    # cp solc-static-linux $(Build.SourcesDirectory)/Tool/ # currently soltoboogietest looks here for solc
     cp solc-static-linux $(Build.SourcesDirectory)/Binaries/
   displayName: 'get solc linux'
 
@@ -35,22 +34,10 @@ steps:
   inputs:
     command: build
     projects: '**/SolToBoogie.sln'    
-- task: DotNetCoreCLI@2 # Need to perform twice to copy dlls
-  displayName: Build
-  inputs:
-    command: build
-    projects: '**/SolToBoogie.sln'    
 - script: |
      ls -R $(Build.SourcesDirectory)/corral/
      ls -R  $(Build.SourcesDirectory)/Sources/SolToBoogieTest/
      # these steps needed since *.csproj Copy command are not reliable and need to be executed twice
-     # cp $(Build.SourcesDirectory)/corral/bin/Debug/netcoreapp2.2/corral* $(Build.SourcesDirectory)/Binaries/
-     # cp $(Build.SourcesDirectory)/corral/boogie/Source/BoogieDriver/bin/Debug/netcoreapp2.2/BoogieDriver* $(Build.SourcesDirectory)/Binaries/
-     # lets copy all dlls to the binary folder
-     # cp $(Build.SourcesDirectory)/Sources/VeriSol/bin/Debug/netcoreapp2.2/* $(Build.SourcesDirectory)/Binaries/
-     # cp $(Build.SourcesDirectory)/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/* $(Build.SourcesDirectory)/Binaries/
-     # cp $(Build.SourcesDirectory)/corral/bin/Debug/netcoreapp2.2/corral* $(Build.SourcesDirectory)/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/
-     # cp $(Build.SourcesDirectory)/corral/bin/Debug/netcoreapp2.2/corral* $(Build.SourcesDirectory)/Sources/VeriSol/bin/Debug/netcoreapp2.2/
      ls -R $(Build.SourcesDirectory)/Binaries
   displayName: 'inspect dirs and copy corral and boogie dependencies'
 - script: |
