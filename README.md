@@ -1,5 +1,4 @@
-
-[![Build Status](https://shuvendu-lahiri.visualstudio.com/VeriSol%20Azure%20pipeline%20Build/_apis/build/status/microsoft.verisol?branchName=shuvendu-azure-pipelines)](https://shuvendu-lahiri.visualstudio.com/VeriSol%20Azure%20pipeline%20Build/_build/latest?definitionId=3&branchName=shuvendu-azure-pipelines)
+[![Build Status](https://shuvendu-lahiri.visualstudio.com/VeriSol%20Azure%20pipeline%20Build/_apis/build/status/microsoft.verisol?branchName=master)](https://shuvendu-lahiri.visualstudio.com/VeriSol%20Azure%20pipeline%20Build/_build/latest?definitionId=3&branchName=master)
 
 # VeriSol
 
