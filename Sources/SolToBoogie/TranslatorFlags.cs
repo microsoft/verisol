@@ -17,7 +17,7 @@ namespace SolToBoogie
             NoUnsignedAssumesFlag = false;
             NoHarness = false; 
             GenerateInlineAttributes = true;
-            ModelReverts = true;
+            ModelReverts = false;
         }
         /// <summary>
         /// Omit printing sourceFile/sourceLine information
