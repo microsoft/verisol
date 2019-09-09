@@ -10,7 +10,7 @@ contract LoopFor2 {
       require (n > 0 && n < 100);
       for (uint i = 0; i < n; i += 1) {
         b[i] = i + 1;
-        if (n > 6) { c[i] = b[i] - 1; }
+        if (n > 3) { c[i] = b[i] - 1; }
         else c[i] = b[i];
       }
     }

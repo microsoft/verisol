@@ -98,6 +98,10 @@ namespace SolToBoogie
             BoogieStmtList harnessBody = new BoogieStmtList();
             harnessBody.AddStatement(GenerateDynamicTypeAssumes(contract));
             GenerateConstructorCall(contract).ForEach(x => harnessBody.AddStatement(x));
+            if (context.TranslateFlags.ModelReverts)
+            {
+                harnessBody.AddStatement(new BoogieAssumeCmd(new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, new BoogieIdentifierExpr("revert"))));
+            }
             harnessBody.AddStatement(GenerateWhileLoop(contract, houdiniVarMap, localVars));
             BoogieImplementation harnessImpl = new BoogieImplementation(harnessName, inParams, outParams, localVars, harnessBody);
             context.Program.AddDeclaration(harnessImpl);
@@ -362,6 +366,10 @@ namespace SolToBoogie
             BoogieStmtList harnessBody = new BoogieStmtList();
             harnessBody.AddStatement(GenerateDynamicTypeAssumes(contract));
             GenerateConstructorCall(contract).ForEach(x => harnessBody.AddStatement(x));
+            if (context.TranslateFlags.ModelReverts)
+            {
+                harnessBody.AddStatement(new BoogieAssumeCmd(new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, new BoogieIdentifierExpr("revert"))));
+            }
             harnessBody.AddStatement(GenerateCorralWhileLoop(contract));
             BoogieImplementation harnessImpl = new BoogieImplementation(harnessName, inParams, outParams, localVars, harnessBody);
             context.Program.AddDeclaration(harnessImpl);

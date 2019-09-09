@@ -1230,31 +1230,8 @@ namespace SolToBoogie
             }
         }
         
-        private void havocReturnVars(BoogieStmtList list)
-        {
-            var retParamCount = 0;
-            List<BoogieIdentifierExpr> varsToHavoc = new List<BoogieIdentifierExpr>();
-            foreach (var retVarDecl in currentFunction.ReturnParameters.Parameters)
-            {
-                string retVarName = String.IsNullOrEmpty(retVarDecl.Name)
-                    ? $"__ret_{retParamCount}_"
-                    : TransUtils.GetCanonicalLocalVariableName(retVarDecl);
-                BoogieIdentifierExpr retVar = new BoogieIdentifierExpr(retVarName);
-                varsToHavoc.Add(retVar);
-            }
-
-            if (varsToHavoc.Count != 0)
-            {
-                Console.Write(varsToHavoc.Count);
-                BoogieHavocCmd havocRets = new BoogieHavocCmd(varsToHavoc);
-                list.AddStatement(havocRets);
-            }
-        }
-        
         private void emitRevertLogic(BoogieStmtList revertLogic)
         {
-            havocReturnVars(revertLogic);
-
             BoogieAssignCmd setRevert = new BoogieAssignCmd(new BoogieIdentifierExpr("revert"), new BoogieLiteralExpr(true));
             revertLogic.AddStatement(setRevert);
 
@@ -1730,7 +1707,7 @@ namespace SolToBoogie
                     
                     emitRevertLogic(revertLogic);
 
-                    BoogieIfCmd requierCheck = new BoogieIfCmd(predicate, revertLogic, null);
+                    BoogieIfCmd requierCheck = new BoogieIfCmd(new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, predicate), revertLogic, null);
                     
                     currentStmtList.AddStatement(requierCheck);
                 }

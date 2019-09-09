@@ -12,6 +12,12 @@ namespace SolToBoogie
 
         private HashSet<string> constructorNames;
 
+        private Dictionary<string, BoogieGlobalVariable> shadowGlobals = new Dictionary<string, BoogieGlobalVariable>();
+
+        private Dictionary<string, BoogieImplementation>.KeyCollection procsWiltImplNames;
+
+        private Dictionary<string, BoogieProcedure> proceduresInProgram;
+
         private bool mustHaveShadow(string globalName)
         {
             return !globalName.Equals("revert");
@@ -44,33 +50,17 @@ namespace SolToBoogie
             return dup;
         }
 
-        private BoogieImplementation duplicateImplementation(BoogieImplementation impl, string newNameSuffix)
-        {
-            // Duplicate statement list.
-            var dupStmtList = new BoogieStmtList();
-            // Bit hack-y but the setter is private and don't want to touch the BoogieAST file.
-            dupStmtList.BigBlocks.RemoveAt(0);
-            dupStmtList.BigBlocks.AddRange(impl.StructuredStmts.BigBlocks);
-            
-            return new BoogieImplementation(impl.Name + "__" + newNameSuffix,
-                new List<BoogieVariable>(impl.InParams),
-                new List<BoogieVariable>(impl.OutParams),
-                new List<BoogieVariable>(impl.LocalVars),
-                         dupStmtList);
-        }
-
-        private BoogieExpr dupAndReplaceExpr(BoogieExpr expr, Dictionary<string, BoogieGlobalVariable> shadowGlobals,
-                                             Dictionary<string, BoogieImplementation>.KeyCollection procsWiltImpl)
+        private BoogieExpr dupAndReplaceExpr(BoogieExpr expr, bool isFail, bool inHarness)
         {
             List<BoogieExpr> dupAndReplaceExprList(List<BoogieExpr> exprs)
             {
-                return exprs.Select(e => dupAndReplaceExpr(e, shadowGlobals, procsWiltImpl)).ToList();
+                return exprs.Select(e => dupAndReplaceExpr(e, isFail, inHarness)).ToList();
             }
 
             if (expr is BoogieIdentifierExpr)
             {
                 string idName = ((BoogieIdentifierExpr) expr).Name;
-                if (shadowGlobals.ContainsKey(idName))
+                if (isFail && shadowGlobals.ContainsKey(idName))
                 {
                     return new BoogieIdentifierExpr(shadowGlobals[idName].Name);
                 }
@@ -80,39 +70,39 @@ namespace SolToBoogie
             if (expr is BoogieMapSelect)
             {
                 BoogieMapSelect selectExpr = (BoogieMapSelect) expr;
-                return new BoogieMapSelect(dupAndReplaceExpr(selectExpr.BaseExpr, shadowGlobals, procsWiltImpl),
+                return new BoogieMapSelect(dupAndReplaceExpr(selectExpr.BaseExpr, isFail, inHarness),
                                            dupAndReplaceExprList(selectExpr.Arguments));
             }
             if (expr is BoogieMapUpdate)
             {
                 BoogieMapUpdate updateExpr = (BoogieMapUpdate) expr;
-                return new BoogieMapUpdate(dupAndReplaceExpr(updateExpr.BaseExpr, shadowGlobals, procsWiltImpl), 
+                return new BoogieMapUpdate(dupAndReplaceExpr(updateExpr.BaseExpr, isFail, inHarness),
                                            dupAndReplaceExprList(updateExpr.Arguments), 
-                                           dupAndReplaceExpr(updateExpr.Value, shadowGlobals, procsWiltImpl));
+                                           dupAndReplaceExpr(updateExpr.Value, isFail, inHarness));
             }
             if (expr is BoogieUnaryOperation)
             {
                 BoogieUnaryOperation unaryOperation = (BoogieUnaryOperation) expr;
-                return new BoogieUnaryOperation(unaryOperation.Op, dupAndReplaceExpr(unaryOperation.Expr, shadowGlobals, procsWiltImpl));
+                return new BoogieUnaryOperation(unaryOperation.Op, dupAndReplaceExpr(unaryOperation.Expr, isFail, inHarness));
             }
             if (expr is BoogieBinaryOperation)
             {
                 BoogieBinaryOperation binOperation = (BoogieBinaryOperation) expr;
-                return new BoogieBinaryOperation(binOperation.Op,dupAndReplaceExpr(binOperation.Lhs, shadowGlobals, procsWiltImpl),
-                                                dupAndReplaceExpr(binOperation.Rhs, shadowGlobals, procsWiltImpl));
+                return new BoogieBinaryOperation(binOperation.Op,dupAndReplaceExpr(binOperation.Lhs, isFail, inHarness),
+                                                dupAndReplaceExpr(binOperation.Rhs, isFail, inHarness));
             }
             if (expr is BoogieITE)
             {
                 BoogieITE iteExpr = (BoogieITE) expr;
-                return new BoogieITE(dupAndReplaceExpr(iteExpr.Guard, shadowGlobals, procsWiltImpl),
-                                     dupAndReplaceExpr(iteExpr.ThenExpr, shadowGlobals, procsWiltImpl),
-                                     dupAndReplaceExpr(iteExpr.ElseExpr, shadowGlobals, procsWiltImpl));
+                return new BoogieITE(dupAndReplaceExpr(iteExpr.Guard, isFail, inHarness),
+                                     dupAndReplaceExpr(iteExpr.ThenExpr, isFail, inHarness),
+                                     dupAndReplaceExpr(iteExpr.ElseExpr, isFail, inHarness));
             }
             if (expr is BoogieQuantifiedExpr)
             {
                 BoogieQuantifiedExpr quantifiedExpr = (BoogieQuantifiedExpr) expr;
                 return  new BoogieQuantifiedExpr(quantifiedExpr.IsForall, quantifiedExpr.QVars, quantifiedExpr.QVarTypes,
-                                                 dupAndReplaceExpr(quantifiedExpr.BodyExpr, shadowGlobals, procsWiltImpl),
+                                                 dupAndReplaceExpr(quantifiedExpr.BodyExpr, isFail, inHarness),
                                                  quantifiedExpr.Trigger);
             }
             if (expr is BoogieFuncCallExpr)
@@ -120,13 +110,13 @@ namespace SolToBoogie
                 BoogieFuncCallExpr callExpr = (BoogieFuncCallExpr) expr;
 
                 string calledFun = callExpr.Function;
-                if (!isConstructor(calledFun) && procsWiltImpl.Contains(calledFun))
-                {
-                    calledFun = calledFun + "__fail";
 
-                    // This is lazy, but I don't want to generalize these methods.
-                    callExpr.Function = callExpr.Function + "__succeess";
-                }
+                // TODO: handle this properly.
+//                if (!isHarnessProcudure(calledFun) && procsWiltImplNames.Contains(calledFun))
+//                {
+//                    if (!inHarness || (!isConstructor(calledFun) && !isPublic(proceduresInProgram[calledFun])))
+//                        calledFun = calledFun + (isFail ? "__fail" : "__success");
+//                }
                 
                 return new BoogieFuncCallExpr(calledFun, dupAndReplaceExprList(callExpr.Arguments));
             }
@@ -139,12 +129,11 @@ namespace SolToBoogie
             return expr;
         }
 
-        private BoogieCmd dupAndReplaceCmd(BoogieCmd cmd, Dictionary<string, BoogieGlobalVariable> shadowGlobals, 
-                                           Dictionary<string, BoogieImplementation>.KeyCollection procsWiltImpl)
+        private void generateRevertLogicForCmd(BoogieCmd cmd, BoogieStmtList parent, bool isFail, bool inHarness)
         {
             List<BoogieExpr> dupAndReplaceExprList(List<BoogieExpr> exprs)
             {
-                return exprs.Select(e => dupAndReplaceExpr(e, shadowGlobals, procsWiltImpl)).ToList();
+                return exprs.Select(e => dupAndReplaceExpr(e, isFail, inHarness)).ToList();
             }
             
             BoogieStmtList dupAndReplaceStmList(BoogieStmtList stmtList)
@@ -153,98 +142,125 @@ namespace SolToBoogie
                     return null;
 
                 BoogieStmtList newList = new BoogieStmtList();
-                stmtList.BigBlocks[0].SimpleCmds.ForEach(c => newList.AddStatement(dupAndReplaceCmd(c, shadowGlobals, procsWiltImpl)));
+                stmtList.BigBlocks[0].SimpleCmds.ForEach(c => generateRevertLogicForCmd(c, newList, isFail, inHarness));
                 return newList;
             }
             
-            if (cmd is BoogieAssignCmd)
+            if (cmd is BoogieAssignCmd assignCmd)
             {
-                BoogieAssignCmd assignCmd = (BoogieAssignCmd) cmd;
-                return new BoogieAssignCmd(dupAndReplaceExpr(assignCmd.Lhs, shadowGlobals, procsWiltImpl),
-                                           dupAndReplaceExpr(assignCmd.Rhs, shadowGlobals, procsWiltImpl));
+                parent.AddStatement(new BoogieAssignCmd(dupAndReplaceExpr(assignCmd.Lhs, isFail, inHarness),
+                                                        dupAndReplaceExpr(assignCmd.Rhs, isFail, inHarness)));
             }
-            if (cmd is BoogieCallCmd)
+            else if (cmd is BoogieCallCmd callCmd)
             {
-                BoogieCallCmd callCmd = (BoogieCallCmd) cmd;
-
                 string calleeName = callCmd.Callee;
-                if (!isConstructor(calleeName) && procsWiltImpl.Contains(calleeName))
+                bool emitCheckRevertLogic = false;
+                if (!isHarnessProcudure(calleeName) && procsWiltImplNames.Contains(calleeName))
                 {
-                    calleeName = calleeName + "__fail";
-                    
-                    // This is a bit lazy, but I don't want to generalize these methods.
-                    callCmd.Callee = callCmd.Callee + "__success";
+                    if (!inHarness || !isPublic(proceduresInProgram[calleeName]))
+                    {
+                        calleeName = calleeName + (isFail ? "__fail" : "__success");
+                        emitCheckRevertLogic = !inHarness;
+                    }
                 }
 
-                return new BoogieCallCmd(calleeName, dupAndReplaceExprList(callCmd.Ins), 
-                                         callCmd.Outs.Select(e => (BoogieIdentifierExpr) dupAndReplaceExpr(e, shadowGlobals, procsWiltImpl)).ToList());
+                var newIns = callCmd.Ins != null ? dupAndReplaceExprList(callCmd.Ins) : null;
+                var newOuts = callCmd.Outs != null ? callCmd.Outs.Select(e => (BoogieIdentifierExpr) dupAndReplaceExpr(e, isFail, inHarness)).ToList() : null;
+                parent.AddStatement(new BoogieCallCmd(calleeName, newIns, newOuts));
+
+                if (emitCheckRevertLogic)
+                {
+                    BoogieStmtList thenBody = new BoogieStmtList();
+                    thenBody.AddStatement(new BoogieReturnCmd());
+
+                    parent.AddStatement(new BoogieIfCmd(new BoogieIdentifierExpr("revert"), thenBody, null));
+                }
             }
-            if (cmd is BoogieAssertCmd)
+            else if (cmd is BoogieAssertCmd assertCmd)
             {
-                BoogieAssertCmd assertCmd = (BoogieAssertCmd) cmd;
-                return new BoogieAssertCmd(dupAndReplaceExpr(assertCmd.Expr, shadowGlobals, procsWiltImpl), assertCmd.Attributes);
+                if (!isFail)
+                {
+                    parent.AddStatement(new BoogieAssertCmd(dupAndReplaceExpr(assertCmd.Expr, false, inHarness), assertCmd.Attributes));
+                }
             }
-            if (cmd is BoogieAssumeCmd)
+            else if (cmd is BoogieAssumeCmd assumeCmd)
             {
-                BoogieAssumeCmd assumeCmd = (BoogieAssumeCmd) cmd;
-                return new BoogieAssumeCmd(dupAndReplaceExpr(assumeCmd.Expr, shadowGlobals, procsWiltImpl));
+                parent.AddStatement(new BoogieAssumeCmd(dupAndReplaceExpr(assumeCmd.Expr, isFail, inHarness)));
             }
-            if (cmd is BoogieLoopInvCmd)
+            else if (cmd is BoogieLoopInvCmd loopInvCmd)
             {
-                BoogieLoopInvCmd loopInvCmd = (BoogieLoopInvCmd) cmd;
-                return new BoogieLoopInvCmd(dupAndReplaceExpr(loopInvCmd.Expr, shadowGlobals, procsWiltImpl));
+                parent.AddStatement(new BoogieLoopInvCmd(dupAndReplaceExpr(loopInvCmd.Expr, isFail, inHarness)));
             }
-            if (cmd is BoogieReturnExprCmd)
+            else if (cmd is BoogieReturnExprCmd returnExprCmd)
             {
                 // This one does not seem to be used.
-                BoogieReturnExprCmd returnExprCmd = (BoogieReturnExprCmd) cmd;
-                return new BoogieReturnExprCmd(dupAndReplaceExpr(returnExprCmd.Expr, shadowGlobals, procsWiltImpl));
+                parent.AddStatement(new BoogieReturnExprCmd(dupAndReplaceExpr(returnExprCmd.Expr, isFail, inHarness)));
             }
-            if (cmd is BoogieHavocCmd)
+            else if (cmd is BoogieHavocCmd havocCmd)
             {
-                BoogieHavocCmd havocCmd = (BoogieHavocCmd) cmd;
-                return new BoogieHavocCmd(havocCmd.Vars.Select(id => (BoogieIdentifierExpr) dupAndReplaceExpr(id, shadowGlobals, procsWiltImpl)).ToList());
+                parent.AddStatement(new BoogieHavocCmd(havocCmd.Vars.Select(id => (BoogieIdentifierExpr) dupAndReplaceExpr(id, isFail, inHarness)).ToList()));
             }
-            if (cmd is BoogieIfCmd)
+            else if (cmd is BoogieIfCmd ifCmd)
             {
-                BoogieIfCmd ifCmd = (BoogieIfCmd) cmd;
-                return new BoogieIfCmd(dupAndReplaceExpr(ifCmd.Guard, shadowGlobals, procsWiltImpl),
+                parent.AddStatement(new BoogieIfCmd(dupAndReplaceExpr(ifCmd.Guard, isFail, inHarness),
                                        dupAndReplaceStmList(ifCmd.ThenBody),
-                                       dupAndReplaceStmList(ifCmd.ElseBody));
+                                       dupAndReplaceStmList(ifCmd.ElseBody)));
             }
-            if (cmd is BoogieWhileCmd)
+            else if (cmd is BoogieWhileCmd whileCmd)
             {
-                BoogieWhileCmd whileCmd = (BoogieWhileCmd) cmd;
-                return new BoogieWhileCmd(dupAndReplaceExpr(whileCmd.Guard, shadowGlobals, procsWiltImpl), 
-                                          dupAndReplaceStmList(whileCmd.Body),
-                                          whileCmd.Invariants.Select(inv => (BoogiePredicateCmd) dupAndReplaceCmd(inv, shadowGlobals, procsWiltImpl)).ToList());
+                var body = dupAndReplaceStmList(whileCmd.Body);
+                BoogieStmtList invsAsStmtList = new BoogieStmtList();
+                whileCmd.Invariants.ForEach(i => generateRevertLogicForCmd(i, invsAsStmtList, isFail, inHarness));
+                List<BoogiePredicateCmd> invs = invsAsStmtList.BigBlocks[0].SimpleCmds.Select(c => (BoogiePredicateCmd) c).ToList();
+                parent.AddStatement( new BoogieWhileCmd(dupAndReplaceExpr(whileCmd.Guard, isFail, inHarness), body, invs));
             }
-            return cmd;
+            else
+            {
+                parent.AddStatement(cmd);
+            }
         }
 
-        private BoogieImplementation createFailImplementation(string name, BoogieImplementation originalImpl, 
-                                                              Dictionary<string, BoogieGlobalVariable> shadowGlobals, 
-                                                              Dictionary<string, BoogieImplementation>.KeyCollection procsWiltImpl)
+        private BoogieImplementation createFailImplementation(string name, BoogieImplementation originalImpl)
         {
+            Debug.Assert(!isHarnessProcudure(originalImpl.Name));
+
             BoogieStmtList failStmtList = new BoogieStmtList();
 
             foreach (var cmd in originalImpl.StructuredStmts.BigBlocks[0].SimpleCmds)
             {
-                failStmtList.AddStatement(dupAndReplaceCmd(cmd, shadowGlobals, procsWiltImpl));
+                generateRevertLogicForCmd(cmd, failStmtList,true, false);
             }
 
             return new BoogieImplementation(name, originalImpl.InParams, originalImpl.OutParams, originalImpl.LocalVars, failStmtList);
+        }
+
+        private bool isHarnessProcudure(string procName)
+        {
+            return procName.StartsWith("Boogie") || procName.StartsWith("Corral");
+        }
+
+        private BoogieImplementation createSuccessImplementation(string name, BoogieImplementation originalImpl)
+        {
+            BoogieStmtList successStmtList = new BoogieStmtList();
+
+            foreach (var cmd in originalImpl.StructuredStmts.BigBlocks[0].SimpleCmds)
+            {
+                generateRevertLogicForCmd(cmd, successStmtList, false, isHarnessProcudure(originalImpl.Name));
+            }
+
+            return new BoogieImplementation(name, originalImpl.InParams, originalImpl.OutParams, originalImpl.LocalVars, successStmtList);
         }
         
         public RevertLogicGenerator(TranslatorContext context)
         {
             this.context = context; 
             this.constructorNames = context.ContractDefinitions.Select(c => TransUtils.GetCanonicalConstructorName(c)).ToHashSet();
+            proceduresInProgram = context.Program.Declarations.OfType<BoogieProcedure>().ToDictionary(procedure => procedure.Name);
         }
 
         bool isConstructor(string funcName)
         {
-            return constructorNames.Any(funcName.StartsWith);
+            return constructorNames.Any(funcName.Equals);
         }
 
         public void Generate()
@@ -263,7 +279,6 @@ namespace SolToBoogie
             }
             
             // Generate shadow state.
-            Dictionary<string, BoogieGlobalVariable> shadowGlobals = new Dictionary<string, BoogieGlobalVariable>();
             foreach (var g in globals)
             {
                 var varName = g.TypedIdent.Name;
@@ -275,18 +290,8 @@ namespace SolToBoogie
             }
             
             // Duplicate and rename methods.
-            Dictionary<string, BoogieProcedure> proceduresInProgram = new Dictionary<string, BoogieProcedure>();
-           
-            foreach (var decl in context.Program.Declarations)
-            {
-                if (decl is BoogieProcedure)
-                {
-                    var procedure = (BoogieProcedure) decl;
-                    proceduresInProgram.Add(procedure.Name, procedure);
-                }
-            }
-
             Dictionary<string, BoogieImplementation> proceduresWithImpl = new Dictionary<string, BoogieImplementation>();
+            procsWiltImplNames = proceduresWithImpl.Keys;
             foreach (var decl in context.Program.Declarations)
             {
                 if (decl is BoogieImplementation)
@@ -297,7 +302,6 @@ namespace SolToBoogie
                         proceduresWithImpl.Add(boogieImpl.Name, boogieImpl);
                     }
                 }
-                    
             }
 
             Dictionary<string, BoogieProcedure> failProcedures = new Dictionary<string, BoogieProcedure>();
@@ -305,14 +309,14 @@ namespace SolToBoogie
             {
                 BoogieProcedure proc = proceduresInProgram[implPair.Key];
 
-                if (isPublic(proc))
+                if (isPublic(proc) || isConstructor(proc.Name))
                 {
                     // If public maintain original definition as the wrapper.
                     BoogieProcedure successVersion = duplicateProcedure(proc, "success", true);
-                    BoogieImplementation successImpl = duplicateImplementation(implPair.Value, "success");
+                    //BoogieImplementation successImpl = duplicateImplementation(implPair.Value, "success");
                     
                     context.Program.AddDeclaration(successVersion);
-                    context.Program.AddDeclaration(successImpl);
+                    //context.Program.AddDeclaration(successImpl);
                     
                     BoogieProcedure failVersion = duplicateProcedure(proc, "fail", true);
                     
@@ -321,7 +325,7 @@ namespace SolToBoogie
                     // Use original name of the procedure.
                     failProcedures.Add(implPair.Key, failVersion);
                 }
-                else if (!isConstructor(proc.Name))
+                else if (!isHarnessProcudure(proc.Name))
                 {
                     // Otherwise reuse original definition/impl as the "successful" method.
                     BoogieProcedure failVersion = duplicateProcedure(proc, "fail");
@@ -336,32 +340,40 @@ namespace SolToBoogie
                     implPair.Value.Name = implPair.Value.Name + "__success";
                 }
             }
-            
-            // Create implementations for failing methods.
 
+            // Create implementations for failing methods.
             foreach (var failProcedurePair in failProcedures)
             {
-                string procName = failProcedurePair.Key;
+                string originalProcName = failProcedurePair.Key;
                 BoogieProcedure proc = failProcedurePair.Value;
-                
-                context.Program.AddDeclaration(createFailImplementation(proc.Name, proceduresWithImpl[procName], shadowGlobals, proceduresWithImpl.Keys));
+
+                var originalImpl = proceduresWithImpl[originalProcName];
+                context.Program.AddDeclaration(createFailImplementation(proc.Name, originalImpl));
+                context.Program.AddDeclaration(createSuccessImplementation(originalProcName + "__success", originalImpl));
+
+                // Remove original implementation for non-public methods
+                if (!isPublic(proceduresInProgram[originalProcName]) && !isConstructor(originalProcName))
+                {
+                    context.Program.Declarations.Remove(originalImpl);
+                }
             }
 
-            // A bit hack-y but will hopefully do the trick for now
-            foreach (var nameImplPair in proceduresWithImpl)
+            foreach (var implPair in proceduresWithImpl)
             {
-                var pName = nameImplPair.Key;
-                
-                // This is just to update calls in constructors
-                if (isConstructor(pName))
-                    createFailImplementation(pName, nameImplPair.Value, shadowGlobals, proceduresWithImpl.Keys);
+                // Update non-public methods in harness methods
+                if (isHarnessProcudure(implPair.Key))
+                {
+                    context.Program.AddDeclaration(createSuccessImplementation(implPair.Key, implPair.Value));
+
+                    context.Program.Declarations.Remove(implPair.Value);
+                }
             }
-            
+
             // Create wrappers for public methods.
 
             foreach (var proc in proceduresInProgram.Values)
             {
-                if (isPublic(proc))
+                if (proceduresWithImpl.ContainsKey(proc.Name) && (isPublic(proc) || isConstructor(proc.Name)))
                 {
                     BoogieImplementation impl = proceduresWithImpl[proc.Name];
                     impl.StructuredStmts = new BoogieStmtList();
@@ -373,6 +385,7 @@ namespace SolToBoogie
 
                     var stmtList = impl.StructuredStmts;
                     stmtList.AddStatement(new BoogieHavocCmd(new BoogieIdentifierExpr(exceptionVarName)));
+                    stmtList.AddStatement(new BoogieAssignCmd(new BoogieIdentifierExpr(revertGlobalName), new BoogieLiteralExpr(false)));
                     
                     // Call Successful version.
                     BoogieStmtList successCallStmtList = new BoogieStmtList();
