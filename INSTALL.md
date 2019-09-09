@@ -79,13 +79,13 @@ The code contract library **VeriSolContracts.sol** is present [here](https://git
 ## Regression script
 
 To run the regressions, let %VERISOL_PATH% denote path to the root of the installation on Windows, run:
--  `dotnet %VERISOL_PATH%\Binaries\SolToBoogieTest.dll  %VERISOL_PATH%\test\`
+-  `dotnet %VERISOL_PATH%\Binaries\SolToBoogieTest.dll  %VERISOL_PATH%\Test\`
 <!-- - (Linux/OSX) `dotnet $VeriSolPath/Sources/SolToBoogieTest/bin/Debug/netcoreapp2.2/SolToBoogieTest.dll $VeriSolPath $VeriSolPath/Test` -->
 
 All regressions are expected to pass. 
 
 To run a subset of examples during testing, add an optional parameter to limit the above run to a subset of tests that match a prefix string *<prefix>* (e.g. using Array will only run regresssions with Array in their prefix)
 
-`dotnet %VERISOL_PATH%\Binaries\SolToBoogieTest.dll  %VERISOL_PATH%\test\ [<prefix>]`
+`dotnet %VERISOL_PATH%\Binaries\SolToBoogieTest.dll  %VERISOL_PATH%\Test\ [<prefix>]`
 
 
