@@ -30,8 +30,6 @@ Perform the following commands from the root folder:
 
     dotnet build Sources\SolToBoogie.sln
 
-Perform this command **twice** to copy the dependencies (TODO: to be fixed). 
-
 ## Running VeriSol
 
 Assuming the root folder of this repository is *VERISOL_PATH*, run 
