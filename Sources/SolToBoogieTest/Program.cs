@@ -9,23 +9,21 @@ namespace SolToBoogieTest
 
     class Program
     {
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
-            if (args.Length < 2 || args.Length > 3)
+            if (args.Length < 1 || args.Length > 2)
             {
-                Console.WriteLine("Usage: SolToBoogieTest <verisol-root> <test-dir> [<test-prefix>]");
+                Console.WriteLine("Usage: SolToBoogieTest <test-dir> [<test-prefix>]");
                 Console.WriteLine("\t: if <test-prefix> is specified, we only run subset of tests that have the string as prefix");
-                return;
+                return 1;
             }
 
-            string workingDirectory = args[0];
-            string testDir = args[1];
-            string testPrefix = args.Length >= 3 ? args[2] : ""; 
+            string testDir = args[0];
+            string testPrefix = args.Length >= 2 ? args[1] : ""; 
 
 
             string solcName = GetSolcNameByOSPlatform();
-            string solcPath = Path.Combine(workingDirectory, "Tool", solcName);
-            // string solcPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), solcName);
+            string solcPath = Path.Combine(Directory.GetParent(Assembly.GetExecutingAssembly().Location).FullName, solcName);
             string corralPath = GetCorralPathFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
 
             string regressionDir = Path.Combine(testDir, "regressions");
@@ -40,27 +38,13 @@ namespace SolToBoogieTest
                 Console.WriteLine($"Warning!!! only running tests that have a prefix {testPrefix}....");
             }
             RegressionExecutor executor = new RegressionExecutor(solcPath, corralPath, regressionDir, configDir, recordsDir, logger, testPrefix);
-            executor.BatchExecute();
+            return executor.BatchExecute();
         }
 
         private static string GetCorralPathFromAssemblyPath(string location)
         {
-            // from .\sources\soltoboogietest\bin\debug\netcoreapp2.2\ to .\corral\bin\debug\corral.exe
-            var verisolRoot =
-                Directory.GetParent(
-                Directory.GetParent(
-                Directory.GetParent(
-                    Directory.GetParent(
-                    Directory.GetParent(
-                    Directory.GetParent(
-                        location
-                        ).FullName
-                        ).FullName
-                        ).FullName
-                        ).FullName
-                        ).FullName
-                        ).FullName;
-            return Path.Combine(new string[] {verisolRoot, "corral", "bin", "Debug", "corral.exe"});
+            // from .\sources\soltoboogietest\bin\debug\netcoreapp2.2\ to .\sources\soltoboogietest\bin\debug\netcoreapp2.2\
+            return Path.Combine(new string[] {Directory.GetParent(location).FullName, "corral.dll"});
         }
 
         private static string GetSolcNameByOSPlatform()

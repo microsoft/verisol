@@ -1,9 +1,10 @@
+[![Build Status](https://shuvendu-lahiri.visualstudio.com/VeriSol%20Azure%20pipeline%20Build/_apis/build/status/microsoft.verisol?branchName=master)](https://shuvendu-lahiri.visualstudio.com/VeriSol%20Azure%20pipeline%20Build/_build/latest?definitionId=3&branchName=master)
 
 # VeriSol
 
 VeriSol (Verifier for Solidity) is a [Microsoft Research project](https://www.microsoft.com/en-us/research/project/verisol-a-formal-verifier-for-solidity-based-smart-contracts/) for prototyping a formal verification and analysis system for smart contracts developed in the popular [Solidity](https://solidity.readthedocs.io/) programming language. It is based on translating
 programs in Solidity language to programs in [Boogie](https://github.com/boogie-org/boogie) intermediate 
-verification language, and then leveraging the verification toolchain for Boogie programs. 
+verification language, and then leveraging and extending the verification toolchain for Boogie programs. 
 
 The following paper describes the design of VeriSol and application of smart contract verification for [Azure Blockchain](https://azure.microsoft.com/en-us/solutions/blockchain/).
 

@@ -51,7 +51,7 @@ namespace VeriSolRunner
             string solcPath = 
                 Path.Combine(
                     Directory.GetParent(Path.GetDirectoryName(assemblyLocation)).FullName, 
-                    "solc", solcName);
+                    solcName);
             if (!File.Exists(solcPath))
             {
                 ShowUsage();

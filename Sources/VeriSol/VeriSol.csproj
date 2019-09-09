@@ -4,7 +4,19 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <HighEntropyVA>true</HighEntropyVA> 
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <RepositoryUrl>https://github.com/microsoft/verisol</RepositoryUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageOutputPath>nupkg</PackageOutputPath>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>VeriSol</ToolCommandName>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <BoogieDriverDir>..\..\corral\boogie\Source\BoogieDriver\bin\Debug\netcoreapp2.2</BoogieDriverDir>
+    <VeriSolPublishDir>..\..\Binaries\</VeriSolPublishDir>
+  </PropertyGroup>
+
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.1" />
@@ -12,38 +24,53 @@
     <ProjectReference Include="..\SolidityAST\SolidityAST.csproj" />
     <ProjectReference Include="..\BoogieAST\BoogieAST.csproj" />
     <ProjectReference Include="..\SolToBoogie\SolToBoogie.csproj" />
+    <ProjectReference Include="..\..\corral\cba-NetCore.csproj" />
+    <ProjectReference Include="..\..\corral\boogie\Source\BoogieDriver\BoogieDriver-NetCore.csproj" />
   </ItemGroup>
 
    <ItemGroup>
-        <SolcFiles Include="..\..\Tool\**\*.*"/>
-        <CorralFiles Include="..\..\corral\bin\debug\**\*.*"/>
-        <ConcExplorerFiles Include="..\..\corral\tools\**\*.*"/>
-        <BoogieFiles Include="..\..\corral\boogie\Binaries\**\*.*"/>
+        <SolcFiles Include="..\..\Tool\solc*"/>
+        <CorralFiles Include="..\..\corral\bin\Debug\netcoreapp2.2\**\*.*"/>
+        <ConcExplorerFiles Include="..\..\corral\tools\**\*.*"/> 
+        <BoogieFiles Include="$(BoogieDriverDir)\**\*.*"/>
+        <Z3Files Include="..\..\Tool\z3*"/>
+        <VeriSolDlls Include="$(OutDir)\**\*.*"/>
    </ItemGroup> 
 
-  <Target Name="CopySolFiles" AfterTargets="AfterBuild">
+  <Target Name="CopySolFiles" AfterTargets="Publish">
         <Copy
             SourceFiles="@(SolcFiles)"
-            DestinationFolder="$(OutDir)\solc\"
+            DestinationFolder="$(VeriSolPublishDir)\"
         />
     </Target>
-  <Target Name="CopyCorralFiles" AfterTargets="AfterBuild">
-        <Copy
-            SourceFiles="@(CorralFiles)"
-            DestinationFolder="$(OutDir)\corral\"
-        />
-    </Target>
-  <Target Name="CopyBoogieFiles" AfterTargets="AfterBuild">
-        <Copy
-            SourceFiles="@(BoogieFiles)"
-            DestinationFolder="$(OutDir)\boogie\"
-        />
-    </Target>
-  <Target Name="CopyConcExplorerFiles" AfterTargets="AfterBuild">
+  <Target Name="CopyConcExplorerFiles" AfterTargets="Publish">
         <Copy
             SourceFiles="@(ConcExplorerFiles)"
-            DestinationFolder="$(OutDir)\concurrencyExplorer\"
+            DestinationFolder="$(VeriSolPublishDir)\concurrencyExplorer\"
         />
     </Target>
-
+  <Target Name="CopyZ3" AfterTargets="Publish">
+        <Copy
+            SourceFiles="@(Z3Files)"
+            DestinationFolder="$(VeriSolPublishDir)\"
+        />
+    </Target> 
+  <Target Name="CopyCorralConfig" AfterTargets="Publish">
+        <Copy
+            SourceFiles="@(CorralFiles)"
+            DestinationFolder="$(VeriSolPublishDir)\"
+        />
+    </Target>
+  <Target Name="CopyBoogieConfigs" AfterTargets="Publish">
+        <Copy
+            SourceFiles="@(BoogieFiles)"
+            DestinationFolder="$(VeriSolPublishDir)\"
+        />
+    </Target>
+  <Target Name="CopyVeriSolFiles" AfterTargets="Publish">
+        <Copy
+            SourceFiles="@(VeriSolDlls)"
+            DestinationFolder="$(VeriSolPublishDir)\"
+        />
+    </Target>
 </Project>

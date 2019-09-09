@@ -3,6 +3,10 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.2</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>VeriSolRegressionRunner</ToolCommandName>
+    <VeriSolPublishDir>..\..\Binaries\</VeriSolPublishDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,30 +15,19 @@
     <ProjectReference Include="..\SolidityAST\SolidityAST.csproj" />
     <ProjectReference Include="..\BoogieAST\BoogieAST.csproj" />
     <ProjectReference Include="..\SolToBoogie\SolToBoogie.csproj" />
+    <ProjectReference Include="..\..\corral\cba-NetCore.csproj" />
+    <ProjectReference Include="..\..\corral\boogie\Source\BoogieDriver\BoogieDriver-NetCore.csproj" />
   </ItemGroup>
 
    <ItemGroup>
-        <SolcFiles Include="..\..\Tool\**\*.*"/>
-        <CorralFiles Include="..\..\corral\bin\Debug\**\*.*"/>
-        <BoogieFiles Include="..\..\corral\boogie\Binaries\**\*.*"/>
+        <CorralFiles Include="..\..\corral\bin\Debug\netcoreapp2.2\corral.runtimeconfig.json"/>
+        <Z3Files Include="..\..\Tool\z3*"/>
+        <SolToBoogieTestDlls Include="$(OutDir)\**\*.*"/>
    </ItemGroup> 
-
-  <Target Name="CopySolFiles" AfterTargets="AfterBuild">
+  <Target Name="CopySolToBoogieTestDlls" AfterTargets="Publish">
         <Copy
-            SourceFiles="@(SolcFiles)"
-            DestinationFolder="$(OutDir)\solc\"
-        />
-    </Target>
-  <Target Name="CopyCorralFiles" AfterTargets="AfterBuild">
-        <Copy
-            SourceFiles="@(CorralFiles)"
-            DestinationFolder="$(OutDir)\corral\"
-        />
-    </Target>
-  <Target Name="CopyBoogieFiles" AfterTargets="AfterBuild">
-        <Copy
-            SourceFiles="@(BoogieFiles)"
-            DestinationFolder="$(OutDir)\boogie\"
+            SourceFiles="@(SolToBoogieTestDlls)"
+            DestinationFolder="$(VeriSolPublishDir)\"
         />
     </Target>
 

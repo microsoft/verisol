@@ -34,7 +34,7 @@ contract Derived12 is Base1, Base2 {
 contract Derived21 is Base2, Base1 {
 
     function test21() public {
-        assert (a == 1);
+        assert (a != 1);
     }
 
 }

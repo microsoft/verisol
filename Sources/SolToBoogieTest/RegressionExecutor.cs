@@ -47,7 +47,7 @@ namespace SolToBoogieTest
             this.testPrefix = testPrefix;
         }
 
-        public bool BatchExecute()
+        public int BatchExecute()
         {
             string[] filePaths = Directory.GetFiles(testDirectory);
             int passedCount = 0;
@@ -122,7 +122,7 @@ namespace SolToBoogieTest
 
             logger.LogInformation($"{passedCount} passed {failedCount} failed");
             DeleteTemporaryFiles();
-            return (failedCount == 0);
+            return (failedCount == 0)? 0 : 1;
         }
 
         public BatchExeResult Execute(string filename, out string expected, out string current)
@@ -186,17 +186,8 @@ namespace SolToBoogieTest
             p.StartInfo.RedirectStandardOutput = true;
             p.StartInfo.RedirectStandardError = true;
             p.StartInfo.CreateNoWindow = true;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                p.StartInfo.FileName = corralPath;
-                p.StartInfo.Arguments = corralArguments;
-            }
-            else
-            {
-                p.StartInfo.FileName = "mono";
-                p.StartInfo.Arguments = $"{corralPath} {corralArguments}";
-                Console.WriteLine(p.StartInfo.Arguments);
-            }
+            p.StartInfo.FileName = "dotnet";
+            p.StartInfo.Arguments = $"{corralPath} {corralArguments}";
             p.Start();
 
             string corralOutput = p.StandardOutput.ReadToEnd();

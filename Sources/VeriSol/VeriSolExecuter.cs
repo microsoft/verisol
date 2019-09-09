@@ -144,13 +144,18 @@ namespace VeriSolRunner
             {
                 bFile.Write(corralOut);
             }
-            Console.WriteLine($"\tFinished Corral, output in {corralOutFile}....\n");
+            Console.WriteLine($"\tFinished corral, output in {corralOutFile}....\n");
 
             // compare Corral output against expected output
             if (CompareCorralOutput("Program has no bugs", corralOut))
             {
                 Console.WriteLine($"\t*** Formal Verification successful upto {CorralRecursionLimit} transactions");
                 return true;
+            }
+            else if (corralOut.Contains("Error"))
+            {
+                Console.WriteLine($"\t*** Error in Corral, see corral.txt");
+                return false;
             }
             else
             {
@@ -162,7 +167,8 @@ namespace VeriSolRunner
                     PrintCounterexample();
                     Console.WriteLine("\t---------------");
                 }
-                // DisplayTraceOnConsole();
+
+                //Console.WriteLine($"\n\tAlso, see the counterexample in {counterexampleFileName}");
 
                 Console.WriteLine($"\n\tSee full execution trace inside {corralOutFile}");
 
@@ -193,264 +199,61 @@ namespace VeriSolRunner
 
         private string[] FilterCorralTrace(string[] trace)
         {
-            // Only get lines that contain ".sol":
-            return trace.Where(s => s.Contains("Trace: Thread=1")).ToArray();
+            // Only get lines that contain "Trace: Thread=1":
+            var res = trace.Where(s => s.Contains("Trace: Thread=1"));
+            // Remove irrelevant lines: "()", "(Done)", "(x = 0)":
+            res = res.Where(x => x.Contains("CALL ") || x.Contains("RETURN ") || x.Contains("ASSERTION FAILS ") || x.Contains("_verisolFirstArg"));
+            return res.ToArray();
         }
 
-        // Problem: processing one line of corral.txt file at a time doesn't work, since CALL
-        // and its arguments could be located on diff lines
-        // Preprocess corral.txt: append arguments to the lines where their call is; since 
-        // the line number for the arguments doesn't matter, this should be OK
-        private string[] PreprocessCorralTrace(string[] corralTrace)
+        private List<Tuple<string, string>> ConvertTrace(string[] corralTrace)
         {
-            List<string> resTrace = new List<string>();
-            string curFuncName = null;
-            string curUnfinishedLine = null;
-
-            // TODO: CHECK IF WE ARE REMOVING relevant LINES
-            // skip lines that do not start with {CALL, RETURN, ASSERTION}
-            // skip lines that start with {CALL CorralChoice_}
-            List<string> tmpTrace = corralTrace.Where(x => (x.Contains("CALL ") || x.Contains("RETURN ") || x.Contains("ASSERTION FAILS "))).ToList();
-            tmpTrace = tmpTrace.Where(x => !x.Contains("CALL CorralChoice_")).ToList();
-
-            foreach (string line in tmpTrace)
+            var res = new List<Tuple<string, string>>();
+            foreach (string line in corralTrace)
             {
-                string[] splitLine = line.Split("Trace: Thread=1  ");
-                curUnfinishedLine = splitLine[0];
-                string rest = splitLine[1];
-                // Strip braces from the "rest" string:
-                if (rest.Length > 2)
+                var strSplit = line.Split("Trace: Thread=1  ");
+                // This should never happen; TODO: Debug.Assert(false)?
+                if (strSplit.Count() == 0) continue;
+                // Strip braces from the 2nd string:
+                if (strSplit[1].Length > 2)
                 {
-                    if (rest.StartsWith("(") && rest.EndsWith(")"))
+                    if (strSplit[1].StartsWith("(") && strSplit[1].EndsWith(")"))
                     {
-                        rest = rest.Substring(1, rest.Length - 2);
+                        strSplit[1] = strSplit[1].Substring(1, strSplit[1].Length - 2);
                     }
                 }
-
-                // Split the rest of the line to get separate CALLs/RETURNs/args etc.
-                string[] restSplit = rest.Split(", ");
-                if (restSplit.Length  == 1 && !restSplit[0].StartsWith("ASSERTION FAILS") && !restSplit[0].StartsWith("CALL ") &&
-                        !restSplit[0].StartsWith("RETURN") && !restSplit[0].StartsWith("this = T@Ref!val"))
-                {
-                    // Skip the lines like: "(x = 1)", "()", "(Done)", 
-                    //curLine = null;
-                    curFuncName = null;
-                    curUnfinishedLine = null;
-                    continue;
-                }
-                else
-                {
-                    if (restSplit[0].StartsWith("this = ") && curFuncName != null)
-                    {
-                        // These are arguments for a function CALL from the previous line:
-                        // Append the arguments to the previous line and emit the trace line into the resulting trace:
-                        curUnfinishedLine = curUnfinishedLine + ", " + splitLine[1];
-                        resTrace.Add(curUnfinishedLine);
-                        //curLine = null;
-                        curFuncName = null;
-                        curUnfinishedLine = null;
-                        continue;
-                    }
-                    else
-                    {
-                        // restSplit should be included into the resulting trace, unless it's unfinished:
-                        ///////////////stopped here:
-                        // Find the rightmost CALL element in restSplit and check if it has argument list:
-                        int lastCallInd = Array.FindLastIndex(restSplit, elem => elem.StartsWith("CALL "));
-                        // TODO: assuming that no other elements except first argument start with "this = T@Ref!val":
-                        int lastArgsInd = Array.FindLastIndex(restSplit, elem => elem.StartsWith("this = T@Ref!val"));
-                        if (lastCallInd > lastArgsInd)
-                        {
-                            // This line is unfinished - do not append it to the result:
-                            curUnfinishedLine = curUnfinishedLine + ", " + splitLine[1];
-                            string lastCallElem = restSplit[lastCallInd];
-                            curFuncName = lastCallElem.Substring("CALL ".Length + 1);
-                            continue;
-                        }
-                        else
-                        {
-                            // All calls have arguments, append the line to the result:
-                            curUnfinishedLine = curUnfinishedLine + ", " + splitLine[1];
-                            resTrace.Add(curUnfinishedLine);
-                            //curLine = null;
-                            curFuncName = null;
-                            curUnfinishedLine = null;
-                        }
-                    }
-                }
-
-            }
-
-            return resTrace.ToArray();
-        }
-
-        private string[] PreprocessCorralTraceForDemo(string[] corralTrace)
-        {
-            List<string> resTrace = new List<string>();
-
-            // TODO: CHECK IF WE ARE REMOVING relevant LINES
-            // skip lines that do not start with {CALL, RETURN, ASSERTION}
-            // skip lines that start with {CALL CorralChoice_}
-            List<string> tmpTrace = corralTrace.Where(x => (x.Contains("CALL ") || x.Contains("RETURN ") || x.Contains("ASSERTION FAILS "))).ToList();
-            tmpTrace = tmpTrace.Where(x => !x.Contains("CALL CorralChoice_")).ToList();
-
-            string foundBottomCallOnStack = null;
-            foreach (string line in tmpTrace)
-            {
-                string[] splitLine = line.Split("Trace: Thread=1  ");
-                string curUnfinishedLine = splitLine[0];
-                string rest = splitLine[1];
-                // Strip braces from the "rest" string:
-                if (rest.Length > 2)
-                {
-                    if (rest.StartsWith("(") && rest.EndsWith(")"))
-                    {
-                        rest = rest.Substring(1, rest.Length - 2);
-                    }
-                }
-
-                // Split the rest of the line to get separate CALLs/RETURNs/args etc.
-                string[] restSplit = rest.Split(", ");
-                List<string> args = new List<string>();
-                if (foundBottomCallOnStack == null)
-                {
-                    if (restSplit[0].StartsWith("CALL "))
-                    {
-                        foundBottomCallOnStack = restSplit[0].Substring("CALL ".Length);
-                        for(int i = 1; i < restSplit.Length; ++i)
-                        {
-                            if (restSplit[i].StartsWith("CALL "))
-                                break;
-                            args.Add(restSplit[i]);
-                        }
-                        resTrace.Add($"{curUnfinishedLine} {foundBottomCallOnStack} ({string.Join(", ", args)})");
-                    } 
-                } else if(rest.Contains("RETURN from " + foundBottomCallOnStack))
-                {
-                    foundBottomCallOnStack = null;
-                } else if (rest.Contains("ASSERTION FAIL"))
-                {
-                    resTrace.Add($"{curUnfinishedLine} {"ASSERTION fails!"}");
-                }
-            }
-
-            resTrace.ForEach(x => Console.WriteLine($"\t{x}"));
-
-            return resTrace.ToArray();
-        }
-
-        private string GetArgsInSingleLine(string[] inputArray)
-        {
-            // Skip any elements that are not arguments (for example: FreshGenerator calls/returns)
-            string res = String.Empty;
-            bool argsFound = false;
-            foreach (string elem in inputArray)
-            {
-                if (elem.StartsWith("this =") && !argsFound)
-                {
-                    argsFound = true;
-                    res = res + elem + ", ";
-                }
-                else if (elem.Contains("=") && argsFound)
-                {
-                    res = res + elem + ", ";
-                }
-                else if (argsFound)
-                {
-                    return res;
-                }
+                var tuples = strSplit[1].Split(", ").ToList();
+                tuples.ForEach(x => res.Add(Tuple.Create(strSplit[0], x)));
             }
             return res;
         }
-        private void ProcessCall(string input, string output, string curFunctionName)
+        
+        private string ConvertFunctionName(string origName)
         {
-            // Example: "CALL withdraw_SimpleDAO"
-            string functionName = input.Substring("CALL ".Length + 1, input.Length - 1);
-            if (functionName.StartsWith("Corral_Choice")) return;
-            string[] nameSplit = functionName.Split("_");
-            if (nameSplit[0] == nameSplit[1] && nameSplit.Length == 1)
+            string[] nameSplit = origName.Split("_");
+            if (nameSplit.Count() > 2)
             {
-                //top level constructor "XX_XX":
-                Debug.Assert(curFunctionName == null);
-                output = output + "CALL " + nameSplit[0] + "::Constructor" + "(";
-                curFunctionName = nameSplit[0] + "::Constructor";
+                // More than one underscore in the name: leave it as it is:
+                //Console.WriteLine($"Name {origName} has more than one underscore and will not be converted into a user-friendly format");
+                return origName;
             }
-            else
+            else if (nameSplit.Count() == 2)
             {
-                // Regular function call: FunctionName_ConstractName
-                // Example: CALL Modifier::plusOne(this = T@Ref!val!0, msg.sender = T@Ref!val!3)
-                if (curFunctionName == null)
+                if (nameSplit[0] == nameSplit[1])
                 {
-                    // Top level function call:
-                    output = output + "CALL " + nameSplit[1] + "::" + nameSplit[0] + "(";
-                    curFunctionName = nameSplit[1] + "::" + nameSplit[0];
-                }               
-            }
-        }
-
-        private void ProcessReturn(string input, string output, string curFunctionName)
-        {
-            // Example: RETURN from Modifier::plusOne
-            string functionName = input.Substring("RETURN from ".Length + 1, input.Length - 1);
-            string[] nameSplit = functionName.Split("_");
-            if (nameSplit[0] == nameSplit[1] && nameSplit.Length == 1)
-            {
-                // Return from the top level constructor:
-                Debug.Assert(curFunctionName == nameSplit[0] + "::Constructor");
-                output = output + "RETURN from " + nameSplit[1] + "::" + nameSplit[0];
-                curFunctionName = null;
-            }
-            else
-            {
-                string name = nameSplit[1] + "::" + nameSplit[0];
-                if (curFunctionName != null && curFunctionName == name)
-                {
-                    // Return from the Top level function:
-                    output = output + "RETURN from " + name;
-                    curFunctionName = null;
-                }
-            }
-        }
-
-        private void ProcessCallReturnAssert(string input, string output, string curFunctionName)
-        {
-            if (input.StartsWith("CALL"))
-            {
-                ProcessCall(input, output, curFunctionName);
-            }
-            else if (input.StartsWith("RETURN"))
-            {
-                ProcessReturn(input, output, curFunctionName);
-                return;
-            }
-            else if (input.StartsWith("ASSERTION FAILS"))
-            {
-                // Example: "ASSERTION FAILS <assertion>"
-                output = output + input;
-            }
-            else
-            {
-                // TODO: ERROR: not expected, print message
-            }
-        }
-        private void ProcessArgs(string[] elements, int ind, string output)
-        {
-            // Append all arguments from "elements" into "output"
-            // starting from index "ind"
-            // Arguments end when one of the following elements found:
-            // "this = T@Ref!val...", "CALL...", "RETURN..."
-            output = output + elements[ind];
-            // Number of arguments is always more then 1:
-            for (int i = ind + 1; i < elements.Count(); i++)
-            {
-                if (elements[i].StartsWith("CALL") || elements[i].StartsWith("RETURN") || elements[i].StartsWith("this = T@Ref!val"))
-                {
-                    return;
+                    // Top level constructor name "XX_XX":
+                    return nameSplit[0] + "::Constructor";
                 }
                 else
                 {
-                    output = output + elements[i];
+                    // Regular function call: functionName_ConstractName
+                    return nameSplit[1] + "::" + nameSplit[0];
                 }
+            }
+            else
+            {
+                Debug.Assert(false, $"Unreachable: Function name {origName} does not contain underscores");
+                return String.Empty;
             }
         }
 
@@ -459,61 +262,90 @@ namespace VeriSolRunner
             string[] corralTrace = File.ReadAllLines("corral.txt");
             // Find relevant trace lines in the full trace:
             corralTrace = FilterCorralTrace(corralTrace);
-            // Preprocess the trace:
-            // - append the line with function argument values to the line with the function call;
-            // - clean up the trace from the irrelevant lines
-            corralTrace = PreprocessCorralTraceForDemo(corralTrace);
-            PrintCounterexampleHelper(corralTrace);
-            }
-
-        private void PrintCounterexampleHelper(string[] corralTrace)
-        {
-            return;
-            string curFunctionName = null;
-
-            using (var outWriter = new StreamWriter(counterexampleFileName))
-            {
-                foreach (string corralLine in corralTrace)
-                {
-                    string[] splitRes = corralLine.Split(":");
-                    string counterexLine = splitRes[0];
-                    string rest = splitRes[1];
-                    // Strip braces from the "rest" string:
-                    if (rest.Length > 2)
-                    {
-                        if (rest.StartsWith("(") && rest.EndsWith(")"))
-                        {
-                            rest = rest.Substring(1, rest.Length - 2);
-                        }
-                    }
-                    string[] restSplit = splitRes[1].Split(", ");
-                    foreach (string resi in restSplit)
-                    {
-                        if (resi.StartsWith("CALL") || resi.StartsWith("RETURN") || resi.StartsWith("ASSERTION FAILS"))
-                        {
-                            ProcessCallReturnAssert(resi, counterexLine, curFunctionName);
-                        }
-                        else if (resi.StartsWith("this = T@Ref!val"))
-                        {
-                            ProcessArgs(restSplit, Array.IndexOf(restSplit, resi), counterexLine);
-                        }
-                        else continue;
-                    }
-                    outWriter.WriteLine(counterexLine);
-                }
-            }
+            // Convert array of strings into a list of tuples:
+            var tracePrime = ConvertTrace(corralTrace);
+            PrintCounterexampleHelper(tracePrime);
         }
 
-        private void DisplayTraceOnConsole()
+        private void PrintCounterexampleHelper(List<Tuple<string, string>> trace)
         {
-            string corralTrace = File.ReadAllText(corralTraceFileName);
-            string[] tracePerChoice = corralTrace.Split($"CALL CorralChoice_{ContractName}");  
+            Stack<string> callStack = new Stack<string>();
+            string currentArgs = "";
+            bool collectArgs = false;
+            List<string> resultArray = new List<string>();
 
-            foreach(string choiceTrace in tracePerChoice)
+            // this is a list of (line#, element)
+            // element \in {CALL foo, RETURM from foo, x = e, ASSERTION FAILS, ...}
+            for (int i = 0; i < trace.Count(); i++)
             {
-                Match functionNameMatch = Regex.Match(choiceTrace, @"(?<=\ )\S*?(?=_)");
-                Console.WriteLine($"\t{functionNameMatch.Value}");
-            }          
+                var elem = trace[i].Item2;
+                if (elem.StartsWith("CALL CorralChoice_"))
+                {
+                    continue;
+                }
+                else if (elem.StartsWith("RETURN from CorralChoice_"))
+                {
+                    continue;
+                }
+                else if (elem.StartsWith("CALL "))
+                {
+                    var func = elem.Substring("CALL ".Length);
+                    callStack.Push(func);
+                    currentArgs = "";
+                }
+                else if (elem.StartsWith("RETURN from "))
+                {
+                    var func = elem.Substring("RETURN from ".Length);
+                    Debug.Assert(callStack.Count > 0, "Call stack cannot be empty");
+                    Debug.Assert(func.TrimEnd().Equals(callStack.Peek().TrimEnd()), $"Top of stack {callStack.Peek()} does not match with return {func}");
+                    callStack.Pop();
+                }
+                else if (elem.StartsWith("_verisolFirstArg"))
+                {
+                    collectArgs = true;
+                }
+                else if (elem.StartsWith("_verisolLastArg"))
+                {
+                    Debug.Assert(callStack.Count > 0, "callstack cannot be empty");
+                    collectArgs = false;
+                    if (callStack.Count == 1)
+                    {
+                        resultArray.Add($"{trace[i].Item1}: {ConvertFunctionName(callStack.Peek())} ({currentArgs.Substring(", ".Length)})");
+                    }
+                }
+                else if (elem.StartsWith("(ASSERTION FAILS"))
+                {
+                    resultArray.Add($"{trace[i].Item1}: ASSERTION FAILS!");
+                }
+                else if (elem.Contains("="))
+                {
+
+                    if (collectArgs)
+                    {
+                        // Replace "T@Ref!val!0" with "address!0"
+                        string[] splitElem = elem.Split(" = ");
+                        Debug.Assert(splitElem.Count() == 2);
+                        string[] rhsSplit = splitElem[1].Split("!");
+                        if (rhsSplit.Count() > 0 && rhsSplit[0].Equals("T@Ref"))
+                        {
+                            currentArgs += ", " + elem.Replace("T@Ref!val", "address");
+                        }
+                        else
+                        {
+                            currentArgs += ", " + elem;
+                        }                       
+                    }
+                }
+                else
+                {
+                    Debug.Assert(false, $"This should be unreachable, found a new class of statement {elem}");
+                }
+            }
+
+            resultArray.ForEach(x => Console.WriteLine(x));
+            // Only printing counterexample on the command line:
+            File.WriteAllLines(counterexampleFileName, resultArray);
+            return;
         }
 
         private bool ExecuteSolToBoogie()
@@ -563,17 +395,8 @@ namespace VeriSolRunner
             p.StartInfo.RedirectStandardOutput = true;
             p.StartInfo.RedirectStandardError = true;
             p.StartInfo.CreateNoWindow = true;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                p.StartInfo.FileName = binaryPath;
-                p.StartInfo.Arguments = binaryArguments;
-            }
-            else
-            {
-                p.StartInfo.FileName = "mono";
-                p.StartInfo.Arguments = $"{binaryPath} {binaryArguments}";
-                Console.WriteLine(p.StartInfo.Arguments);
-            }
+            p.StartInfo.FileName = "dotnet";
+            p.StartInfo.Arguments = $"{binaryPath} {binaryArguments}";
             p.Start();
 
             string outputBinary = p.StandardOutput.ReadToEnd();
