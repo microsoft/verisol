@@ -160,6 +160,11 @@ namespace VeriSolRunner
                 translatorFlags.NoHarness = true;
             }
 
+            if (args.Any(x => x.Equals("/modelReverts")))
+            {
+                translatorFlags.ModelReverts = true;
+            }
+
             // don't perform verification for some of these omitFlags
             if (tryProofFlag || tryRefutation)
             {

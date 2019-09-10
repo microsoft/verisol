@@ -83,6 +83,13 @@ namespace SolToBoogie
                 HarnessGenerator harnessGenerator = new HarnessGenerator(context, procTranslator.ContractInvariants);
                 harnessGenerator.Generate();
             }
+
+            if (context.TranslateFlags.ModelReverts)
+            {
+                RevertLogicGenerator reverGenerator = new RevertLogicGenerator(context);
+                reverGenerator.Generate();
+            }
+
             return new BoogieAST(context.Program);
         }
     }

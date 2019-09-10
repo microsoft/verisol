@@ -1278,11 +1278,27 @@ namespace SolToBoogie
                 currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(assumePositiveCmd));
             }
         }
+        
+        private void emitRevertLogic(BoogieStmtList revertLogic)
+        {
+            BoogieAssignCmd setRevert = new BoogieAssignCmd(new BoogieIdentifierExpr("revert"), new BoogieLiteralExpr(true));
+            revertLogic.AddStatement(setRevert);
+
+            revertLogic.AddStatement(new BoogieReturnCmd());
+        }
 
         public override bool Visit(Throw node)
         {
-            BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(new BoogieLiteralExpr(false));
-            currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(assumeCmd));
+            if (!context.TranslateFlags.ModelReverts)
+            {
+                BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(new BoogieLiteralExpr(false));
+                currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(assumeCmd));
+            }
+            else
+            {
+                emitRevertLogic(currentStmtList);
+            }
+
             return false;
         }
 
@@ -1728,14 +1744,35 @@ namespace SolToBoogie
             {
                 VeriSolAssert(node.Arguments.Count == 1 || node.Arguments.Count == 2);
                 BoogieExpr predicate = TranslateExpr(node.Arguments[0]);
-                BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(predicate);
-                currentStmtList.AddStatement(assumeCmd);
+                
+                if (!context.TranslateFlags.ModelReverts)
+                {
+                    BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(predicate);
+                    currentStmtList.AddStatement(assumeCmd);
+                }
+                else
+                {
+                    BoogieStmtList revertLogic = new BoogieStmtList();
+                    
+                    emitRevertLogic(revertLogic);
+
+                    BoogieIfCmd requierCheck = new BoogieIfCmd(new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, predicate), revertLogic, null);
+                    
+                    currentStmtList.AddStatement(requierCheck);
+                }
             }
             else if (functionName.Equals("revert"))
             {
                 VeriSolAssert(node.Arguments.Count == 0 || node.Arguments.Count == 1);
-                BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(new BoogieLiteralExpr(false));
-                currentStmtList.AddStatement(assumeCmd);
+                if (!context.TranslateFlags.ModelReverts)
+                {
+                    BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(new BoogieLiteralExpr(false));
+                    currentStmtList.AddStatement(assumeCmd);
+                }
+                else
+                {
+                    emitRevertLogic(currentStmtList);
+                }
             }
             else if (IsImplicitFunc(node))
             {
