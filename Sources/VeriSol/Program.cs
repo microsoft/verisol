@@ -165,6 +165,11 @@ namespace VeriSolRunner
                 translatorFlags.ModelReverts = true;
             }
 
+            if (args.Any(x => x.Equals("/instrumentGas")))
+            {
+                translatorFlags.InstrumentGas = true;
+            }
+
             // don't perform verification for some of these omitFlags
             if (tryProofFlag || tryRefutation)
             {
