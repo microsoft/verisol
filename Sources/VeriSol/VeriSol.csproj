@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -29,11 +29,11 @@
   </ItemGroup>
 
    <ItemGroup>
-        <SolcFiles Include="..\..\Tool\solc*"/>
+        <SolcFiles Include="..\..\Binaries\solc*"/>
         <CorralFiles Include="..\..\corral\bin\Debug\netcoreapp2.2\**\*.*"/>
         <ConcExplorerFiles Include="..\..\corral\tools\**\*.*"/> 
         <BoogieFiles Include="$(BoogieDriverDir)\**\*.*"/>
-        <Z3Files Include="..\..\Tool\z3*"/>
+        <Z3Files Include="..\..\Binaries\z3*"/>
         <VeriSolDlls Include="$(OutDir)\**\*.*"/>
    </ItemGroup> 
 
@@ -73,4 +73,16 @@
             DestinationFolder="$(VeriSolPublishDir)\"
         />
     </Target>
+  <Target Name="CopySolFilesToOutDir" AfterTargets="Publish">
+        <Copy
+            SourceFiles="@(SolcFiles)"
+            DestinationFolder="$(OutDir)\"
+        />
+    </Target>
+  <Target Name="CopyZ3ToOutDir" AfterTargets="Publish">
+        <Copy
+            SourceFiles="@(Z3Files)"
+            DestinationFolder="$(OutDir)\"
+        />
+    </Target> 
 </Project>

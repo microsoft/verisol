@@ -11,13 +11,13 @@ contract SimpleDAO {
         return credit[to];
     }
     function withdraw() public {
-        uint oldBal = address(this).balance;
+        uint oldBal = 0; //uint oldBal = address(this).balance; //FIX
         uint amount = credit[msg.sender];
         if (amount > 0) {
-            msg.sender.transfer(amount));
+            // msg.sender.transfer(amount); // FIX
             credit[msg.sender] = 0;
         }
-        uint bal = address(this).balance;
+        uint bal = 0; // address(this).balance;
         assert(bal == oldBal || bal == (oldBal - amount));
     }
 }
@@ -29,7 +29,7 @@ contract Mallory {
         count = 0;
         dao = SimpleDAO(daoAddr);
         require(dao.queryCredit(address(this)) == 0);
-        require(address(this).balance == 1);
+        // require(address(this).balance == 1);
     }
     function() external {
         if (count < 3) {
@@ -38,12 +38,12 @@ contract Mallory {
         }
     }
     function donate() public {
-        dao.donate(address(this), address(this).balance);
+        // dao.donate(address(this), address(this).balance); //FIX
     }
     function getJackpot() public {
         dao.withdraw();
     }
     function queryBalance() public view returns (uint) {
-        return address(this).balance;
+        return 0; // return address(this).balance; //FIX
     }
 }

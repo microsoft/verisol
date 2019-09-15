@@ -42,6 +42,10 @@ namespace SolToBoogie
         // solidity only allows at most one constructor for each contract
         public Dictionary<ContractDefinition, FunctionDefinition> ContractToConstructorMap { get; private set; }
 
+        // explicit fallback defined in each contract
+        // solidity only allows at most one fallback for each contract
+        public Dictionary<ContractDefinition, FunctionDefinition> ContractToFallbackMap { get; private set; }
+
         // all events explicitly defined in each contract
         public Dictionary<ContractDefinition, HashSet<EventDefinition>> ContractToEventsMap { get; private set; }
         public Dictionary<EventDefinition, ContractDefinition> EventToContractMap { get; private set; }
@@ -98,6 +102,7 @@ namespace SolToBoogie
             ContractToArraysMap = new Dictionary<ContractDefinition, HashSet<VariableDeclaration>>();
             StateVarToContractMap = new Dictionary<VariableDeclaration, ContractDefinition>();
             ContractToConstructorMap = new Dictionary<ContractDefinition, FunctionDefinition>();
+            ContractToFallbackMap = new Dictionary<ContractDefinition, FunctionDefinition>();
             ContractToEventsMap = new Dictionary<ContractDefinition, HashSet<EventDefinition>>();
             EventToContractMap = new Dictionary<EventDefinition, ContractDefinition>();
             ContractToFunctionsMap = new Dictionary<ContractDefinition, HashSet<FunctionDefinition>>();
@@ -263,10 +268,18 @@ namespace SolToBoogie
 
         public void AddConstructorToContract(ContractDefinition contract, FunctionDefinition ctor)
         {
-            Debug.Assert(ctor.IsConstructorForContract(contract.Name), $"{ctor.Name} is not a constructor");
-            Debug.Assert(!ContractToConstructorMap.ContainsKey(contract), $"Multiple constructors are defined");
+            Debug.Assert(ctor.IsConstructor, $"{ctor.Name} is not a constructor");
+            Debug.Assert(!ContractToConstructorMap.ContainsKey(contract), $"Multiple constructors are defined for {contract.Name}");
             ContractToConstructorMap[contract] = ctor;
         }
+
+        public void AddFallbackToContract(ContractDefinition contract, FunctionDefinition fallback)
+        {
+            Debug.Assert(fallback.IsFallback, $"{fallback.Name} is not a fallback function");
+            Debug.Assert(!ContractToFallbackMap.ContainsKey(contract), $"Multiple fallbacks are defined for {contract.Name}");
+            ContractToConstructorMap[contract] = fallback;
+        }
+
 
         public bool IsConstructorDefined(ContractDefinition contract)
         {

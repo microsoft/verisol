@@ -258,7 +258,8 @@ namespace SolToBoogie
             List<FunctionDefinition> publicFuncDefs = new List<FunctionDefinition>();
             foreach (FunctionDefinition funcDef in funcDefs)
             {
-                if (funcDef.IsConstructorForContract(contract.Name)) continue;
+                if (funcDef.IsConstructor) continue;
+                if (funcDef.IsFallback) continue; //let us not call fallback directly in harness
                 if (funcDef.Visibility == EnumVisibility.PUBLIC || funcDef.Visibility == EnumVisibility.EXTERNAL)
                 {
                     // HACK: lets ignore "fallback_" named functions for DAO demo

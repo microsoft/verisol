@@ -419,7 +419,7 @@ namespace SolidityAST
 
         public bool IsConstructor { get; set; }
 
-        public bool IsConstructorForContract(string contractName) { return IsConstructor || string.IsNullOrEmpty(Name) || Name.Equals(contractName); }
+        public bool IsFallback{ get; set; }
 
         public bool IsDeclaredConst { get; set; }
 

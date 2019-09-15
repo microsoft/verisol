@@ -21,7 +21,6 @@
 
    <ItemGroup>
         <CorralFiles Include="..\..\corral\bin\Debug\netcoreapp2.2\corral.runtimeconfig.json"/>
-        <Z3Files Include="..\..\Tool\z3*"/>
         <SolToBoogieTestDlls Include="$(OutDir)\**\*.*"/>
    </ItemGroup> 
   <Target Name="CopySolToBoogieTestDlls" AfterTargets="Publish">

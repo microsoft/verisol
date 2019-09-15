@@ -232,7 +232,7 @@ namespace SolToBoogie
             // procedure name
             string procName = node.Name + "_" + currentContract.Name;
 
-            if (node.IsConstructorForContract(currentContract.Name))
+            if (node.IsConstructor)
             {
                 procName += "_NoBaseCtor";
             }
@@ -259,7 +259,8 @@ namespace SolToBoogie
             // attributes
             List<BoogieAttribute> attributes = new List<BoogieAttribute>();
             if ((node.Visibility == EnumVisibility.PUBLIC || node.Visibility == EnumVisibility.EXTERNAL)
-                && !node.IsConstructorForContract(currentContract.Name))
+                && !node.IsConstructor
+                && !node.IsFallback) //don't expose fallback for calling directly
             {
                 attributes.Add(new BoogieAttribute("public"));
             }
@@ -337,7 +338,7 @@ namespace SolToBoogie
                 }
 
                 // initialization statements
-                if (node.IsConstructorForContract(currentContract.Name))
+                if (node.IsConstructor)
                 {
                     BoogieStmtList initStmts = GenerateInitializationStmts(currentContract);
                     initStmts.AppendStmtList(procBody);
@@ -361,7 +362,7 @@ namespace SolToBoogie
             }
 
             // generate real constructors
-            if (node.IsConstructorForContract(currentContract.Name))
+            if (node.IsConstructor)
             {
                 GenerateConstructorWithBaseCalls(node, inParams);
             }
@@ -762,7 +763,7 @@ namespace SolToBoogie
         // generate actual constructor procedures that invoke constructors without base in linearized order
         private void GenerateConstructorWithBaseCalls(FunctionDefinition ctor, List<BoogieVariable> inParams)
         {
-            VeriSolAssert(ctor.IsConstructorForContract(currentContract.Name), $"{ctor.Name} is not a constructor");
+            VeriSolAssert(ctor.IsConstructor, $"{ctor.Name} is not a constructor");
 
             ContractDefinition contract = context.GetContractByFunction(ctor);
             string procName = contract.Name + "_" + contract.Name;
@@ -1813,9 +1814,13 @@ namespace SolToBoogie
             {
                 TranslateCallStatement(node);
             }
-            else if (functionName.Equals("send") || functionName.Equals("delegatecall"))
+            else if (functionName.Equals("delegatecall"))
             {
-                VeriSolAssert(false, $"Not implemented functions {functionName}");
+                TranslateCallStatement(node);
+            }
+            else if (functionName.Equals("send") || functionName.Equals("transfer")  || functionName.Equals("value"))
+            {
+                TranslateSendTransferCallStmt(node, functionName);
             }
             else if (IsDynamicArrayPush(node))
             {
@@ -2018,8 +2023,19 @@ namespace SolToBoogie
         private void TranslateCallStatement(FunctionCall node)
         {
             currentStmtList.AddStatement(new BoogieSkipCmd(node.ToString()));
-            VeriSolAssert(false, "call statements not implemented..");
+            VeriSolAssert(false, "low-level call/delegatecall statements not implemented..");
         }
+
+        private void TranslateSendTransferCallStmt(FunctionCall node, string name)
+        {
+            if (name.Equals("transfer"))
+            {
+                //create a call to global transferDispatch method
+            }
+            currentStmtList.AddStatement(new BoogieSkipCmd(node.ToString()));
+            VeriSolAssert(false, "payable function transfer call statements not implemented..");
+        }
+
 
         private void TranslateNewStatement(FunctionCall node, BoogieExpr lhs)
         {

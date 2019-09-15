@@ -41,9 +41,19 @@ namespace SolToBoogie
             Debug.Assert(currentContract != null);
             currentFunction = node;
 
-            if (node.IsConstructorForContract(currentContract.Name) && string.IsNullOrEmpty(node.Name))
+            // if (node.IsConstructorForContract(currentContract.Name) && string.IsNullOrEmpty(node.Name))
+            if (string.IsNullOrEmpty(node.Name))
             {
-                node.Name = currentContract.Name;
+                if (node.Visibility == EnumVisibility.PUBLIC || node.Visibility == EnumVisibility.INTERNAL)
+                {
+                    node.IsConstructor = true;
+                    node.Name = currentContract.Name;
+                }
+                else if (node.Visibility == EnumVisibility.EXTERNAL)
+                {
+                    node.IsFallback = true;
+                    node.Name = "FallbackMethod";
+                }
             }
             return false;
         }
