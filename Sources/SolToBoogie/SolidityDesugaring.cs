@@ -47,11 +47,13 @@ namespace SolToBoogie
                 if (node.Visibility == EnumVisibility.PUBLIC || node.Visibility == EnumVisibility.INTERNAL)
                 {
                     node.IsConstructor = true;
+                    node.IsFallback = false;
                     node.Name = currentContract.Name;
                 }
                 else if (node.Visibility == EnumVisibility.EXTERNAL)
                 {
                     node.IsFallback = true;
+                    node.IsConstructor = false;
                     node.Name = "FallbackMethod";
                 }
             }

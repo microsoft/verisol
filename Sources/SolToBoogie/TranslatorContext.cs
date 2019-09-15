@@ -277,7 +277,7 @@ namespace SolToBoogie
         {
             Debug.Assert(fallback.IsFallback, $"{fallback.Name} is not a fallback function");
             Debug.Assert(!ContractToFallbackMap.ContainsKey(contract), $"Multiple fallbacks are defined for {contract.Name}");
-            ContractToConstructorMap[contract] = fallback;
+            ContractToFallbackMap[contract] = fallback;
         }
 
 

@@ -848,6 +848,7 @@ namespace SolToBoogie
 
                             // Do we call the constructor or assume that it is invoked in teh base contract?
                             /* Assume it is invoked in the constructor for the base contract if the parameter list is non-empty (HACK) */ 
+                            // Issue #101
                             var baseCtr = context.IsConstructorDefined(baseContract) ? context.GetConstructorByContract(baseContract) : null;
                             if (baseCtr != null && baseCtr.Parameters.Length() > 0)
                             {

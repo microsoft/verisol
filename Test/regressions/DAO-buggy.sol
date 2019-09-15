@@ -31,7 +31,7 @@ contract Mallory {
         require(dao.queryCredit(address(this)) == 0);
         // require(address(this).balance == 1);
     }
-    function() external {
+    function XX() external {
         if (count < 3) {
             count ++;
             dao.withdraw();
