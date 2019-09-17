@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -12,65 +12,22 @@
     <ToolCommandName>VeriSol</ToolCommandName>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <BoogieDriverDir>..\..\corral\boogie\Source\BoogieDriver\bin\Debug\netcoreapp2.2</BoogieDriverDir>
-    <VeriSolPublishDir>..\..\Binaries\</VeriSolPublishDir>
-  </PropertyGroup>
-
-
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.2.4" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.1.1" />
     <ProjectReference Include="..\SolidityAST\SolidityAST.csproj" />
     <ProjectReference Include="..\BoogieAST\BoogieAST.csproj" />
     <ProjectReference Include="..\SolToBoogie\SolToBoogie.csproj" />
-    <ProjectReference Include="..\..\corral\cba-NetCore.csproj" />
-    <ProjectReference Include="..\..\corral\boogie\Source\BoogieDriver\BoogieDriver-NetCore.csproj" />
   </ItemGroup>
 
-   <ItemGroup>
-        <SolcFiles Include="..\..\Tool\solc*"/>
-        <CorralFiles Include="..\..\corral\bin\Debug\netcoreapp2.2\**\*.*"/>
-        <ConcExplorerFiles Include="..\..\corral\tools\**\*.*"/> 
-        <BoogieFiles Include="$(BoogieDriverDir)\**\*.*"/>
-        <Z3Files Include="..\..\Tool\z3*"/>
-        <VeriSolDlls Include="$(OutDir)\**\*.*"/>
-   </ItemGroup> 
+  <ItemGroup>
+    <None Update="toolsourcesettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
-  <Target Name="CopySolFiles" AfterTargets="Publish">
-        <Copy
-            SourceFiles="@(SolcFiles)"
-            DestinationFolder="$(VeriSolPublishDir)\"
-        />
-    </Target>
-  <Target Name="CopyConcExplorerFiles" AfterTargets="Publish">
-        <Copy
-            SourceFiles="@(ConcExplorerFiles)"
-            DestinationFolder="$(VeriSolPublishDir)\concurrencyExplorer\"
-        />
-    </Target>
-  <Target Name="CopyZ3" AfterTargets="Publish">
-        <Copy
-            SourceFiles="@(Z3Files)"
-            DestinationFolder="$(VeriSolPublishDir)\"
-        />
-    </Target> 
-  <Target Name="CopyCorralConfig" AfterTargets="Publish">
-        <Copy
-            SourceFiles="@(CorralFiles)"
-            DestinationFolder="$(VeriSolPublishDir)\"
-        />
-    </Target>
-  <Target Name="CopyBoogieConfigs" AfterTargets="Publish">
-        <Copy
-            SourceFiles="@(BoogieFiles)"
-            DestinationFolder="$(VeriSolPublishDir)\"
-        />
-    </Target>
-  <Target Name="CopyVeriSolFiles" AfterTargets="Publish">
-        <Copy
-            SourceFiles="@(VeriSolDlls)"
-            DestinationFolder="$(VeriSolPublishDir)\"
-        />
-    </Target>
 </Project>

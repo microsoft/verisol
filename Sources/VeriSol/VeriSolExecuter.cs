@@ -15,6 +15,7 @@ namespace VeriSolRunner
     using System.Reflection;
     using System.Text.RegularExpressions;
     using System.Linq;
+    using VeriSolRunner.Tools;
 
     internal class VeriSolExecutor
     {
@@ -24,7 +25,6 @@ namespace VeriSolRunner
         private string CorralPath;
         private string BoogiePath;
         private string SolcPath;
-        private string SolcName;
         private bool TryProof;
         private bool TryRefutation;
         // private bool GenInlineAttrs;
@@ -38,16 +38,15 @@ namespace VeriSolRunner
         private TranslatorFlags translatorFlags;
         private bool printTransactionSequence = false; 
 
-        public VeriSolExecutor(string solidityFilePath, string contractName, string corralPath, string boogiePath, string solcPath, string solcName, int corralRecursionLimit, HashSet<Tuple<string, string>> ignoreMethods, bool tryRefutation, bool tryProofFlag, ILogger logger, bool _printTransactionSequence, TranslatorFlags _translatorFlags = null)
+        public VeriSolExecutor(string solidityFilePath, string contractName, int corralRecursionLimit, HashSet<Tuple<string, string>> ignoreMethods, bool tryRefutation, bool tryProofFlag, ILogger logger, bool _printTransactionSequence, TranslatorFlags _translatorFlags = null)
         {
             this.SolidityFilePath = solidityFilePath;
             this.ContractName = contractName;
             this.SolidityFileDir = Path.GetDirectoryName(solidityFilePath);
             Console.WriteLine($"SpecFilesDir = {SolidityFileDir}");
-            this.CorralPath = corralPath;
-            this.BoogiePath = boogiePath;
-            this.SolcPath = solcPath;
-            this.SolcName = solcName;
+            this.CorralPath = ToolsSourceManager.Corral.Command;
+            this.BoogiePath = ToolsSourceManager.Boogie.Command;
+            this.SolcPath = ToolsSourceManager.Solc.Command;
             this.CorralRecursionLimit = corralRecursionLimit;
             this.ignoreMethods = new HashSet<Tuple<string, string>>(ignoreMethods);
             this.Logger = logger;
@@ -387,7 +386,7 @@ namespace VeriSolRunner
             return true;
         }
 
-        private string RunBinary(string binaryPath, string binaryArguments)
+        private string RunBinary(string cmdName, string arguments)
         {
             Process p = new Process();
             p.StartInfo.UseShellExecute = false;
@@ -395,8 +394,8 @@ namespace VeriSolRunner
             p.StartInfo.RedirectStandardOutput = true;
             p.StartInfo.RedirectStandardError = true;
             p.StartInfo.CreateNoWindow = true;
-            p.StartInfo.FileName = "dotnet";
-            p.StartInfo.Arguments = $"{binaryPath} {binaryArguments}";
+            p.StartInfo.FileName = cmdName;
+            p.StartInfo.Arguments = $"{arguments}";
             p.Start();
 
             string outputBinary = p.StandardOutput.ReadToEnd();

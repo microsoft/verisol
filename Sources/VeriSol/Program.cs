@@ -10,6 +10,7 @@ namespace VeriSolRunner
     using System.Runtime.InteropServices;
     using Microsoft.Extensions.Logging;
     using SolToBoogie;
+    using VeriSolRunner.Tools;
 
     /// <summary>
     /// Top level application to run VeriSol to target proofs as well as scalable counterexamples
@@ -24,7 +25,9 @@ namespace VeriSolRunner
                 return 1;
             }
 
-            string solidityFile, entryPointContractName, solcName;
+            ToolsSourceManager.EnsureAllExisted();
+
+            string solidityFile, entryPointContractName;
             bool tryProofFlag, tryRefutation;
             int recursionBound;
             ILogger logger;
@@ -37,51 +40,15 @@ namespace VeriSolRunner
                 out tryProofFlag,
                 out tryRefutation,
                 out recursionBound,
-                out solcName,
                 out logger,
                 out ignoredMethods,
                 out printTransactionSequence, 
                 ref translatorFlags);
 
-            var assemblyLocation = Assembly.GetExecutingAssembly().Location;
-            string solcPath = Path.Combine(
-                    Path.GetDirectoryName(assemblyLocation),
-                    solcName);
-            if (!File.Exists(solcPath))
-            {
-                ShowUsage();
-                Console.WriteLine($"Cannot find {solcName} at {solcPath}");
-                return 1;
-            }
-
-            string corralPath = Path.Combine(
-                    Path.GetDirectoryName(assemblyLocation),
-                    "corral.dll");
-            if (!File.Exists(corralPath))
-            {
-                ShowUsage();
-                Console.WriteLine($"Cannot find corral.dll at {corralPath}");
-                return 1;
-            }
-
-            string boogiePath = Path.Combine(
-                    Path.GetDirectoryName(assemblyLocation),
-                    "BoogieDriver.dll");
-            if (!File.Exists(boogiePath))
-            {
-                ShowUsage();
-                Console.WriteLine($"Cannot find BoogieDriver.dll at {boogiePath}");
-                return 1;
-            }
-
             var verisolExecuter =
                 new VeriSolExecutor(
                     Path.Combine(Directory.GetCurrentDirectory(), solidityFile), 
                     entryPointContractName,
-                    corralPath,
-                    boogiePath,
-                    solcPath,
-                    solcName,
                     recursionBound,
                     ignoredMethods,
                     tryRefutation,
@@ -92,7 +59,7 @@ namespace VeriSolRunner
             return verisolExecuter.Execute();
         }
 
-        private static void ParseCommandLineArgs(string[] args, out string solidityFile, out string entryPointContractName, out bool tryProofFlag, out bool tryRefutation, out int recursionBound, out string solcName, out ILogger logger, out HashSet<Tuple<string, string>> ignoredMethods,  out bool printTransactionSeq, ref TranslatorFlags translatorFlags)
+        private static void ParseCommandLineArgs(string[] args, out string solidityFile, out string entryPointContractName, out bool tryProofFlag, out bool tryRefutation, out int recursionBound, out ILogger logger, out HashSet<Tuple<string, string>> ignoredMethods,  out bool printTransactionSeq, ref TranslatorFlags translatorFlags)
         {
             Console.WriteLine($"Command line args ==> {string.Join(",", args.ToList())}");
             solidityFile = args[0];
@@ -111,7 +78,6 @@ namespace VeriSolRunner
                 recursionBound = int.Parse(arg.Substring("/tryRefutation:".Length));
             }
 
-            solcName = GetSolcNameByOSPlatform();
             ILoggerFactory loggerFactory = new LoggerFactory().AddConsole(LogLevel.Information);
             logger = loggerFactory.CreateLogger("VeriSol");
             ignoredMethods = new HashSet<Tuple<string, string>>();
