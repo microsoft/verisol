@@ -1,13 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
-using System.Net;
-using System.Runtime.InteropServices;
-
-namespace VeriSolRunner.Tools
+namespace VeriSolRunner.ExternalTools
 {
-    internal class DownloadedToolSourceManager : ToolSourceManager
+    using System;
+    using System.IO;
+    using System.IO.Compression;
+    using System.Net;
+    using System.Runtime.InteropServices;
+
+    internal class DownloadedToolManager : ToolManager
     {
         private static string OsName
         {
@@ -86,7 +85,7 @@ namespace VeriSolRunner.Tools
             }
         }
 
-        internal DownloadedToolSourceManager(ToolSourceSettings settings) : base(settings)
+        internal DownloadedToolManager(ToolSourceSettings settings) : base(settings)
         {
         }
 

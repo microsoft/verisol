@@ -1,10 +1,10 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-
-namespace VeriSolRunner.Tools
+namespace VeriSolRunner.ExternalTools
 {
-    internal class ToolSourceSettings
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Reflection;
+
+    public class ToolSourceSettings
     {
         public string Name { get; set; }
         public string Version { get; set; }

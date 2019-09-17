@@ -6,6 +6,7 @@ namespace SolToBoogieTest
     using System.Reflection;
     using System.Runtime.InteropServices;
     using Microsoft.Extensions.Logging;
+    using VeriSolRunner.ExternalTools;
 
     class Program
     {
@@ -19,12 +20,9 @@ namespace SolToBoogieTest
             }
 
             string testDir = args[0];
-            string testPrefix = args.Length >= 2 ? args[1] : ""; 
+            string testPrefix = args.Length >= 2 ? args[1] : "";
 
-
-            string solcName = GetSolcNameByOSPlatform();
-            string solcPath = Path.Combine(Directory.GetParent(Assembly.GetExecutingAssembly().Location).FullName, solcName);
-            string corralPath = GetCorralPathFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
+            ExternalToolsManager.EnsureAllExisted();
 
             string regressionDir = Path.Combine(testDir, "regressions");
             string configDir = Path.Combine(testDir, "config");
@@ -37,7 +35,7 @@ namespace SolToBoogieTest
             {
                 Console.WriteLine($"Warning!!! only running tests that have a prefix {testPrefix}....");
             }
-            RegressionExecutor executor = new RegressionExecutor(solcPath, corralPath, regressionDir, configDir, recordsDir, logger, testPrefix);
+            RegressionExecutor executor = new RegressionExecutor(regressionDir, configDir, recordsDir, logger, testPrefix);
             return executor.BatchExecute();
         }
 

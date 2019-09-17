@@ -6,11 +6,10 @@ namespace VeriSolRunner
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
-    using System.Reflection;
     using System.Runtime.InteropServices;
     using Microsoft.Extensions.Logging;
     using SolToBoogie;
-    using VeriSolRunner.Tools;
+    using VeriSolRunner.ExternalTools;
 
     /// <summary>
     /// Top level application to run VeriSol to target proofs as well as scalable counterexamples
@@ -25,7 +24,7 @@ namespace VeriSolRunner
                 return 1;
             }
 
-            ToolsSourceManager.EnsureAllExisted();
+            ExternalToolsManager.EnsureAllExisted();
 
             string solidityFile, entryPointContractName;
             bool tryProofFlag, tryRefutation;

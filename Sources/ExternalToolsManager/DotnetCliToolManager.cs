@@ -1,11 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-
-namespace VeriSolRunner.Tools
+namespace VeriSolRunner.ExternalTools
 {
-    internal class DotnetCliToolSourceManager : ToolSourceManager
+    using System;
+    using System.Diagnostics;
+    using System.IO;
+
+    internal class DotnetCliToolManager : ToolManager
     {
         internal string DependencyTargetPath
         {
@@ -15,7 +14,7 @@ namespace VeriSolRunner.Tools
             }
         }
 
-        internal DotnetCliToolSourceManager(ToolSourceSettings settings) : base(settings)
+        internal DotnetCliToolManager(ToolSourceSettings settings) : base(settings)
         {
         }
 
@@ -64,7 +63,7 @@ namespace VeriSolRunner.Tools
             return output;
         }
 
-        internal void EnsureLinkedToZ3(ToolSourceManager z3)
+        internal void EnsureLinkedToZ3(ToolManager z3)
         {
             var z3DependencyPath = GetZ3DependencyPath(z3);
 
@@ -81,7 +80,7 @@ namespace VeriSolRunner.Tools
             }
         }
 
-        private string GetZ3DependencyPath(ToolSourceManager z3)
+        private string GetZ3DependencyPath(ToolManager z3)
         {
             return this.DependencyTargetPath + z3.ExeName;
         }

@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-
-namespace VeriSolRunner.Tools
+﻿namespace VeriSolRunner.ExternalTools
 {
-    internal abstract class ToolSourceManager
+    using System.IO;
+
+    public abstract class ToolManager
     {
         protected readonly ToolSourceSettings settings;
 
-        internal string ExeName
+        public string ExeName
         {
             get
             {
@@ -17,7 +14,7 @@ namespace VeriSolRunner.Tools
             }
         }
 
-        internal string Command
+        public string Command
         {
             get
             {
@@ -25,7 +22,7 @@ namespace VeriSolRunner.Tools
             }
         }
 
-        internal ToolSourceManager(ToolSourceSettings settings)
+        internal ToolManager(ToolSourceSettings settings)
         {
             this.settings = settings;
         }

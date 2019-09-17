@@ -13,9 +13,8 @@ namespace VeriSolRunner
     using System.IO;
     using System.Runtime.InteropServices;
     using System.Reflection;
-    using System.Text.RegularExpressions;
     using System.Linq;
-    using VeriSolRunner.Tools;
+    using VeriSolRunner.ExternalTools;
 
     internal class VeriSolExecutor
     {
@@ -44,9 +43,9 @@ namespace VeriSolRunner
             this.ContractName = contractName;
             this.SolidityFileDir = Path.GetDirectoryName(solidityFilePath);
             Console.WriteLine($"SpecFilesDir = {SolidityFileDir}");
-            this.CorralPath = ToolsSourceManager.Corral.Command;
-            this.BoogiePath = ToolsSourceManager.Boogie.Command;
-            this.SolcPath = ToolsSourceManager.Solc.Command;
+            this.CorralPath = ExternalToolsManager.Corral.Command;
+            this.BoogiePath = ExternalToolsManager.Boogie.Command;
+            this.SolcPath = ExternalToolsManager.Solc.Command;
             this.CorralRecursionLimit = corralRecursionLimit;
             this.ignoreMethods = new HashSet<Tuple<string, string>>(ignoreMethods);
             this.Logger = logger;

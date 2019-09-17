@@ -11,6 +11,7 @@ namespace SolToBoogieTest
     using SolidityAST;
     using BoogieAST;
     using SolToBoogie;
+    using VeriSolRunner.ExternalTools;
 
     class RegressionExecutor
     {
@@ -36,10 +37,10 @@ namespace SolToBoogieTest
 
         public enum BatchExeResult { Success, SolcError, SolToBoogieError, CorralError, OtherException };
 
-        public RegressionExecutor(string solcPath, string corralPath, string testDirectory, string configDirectory, string recordsDir, ILogger logger, string testPrefix = "")
+        public RegressionExecutor(string testDirectory, string configDirectory, string recordsDir, ILogger logger, string testPrefix = "")
         {
-            this.solcPath = solcPath;
-            this.corralPath = corralPath;
+            this.solcPath = ExternalToolsManager.Solc.Command;
+            this.corralPath = ExternalToolsManager.Corral.Command;
             this.testDirectory = testDirectory;
             this.configDirectory = configDirectory;
             this.recordsDir = recordsDir;
@@ -186,8 +187,8 @@ namespace SolToBoogieTest
             p.StartInfo.RedirectStandardOutput = true;
             p.StartInfo.RedirectStandardError = true;
             p.StartInfo.CreateNoWindow = true;
-            p.StartInfo.FileName = "dotnet";
-            p.StartInfo.Arguments = $"{corralPath} {corralArguments}";
+            p.StartInfo.FileName = this.corralPath;
+            p.StartInfo.Arguments = corralArguments;
             p.Start();
 
             string corralOutput = p.StandardOutput.ReadToEnd();
