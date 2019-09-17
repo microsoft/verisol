@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,11 +6,16 @@
     <HighEntropyVA>true</HighEntropyVA> 
   </PropertyGroup>
 
+  <Import Project="..\VeriSol.props" />
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
   <ItemGroup>
     <PackageReference Include="JsonSubTypes" Version="1.4.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.1.1" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
   </ItemGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
 </Project>

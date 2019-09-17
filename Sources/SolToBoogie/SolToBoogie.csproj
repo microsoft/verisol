@@ -1,28 +1,19 @@
-<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
+<Project>
+
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.2</TargetFramework>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
-    <UpgradeBackupLocation>
-    </UpgradeBackupLocation>
-    <OldToolsVersion>2.0</OldToolsVersion>
     <HighEntropyVA>true</HighEntropyVA> 
   </PropertyGroup>
+
+  <Import Project="..\VeriSol.props" />
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
   <ItemGroup>
     <ProjectReference Include="..\BoogieAST\BoogieAST.csproj" />
     <ProjectReference Include="..\SolidityAST\SolidityAST.csproj" />
   </ItemGroup>
 
-   <ItemGroup>
-        <SolcFiles Include="..\..\Tool\**\*.*"/>
-   </ItemGroup> 
-
-  <Target Name="CopySolFiles" AfterTargets="AfterBuild">
-        <Copy
-            SourceFiles="@(SolcFiles)"
-            DestinationFolder="$(OutDir)\solc\"
-        />
-    </Target>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
 </Project>

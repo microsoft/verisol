@@ -1,16 +1,23 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project>
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <AssemblyName>VeriSol</AssemblyName>
     <TargetFramework>netcoreapp2.2</TargetFramework>
-    <HighEntropyVA>true</HighEntropyVA> 
-    <VersionPrefix>1.0.0</VersionPrefix>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>VeriSol</PackageId>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <RepositoryUrl>https://github.com/microsoft/verisol</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageOutputPath>nupkg</PackageOutputPath>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>VeriSol</ToolCommandName>
   </PropertyGroup>
+
+  <Import Project="..\VeriSol.props" />
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
@@ -29,5 +36,13 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(RepositoryROOT)\LICENSE.txt" Pack="true" PackagePath="LICENSE.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
 </Project>
