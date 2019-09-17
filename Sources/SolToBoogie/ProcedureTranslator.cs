@@ -171,7 +171,7 @@ namespace SolToBoogie
                 currentStmtList.AddStatement(callCmd);
             }
 
-            // Add default parameters "this", "msg.sender" (ignoring "msg.value"):
+            // Add default parameters "this", "msg.sender", "msg.value"
             addrType = new TypeDescription();
             addrType.TypeString = "address";
             callCmd = InstrumentForPrintingData(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
@@ -180,6 +180,13 @@ namespace SolToBoogie
                 currentStmtList.AddStatement(callCmd);
             }
             callCmd = InstrumentForPrintingData(addrType, new BoogieIdentifierExpr(inParams[1].Name), "msg.sender");
+            if (callCmd != null)
+            {
+                currentStmtList.AddStatement(callCmd);
+            }
+            var valType = new TypeDescription();
+            valType.TypeString = "int";
+            callCmd = InstrumentForPrintingData(valType, new BoogieIdentifierExpr(inParams[2].Name), "msg.value");
             if (callCmd != null)
             {
                 currentStmtList.AddStatement(callCmd);
@@ -301,6 +308,22 @@ namespace SolToBoogie
 
                 // Add possible assume statements from parameters
                 procBody.AppendStmtList(assumesForParamsAndReturn);
+
+                // if payable, then modify the balance
+                if (node.StateMutability == EnumStateMutability.PAYABLE)
+                {
+                    procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function START "));
+                    var balnSender = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("msgsender_MSG"));
+                    var balnThis = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("this"));
+                    var msgVal = new BoogieIdentifierExpr("msgvalue_MSG");
+                    //assume Balance[msg.sender] >= msg.value
+                    procBody.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, balnSender, msgVal)));
+                    //balance[msg.sender] = balance[msg.sender] - msg.value
+                    procBody.AddStatement(new BoogieAssignCmd(balnSender, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, balnSender, msgVal)));
+                    //balance[this] = balance[this] + msg.value
+                    procBody.AddStatement(new BoogieAssignCmd(balnThis, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, balnThis, msgVal)));
+                    procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function END "));
+                }
 
                 // if (node.Modifiers.Count == 1)
                 for (int i = 0; i < node.Modifiers.Count; ++i)
@@ -1648,6 +1671,12 @@ namespace SolToBoogie
                 return false;
             }
 
+            if (node.MemberName.Equals("balance"))
+            {
+                currentExpr = TranslateBalance(node);
+                return false;
+            }
+
             // only structs will need to use x.f.g notation, since 
             // one can only access functions of nested contracts
             // RESTRICTION: only handle e.f where e is Identifier | IndexExpr | FunctionCall
@@ -1711,6 +1740,13 @@ namespace SolToBoogie
                 VeriSolAssert(false, $"Unknown expression type for member access: {node}");
                 throw new Exception();
             }
+        }
+
+        private BoogieExpr TranslateBalance(MemberAccess node)
+        {
+            BoogieExpr indexExpr = TranslateExpr(node.Expression);
+            var mapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), indexExpr);
+            return mapSelect;
         }
 
         private BoogieExpr TranslateArrayLength(MemberAccess node)
@@ -2078,7 +2114,7 @@ namespace SolToBoogie
             {
                 tmpVarIdentExpr,
                 new BoogieIdentifierExpr("this"),
-                msgValueIdentExpr,
+                new BoogieLiteralExpr(BigInteger.Zero)//assuming msg.value is 0 for new
             };
             foreach (Expression arg in node.Arguments)
             {
@@ -2133,7 +2169,7 @@ namespace SolToBoogie
             {
                 tmpVarIdentExpr,
                 new BoogieIdentifierExpr("this"),
-                msgValueIdentExpr,
+                new BoogieLiteralExpr(BigInteger.Zero) // msg.value is 0 
             };
             foreach (Expression arg in node.Arguments)
             {
@@ -2264,7 +2300,7 @@ namespace SolToBoogie
             {
                 receiver,
                 new BoogieIdentifierExpr("this"),
-                new BoogieIdentifierExpr(msgValueId.Name),
+                new BoogieIdentifierExpr(msgValueId.Name), //TODO: how do we get msg.value for external calls except for send/receive/value
             };
 
             foreach (Expression arg in node.Arguments)
