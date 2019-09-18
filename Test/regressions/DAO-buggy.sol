@@ -15,7 +15,8 @@ contract SimpleDAO {
         uint balSender = msg.sender.balance; // just to check if its translated
         uint amount = credit[msg.sender];
         if (amount > 0) {
-            // msg.sender.transfer(amount); // FIX
+            address payable a = msg.sender;
+            a.transfer(amount); // FIX
             credit[msg.sender] = 0;
         }
         uint bal = address(this).balance;

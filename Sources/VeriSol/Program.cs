@@ -17,6 +17,9 @@ namespace VeriSolRunner
     class Program
     {
         public static int Main(string[] args)
+
+
+
         {
             if (args.Length < 2)
             {

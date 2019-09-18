@@ -2067,7 +2067,15 @@ namespace SolToBoogie
         {
             if (name.Equals("transfer"))
             {
-                //create a call to global transferDispatch method
+                // call FallbackDispatch(from, to, amount)
+                currentStmtList.AddStatement(
+                    new BoogieCallCmd(
+                        "FallbackDispatch", 
+                        new List<BoogieExpr>() {new BoogieIdentifierExpr("this"), TranslateExpr(node.Expression), TranslateExpr(node.Arguments[0])}, 
+                        new List<BoogieIdentifierExpr>()
+                        )
+                    );
+                return;
             }
             currentStmtList.AddStatement(new BoogieSkipCmd(node.ToString()));
             VeriSolAssert(false, "payable function transfer call statements not implemented..");
