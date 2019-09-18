@@ -39,7 +39,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Tools\ConcurrencyExplorer.exe" Link="%(Filename)%(Extension)">
+    <None Include="concurrencyExplorer\ConcurrencyExplorer.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
