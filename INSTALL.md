@@ -4,24 +4,17 @@
 
 
 ## Dependencies
+### Dev/Runtime dependencies
+- Install **.NET Core** (version **2.2**) for Windows/Linux/OSX from [here](https://dotnet.microsoft.com/download/dotnet-core/2.2#sdk-2.2.106)
 
-- Install **.NET Core** (version **2.2**) for Windows/Linux/OSX from [here](https://dotnet.microsoft.com/download/dotnet-core/2.2#sdk-2.2.106) 
-- Install the following **Solidity compiler** (version **0.5.10**) binaries for Windows/Linux/OSX from [here](https://github.com/ethereum/solidity/releases/tag/v0.5.10) into the **Binaries** folder.
-   - (Windows) Download `solc.exe`
-   - (Linux) Download `solc-static-linux` and use command `chmod +x solc-static-linux` 
-   - (OSX) Download `solc-mac` and use command `chmod +x solc-mac` 
-- Install [Z3 theorem prover](https://github.com/Z3Prover/z3/releases) (ver 4.8.4) binary **z3.exe** (respectively, **z3**) for Windows (respectively, Linux/OSX) into **Binaries** 
-   - For Linux/OSX, create a symbolic link to z3 as follows:
-   
-      `ln -S Binaries/z3 Binaries/z3.exe`
+### Dynamically installed at VeriSol runtime
+- [Solidity compiler](https://github.com/ethereum/solidity/releases/tag/v0.5.10), which is downloaded and set up when VeriSol.dll is running for the first time.
+- [Z3 theorem prover](https://github.com/Z3Prover/z3/releases) , which is downloaded and set up when VeriSol.dll is running for the first time.
 
-- We use **corral** and **boogie** verifiers, which are present as submodules. Run a recursive git submodule update from the root folder 
+- We use **corral** and **boogie** verifiers, which are installed as dotnet cli tools when VeriSol.dll is running for the first time.
 
-      git submodule update --recursive --init
-
-
-### (Optional) 
-   - For Windows, we currently use  [ConcurrencyExplorer](https://github.com/LeeSanderson/Chess) in Corral\Tools\ to step through traces. It is unclear if one can build the sources of *ConcurencyExplorer* for Linux/OSX from [here](https://github.com/LeeSanderson/Chess). If that works, copy the *ConcurrencyExplorer.exe* binary to Corral\Tools\.
+### (Optional) Trace explorer
+- For Windows, we currently use [ConcurrencyExplorer](https://github.com/boogie-org/corral/blob/c446f5e827373c8189dabfb86c0c4ed635f63182/tools/ConcurrencyExplorer.exe) to step through traces. The tool is not available on Linux/OSX. Source code is [here](https://github.com/LeeSanderson/Chess).
 
 ## Build VeriSol
 
@@ -29,17 +22,27 @@ Perform the following commands from the root folder:
 
     dotnet build Sources\SolToBoogie.sln
 
+## Install VeriSol as dotnet CLI tool
+Install to the global dotnet CLI tools cache so that you can run command  `VeriSol` from anywhere:
+```
+dotnet tool install VeriSol --version 0.1.0 --global --add-source %VERISOL_PATH%\nupkg\
+```
+Or install to a local directory and access the command with full path `%Installed_Path%\VeriSol`
+```
+dotnet tool install VeriSol --version 0.1.0 --tool-path %Installed_Path%  --add-source %VERISOL_PATH%\nupkg\
+```
+
 ## Running VeriSol
 
-Assuming in the root folder of this repository, run 
+Assuming VeriSol is installed globally, run 
 
-`dotnet Binaries\VeriSol.dll`
+`VeriSol`
 
 to view options and their meanings. 
 
 A common usage:
 
-`dotnet Binaries\VeriSol.dll foo.sol Bar /tryProof /tryRefutation:6 /printTransactionSequence`
+`VeriSol foo.sol Bar /tryProof /tryRefutation:6 /printTransactionSequence`
 
 where 
    - *foo.sol* is the top-level Solidity file
@@ -51,37 +54,46 @@ where
   > For Windows, the tool output prints instructions to step through the trace using *ConcurrencyExplorer.exe* binary. 
 
 ### Example with refutation ###
-`dotnet Binaries\VeriSol.dll Test\regressions\Error.sol AssertFalse /tryProof /tryRefutation:6 /printTransactionSequence`
+`VeriSol Test\regressions\Error.sol AssertFalse /tryProof /tryRefutation:6 /printTransactionSequence`
 
 ### Example with verification ###
-`dotnet Binaries\VeriSol.dll Test\regressions\Mapping.sol Mapping /tryProof /tryRefutation:6 /printTransactionSequence`
+`VeriSol Test\regressions\Mapping.sol Mapping /tryProof /tryRefutation:6 /printTransactionSequence`
 
 ### Example with Loop Invariants ###
-`dotnet Binaries\VeriSol.dll Test\regressions\LoopInvUsageExample.sol LoopFor /tryProof /tryRefutation:10 /printTransactionSequence`
+`VeriSol Test\regressions\LoopInvUsageExample.sol LoopFor /tryProof /tryRefutation:10 /printTransactionSequence`
 
 ### Example with Contract Invariants ###
-`dotnet Binaries\VeriSol.dll Test\regressions\ContractInvUsageExample.sol LoopFor /tryProof /tryRefutation:10 /printTransactionSequence`
+`VeriSol Test\regressions\ContractInvUsageExample.sol LoopFor /tryProof /tryRefutation:10 /printTransactionSequence`
 
 ### Example of higly simplified ERC20 ###
-`dotnet Binaries\VeriSol.dll Test\regressions\ERC20-simplified.sol ERC20 /tryProof /tryRefutation:10 /printTransactionSequence`
+`VeriSol Test\regressions\ERC20-simplified.sol ERC20 /tryProof /tryRefutation:10 /printTransactionSequence`
 
 ### Example of higly simplified TheDAO attack ###
-`dotnet Binaries\VeriSol.dll Test\regressions\DAO-Sim-Buggy.sol Mallory /tryProof /tryRefutation:10 /printTransactionSequence`
+`VeriSol Test\regressions\DAO-Sim-Buggy.sol Mallory /tryProof /tryRefutation:10 /printTransactionSequence`
 
-`dotnet Binaries\VeriSol.dll Test\regressions\DAO-Sim-Fixed.sol Mallory /tryProof /tryRefutation:10 /printTransactionSequence`
+`VeriSol Test\regressions\DAO-Sim-Fixed.sol Mallory /tryProof /tryRefutation:10 /printTransactionSequence`
 
 ## VeriSol Code Contracts library
 The code contract library **VeriSolContracts.sol** is present [here](https://github.com/microsoft/verisol/blob/master/Test/regressions/Libraries/VeriSolContracts.sol). This allows adding loop invariants, contract invariants for proofs, and extending the assertion language.  
 
 ## Regression script
 
-To run the regressions from the root (%VERISOL_PATH%) of the installation, run:
--  `dotnet Binaries\SolToBoogieTest.dll  %VERISOL_PATH%\Test\`
+To run the regressions test, first install SolToBoogieTest
+```
+dotnet tool install --global SolToBoogieTest --version 0.1.0 --add-source %VERISOL_PATH%\nupkg\
+```
+
+Then run command `VeriSolRegressionRunner`
+```
+VeriSolRegressionRunner %VERISOL_PATH%\Test\
+```
 
 All regressions are expected to pass. 
 
 To run a subset of examples during testing, add an optional parameter to limit the above run to a subset of tests that match a prefix string *<prefix>* (e.g. using Array will only run regresssions with Array in their prefix)
 
-`dotnet Binaries\SolToBoogieTest.dll %VERISOL_PATH%\Test\ [<prefix>]`
+```
+VeriSolRegressionRunner %VERISOL_PATH%\Test\ [<prefix>]
+```
 
 

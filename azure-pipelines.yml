@@ -35,7 +35,7 @@ steps:
   inputs:
     command: custom
     custom: 'tool'
-    arguments: 'install  --global SolToBoogieTest --version 0.1.0 --add-source $(Build.SourcesDirectory)/nupkg/'
+    arguments: 'install --global SolToBoogieTest --version 0.1.0 --add-source $(Build.SourcesDirectory)/nupkg/'
 
 - script: 'VeriSolRegressionRunner $(Build.SourcesDirectory)/Test/'
   displayName: 'Run regression tests'
