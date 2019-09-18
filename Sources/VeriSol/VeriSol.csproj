@@ -38,12 +38,6 @@
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="concurrencyExplorer\ConcurrencyExplorer.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
 </Project>

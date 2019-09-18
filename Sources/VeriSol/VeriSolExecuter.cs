@@ -181,17 +181,11 @@ namespace VeriSolRunner
         private void DisplayTraceUsingConcurrencyExplorer()
         {
             var assemblyLocation = Assembly.GetExecutingAssembly().Location;
-            string concExplorerWindowsPath = Path.Combine(
-                Path.GetDirectoryName(assemblyLocation),
-                "concurrencyExplorer",
-                "ConcurrencyExplorer.exe");
-            if (!File.Exists(concExplorerWindowsPath))
-            {
-                throw new Exception($"Cannot find ConcurrencyExplorer.exe at {concExplorerWindowsPath}");
-            }
+            string concExplorerName = "ConcurrencyExplorer.exe";
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Console.WriteLine($"\t{concExplorerWindowsPath} {corralTraceFileName}");
+                Console.WriteLine($"\t{concExplorerName} {corralTraceFileName}");
             }
         }
 
