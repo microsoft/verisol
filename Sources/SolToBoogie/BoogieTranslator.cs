@@ -77,6 +77,10 @@ namespace SolToBoogie
             ProcedureTranslator procTranslator = new ProcedureTranslator(context, generateInlineAttributesInBpl);
             sourceUnits.Accept(procTranslator);
 
+            // generate fallbacks
+            FallbackGenerator fallbackGenerator = new FallbackGenerator(context);
+            fallbackGenerator.Generate();
+
             // generate harness for each contract
             if (!context.TranslateFlags.NoHarness)
             {

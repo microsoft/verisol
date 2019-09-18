@@ -12,11 +12,12 @@ contract SimpleDAO {
     }
     function withdraw() public {
         uint oldBal = address(this).balance; 
+        assert(oldBal == 0);
         uint balSender = msg.sender.balance; // just to check if its translated
         uint amount = credit[msg.sender];
         if (amount > 0) {
             address payable a = msg.sender;
-            a.transfer(amount); // FIX
+            a.transfer(amount); // FIX (can't handle msg.sender.transfer)
             credit[msg.sender] = 0;
         }
         uint bal = address(this).balance;
