@@ -160,6 +160,8 @@ namespace SolidityAST
     public abstract class ASTNode
     {
         public int Id { get; set; }
+        
+        public int GasCost { get; set; }
 
         public string NodeType { get; set; }
 

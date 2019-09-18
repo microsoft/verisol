@@ -20,7 +20,7 @@ namespace SolToBoogie
 
         private bool mustHaveShadow(string globalName)
         {
-            return !globalName.Equals("revert");
+            return !globalName.Equals("revert") && !globalName.Equals("gas");
         }
 
         private bool isPublic(BoogieProcedure proc)
@@ -392,7 +392,13 @@ namespace SolToBoogie
                     successCallStmtList.AddStatement(new BoogieCallCmd(impl.Name + "__success", 
                                                                        impl.InParams.Select(inParam => (BoogieExpr)new BoogieIdentifierExpr(inParam.Name)).ToList(), 
                                                                        impl.OutParams.Select(outParam => new BoogieIdentifierExpr(outParam.Name)).ToList()));
-                    successCallStmtList.AddStatement(new BoogieAssumeCmd(new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, new BoogieIdentifierExpr(revertGlobalName))));
+                    BoogieExpr successAssumePred = new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, new BoogieIdentifierExpr(revertGlobalName));
+
+                    if (context.TranslateFlags.InstrumentGas)
+                    {
+                        successAssumePred = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, successAssumePred, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, new BoogieIdentifierExpr("gas"), new BoogieLiteralExpr(0)));
+                    }
+                    successCallStmtList.AddStatement(new BoogieAssumeCmd(successAssumePred));
                     
                     // Call fail version.
                     BoogieStmtList failCallStmtList = new BoogieStmtList();
@@ -406,7 +412,13 @@ namespace SolToBoogie
                     failCallStmtList.AddStatement(new BoogieCallCmd(impl.Name + "__fail", 
                                                  impl.InParams.Select(inParam => (BoogieExpr)new BoogieIdentifierExpr(inParam.Name)).ToList(), 
                                                 impl.OutParams.Select(outParam => new BoogieIdentifierExpr(outParam.Name)).ToList()));
-                    failCallStmtList.AddStatement(new BoogieAssumeCmd(new BoogieIdentifierExpr(revertGlobalName)));
+                    BoogieExpr failAssumePred = new BoogieIdentifierExpr(revertGlobalName);
+
+                    if (context.TranslateFlags.InstrumentGas)
+                    {
+                        failAssumePred = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, failAssumePred, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.LT, new BoogieIdentifierExpr("gas"), new BoogieLiteralExpr(0)));
+                    }
+                    failCallStmtList.AddStatement(new BoogieAssumeCmd(failAssumePred));
                     
                     stmtList.AddStatement(new BoogieIfCmd(new BoogieIdentifierExpr(exceptionVarName), failCallStmtList, successCallStmtList));
                 }
