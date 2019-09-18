@@ -50,7 +50,7 @@ namespace SolToBoogie
             // foreach contract C that is not Lib/VeriSol
             //    if (DT[this] == C)
             //       if C has a fallback f
-            //            call fallBack_C(from, to, msg.value)
+            //            call fallBack_C(this=to, sender=from, msg.value)
             //       else 
             //            assume msg.value == 0; 
             // else
@@ -70,8 +70,8 @@ namespace SolToBoogie
 
                 List<BoogieExpr> arguments = new List<BoogieExpr>()
                 {
-                    new BoogieIdentifierExpr(inParams[0].Name),
                     new BoogieIdentifierExpr(inParams[1].Name),
+                    new BoogieIdentifierExpr(inParams[0].Name),
                     new BoogieIdentifierExpr(inParams[2].Name)
                 };
                 List<BoogieIdentifierExpr> outParams = new List<BoogieIdentifierExpr>();

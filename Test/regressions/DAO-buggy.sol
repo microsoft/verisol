@@ -12,14 +12,14 @@ contract SimpleDAO {
     }
     function withdraw() public {
         uint oldBal = address(this).balance; 
+        address payable sender = msg.sender;
         uint balSender = msg.sender.balance; // just to check if its translated
         uint amount = credit[msg.sender];
         if (amount > 0) {
-            address payable a = msg.sender;
-            a.transfer(amount); // FIX (can't handle msg.sender.transfer)
+            sender.transfer(amount); // FIX (can't handle msg.sender.transfer)
             credit[msg.sender] = 0;
             uint bal1 = address(this).balance;
-            assert (false);
+            
         }
         uint bal = address(this).balance;
         assert(bal == oldBal || bal == (oldBal - amount));
@@ -37,6 +37,8 @@ contract Mallory {
     }
     function () payable external {
         if (count < 2) {
+            address payable sender = msg.sender;
+            address dbgThis = address(this);
             count ++;
             dao.withdraw();
         }

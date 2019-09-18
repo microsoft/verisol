@@ -319,9 +319,9 @@ namespace SolToBoogie
                     //assume Balance[msg.sender] >= msg.value
                     procBody.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, balnSender, msgVal)));
                     //balance[msg.sender] = balance[msg.sender] - msg.value
-                    procBody.AddStatement(new BoogieAssignCmd(balnSender, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, balnSender, msgVal)));
+                    procBody.AddStatement(new BoogieAssignCmd(balnSender, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, balnSender, msgVal)));
                     //balance[this] = balance[this] + msg.value
-                    procBody.AddStatement(new BoogieAssignCmd(balnThis, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, balnThis, msgVal)));
+                    procBody.AddStatement(new BoogieAssignCmd(balnThis, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, balnThis, msgVal)));
                     procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function END "));
                 }
 
