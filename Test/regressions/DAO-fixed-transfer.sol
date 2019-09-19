@@ -16,7 +16,7 @@ contract SimpleDAO {
         uint balSender = msg.sender.balance; // translated OK
         uint amount = credit[msg.sender];
         if (amount > 0) {
-            credit[msg.sender] = 0;  // FIXed
+            credit[msg.sender] = 0;  // FIXED
             sender.transfer(amount); // VeriSol bug #185 (can't handle msg.sender.transfer)
         }
         uint bal = address(this).balance;
