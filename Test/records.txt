@@ -114,4 +114,6 @@ LoopInvUsageExample.sol
 ContractInvUsageExample.sol
 DAO-Sim-Buggy.sol
 DAO-Sim-Fixed.sol
+DAO-buggy-transfer.sol
+DAO-fixed-transfer.sol
 ERC20-simplified.sol
