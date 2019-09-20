@@ -28,6 +28,7 @@ namespace SolToBoogie
                 new BoogieFormalParam(new BoogieTypedIdent("amount", BoogieType.Int))
             };
             List<BoogieVariable> outParams = new List<BoogieVariable>();
+
             List<BoogieAttribute> attributes = new List<BoogieAttribute>()
             {
                 new BoogieAttribute("inline", 1),
@@ -42,6 +43,8 @@ namespace SolToBoogie
             BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
             context.Program.AddDeclaration(implementation);
 
+            BoogieProcedure unknownFbProc = new BoogieProcedure("Fallback_UnknownType", inParams, outParams, attributes);
+            context.Program.AddDeclaration(unknownFbProc);
         }
 
         private BoogieStmtList GenerateBody(List<BoogieVariable> inParams)
@@ -50,12 +53,25 @@ namespace SolToBoogie
             // foreach contract C that is not Lib/VeriSol
             //    if (DT[this] == C)
             //       if C has a fallback f
-            //            call fallBack_C(this=to, sender=from, msg.value)
+            //            call ret := fallBack_C(this=to, sender=from, msg.value)
             //       else 
             //            assume msg.value == 0; 
             // else
             //     call fallBack_unknownType(from, to, msg.value) 
             BoogieIfCmd ifCmd = null;
+
+            Debug.Assert(context.ContractDefinitions.Count >= 1, "There should be at least one contract");
+
+            List<BoogieExpr> arguments = new List<BoogieExpr>()
+                {
+                    new BoogieIdentifierExpr(inParams[1].Name),
+                    new BoogieIdentifierExpr(inParams[0].Name),
+                    new BoogieIdentifierExpr(inParams[2].Name)
+                };
+            List<BoogieIdentifierExpr> outParams = new List<BoogieIdentifierExpr>();
+
+            BoogieStmtList noMatchCase = BoogieStmtList.MakeSingletonStmtList(
+                new BoogieCallCmd("Fallback_UnknownType", arguments, outParams));
 
             foreach (var contract in context.ContractDefinitions)
             {
@@ -68,13 +84,6 @@ namespace SolToBoogie
                 BoogieExpr rhs = new BoogieIdentifierExpr(contract.Name);
                 BoogieExpr guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lhs, rhs);
 
-                List<BoogieExpr> arguments = new List<BoogieExpr>()
-                {
-                    new BoogieIdentifierExpr(inParams[1].Name),
-                    new BoogieIdentifierExpr(inParams[0].Name),
-                    new BoogieIdentifierExpr(inParams[2].Name)
-                };
-                List<BoogieIdentifierExpr> outParams = new List<BoogieIdentifierExpr>();
 
                 BoogieStmtList thenBody = null;
 
@@ -95,10 +104,11 @@ namespace SolToBoogie
                         );
                 }
 
-                BoogieStmtList elseBody = ifCmd == null ? null : BoogieStmtList.MakeSingletonStmtList(ifCmd);
+                BoogieStmtList elseBody = ifCmd == null ? noMatchCase : BoogieStmtList.MakeSingletonStmtList(ifCmd);
 
                 ifCmd = new BoogieIfCmd(guard, thenBody, elseBody);
             }
+            
 
             return BoogieStmtList.MakeSingletonStmtList(ifCmd);
         }

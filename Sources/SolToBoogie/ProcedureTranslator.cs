@@ -1782,7 +1782,7 @@ namespace SolToBoogie
             {
                 VeriSolAssert(node.Arguments.Count == 1 || node.Arguments.Count == 2);
                 BoogieExpr predicate = TranslateExpr(node.Arguments[0]);
-                
+
                 if (!context.TranslateFlags.ModelReverts)
                 {
                     BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(predicate);
@@ -1791,11 +1791,11 @@ namespace SolToBoogie
                 else
                 {
                     BoogieStmtList revertLogic = new BoogieStmtList();
-                    
+
                     emitRevertLogic(revertLogic);
 
                     BoogieIfCmd requierCheck = new BoogieIfCmd(new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, predicate), revertLogic, null);
-                    
+
                     currentStmtList.AddStatement(requierCheck);
                 }
             }
@@ -1855,9 +1855,20 @@ namespace SolToBoogie
             {
                 TranslateCallStatement(node);
             }
-            else if (functionName.Equals("send") || functionName.Equals("transfer")  || functionName.Equals("value"))
+            else if (functionName.Equals("transfer"))
             {
-                TranslateSendTransferCallStmt(node, functionName);
+                TranslateTransferCallStmt(node);
+            }
+            else if (functionName.Equals("send"))
+            {
+                var tmpVarExpr = MkNewLocalVariableForFunctionReturn(node);
+                TranslateSendCallStmt(node, tmpVarExpr);
+                currentExpr = tmpVarExpr;
+            }
+            else if (functionName.Equals("call"))
+            {
+                currentStmtList.AddStatement(new BoogieSkipCmd(node.ToString()));
+                VeriSolAssert(false, "low-level call statements not implemented..");
             }
             else if (IsDynamicArrayPush(node))
             {
@@ -2067,20 +2078,50 @@ namespace SolToBoogie
         {
             if (name.Equals("transfer"))
             {
-                // call FallbackDispatch(from, to, amount)
-                currentStmtList.AddStatement(
-                    new BoogieCallCmd(
-                        "FallbackDispatch", 
-                        new List<BoogieExpr>() {new BoogieIdentifierExpr("this"), TranslateExpr(node.Expression), TranslateExpr(node.Arguments[0])}, 
-                        new List<BoogieIdentifierExpr>()
-                        )
-                    );
+                TranslateTransferCallStmt(node);
+                return;
+            } else if (name.Equals("send"))
+            {
                 return;
             }
-            currentStmtList.AddStatement(new BoogieSkipCmd(node.ToString()));
-            VeriSolAssert(false, "payable function transfer call statements not implemented..");
         }
 
+        private void TranslateTransferCallStmt(FunctionCall node)
+        {
+            // call FallbackDispatch(from, to, amount)
+            currentStmtList.AddStatement(
+                new BoogieCallCmd(
+                    "FallbackDispatch",
+                    new List<BoogieExpr>() { new BoogieIdentifierExpr("this"), TranslateExpr(node.Expression), TranslateExpr(node.Arguments[0]) },
+                    new List<BoogieIdentifierExpr>()
+                    )
+                );
+            return;
+        }
+
+        private void TranslateSendCallStmt(FunctionCall node, BoogieIdentifierExpr returnExpr)
+        {
+            var amountExpr = TranslateExpr(node.Arguments[0]);
+
+            var guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE,
+                new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("this")),
+                amountExpr);
+
+            // call FallbackDispatch(from, to, amount)
+            var thenBody = new BoogieStmtList();
+            thenBody.AddStatement(
+                new BoogieCallCmd(
+                "FallbackDispatch",
+                new List<BoogieExpr>() { new BoogieIdentifierExpr("this"), TranslateExpr(node.Expression), TranslateExpr(node.Arguments[0]) },
+                new List<BoogieIdentifierExpr>()
+                )); 
+            thenBody.AddStatement(new BoogieAssignCmd(returnExpr, new BoogieLiteralExpr(true)));
+
+            var elseBody = new BoogieAssignCmd(returnExpr, new BoogieLiteralExpr(false));
+
+            currentStmtList.AddStatement(new BoogieIfCmd(guard, thenBody, BoogieStmtList.MakeSingletonStmtList(elseBody)));
+            return;
+        }
 
         private void TranslateNewStatement(FunctionCall node, BoogieExpr lhs)
         {

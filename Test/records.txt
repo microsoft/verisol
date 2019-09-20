@@ -116,4 +116,6 @@ DAO-Sim-Buggy.sol
 DAO-Sim-Fixed.sol
 DAO-buggy-transfer.sol
 DAO-fixed-transfer.sol
+DAO-buggy-send.sol
+DAO-fixed-send.sol
 ERC20-simplified.sol
