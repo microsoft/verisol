@@ -23,6 +23,10 @@ namespace SolToBoogie
                 && typeDescription.TypeString.StartsWith("uint", StringComparison.CurrentCulture);
         }
 
+        // TODO(uint)
+        // public static bool IsUintWSize(this TypeDescription typeDescription, out unsigned sz)
+        
+     
         public static bool IsBool(this TypeDescription typeDescription)
         {
             return typeDescription.TypeString.StartsWith("bool", StringComparison.CurrentCulture);

@@ -147,6 +147,10 @@ namespace VeriSolRunner
             {
                 translatorFlags.NoDataValuesInfoFlag = true;
             }
+            if (args.Any(x => x.Equals("/useModularArithmetic")))
+            {
+                translatorFlags.UseModularArithmetic = true;
+            }
             if (args.Any(x => x.Equals("/omitUnsignedSemantics")))
             {
                 translatorFlags.NoUnsignedAssumesFlag = true;
@@ -175,7 +179,7 @@ namespace VeriSolRunner
             {
                 Debug.Assert(!translatorFlags.NoHarness &&
                     !translatorFlags.NoAxiomsFlag &&
-                    !translatorFlags.NoUnsignedAssumesFlag &&
+                    !translatorFlags.NoUnsignedAssumesFlag &&                   
                     !translatorFlags.NoDataValuesInfoFlag &&
                     !translatorFlags.NoSourceLineInfoFlag,
                     "Cannot perform verification when any of " +

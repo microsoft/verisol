@@ -1318,6 +1318,21 @@ namespace SolToBoogie
             }
         }
         
+        private void AddOverUnderflowAssumesForUints(BoogieExpr boogieExpr, TypeDescription typeDesc)
+        {
+            // skip based on a flag
+            if (!context.TranslateFlags.UseModularArithmetic)
+                return;
+
+            // Add: assume (lower-bound <= e && e <= upperbound);
+            // Compute lower and upper bounds:
+            string type = typeDesc.TypeString;
+            //if (type.StartsWith("uint"))
+            //{
+
+            //}
+
+        }
         private void emitRevertLogic(BoogieStmtList revertLogic)
         {
             BoogieAssignCmd setRevert = new BoogieAssignCmd(new BoogieIdentifierExpr("revert"), new BoogieLiteralExpr(true));
