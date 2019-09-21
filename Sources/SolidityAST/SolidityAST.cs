@@ -1647,6 +1647,14 @@ namespace SolidityAST
     {
         public List<Expression> Arguments { get; set; }
 
+        // implicit msg.value of a function call
+        // can be modified by foo.value(x)(args)
+        public Expression MsgValue { get; set; }
+
+        // implicit gas budget of a function call
+        // can be modified by foo.gas(x)(args)
+        public Expression MsgGas { get; set; }
+
         public Expression Expression { get; set; }
 
         public List<string> Names { get; set; }

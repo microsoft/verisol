@@ -2341,15 +2341,24 @@ namespace SolToBoogie
             VeriSolAssert(node.Expression is MemberAccess, $"Expecting a member access expression here {node.Expression.ToString()}");
             MemberAccess memberAccess = node.Expression as MemberAccess;
             BoogieExpr receiver = TranslateExpr(memberAccess.Expression);
-            BoogieTypedIdent msgValueId = context.MakeFreshTypedIdent(BoogieType.Int);
-            BoogieLocalVariable msgValueVar = new BoogieLocalVariable(msgValueId);
-            boogieToLocalVarsMap[currentBoogieProc].Add(msgValueVar);
+            BoogieExpr msgValueExpr = null;
+            if (node.MsgValue != null)
+            {
+                msgValueExpr = TranslateExpr(node.MsgValue);
+            }
+            else
+            {
+                var msgIdTmp = context.MakeFreshTypedIdent(BoogieType.Int);
+                BoogieLocalVariable msgValueVar = new BoogieLocalVariable(msgIdTmp);
+                boogieToLocalVarsMap[currentBoogieProc].Add(msgValueVar);
+                msgValueExpr = new BoogieIdentifierExpr(msgIdTmp.Name);
+            }
 
             List<BoogieExpr> arguments = new List<BoogieExpr>()
             {
                 receiver,
                 new BoogieIdentifierExpr("this"),
-                new BoogieIdentifierExpr(msgValueId.Name), //TODO: how do we get msg.value for external calls except for send/receive/value
+                msgValueExpr, 
             };
 
             foreach (Expression arg in node.Arguments)

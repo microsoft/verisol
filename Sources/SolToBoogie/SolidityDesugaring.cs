@@ -57,7 +57,7 @@ namespace SolToBoogie
                     node.Name = "FallbackMethod";
                 }
             }
-            return false;
+            return base.Visit(node);
         }
 
         public override bool Visit(PlaceholderStatement node)
@@ -199,6 +199,57 @@ namespace SolToBoogie
         }
 
         public override void EndVisit(ExpressionStatement node)
+        {
+            currentStatement = null;
+        }
+
+        public override bool Visit(FunctionCall node)
+        {
+            //a function call may be of the form
+            // foo(x) | foo.value(y)(x) | foo.gas(z)(x) | foo.value(z).gas(y)(x) | foo.gas(x).value(y)(z)
+            // e.foo(x) | e.foo.value(y)(x) | e.foo.gas(z)(x) | e.foo.value(z).gas(y)(x) | e.foo.gas(x).value(y)(z)
+            // foo could be "call" as well
+            //
+            //
+            // let us remove value/gas attributes and remember then
+
+
+            node.MsgGas = null;
+            node.MsgValue = null;
+
+            if (node.Expression is FunctionCall functionCall)
+            {
+                if (functionCall.Expression is MemberAccess ma)
+                {
+                    // first level
+                    if (ma.MemberName.Equals("value") ||
+                        ma.MemberName.Equals("gas"))
+                    {
+                        node.Expression = ma.Expression;
+                        node.MsgValue = ma.MemberName.Equals("value") ? functionCall.Arguments[0] : node.MsgValue;
+                        node.MsgGas = ma.MemberName.Equals("gas") ? functionCall.Arguments[0]: node.MsgGas;
+
+                        // second level
+                        if (ma.Expression is FunctionCall nestedFunctionCall)
+                        {
+                            if (nestedFunctionCall.Expression is MemberAccess nestedMa)
+                            {
+                                if (nestedMa.MemberName.Equals("value") ||
+                                    nestedMa.MemberName.Equals("gas"))
+                                {
+                                    node.Expression = nestedMa.Expression;
+                                    node.MsgValue = nestedMa.MemberName.Equals("value") ? nestedFunctionCall.Arguments[0] : node.MsgValue;
+                                    node.MsgGas = nestedMa.MemberName.Equals("gas") ? nestedFunctionCall.Arguments[0] : node.MsgGas;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return base.Visit(node);
+        }
+
+        public override void EndVisit(FunctionCall node)
         {
             currentStatement = null;
         }

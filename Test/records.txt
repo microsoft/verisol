@@ -118,4 +118,6 @@ DAO-buggy-transfer.sol
 DAO-fixed-transfer.sol
 DAO-buggy-send.sol
 DAO-fixed-send.sol
+DAO-buggy-value.sol
+DAO-fixed-value.sol
 ERC20-simplified.sol

@@ -361,24 +361,6 @@ namespace SolToBoogie
 
         public static string GetFuncNameFromFuncCall(FunctionCall node)
         {
-            //a function call may be of the form
-            // e.foo(x) | e.foo.value(y)(x) | e.foo.gas(z)(x) | e.foo.value(z).gas(y)(x) | e.foo.gas(x).value(y)(z)
-            // foo could be "call" as well
-            // we will remove value/gas attributes and remember then
-
-            if (node.Expression is FunctionCall functionCall)
-            {
-                if (functionCall.Expression is MemberAccess ma)
-                {
-                    if (ma.MemberName.Equals("value") ||
-                        ma.MemberName.Equals("gas"))
-                    {
-                        return GetFuncNameFromFuncCallExpr(ma.Expression);
-                    }
-                }
-            }
-
-
             if (node.Expression is FunctionCall funcCall)
             {
                 if (funcCall.Expression is MemberAccess memberAccess)
@@ -396,7 +378,7 @@ namespace SolToBoogie
             }
         }
 
-        private static string GetFuncNameFromFuncCallExpr(Expression expr)
+        public static string GetFuncNameFromFuncCallExpr(Expression expr)
         {
             string functionName = null;
             if (expr is Identifier ident)
