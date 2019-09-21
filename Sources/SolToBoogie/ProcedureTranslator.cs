@@ -1769,7 +1769,7 @@ namespace SolToBoogie
                 return false;
             }
 
-            var functionName = TransUtils.GetFuncNameFromFunctionCall(node);
+            var functionName = TransUtils.GetFuncNameFromFuncCall(node);
 
             if (functionName.Equals("assert"))
             {
@@ -2241,7 +2241,7 @@ namespace SolToBoogie
 
         private bool IsDynamicArrayPush(FunctionCall node)
         {
-            string functionName = TransUtils.GetFuncNameFromFunctionCall(node);
+            string functionName = TransUtils.GetFuncNameFromFuncCall(node);
             if (functionName.Equals("push"))
             {
                 VeriSolAssert(node.Expression is MemberAccess);
@@ -2397,7 +2397,7 @@ namespace SolToBoogie
             else if (IsStaticDispatching(node))
             {
                 ContractDefinition contract = GetStaticDispatchingContract(node);
-                string functionName = TransUtils.GetFuncNameFromFunctionCall(node);
+                string functionName = TransUtils.GetFuncNameFromFuncCall(node);
                 string callee = functionName + "_" + contract.Name;
                 BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, outParams);
 

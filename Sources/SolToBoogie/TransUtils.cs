@@ -288,7 +288,7 @@ namespace SolToBoogie
             }
             else
             {
-                string functionName = GetFuncNameFromFunctionCall(node);
+                string functionName = GetFuncNameFromFuncCall(node);
                 StringBuilder builder = new StringBuilder();
                 builder.Append(functionName).Append("(");
                 if (node.Arguments.Count > 0)
@@ -359,8 +359,26 @@ namespace SolToBoogie
             }
         }
 
-        public static string GetFuncNameFromFunctionCall(FunctionCall node)
+        public static string GetFuncNameFromFuncCall(FunctionCall node)
         {
+            //a function call may be of the form
+            // e.foo(x) | e.foo.value(y)(x) | e.foo.gas(z)(x) | e.foo.value(z).gas(y)(x) | e.foo.gas(x).value(y)(z)
+            // foo could be "call" as well
+            // we will remove value/gas attributes and remember then
+
+            if (node.Expression is FunctionCall functionCall)
+            {
+                if (functionCall.Expression is MemberAccess ma)
+                {
+                    if (ma.MemberName.Equals("value") ||
+                        ma.MemberName.Equals("gas"))
+                    {
+                        return GetFuncNameFromFuncCallExpr(ma.Expression);
+                    }
+                }
+            }
+
+
             if (node.Expression is FunctionCall funcCall)
             {
                 if (funcCall.Expression is MemberAccess memberAccess)
@@ -395,7 +413,7 @@ namespace SolToBoogie
             }
             else if (expr is FunctionCall funcCall)
             {
-                functionName = GetFuncNameFromFunctionCall(funcCall);
+                functionName = GetFuncNameFromFuncCall(funcCall);
             }
             else
             {
