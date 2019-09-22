@@ -6,7 +6,9 @@ namespace SolToBoogie
     using System.CodeDom.Compiler;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Numerics;
+    using System.Security.Cryptography.X509Certificates;
     using BoogieAST;
     using SolidityAST;
 
@@ -43,7 +45,9 @@ namespace SolToBoogie
             BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
             context.Program.AddDeclaration(implementation);
 
-            BoogieProcedure unknownFbProc = new BoogieProcedure("Fallback_UnknownType", inParams, outParams, attributes);
+            // let us havoc all the global variables when fallback_unknowntype is called
+            var modSet = context.Program.Declarations.Where(x => x is BoogieGlobalVariable).Select(x => (BoogieGlobalVariable) x).ToList();
+            BoogieProcedure unknownFbProc = new BoogieProcedure("Fallback_UnknownType", inParams, outParams, attributes, modSet);
             context.Program.AddDeclaration(unknownFbProc);
         }
 
