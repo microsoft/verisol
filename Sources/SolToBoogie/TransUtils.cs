@@ -288,7 +288,7 @@ namespace SolToBoogie
             }
             else
             {
-                string functionName = GetFuncNameFromFunctionCall(node);
+                string functionName = GetFuncNameFromFuncCall(node);
                 StringBuilder builder = new StringBuilder();
                 builder.Append(functionName).Append("(");
                 if (node.Arguments.Count > 0)
@@ -359,7 +359,7 @@ namespace SolToBoogie
             }
         }
 
-        public static string GetFuncNameFromFunctionCall(FunctionCall node)
+        public static string GetFuncNameFromFuncCall(FunctionCall node)
         {
             if (node.Expression is FunctionCall funcCall)
             {
@@ -378,7 +378,7 @@ namespace SolToBoogie
             }
         }
 
-        private static string GetFuncNameFromFuncCallExpr(Expression expr)
+        public static string GetFuncNameFromFuncCallExpr(Expression expr)
         {
             string functionName = null;
             if (expr is Identifier ident)
@@ -395,7 +395,7 @@ namespace SolToBoogie
             }
             else if (expr is FunctionCall funcCall)
             {
-                functionName = GetFuncNameFromFunctionCall(funcCall);
+                functionName = GetFuncNameFromFuncCall(funcCall);
             }
             else
             {

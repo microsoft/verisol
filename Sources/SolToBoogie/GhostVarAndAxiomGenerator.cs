@@ -156,6 +156,10 @@ namespace SolToBoogie
 
         private void GenerateGlobalVariables()
         {
+            BoogieTypedIdent balanceId = new BoogieTypedIdent("Balance", new BoogieMapType(BoogieType.Ref, BoogieType.Int));
+            BoogieGlobalVariable balanceVar = new BoogieGlobalVariable(balanceId);
+            context.Program.AddDeclaration(balanceVar);
+
             BoogieTypedIdent dtypeId = new BoogieTypedIdent("DType", new BoogieMapType(BoogieType.Ref, contractType));
             BoogieGlobalVariable dtype = new BoogieGlobalVariable(dtypeId);
             context.Program.AddDeclaration(dtype);

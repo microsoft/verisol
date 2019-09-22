@@ -152,12 +152,7 @@ namespace VeriSolRunner
                 Console.WriteLine($"\t*** Formal Verification successful upto {CorralRecursionLimit} transactions");
                 return true;
             }
-            else if (corralOut.Contains("Error"))
-            {
-                Console.WriteLine($"\t*** Error in Corral, see corral.txt");
-                return false;
-            }
-            else
+            else if (corralOut.Contains("Execution trace:"))
             {
                 Console.WriteLine($"\t*** Found a counterexample");
 
@@ -178,6 +173,12 @@ namespace VeriSolRunner
                 }
                 return false;
             }
+            else 
+            {
+                Console.WriteLine($"\t*** Corral may have aborted abnormally, see corral.txt");
+                return false;
+            }
+
         }
 
         private void DisplayTraceUsingConcurrencyExplorer()
@@ -193,6 +194,7 @@ namespace VeriSolRunner
             }
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
+                Console.WriteLine($"\tRun the command below to see the trace in a viewer:");
                 Console.WriteLine($"\t{concExplorerWindowsPath} {corralTraceFileName}");
             }
         }

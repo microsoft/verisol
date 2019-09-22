@@ -202,7 +202,7 @@ namespace SolToBoogie
                 currentStmtList.AddStatement(callCmd);
             }
 
-            // Add default parameters "this", "msg.sender" (ignoring "msg.value"):
+            // Add default parameters "this", "msg.sender", "msg.value"
             addrType = new TypeDescription();
             addrType.TypeString = "address";
             callCmd = InstrumentForPrintingData(addrType, new BoogieIdentifierExpr(inParams[0].Name), "this");
@@ -211,6 +211,13 @@ namespace SolToBoogie
                 currentStmtList.AddStatement(callCmd);
             }
             callCmd = InstrumentForPrintingData(addrType, new BoogieIdentifierExpr(inParams[1].Name), "msg.sender");
+            if (callCmd != null)
+            {
+                currentStmtList.AddStatement(callCmd);
+            }
+            var valType = new TypeDescription();
+            valType.TypeString = "int";
+            callCmd = InstrumentForPrintingData(valType, new BoogieIdentifierExpr(inParams[2].Name), "msg.value");
             if (callCmd != null)
             {
                 currentStmtList.AddStatement(callCmd);
@@ -264,7 +271,7 @@ namespace SolToBoogie
             // procedure name
             string procName = node.Name + "_" + currentContract.Name;
 
-            if (node.IsConstructorForContract(currentContract.Name))
+            if (node.IsConstructor)
             {
                 procName += "_NoBaseCtor";
             }
@@ -291,7 +298,8 @@ namespace SolToBoogie
             // attributes
             List<BoogieAttribute> attributes = new List<BoogieAttribute>();
             if ((node.Visibility == EnumVisibility.PUBLIC || node.Visibility == EnumVisibility.EXTERNAL)
-                && !node.IsConstructorForContract(currentContract.Name))
+                && !node.IsConstructor
+                && !node.IsFallback) //don't expose fallback for calling directly
             {
                 attributes.Add(new BoogieAttribute("public"));
             }
@@ -333,6 +341,22 @@ namespace SolToBoogie
                 // Add possible assume statements from parameters
                 procBody.AppendStmtList(assumesForParamsAndReturn);
 
+                // if payable, then modify the balance
+                if (node.StateMutability == EnumStateMutability.PAYABLE)
+                {
+                    procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function START "));
+                    var balnSender = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("msgsender_MSG"));
+                    var balnThis = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("this"));
+                    var msgVal = new BoogieIdentifierExpr("msgvalue_MSG");
+                    //assume Balance[msg.sender] >= msg.value
+                    procBody.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, balnSender, msgVal)));
+                    //balance[msg.sender] = balance[msg.sender] - msg.value
+                    procBody.AddStatement(new BoogieAssignCmd(balnSender, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, balnSender, msgVal)));
+                    //balance[this] = balance[this] + msg.value
+                    procBody.AddStatement(new BoogieAssignCmd(balnThis, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, balnThis, msgVal)));
+                    procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function END "));
+                }
+
                 // if (node.Modifiers.Count == 1)
                 for (int i = 0; i < node.Modifiers.Count; ++i)
                 {
@@ -369,7 +393,7 @@ namespace SolToBoogie
                 }
 
                 // initialization statements
-                if (node.IsConstructorForContract(currentContract.Name))
+                if (node.IsConstructor)
                 {
                     BoogieStmtList initStmts = GenerateInitializationStmts(currentContract);
                     initStmts.AppendStmtList(procBody);
@@ -393,7 +417,7 @@ namespace SolToBoogie
             }
 
             // generate real constructors
-            if (node.IsConstructorForContract(currentContract.Name))
+            if (node.IsConstructor)
             {
                 GenerateConstructorWithBaseCalls(node, inParams);
             }
@@ -795,7 +819,7 @@ namespace SolToBoogie
         // generate actual constructor procedures that invoke constructors without base in linearized order
         private void GenerateConstructorWithBaseCalls(FunctionDefinition ctor, List<BoogieVariable> inParams)
         {
-            VeriSolAssert(ctor.IsConstructorForContract(currentContract.Name), $"{ctor.Name} is not a constructor");
+            VeriSolAssert(ctor.IsConstructor, $"{ctor.Name} is not a constructor");
 
             ContractDefinition contract = context.GetContractByFunction(ctor);
             string procName = contract.Name + "_" + contract.Name;
@@ -880,6 +904,7 @@ namespace SolToBoogie
 
                             // Do we call the constructor or assume that it is invoked in teh base contract?
                             /* Assume it is invoked in the constructor for the base contract if the parameter list is non-empty (HACK) */ 
+                            // Issue #101
                             var baseCtr = context.IsConstructorDefined(baseContract) ? context.GetConstructorByContract(baseContract) : null;
                             if (baseCtr != null && baseCtr.Parameters.Length() > 0)
                             {
@@ -1099,7 +1124,8 @@ namespace SolToBoogie
             {
                 lhs.Add(TranslateExpr(node.LeftHandSide));
             }
-         
+
+            // TODO: this part should go into Translate a function call expression
             if (node.RightHandSide is FunctionCall funcCall)
             {
                 // if lhs is not an identifier (e.g. a[i]), then
@@ -1714,6 +1740,12 @@ namespace SolToBoogie
                 return false;
             }
 
+            if (node.MemberName.Equals("balance"))
+            {
+                currentExpr = TranslateBalance(node);
+                return false;
+            }
+
             // only structs will need to use x.f.g notation, since 
             // one can only access functions of nested contracts
             // RESTRICTION: only handle e.f where e is Identifier | IndexExpr | FunctionCall
@@ -1779,6 +1811,13 @@ namespace SolToBoogie
             }
         }
 
+        private BoogieExpr TranslateBalance(MemberAccess node)
+        {
+            BoogieExpr indexExpr = TranslateExpr(node.Expression);
+            var mapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), indexExpr);
+            return mapSelect;
+        }
+
         private BoogieExpr TranslateArrayLength(MemberAccess node)
         {
             VeriSolAssert(node.MemberName.Equals("length"));
@@ -1800,7 +1839,7 @@ namespace SolToBoogie
                 return false;
             }
 
-            var functionName = TransUtils.GetFuncNameFromFunctionCall(node);
+            var functionName = TransUtils.GetFuncNameFromFuncCall(node);
 
             if (functionName.Equals("assert"))
             {
@@ -1813,7 +1852,7 @@ namespace SolToBoogie
             {
                 VeriSolAssert(node.Arguments.Count == 1 || node.Arguments.Count == 2);
                 BoogieExpr predicate = TranslateExpr(node.Arguments[0]);
-                
+
                 if (!context.TranslateFlags.ModelReverts)
                 {
                     BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(predicate);
@@ -1822,11 +1861,11 @@ namespace SolToBoogie
                 else
                 {
                     BoogieStmtList revertLogic = new BoogieStmtList();
-                    
+
                     emitRevertLogic(revertLogic);
 
                     BoogieIfCmd requierCheck = new BoogieIfCmd(new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, predicate), revertLogic, null);
-                    
+
                     currentStmtList.AddStatement(requierCheck);
                 }
             }
@@ -1882,9 +1921,20 @@ namespace SolToBoogie
             {
                 TranslateCallStatement(node);
             }
-            else if (functionName.Equals("send") || functionName.Equals("delegatecall"))
+            else if (functionName.Equals("delegatecall"))
             {
-                VeriSolAssert(false, $"Not implemented functions {functionName}");
+                VeriSolAssert(false, "low-level delegatecall statements not supported...");
+            }
+            else if (functionName.Equals("transfer"))
+            {
+                TranslateTransferCallStmt(node);
+            }
+            else if (functionName.Equals("send"))
+            {
+                var tmpVarExpr = MkNewLocalVariableForFunctionReturn(node);
+                var amountExpr = TranslateExpr(node.Arguments[0]);
+                TranslateSendCallStmt(node, tmpVarExpr, amountExpr);
+                currentExpr = tmpVarExpr;
             }
             else if (IsDynamicArrayPush(node))
             {
@@ -2084,10 +2134,71 @@ namespace SolToBoogie
             return;
         }
 
-        private void TranslateCallStatement(FunctionCall node)
+        private void TranslateCallStatement(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
-            currentStmtList.AddStatement(new BoogieSkipCmd(node.ToString()));
-            VeriSolAssert(false, "call statements not implemented..");
+            Debug.Assert(outParams == null || outParams.Count == 2, "Number of outPArams for call statement should be 2");
+            // only handle call.value(x).gas(y)("") 
+            var arg0 = node.Arguments[0].ToString();
+            if (!string.IsNullOrEmpty(arg0) && !arg0.Equals("\'\'"))
+            {
+                currentStmtList.AddStatement(new BoogieSkipCmd(node.ToString()));
+                VeriSolAssert(false, "low-level call statements with non-empty signature not implemented..");
+            }
+
+            // almost identical to send(amount)
+            BoogieIdentifierExpr tmpVarExpr = outParams[0]; //bool part of the tuple
+            if (tmpVarExpr == null)
+            {
+                tmpVarExpr = MkNewLocalVariableWithType(BoogieType.Bool);
+            }
+
+            var amountExpr = node.MsgValue != null ? TranslateExpr(node.MsgValue) : new BoogieLiteralExpr(BigInteger.Zero);
+            TranslateSendCallStmt(node, tmpVarExpr, amountExpr);
+            currentExpr = tmpVarExpr;
+        }
+
+        private void TranslateTransferCallStmt(FunctionCall node)
+        {
+            var amountExpr = TranslateExpr(node.Arguments[0]);
+
+            // call FallbackDispatch(from, to, amount)
+            BoogieCallCmd callStmt = MkFallbackDispatchCallCmd(node, amountExpr);
+
+            currentStmtList.AddStatement(callStmt);
+            return;
+        }
+
+        private BoogieCallCmd MkFallbackDispatchCallCmd(FunctionCall node, BoogieExpr amountExpr)
+        {
+            Debug.Assert(node.Expression is MemberAccess, $"Expecting a call of the form e.send/e.transfer/e.call, but found {node.ToString()}");
+            var memberAccess = node.Expression as MemberAccess;
+            var baseExpr = memberAccess.Expression;
+
+            var callStmt = new BoogieCallCmd(
+                    "FallbackDispatch",
+                    new List<BoogieExpr>() { new BoogieIdentifierExpr("this"), TranslateExpr(baseExpr), amountExpr },
+                    new List<BoogieIdentifierExpr>()
+                    );
+            return callStmt;
+        }
+
+        private void TranslateSendCallStmt(FunctionCall node, BoogieIdentifierExpr returnExpr, BoogieExpr amountExpr)
+        {
+            var guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE,
+                new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("this")),
+                amountExpr);
+
+            // call FallbackDispatch(from, to, amount)
+            var callStmt = MkFallbackDispatchCallCmd(node, amountExpr);
+
+            var thenBody = new BoogieStmtList();
+            thenBody.AddStatement(callStmt); 
+            thenBody.AddStatement(new BoogieAssignCmd(returnExpr, new BoogieLiteralExpr(true)));
+
+            var elseBody = new BoogieAssignCmd(returnExpr, new BoogieLiteralExpr(false));
+
+            currentStmtList.AddStatement(new BoogieIfCmd(guard, thenBody, BoogieStmtList.MakeSingletonStmtList(elseBody)));
+            return;
         }
 
         private void TranslateNewStatement(FunctionCall node, BoogieExpr lhs)
@@ -2130,7 +2241,7 @@ namespace SolToBoogie
             {
                 tmpVarIdentExpr,
                 new BoogieIdentifierExpr("this"),
-                msgValueIdentExpr,
+                new BoogieLiteralExpr(BigInteger.Zero)//assuming msg.value is 0 for new
             };
             foreach (Expression arg in node.Arguments)
             {
@@ -2185,7 +2296,7 @@ namespace SolToBoogie
             {
                 tmpVarIdentExpr,
                 new BoogieIdentifierExpr("this"),
-                msgValueIdentExpr,
+                new BoogieLiteralExpr(BigInteger.Zero) // msg.value is 0 
             };
             foreach (Expression arg in node.Arguments)
             {
@@ -2208,7 +2319,7 @@ namespace SolToBoogie
 
         private bool IsDynamicArrayPush(FunctionCall node)
         {
-            string functionName = TransUtils.GetFuncNameFromFunctionCall(node);
+            string functionName = TransUtils.GetFuncNameFromFuncCall(node);
             if (functionName.Equals("push"))
             {
                 VeriSolAssert(node.Expression is MemberAccess);
@@ -2273,7 +2384,12 @@ namespace SolToBoogie
                     {
                         return true;
                     }
-                } else if (memberAccess.Expression is FunctionCall)
+                } else if (memberAccess.Expression.ToString().Equals("msg.sender"))
+                {
+                    // calls can be of the form "msg.sender.call()" or "msg.sender.send()" or "msg.sender.transfer()"
+                    return true;
+                }
+                else if (memberAccess.Expression is FunctionCall)
                 {
                     return true;
                 } else if (memberAccess.Expression is IndexAccess)
@@ -2306,17 +2422,43 @@ namespace SolToBoogie
         private void TranslateExternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
             VeriSolAssert(node.Expression is MemberAccess, $"Expecting a member access expression here {node.Expression.ToString()}");
-            MemberAccess memberAccess = node.Expression as MemberAccess;
+
+           MemberAccess memberAccess = node.Expression as MemberAccess;
+            if(memberAccess.MemberName.Equals("call"))
+            {
+                TranslateCallStatement(node, outParams);
+                return;
+            }
+            else if (memberAccess.MemberName.Equals("send"))
+            {
+                TranslateSendCallStmt(node, outParams[0], TranslateExpr(node.Arguments[0]));
+                return;
+            }
+            else if (memberAccess.MemberName.Equals("transfer"))
+            {
+                TranslateTransferCallStmt(node); // this may be unreachable as we already trap transfer directly
+                return;
+            }
+
             BoogieExpr receiver = TranslateExpr(memberAccess.Expression);
-            BoogieTypedIdent msgValueId = context.MakeFreshTypedIdent(BoogieType.Int);
-            BoogieLocalVariable msgValueVar = new BoogieLocalVariable(msgValueId);
-            boogieToLocalVarsMap[currentBoogieProc].Add(msgValueVar);
+            BoogieExpr msgValueExpr = null;
+            if (node.MsgValue != null)
+            {
+                msgValueExpr = TranslateExpr(node.MsgValue);
+            }
+            else
+            {
+                var msgIdTmp = context.MakeFreshTypedIdent(BoogieType.Int);
+                BoogieLocalVariable msgValueVar = new BoogieLocalVariable(msgIdTmp);
+                boogieToLocalVarsMap[currentBoogieProc].Add(msgValueVar);
+                msgValueExpr = new BoogieIdentifierExpr(msgIdTmp.Name);
+            }
 
             List<BoogieExpr> arguments = new List<BoogieExpr>()
             {
                 receiver,
                 new BoogieIdentifierExpr("this"),
-                new BoogieIdentifierExpr(msgValueId.Name),
+                msgValueExpr, 
             };
 
             foreach (Expression arg in node.Arguments)
@@ -2364,7 +2506,7 @@ namespace SolToBoogie
             else if (IsStaticDispatching(node))
             {
                 ContractDefinition contract = GetStaticDispatchingContract(node);
-                string functionName = TransUtils.GetFuncNameFromFunctionCall(node);
+                string functionName = TransUtils.GetFuncNameFromFuncCall(node);
                 string callee = functionName + "_" + contract.Name;
                 BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, outParams);
 
@@ -2445,6 +2587,8 @@ namespace SolToBoogie
             contractDefinition = null;
             if (node.Expression is MemberAccess memberAccess)
             {
+                if (memberAccess.MemberName.Equals("call"))
+                    return false;
                 VeriSolAssert(memberAccess.ReferencedDeclaration != null);
                 var contractTypeStr = memberAccess.Expression.TypeDescriptions.TypeString;
 
