@@ -1086,7 +1086,8 @@ namespace SolToBoogie
             {
                 lhs.Add(TranslateExpr(node.LeftHandSide));
             }
-         
+
+            // TODO: this part should go into Translate a function call expression
             if (node.RightHandSide is FunctionCall funcCall)
             {
                 // if lhs is not an identifier (e.g. a[i]), then
@@ -1853,7 +1854,7 @@ namespace SolToBoogie
             }
             else if (functionName.Equals("delegatecall"))
             {
-                TranslateCallStatement(node);
+                VeriSolAssert(false, "low-level delegatecall statements not supported...");
             }
             else if (functionName.Equals("transfer"))
             {
@@ -1862,13 +1863,9 @@ namespace SolToBoogie
             else if (functionName.Equals("send"))
             {
                 var tmpVarExpr = MkNewLocalVariableForFunctionReturn(node);
-                TranslateSendCallStmt(node, tmpVarExpr);
+                var amountExpr = TranslateExpr(node.Arguments[0]);
+                TranslateSendCallStmt(node, tmpVarExpr, amountExpr);
                 currentExpr = tmpVarExpr;
-            }
-            else if (functionName.Equals("call"))
-            {
-                currentStmtList.AddStatement(new BoogieSkipCmd(node.ToString()));
-                VeriSolAssert(false, "low-level call statements not implemented..");
             }
             else if (IsDynamicArrayPush(node))
             {
@@ -2068,22 +2065,27 @@ namespace SolToBoogie
             return;
         }
 
-        private void TranslateCallStatement(FunctionCall node)
+        private void TranslateCallStatement(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
-            currentStmtList.AddStatement(new BoogieSkipCmd(node.ToString()));
-            VeriSolAssert(false, "low-level call/delegatecall statements not implemented..");
-        }
-
-        private void TranslateSendTransferCallStmt(FunctionCall node, string name)
-        {
-            if (name.Equals("transfer"))
+            Debug.Assert(outParams == null || outParams.Count == 2, "Number of outPArams for call statement should be 2");
+            // only handle call.value(x).gas(y)("") 
+            var arg0 = node.Arguments[0].ToString();
+            if (!string.IsNullOrEmpty(arg0) && !arg0.Equals("\'\'"))
             {
-                TranslateTransferCallStmt(node);
-                return;
-            } else if (name.Equals("send"))
-            {
-                return;
+                currentStmtList.AddStatement(new BoogieSkipCmd(node.ToString()));
+                VeriSolAssert(false, "low-level call statements with non-empty signature not implemented..");
             }
+
+            // almost identical to send(amount)
+            BoogieIdentifierExpr tmpVarExpr = outParams[0]; //bool part of the tuple
+            if (tmpVarExpr == null)
+            {
+                tmpVarExpr = MkNewLocalVariableWithType(BoogieType.Bool);
+            }
+
+            var amountExpr = node.MsgValue != null ? TranslateExpr(node.MsgValue) : new BoogieLiteralExpr(BigInteger.Zero);
+            TranslateSendCallStmt(node, tmpVarExpr, amountExpr);
+            currentExpr = tmpVarExpr;
         }
 
         private void TranslateTransferCallStmt(FunctionCall node)
@@ -2099,10 +2101,8 @@ namespace SolToBoogie
             return;
         }
 
-        private void TranslateSendCallStmt(FunctionCall node, BoogieIdentifierExpr returnExpr)
+        private void TranslateSendCallStmt(FunctionCall node, BoogieIdentifierExpr returnExpr, BoogieExpr amountExpr)
         {
-            var amountExpr = TranslateExpr(node.Arguments[0]);
-
             var guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE,
                 new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("this")),
                 amountExpr);
@@ -2339,7 +2339,18 @@ namespace SolToBoogie
         private void TranslateExternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
             VeriSolAssert(node.Expression is MemberAccess, $"Expecting a member access expression here {node.Expression.ToString()}");
-            MemberAccess memberAccess = node.Expression as MemberAccess;
+
+           MemberAccess memberAccess = node.Expression as MemberAccess;
+            if(memberAccess.MemberName.Equals("call"))
+            {
+                TranslateCallStatement(node, outParams);
+                return;
+            }
+            else if (memberAccess.MemberName.Equals("send"))
+            {
+                Debug.Assert(false, "Don't yet handle x = send(..) calls");
+            }
+
             BoogieExpr receiver = TranslateExpr(memberAccess.Expression);
             BoogieExpr msgValueExpr = null;
             if (node.MsgValue != null)
@@ -2487,6 +2498,8 @@ namespace SolToBoogie
             contractDefinition = null;
             if (node.Expression is MemberAccess memberAccess)
             {
+                if (memberAccess.MemberName.Equals("call"))
+                    return false;
                 VeriSolAssert(memberAccess.ReferencedDeclaration != null);
                 var contractTypeStr = memberAccess.Expression.TypeDescriptions.TypeString;
 

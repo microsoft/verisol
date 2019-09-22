@@ -120,4 +120,6 @@ DAO-buggy-send.sol
 DAO-fixed-send.sol
 DAO-buggy-value.sol
 DAO-fixed-value.sol
+DAO-buggy-call.sol
+DAO-fixed-call.sol
 ERC20-simplified.sol
