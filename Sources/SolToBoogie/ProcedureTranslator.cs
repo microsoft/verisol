@@ -2348,7 +2348,8 @@ namespace SolToBoogie
             }
             else if (memberAccess.MemberName.Equals("send"))
             {
-                Debug.Assert(false, "Don't yet handle x = send(..) calls");
+                TranslateSendCallStmt(node, outParams[0], TranslateExpr(node.Arguments[0]));
+                return;
             }
 
             BoogieExpr receiver = TranslateExpr(memberAccess.Expression);
