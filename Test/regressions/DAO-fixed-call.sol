@@ -12,14 +12,13 @@ contract SimpleDAO {
     }
     function withdraw() public {
         uint oldBal = address(this).balance; 
-        address payable sender = msg.sender;
         uint balSender = msg.sender.balance; // translated OK
         uint amount = credit[msg.sender];
         if (amount > 0) {
             credit[msg.sender] = 0;  // fix
             bool success;
             bytes memory status;
-            (success, status) = sender.call.value(amount)(""); //VeriSol bug #22 (tuple declarations not handled in same declaration)
+            (success, status) = msg.sender.call.value(amount)(""); //VeriSol bug #22 (tuple declarations not handled in same declaration)
             require(success);
         }
         uint bal = address(this).balance;

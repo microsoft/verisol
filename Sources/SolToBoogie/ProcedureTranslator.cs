@@ -1665,6 +1665,8 @@ namespace SolToBoogie
 
         public override bool Visit(MemberAccess node)
         {
+            //msg.sender/msg.value etc.
+
             // length attribute of arrays
             if (node.MemberName.Equals("length"))
             {
@@ -2090,15 +2092,27 @@ namespace SolToBoogie
 
         private void TranslateTransferCallStmt(FunctionCall node)
         {
+            var amountExpr = TranslateExpr(node.Arguments[0]);
+
             // call FallbackDispatch(from, to, amount)
-            currentStmtList.AddStatement(
-                new BoogieCallCmd(
-                    "FallbackDispatch",
-                    new List<BoogieExpr>() { new BoogieIdentifierExpr("this"), TranslateExpr(node.Expression), TranslateExpr(node.Arguments[0]) },
-                    new List<BoogieIdentifierExpr>()
-                    )
-                );
+            BoogieCallCmd callStmt = MkFallbackDispatchCallCmd(node, amountExpr);
+
+            currentStmtList.AddStatement(callStmt);
             return;
+        }
+
+        private BoogieCallCmd MkFallbackDispatchCallCmd(FunctionCall node, BoogieExpr amountExpr)
+        {
+            Debug.Assert(node.Expression is MemberAccess, $"Expecting a call of the form e.send/e.transfer/e.call, but found {node.ToString()}");
+            var memberAccess = node.Expression as MemberAccess;
+            var baseExpr = memberAccess.Expression;
+
+            var callStmt = new BoogieCallCmd(
+                    "FallbackDispatch",
+                    new List<BoogieExpr>() { new BoogieIdentifierExpr("this"), TranslateExpr(baseExpr), amountExpr },
+                    new List<BoogieIdentifierExpr>()
+                    );
+            return callStmt;
         }
 
         private void TranslateSendCallStmt(FunctionCall node, BoogieIdentifierExpr returnExpr, BoogieExpr amountExpr)
@@ -2108,13 +2122,10 @@ namespace SolToBoogie
                 amountExpr);
 
             // call FallbackDispatch(from, to, amount)
+            var callStmt = MkFallbackDispatchCallCmd(node, amountExpr);
+
             var thenBody = new BoogieStmtList();
-            thenBody.AddStatement(
-                new BoogieCallCmd(
-                "FallbackDispatch",
-                new List<BoogieExpr>() { new BoogieIdentifierExpr("this"), TranslateExpr(node.Expression), amountExpr },
-                new List<BoogieIdentifierExpr>()
-                )); 
+            thenBody.AddStatement(callStmt); 
             thenBody.AddStatement(new BoogieAssignCmd(returnExpr, new BoogieLiteralExpr(true)));
 
             var elseBody = new BoogieAssignCmd(returnExpr, new BoogieLiteralExpr(false));
@@ -2306,7 +2317,12 @@ namespace SolToBoogie
                     {
                         return true;
                     }
-                } else if (memberAccess.Expression is FunctionCall)
+                } else if (memberAccess.Expression.ToString().Equals("msg.sender"))
+                {
+                    // calls can be of the form "msg.sender.call()" or "msg.sender.send()" or "msg.sender.transfer()"
+                    return true;
+                }
+                else if (memberAccess.Expression is FunctionCall)
                 {
                     return true;
                 } else if (memberAccess.Expression is IndexAccess)
@@ -2349,6 +2365,11 @@ namespace SolToBoogie
             else if (memberAccess.MemberName.Equals("send"))
             {
                 TranslateSendCallStmt(node, outParams[0], TranslateExpr(node.Arguments[0]));
+                return;
+            }
+            else if (memberAccess.MemberName.Equals("transfer"))
+            {
+                TranslateTransferCallStmt(node); // this may be unreachable as we already trap transfer directly
                 return;
             }
 

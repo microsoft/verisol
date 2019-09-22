@@ -12,13 +12,11 @@ contract SimpleDAO {
     }
     function withdraw() public {
         uint oldBal = address(this).balance; 
-        address payable sender = msg.sender;
-        uint balSender = msg.sender.balance; // translated OK
         uint amount = credit[msg.sender];
         if (amount > 0) {
             bool success;
             bytes memory status;
-            (success, status) = sender.call.value(amount)("");
+            (success, status) = msg.sender.call.value(amount)("");
             require(success);
             credit[msg.sender] = 0;  // BUG
         }
