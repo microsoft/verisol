@@ -2112,7 +2112,7 @@ namespace SolToBoogie
             thenBody.AddStatement(
                 new BoogieCallCmd(
                 "FallbackDispatch",
-                new List<BoogieExpr>() { new BoogieIdentifierExpr("this"), TranslateExpr(node.Expression), TranslateExpr(node.Arguments[0]) },
+                new List<BoogieExpr>() { new BoogieIdentifierExpr("this"), TranslateExpr(node.Expression), amountExpr },
                 new List<BoogieIdentifierExpr>()
                 )); 
             thenBody.AddStatement(new BoogieAssignCmd(returnExpr, new BoogieLiteralExpr(true)));
