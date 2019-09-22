@@ -100,7 +100,13 @@ namespace SolToBoogie
             GenerateConstructorCall(contract).ForEach(x => harnessBody.AddStatement(x));
             if (context.TranslateFlags.ModelReverts)
             {
-                harnessBody.AddStatement(new BoogieAssumeCmd(new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, new BoogieIdentifierExpr("revert"))));
+                BoogieExpr assumePred = new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, new BoogieIdentifierExpr("revert"));
+                if (context.TranslateFlags.InstrumentGas)
+                {
+                    assumePred = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, assumePred, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, new BoogieIdentifierExpr("gas"), new BoogieLiteralExpr(0)));    
+                }
+                
+                harnessBody.AddStatement(new BoogieAssumeCmd(assumePred));
             }
             harnessBody.AddStatement(GenerateWhileLoop(contract, houdiniVarMap, localVars));
             BoogieImplementation harnessImpl = new BoogieImplementation(harnessName, inParams, outParams, localVars, harnessBody);
@@ -179,9 +185,25 @@ namespace SolToBoogie
             return new BoogieAssumeCmd(assumeExpr);
         }
 
-        private List<BoogieCallCmd> GenerateConstructorCall(ContractDefinition contract)
+        private void havocGas(BoogieStmtList list)
         {
-            List<BoogieCallCmd> localStmtList = new List<BoogieCallCmd>();
+            List<BoogieCmd> cmdList = new List<BoogieCmd>();
+            havocGas(cmdList);
+            cmdList.ForEach(list.AddStatement);
+        }
+        
+        private void havocGas(List<BoogieCmd> list)
+        {
+            var gasVar = new BoogieIdentifierExpr("gas");
+            list.Add(new BoogieHavocCmd(gasVar));
+            list.Add(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND,
+                new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GT, gasVar, new BoogieLiteralExpr(TranslatorContext.MIN_GAS_LIMIT)), 
+                new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.LE, gasVar, new BoogieLiteralExpr(TranslatorContext.MAX_GAS_LIMIT)))));
+        }
+
+        private List<BoogieCmd> GenerateConstructorCall(ContractDefinition contract)
+        {
+            List<BoogieCmd> localStmtList = new List<BoogieCmd>();
             string callee = TransUtils.GetCanonicalConstructorName(contract);
             List<BoogieExpr> inputs = new List<BoogieExpr>()
             {
@@ -205,6 +227,12 @@ namespace SolToBoogie
                     }
                 }
             }
+
+            if (context.TranslateFlags.InstrumentGas)
+            {
+                havocGas(localStmtList);
+            }
+
             localStmtList.Add(new BoogieCallCmd(callee, inputs, null));
             return localStmtList;
         }
@@ -313,6 +341,10 @@ namespace SolToBoogie
                     outputs.Add(new BoogieIdentifierExpr(name));
                 }
 
+                if (context.TranslateFlags.InstrumentGas)
+                {
+                    havocGas(thenBody);
+                }
                 BoogieCallCmd callCmd = new BoogieCallCmd(callee, inputs, outputs);
                 thenBody.AddStatement(callCmd);
 
@@ -369,7 +401,13 @@ namespace SolToBoogie
             GenerateConstructorCall(contract).ForEach(x => harnessBody.AddStatement(x));
             if (context.TranslateFlags.ModelReverts)
             {
-                harnessBody.AddStatement(new BoogieAssumeCmd(new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, new BoogieIdentifierExpr("revert"))));
+                BoogieExpr assumePred = new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, new BoogieIdentifierExpr("revert"));
+                if (context.TranslateFlags.InstrumentGas)
+                {
+                    assumePred = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, assumePred, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, new BoogieIdentifierExpr("gas"), new BoogieLiteralExpr(0)));    
+                }
+                
+                harnessBody.AddStatement(new BoogieAssumeCmd(assumePred));
             }
             harnessBody.AddStatement(GenerateCorralWhileLoop(contract));
             BoogieImplementation harnessImpl = new BoogieImplementation(harnessName, inParams, outParams, localVars, harnessBody);

@@ -38,6 +38,35 @@ namespace SolToBoogie
 
         // to collect contract invariants
         private Dictionary<string, List<BoogieExpr>> contractInvariants = null;
+        
+        private static void emitGasCheck(BoogieStmtList newBody)
+        {
+            BoogieStmtList thenBody = new BoogieStmtList();
+            thenBody.AddStatement(new BoogieReturnCmd());
+
+            newBody.AddStatement(new BoogieIfCmd(
+                new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.LT, new BoogieIdentifierExpr("gas"),
+                    new BoogieLiteralExpr(0)), thenBody, null));
+        }
+
+        private void preTranslationAction(ASTNode node)
+        {
+            if (context.TranslateFlags.InstrumentGas)
+            {
+                if (node.GasCost > 0)
+                    // gas := gas - node.GasCost
+                    currentStmtList.AddStatement(new BoogieAssignCmd(new BoogieIdentifierExpr("gas"), 
+                        new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, new BoogieIdentifierExpr("gas"), new BoogieLiteralExpr(node.GasCost))));
+
+                if (context.TranslateFlags.ModelReverts)
+                {
+                    if (node is Continue)
+                    {
+                        emitGasCheck(currentStmtList);
+                    }
+                }
+            }
+        }
 
         public ProcedureTranslator(TranslatorContext context, bool _genInlineAttrsInBpl = true)
         {
@@ -49,6 +78,7 @@ namespace SolToBoogie
 
         public override bool Visit(ContractDefinition node)
         {
+            preTranslationAction(node);
             currentContract = node;
 
             if (currentContract.ContractKind == EnumContractKind.LIBRARY &&
@@ -118,6 +148,7 @@ namespace SolToBoogie
 
         public override bool Visit(EnumDefinition node)
         {
+            preTranslationAction(node);
             // do nothing
             return false;
         }
@@ -231,6 +262,7 @@ namespace SolToBoogie
         }
         public override bool Visit(FunctionDefinition node)
         {
+            preTranslationAction(node);
             // VeriSolAssert(node.IsConstructor || node.Modifiers.Count <= 1, "Multiple Modifiers are not supported yet");
             VeriSolAssert(currentContract != null);
 
@@ -409,6 +441,7 @@ namespace SolToBoogie
 
         public override bool Visit(ModifierDefinition node)
         {
+            preTranslationAction(node);
             currentBoogieProc = node.Name + "_pre";
             boogieToLocalVarsMap[currentBoogieProc] = new List<BoogieVariable>();
 
@@ -935,6 +968,7 @@ namespace SolToBoogie
         
         public override bool Visit(ParameterList node)
         {
+            preTranslationAction(node);
             currentParamList = new List<BoogieVariable>();
             var retParamCount = 0;
             foreach (VariableDeclaration parameter in node.Parameters)
@@ -1007,6 +1041,7 @@ namespace SolToBoogie
 
         public override bool Visit(Block node)
         {
+            preTranslationAction(node);
             BoogieStmtList block = new BoogieStmtList();
             foreach (Statement statement in node.Statements)
             {
@@ -1020,11 +1055,13 @@ namespace SolToBoogie
 
         public override bool Visit(PlaceholderStatement node)
         {
+            preTranslationAction(node);
             return false;
         }
 
         public override bool Visit(VariableDeclarationStatement node)
         {
+            preTranslationAction(node);
             foreach (VariableDeclaration varDecl in node.Declarations)
             {
                 string name = TransUtils.GetCanonicalLocalVariableName(varDecl);
@@ -1070,6 +1107,7 @@ namespace SolToBoogie
 
         public override bool Visit(Assignment node)
         {
+            preTranslationAction(node);
             List<BoogieExpr> lhs = new List<BoogieExpr>();
             List<BoogieType> lhsTypes = new List<BoogieType>(); //stores types in case of tuples
 
@@ -1230,6 +1268,7 @@ namespace SolToBoogie
 
         public override bool Visit(Return node)
         {
+            preTranslationAction(node);
             if (node.Expression == null)
             {
                 //Void
@@ -1315,6 +1354,7 @@ namespace SolToBoogie
 
         public override bool Visit(Throw node)
         {
+            preTranslationAction(node);
             if (!context.TranslateFlags.ModelReverts)
             {
                 BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(new BoogieLiteralExpr(false));
@@ -1330,6 +1370,7 @@ namespace SolToBoogie
 
         public override bool Visit(IfStatement node)
         {
+            preTranslationAction(node);
             BoogieExpr guard = TranslateExpr(node.Condition);
             BoogieStmtList thenBody = TranslateStatement(node.TrueBody);
             BoogieStmtList elseBody = null;
@@ -1347,6 +1388,7 @@ namespace SolToBoogie
 
         public override bool Visit(WhileStatement node)
         {
+            preTranslationAction(node);
             BoogieExpr guard = TranslateExpr(node.Condition);
             BoogieStmtList body = TranslateStatement(node.Body);
 
@@ -1355,11 +1397,18 @@ namespace SolToBoogie
             BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, newBody, invariants);
 
             currentStmtList.AddStatement(whileCmd);
+
+            if (context.TranslateFlags.InstrumentGas &&
+                context.TranslateFlags.ModelReverts)
+            {
+                emitGasCheck(newBody);
+            }
             return false;
         }
 
         public override bool Visit(ForStatement node)
         {
+            preTranslationAction(node);
             BoogieStmtList initStmt = TranslateStatement(node.InitializationExpression);
             BoogieExpr guard = TranslateExpr(node.Condition);
             BoogieStmtList loopStmt = TranslateStatement(node.LoopExpression);
@@ -1376,6 +1425,12 @@ namespace SolToBoogie
             stmtList.AddStatement(whileCmd);
 
             currentStmtList.AppendStmtList(stmtList);
+
+            if (context.TranslateFlags.InstrumentGas &&
+                context.TranslateFlags.ModelReverts)
+            {
+                emitGasCheck(newBody);
+            }
             return false;
         }
 
@@ -1435,6 +1490,7 @@ namespace SolToBoogie
 
         public override bool Visit(DoWhileStatement node)
         {
+            preTranslationAction(node);
             BoogieExpr guard = TranslateExpr(node.Condition);
             BoogieStmtList body = TranslateStatement(node.Body);
 
@@ -1449,11 +1505,18 @@ namespace SolToBoogie
             stmtList.AddStatement(whileCmd);
 
             currentStmtList.AppendStmtList(stmtList);
+            
+            if (context.TranslateFlags.InstrumentGas &&
+                context.TranslateFlags.ModelReverts)
+            {
+                emitGasCheck(newBody);
+            }
             return false;
         }
 
         public override bool Visit(Break node)
         {
+            preTranslationAction(node);
             BoogieBreakCmd breakCmd = new BoogieBreakCmd();
             currentStmtList.AddStatement(breakCmd);
             return false;
@@ -1461,11 +1524,13 @@ namespace SolToBoogie
 
         public override bool Visit(Continue node)
         {
+            preTranslationAction(node);
             throw new NotImplementedException(node.ToString());
         }
 
         public override bool Visit(ExpressionStatement node)
         {
+            preTranslationAction(node);
             if (node.Expression is UnaryOperation unaryOperation)
             {
                 // only handle increment and decrement operators in a separate statement
@@ -1589,6 +1654,7 @@ namespace SolToBoogie
 
         public override bool Visit(Literal node)
         {
+            preTranslationAction(node);
             if (node.Kind.Equals("bool"))
             {
                 bool b = Convert.ToBoolean(node.Value);
@@ -1635,6 +1701,7 @@ namespace SolToBoogie
 
         public override bool Visit(Identifier node)
         {
+            preTranslationAction(node);
             if (node.Name.Equals("this"))
             {
                 currentExpr = new BoogieIdentifierExpr("this");
@@ -1665,8 +1732,7 @@ namespace SolToBoogie
 
         public override bool Visit(MemberAccess node)
         {
-            //msg.sender/msg.value etc.
-
+            preTranslationAction(node);
             // length attribute of arrays
             if (node.MemberName.Equals("length"))
             {
@@ -1763,6 +1829,7 @@ namespace SolToBoogie
 
         public override bool Visit(FunctionCall node)
         {
+            preTranslationAction(node);
             // VeriSolAssert(!(node.Expression is NewExpression), $"new expressions should be handled in assignment");
             if (node.Expression is NewExpression)
             {
@@ -2637,6 +2704,7 @@ namespace SolToBoogie
 
         public override bool Visit(UnaryOperation node)
         {
+            preTranslationAction(node);
             BoogieExpr expr = TranslateExpr(node.SubExpression);
 
             switch (node.Operator)
@@ -2691,6 +2759,7 @@ namespace SolToBoogie
 
         public override bool Visit(BinaryOperation node)
         {
+            preTranslationAction(node);
             BoogieExpr leftExpr = TranslateExpr(node.LeftExpression);
             BoogieExpr rightExpr = TranslateExpr(node.RightExpression);
 
@@ -2750,6 +2819,7 @@ namespace SolToBoogie
 
         public override bool Visit(Conditional node)
         {
+            preTranslationAction(node);
             BoogieExpr guard = TranslateExpr(node.Condition);
             BoogieExpr thenExpr = TranslateExpr(node.TrueExpression);
             BoogieExpr elseExpr = TranslateExpr(node.FalseExpression);
@@ -2762,6 +2832,7 @@ namespace SolToBoogie
 
         public override bool Visit(IndexAccess node)
         {
+            preTranslationAction(node);
             Expression baseExpression = node.BaseExpression;
             Expression indexExpression = node.IndexExpression;
 
@@ -2792,12 +2863,14 @@ namespace SolToBoogie
 
         public override bool Visit(UsingForDirective node)
         {
+            preTranslationAction(node);
             VeriSolAssert(false, $"Using unsupported...{node.ToString()}");
             throw new NotImplementedException();
         }
 
         public override bool Visit(InlineAssembly node)
         {
+            preTranslationAction(node);
             VeriSolAssert(false, $"Inline assembly unsupported {node.ToString()}");
             throw new NotImplementedException();
         }

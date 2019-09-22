@@ -18,6 +18,7 @@ namespace SolToBoogie
             NoHarness = false; 
             GenerateInlineAttributes = true;
             ModelReverts = false;
+            InstrumentGas = false;
         }
         /// <summary>
         /// Omit printing sourceFile/sourceLine information
@@ -45,8 +46,12 @@ namespace SolToBoogie
         /// </summary>
         public bool GenerateInlineAttributes{ get; set; }
         /// <summary>
-        /// Model revery logic when an exception happens.
+        /// Model revert logic when an exception happens.
         /// </summary>
         public bool ModelReverts { get; set; }
+        /// <summary>
+        /// Instrument contracts with gas consumption.
+        /// </summary>
+        public bool InstrumentGas { get; set; }
     }
 }

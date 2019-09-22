@@ -186,6 +186,13 @@ namespace SolToBoogie
                 BoogieGlobalVariable revert = new BoogieGlobalVariable(revertId);
                 context.Program.AddDeclaration(revert);
             }
+
+            if (context.TranslateFlags.InstrumentGas)
+            {
+                BoogieTypedIdent gasId = new BoogieTypedIdent("gas", BoogieType.Int);
+                BoogieGlobalVariable gas = new BoogieGlobalVariable(gasId);
+                context.Program.AddDeclaration(gas);
+            }
         }
 
         private void GenerateGlobalImplementations()

@@ -11,6 +11,11 @@ namespace SolToBoogie
 
     public class TranslatorContext
     {
+        // TODO: Make these configurable.
+        public static int MAX_GAS_LIMIT = 8000000;
+
+        public static int MIN_GAS_LIMIT = 4000000;
+
         public BoogieProgram Program { get; private set; }
 
         public Dictionary<int, ASTNode> IdToNodeMap { get; set; }
