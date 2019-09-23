@@ -46,9 +46,22 @@ namespace SolToBoogie
             context.Program.AddDeclaration(implementation);
 
             // let us havoc all the global variables when fallback_unknowntype is called
-            var modSet = context.Program.Declarations.Where(x => x is BoogieGlobalVariable).Select(x => (BoogieGlobalVariable) x).ToList();
-            BoogieProcedure unknownFbProc = new BoogieProcedure("Fallback_UnknownType", inParams, outParams, attributes, modSet);
+            var fbProcName = "Fallback_UnknownType";
+            var modSet = context.Program.Declarations.Where(x => x is BoogieGlobalVariable).Select(x => (BoogieGlobalVariable)x).ToList();
+            BoogieProcedure unknownFbProc = new BoogieProcedure(fbProcName, inParams, outParams, attributes, modSet);
             context.Program.AddDeclaration(unknownFbProc);
+
+            // we need to create an implementation as Corral seem to ignore modifies on declarations 
+            // https://github.com/boogie-org/corral/issues/98
+            BoogieStmtList fbBody = new BoogieStmtList();
+            foreach (var global in modSet)
+            {
+                fbBody.AddStatement(new BoogieHavocCmd(new BoogieIdentifierExpr(global.Name)));
+            }
+
+            BoogieImplementation unknownFbImpl = new BoogieImplementation(fbProcName, inParams, outParams, new List<BoogieVariable>(), fbBody);
+            context.Program.AddDeclaration(unknownFbImpl);
+
         }
 
         private BoogieStmtList GenerateBody(List<BoogieVariable> inParams)
