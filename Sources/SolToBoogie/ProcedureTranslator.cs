@@ -1320,6 +1320,7 @@ namespace SolToBoogie
         
         private void AddOverUnderflowAssumesForUints(BoogieExpr boogieExpr, TypeDescription typeDesc)
         {
+            // Placeholder in case we need the axioms
             // skip based on a flag
             if (!context.TranslateFlags.UseModularArithmetic)
                 return;
@@ -1327,11 +1328,6 @@ namespace SolToBoogie
             // Add: assume (lower-bound <= e && e <= upperbound);
             // Compute lower and upper bounds:
             string type = typeDesc.TypeString;
-            //if (type.StartsWith("uint"))
-            //{
-
-            //}
-
         }
         private void emitRevertLogic(BoogieStmtList revertLogic)
         {
@@ -2682,7 +2678,25 @@ namespace SolToBoogie
                     break;
             }
 
-            BoogieBinaryOperation binaryExpr = new BoogieBinaryOperation(op, leftExpr, rightExpr);
+            BoogieExpr binaryExpr = new BoogieBinaryOperation(op, leftExpr, rightExpr);
+            Console.WriteLine("UseModularArithmetic: {0}", context.TranslateFlags.UseModularArithmetic);
+            if (context.TranslateFlags.UseModularArithmetic)
+            {
+                if (node.LeftExpression.TypeDescriptions.IsUintWSize(out uint szLeft1) && node.RightExpression.TypeDescriptions.IsUintWSize(out uint szRight1))
+                {
+                    Console.WriteLine("UseModularArithmetic: uint of size {0}", szLeft1);
+                    VeriSolAssert(szLeft1 == szRight1, $"Sizes for uint in a binary expression are different: {node}");
+                    // rhs = 2 ^ sz
+                    BigInteger maxUIntValue = (BigInteger)Math.Pow(2, szLeft1);
+                    binaryExpr = new BoogieFuncCallExpr("modBpl", new List<BoogieExpr>() { binaryExpr, new BoogieLiteralExpr(maxUIntValue) });                   
+                }
+                else if (node.LeftExpression.TypeDescriptions.IsIntWSize(out uint szLeft2) && node.RightExpression.TypeDescriptions.IsIntWSize(out uint szRight2))
+                {
+                    //TODO
+                    // Value(x op y) = (x op y + 2^k) mod 2^{k+1} – 2^k - 1 
+                }
+            }
+
             currentExpr = binaryExpr;
 
             return false;

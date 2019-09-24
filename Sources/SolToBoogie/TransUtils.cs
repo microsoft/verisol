@@ -17,16 +17,49 @@ namespace SolToBoogie
             return typeDescription.TypeString.StartsWith("int", StringComparison.CurrentCulture);
         }
 
+        public static bool IsIntWSize(this TypeDescription typeDescription, out uint sz)
+        {
+            string typeStr = typeDescription.TypeString;
+            if (!typeStr.StartsWith("int", StringComparison.CurrentCulture))
+            {
+                sz = 0;
+                return false;
+            }
+
+            sz = uint.Parse(typeStr.Substring("int".Length, typeStr.Length - 1));
+            return true;
+        }
         public static bool IsUint(this TypeDescription typeDescription)
         {
             return !typeDescription.IsDynamicArray() && !typeDescription.IsStaticArray()
                 && typeDescription.TypeString.StartsWith("uint", StringComparison.CurrentCulture);
         }
 
-        // TODO(uint)
-        // public static bool IsUintWSize(this TypeDescription typeDescription, out unsigned sz)
+        public static bool IsUintWSize(this TypeDescription typeDescription, out uint sz)
+        {
+            string typeStr = typeDescription.TypeString;
+            if (!typeStr.StartsWith("uint", StringComparison.CurrentCulture) || typeStr.Equals("uint_const"))
+            {
+                Console.WriteLine($"IsUintWSize: not uint type: {typeStr}");
+                sz = 0;
+                return false;
+            }
+
+            Console.WriteLine($"IsUintWSize: uint type: {typeStr}");
+            try
+            {
+                sz = uint.Parse(typeStr.Substring("uint".Length, typeStr.Length - 1));
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Exception in IsUintWSize: {e.Message}");
+                sz = 0;
+                return false;
+            }
+
+            return true;
+        }
         
-     
         public static bool IsBool(this TypeDescription typeDescription)
         {
             return typeDescription.TypeString.StartsWith("bool", StringComparison.CurrentCulture);
