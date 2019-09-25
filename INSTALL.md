@@ -8,8 +8,9 @@
 - Install **.NET Core** (version **2.2**) for Windows/Linux/OSX from [here](https://dotnet.microsoft.com/download/dotnet-core/2.2#sdk-2.2.106) 
 - Install the following **Solidity compiler** (version **0.5.10**) binaries for Windows/Linux/OSX from [here](https://github.com/ethereum/solidity/releases/tag/v0.5.10) into the **Binaries** folder.
    - (Windows) Download `solc.exe`
-   - (Linux) Download `solc-static-linux` and use command `chmod +x solc-static-linux` 
-   - (OSX) Download `solc-mac` and use command `chmod +x solc-mac` 
+   - (Linux) Download `solc-static-linux` binary and use command `chmod +x solc-static-linux` 
+   - (OSX) Download `solc-mac` and use command `chmod +x solc-mac`. Follow the instructions [here](https://solidity.readthedocs.io/en/v0.4.21/installing-solidity.html) following the *brew* based install of binary, and rename it to `solc-mac` and move it to **Binaries** folder 
+   
 - Install [Z3 theorem prover](https://github.com/Z3Prover/z3/releases) (ver 4.8.4) binary **z3.exe** (respectively, **z3**) for Windows (respectively, Linux/OSX) into **Binaries** 
    - For Linux/OSX, create a symbolic link to z3 as follows:
    
