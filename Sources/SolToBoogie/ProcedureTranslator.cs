@@ -2679,22 +2679,25 @@ namespace SolToBoogie
             }
 
             BoogieExpr binaryExpr = new BoogieBinaryOperation(op, leftExpr, rightExpr);
-            Console.WriteLine("UseModularArithmetic: {0}", context.TranslateFlags.UseModularArithmetic);
-            if (context.TranslateFlags.UseModularArithmetic)
+            //Console.WriteLine("UseModularArithmetic: {0}", context.TranslateFlags.UseModularArithmetic);
+            if (context.TranslateFlags.UseModularArithmetic && (op == BoogieBinaryOperation.Opcode.ADD || op == BoogieBinaryOperation.Opcode.SUB ||
+                op == BoogieBinaryOperation.Opcode.MUL || op == BoogieBinaryOperation.Opcode.DIV))
             {
-                if (node.LeftExpression.TypeDescriptions.IsUintWSize(out uint szLeft1) && node.RightExpression.TypeDescriptions.IsUintWSize(out uint szRight1))
+                //if (node.LeftExpression.TypeDescriptions.IsUintWSize(out uint szLeft1) && node.RightExpression.TypeDescriptions.IsUintWSize(out uint szRight1))
+                if (node.LeftExpression.TypeDescriptions.IsUintWSize(out uint szLeft1) || node.RightExpression.TypeDescriptions.IsUintWSize(out uint szRight1))
                 {
-                    Console.WriteLine("UseModularArithmetic: uint of size {0}", szLeft1);
-                    VeriSolAssert(szLeft1 == szRight1, $"Sizes for uint in a binary expression are different: {node}");
-                    // rhs = 2 ^ sz
+                    Console.WriteLine("UseModularArithmetic: binary expr with operands of uint of size {0}", szLeft1);
+                    //VeriSolAssert(szLeft1 == szRight1, $"Sizes for uint in a binary expression are different: {node}");
+                    // max value of uint = 2 ^ sz                   
                     BigInteger maxUIntValue = (BigInteger)Math.Pow(2, szLeft1);
+                    Console.WriteLine("maxUIntValue is {0}", maxUIntValue);
                     binaryExpr = new BoogieFuncCallExpr("modBpl", new List<BoogieExpr>() { binaryExpr, new BoogieLiteralExpr(maxUIntValue) });                   
                 }
-                else if (node.LeftExpression.TypeDescriptions.IsIntWSize(out uint szLeft2) && node.RightExpression.TypeDescriptions.IsIntWSize(out uint szRight2))
-                {
+                //else if (node.LeftExpression.TypeDescriptions.IsIntWSize(out uint szLeft2) && node.RightExpression.TypeDescriptions.IsIntWSize(out uint szRight2))
+                //{
                     //TODO
                     // Value(x op y) = (x op y + 2^k) mod 2^{k+1} – 2^k - 1 
-                }
+                //}
             }
 
             currentExpr = binaryExpr;

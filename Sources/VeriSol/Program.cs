@@ -208,6 +208,7 @@ namespace VeriSolRunner
             Console.WriteLine("\t\t /noInlineAttrs          \tdo not generate any {:inline x} attributes, to speed Corral (cannot use with /tryProof)");
             Console.WriteLine("\t\t /outBpl:<out.bpl>       \tpersist the output Boogie file");
             Console.WriteLine("\t\t /printTransactionSequence \tprints the transaction sequence on console (default false)");
+            Console.WriteLine("\t\t /useModularArithmetic         \tuse modular arithmetic for uint (default false)");
         }
 
         private static string GetSolcNameByOSPlatform()

@@ -22,11 +22,31 @@ namespace SolToBoogie
             string typeStr = typeDescription.TypeString;
             if (!typeStr.StartsWith("int", StringComparison.CurrentCulture))
             {
+                //Console.WriteLine($"IsIntWSize: not int type: {typeStr}");
                 sz = 0;
                 return false;
             }
 
-            sz = uint.Parse(typeStr.Substring("int".Length, typeStr.Length - 1));
+            //Console.WriteLine($"IsIntWSize: int type: {typeStr}");
+            try
+            {
+                if (typeStr.Equals("int") || (typeStr.Contains("const")))
+                {
+                    sz = 256;
+                }
+                else
+                {
+                    sz = uint.Parse(GetNumberFromEnd(typeStr));
+                }
+                //Console.WriteLine("int, intKK or int_const type, size is {0}", sz);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"VeriSol translation error in IsIntWSize: unknown intXX type: {e.Message}");
+                sz = 0;
+                return false;
+            }
+
             return true;
         }
         public static bool IsUint(this TypeDescription typeDescription)
@@ -35,24 +55,43 @@ namespace SolToBoogie
                 && typeDescription.TypeString.StartsWith("uint", StringComparison.CurrentCulture);
         }
 
+        public static string GetNumberFromEnd(string text)
+        {
+            int i = text.Length - 1;
+            while (i >= 0)
+            {
+                if (!char.IsNumber(text[i])) break;
+                i--;
+            }
+            return text.Substring(i + 1);
+        }
         public static bool IsUintWSize(this TypeDescription typeDescription, out uint sz)
         {
             string typeStr = typeDescription.TypeString;
-            if (!typeStr.StartsWith("uint", StringComparison.CurrentCulture) || typeStr.Equals("uint_const"))
+            if (!typeStr.StartsWith("uint", StringComparison.CurrentCulture))
             {
-                Console.WriteLine($"IsUintWSize: not uint type: {typeStr}");
+                //Console.WriteLine($"IsUintWSize: not uint type: {typeStr}");
                 sz = 0;
                 return false;
             }
 
-            Console.WriteLine($"IsUintWSize: uint type: {typeStr}");
+            //Console.WriteLine($"IsUintWSize: uint type: {typeStr}");
             try
             {
-                sz = uint.Parse(typeStr.Substring("uint".Length, typeStr.Length - 1));
+                if (typeStr.Equals("uint") || (typeStr.Contains("const")))
+                {
+                    sz = 256;
+                }
+                else
+                {
+                    sz = uint.Parse(GetNumberFromEnd(typeStr));
+                }
+
+                //Console.WriteLine("uint, uintKK or uint_const type, size is {0}", sz);
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Exception in IsUintWSize: {e.Message}");
+                Console.WriteLine($"VeriSol translation error in IsUintWSize: unknown uintXX type: {e.Message}");
                 sz = 0;
                 return false;
             }

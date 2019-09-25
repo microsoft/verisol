@@ -33,6 +33,7 @@ namespace SolToBoogie
         private void GenerateFunctions()
         {
             context.Program.AddDeclaration(GenerateConstToRefFunction());
+            context.Program.AddDeclaration(GenerateModFunction());
             context.Program.AddDeclaration(GenerateKeccakFunction());
             context.Program.AddDeclaration(GenerateAbiEncodedFunctionOneArg());
             context.Program.AddDeclaration(GenerateVeriSolSumFunction());
