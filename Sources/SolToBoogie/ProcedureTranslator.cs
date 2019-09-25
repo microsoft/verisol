@@ -2684,6 +2684,7 @@ namespace SolToBoogie
                 op == BoogieBinaryOperation.Opcode.MUL || op == BoogieBinaryOperation.Opcode.DIV))
             {
                 //if (node.LeftExpression.TypeDescriptions.IsUintWSize(out uint szLeft1) && node.RightExpression.TypeDescriptions.IsUintWSize(out uint szRight1))
+                // non-negative int constant for left or right
                 if (node.LeftExpression.TypeDescriptions.IsUintWSize(out uint szLeft1) || node.RightExpression.TypeDescriptions.IsUintWSize(out uint szRight1))
                 {
                     Console.WriteLine("UseModularArithmetic: binary expr with operands of uint of size {0}", szLeft1);
