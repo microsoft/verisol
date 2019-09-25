@@ -5,8 +5,18 @@
 
 trigger:
 - master
+
+strategy:
+  matrix:
+    linux:
+      imageName: 'ubuntu-latest'
+    mac:
+      imageName: 'macos-latest'
+#    windows:
+#      imageName: 'vs2017-win2016'
+
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: $(imageName)
   
 steps:
 - checkout: self
