@@ -94,7 +94,7 @@ namespace SolToBoogie
             BoogieProcedure harness = new BoogieProcedure(harnessName, inParams, outParams);
             context.Program.AddDeclaration(harness);
 
-            List<BoogieVariable> localVars = CollectLocalVars(contract);
+            List<BoogieVariable> localVars = TransUtils.CollectLocalVars(new List<ContractDefinition>() { contract }, context);
             BoogieStmtList harnessBody = new BoogieStmtList();
             harnessBody.AddStatement(GenerateDynamicTypeAssumes(contract));
             GenerateConstructorCall(contract).ForEach(x => harnessBody.AddStatement(x));
@@ -111,59 +111,6 @@ namespace SolToBoogie
             harnessBody.AddStatement(GenerateWhileLoop(contract, houdiniVarMap, localVars));
             BoogieImplementation harnessImpl = new BoogieImplementation(harnessName, inParams, outParams, localVars, harnessBody);
             context.Program.AddDeclaration(harnessImpl);
-        }
-
-        private List<BoogieVariable> CollectLocalVars(ContractDefinition contract)
-        {
-            List<BoogieVariable> localVars = new List<BoogieVariable>()
-            {
-                new BoogieLocalVariable(new BoogieTypedIdent("this", BoogieType.Ref)),
-                new BoogieLocalVariable(new BoogieTypedIdent("msgsender_MSG", BoogieType.Ref)),
-                new BoogieLocalVariable(new BoogieTypedIdent("msgvalue_MSG", BoogieType.Int)),
-                new BoogieLocalVariable(new BoogieTypedIdent("choice", BoogieType.Int)),
-            };
-
-            // use to remove duplicated variables by name
-            HashSet<string> uniqueVarNames = new HashSet<string>() { "this", "msgsender_MSG", "msgvalue_MSG", "choice" };
-
-            // Consider all visible functions
-            HashSet<FunctionDefinition> funcDefs = context.GetVisibleFunctionsByContract(contract);
-            foreach (FunctionDefinition funcDef in funcDefs)
-            {
-                if (funcDef.Visibility == EnumVisibility.PUBLIC || funcDef.Visibility == EnumVisibility.EXTERNAL)
-                {
-                    foreach (VariableDeclaration param in funcDef.Parameters.Parameters)
-                    {
-                        string name = TransUtils.GetCanonicalLocalVariableName(param);
-                        if (!uniqueVarNames.Contains(name))
-                        {
-                            BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(param.TypeName);
-                            BoogieVariable localVar = new BoogieLocalVariable(new BoogieTypedIdent(name, type));
-                            localVars.Add(localVar);
-                            uniqueVarNames.Add(name);
-                        }
-                    }
-
-                    var retParamCount = 0;
-                    foreach (VariableDeclaration param in funcDef.ReturnParameters.Parameters)
-                    {
-                        //string name = "__ret" + funcDef.Name;
-                        string name = $"__ret_{retParamCount++}_" + funcDef.Name;
-                        if (!string.IsNullOrEmpty(param.Name))
-                        {
-                            name = TransUtils.GetCanonicalLocalVariableName(param);
-                        }
-                        if (!uniqueVarNames.Contains(name))
-                        {
-                            BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(param.TypeName);
-                            BoogieVariable localVar = new BoogieLocalVariable(new BoogieTypedIdent(name, type));
-                            localVars.Add(localVar);
-                            uniqueVarNames.Add(name);
-                        }
-                    }
-                }
-            }
-            return localVars;
         }
 
         private BoogieAssumeCmd GenerateDynamicTypeAssumes(ContractDefinition contract)
@@ -185,22 +132,7 @@ namespace SolToBoogie
             return new BoogieAssumeCmd(assumeExpr);
         }
 
-        private void havocGas(BoogieStmtList list)
-        {
-            List<BoogieCmd> cmdList = new List<BoogieCmd>();
-            havocGas(cmdList);
-            cmdList.ForEach(list.AddStatement);
-        }
-        
-        private void havocGas(List<BoogieCmd> list)
-        {
-            var gasVar = new BoogieIdentifierExpr("gas");
-            list.Add(new BoogieHavocCmd(gasVar));
-            list.Add(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND,
-                new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GT, gasVar, new BoogieLiteralExpr(TranslatorContext.MIN_GAS_LIMIT)), 
-                new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.LE, gasVar, new BoogieLiteralExpr(TranslatorContext.MAX_GAS_LIMIT)))));
-        }
-
+      
         private List<BoogieCmd> GenerateConstructorCall(ContractDefinition contract)
         {
             List<BoogieCmd> localStmtList = new List<BoogieCmd>();
@@ -230,7 +162,7 @@ namespace SolToBoogie
 
             if (context.TranslateFlags.InstrumentGas)
             {
-                havocGas(localStmtList);
+                TransUtils.havocGas(localStmtList);
             }
 
             localStmtList.Add(new BoogieCallCmd(callee, inputs, null));
@@ -243,7 +175,7 @@ namespace SolToBoogie
             BoogieStmtList body = GenerateHavocBlock(contract, localVars);
 
             // generate the choice block
-            body.AddStatement(GenerateChoiceBlock(contract));
+            body.AddStatement(TransUtils.GenerateChoiceBlock(new List<ContractDefinition>() { contract }, context));
 
             // generate candidate invariants for Houdini
             List<BoogiePredicateCmd> candidateInvs = new List<BoogiePredicateCmd>();
@@ -279,81 +211,7 @@ namespace SolToBoogie
             return stmtList;
         }
 
-        // generate a non-deterministic choice block to call every public visible functions except constructors
-        private BoogieIfCmd GenerateChoiceBlock(ContractDefinition contract)
-        {
-            HashSet<FunctionDefinition> funcDefs = context.GetVisibleFunctionsByContract(contract);
-            List<FunctionDefinition> publicFuncDefs = new List<FunctionDefinition>();
-            foreach (FunctionDefinition funcDef in funcDefs)
-            {
-                if (funcDef.IsConstructor) continue;
-                if (funcDef.IsFallback) continue; //let us not call fallback directly in harness
-                if (funcDef.Visibility == EnumVisibility.PUBLIC || funcDef.Visibility == EnumVisibility.EXTERNAL)
-                {
-                    // HACK: lets ignore "fallback_" named functions for DAO demo
-                    if (funcDef.Name.Equals("fallback"))
-                        continue;
-                    publicFuncDefs.Add(funcDef);
-                }
-            }
-            BoogieIfCmd ifCmd = null;
-            for (int i = publicFuncDefs.Count - 1; i >= 0; --i)
-            {
-                BoogieExpr guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ,
-                    new BoogieIdentifierExpr("choice"),
-                    new BoogieLiteralExpr(i + 1));
-
-                BoogieStmtList thenBody = new BoogieStmtList();
-
-                FunctionDefinition funcDef = publicFuncDefs[i];
-                string callee = TransUtils.GetCanonicalFunctionName(funcDef, context);
-                List<BoogieExpr> inputs = new List<BoogieExpr>()
-                {
-                    new BoogieIdentifierExpr("this"),
-                    new BoogieIdentifierExpr("msgsender_MSG"),
-                    new BoogieIdentifierExpr("msgvalue_MSG"),
-                };
-                foreach (VariableDeclaration param in funcDef.Parameters.Parameters)
-                {
-                    string name = TransUtils.GetCanonicalLocalVariableName(param);
-                    inputs.Add(new BoogieIdentifierExpr(name));
-                    if (param.TypeName is ArrayTypeName array)
-                    {
-                        thenBody.AddStatement(new BoogieCallCmd(
-                            "FreshRefGenerator",
-                            new List<BoogieExpr>(), new List<BoogieIdentifierExpr>() { new BoogieIdentifierExpr(name) }));
-                    }
-
-                }
-
-                List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
-                var retParamCount = 0;
-
-                foreach (VariableDeclaration param in funcDef.ReturnParameters.Parameters)
-                {
-                    //string name = "__ret" + funcDef.Name;
-                    string name = $"__ret_{retParamCount++}_" + funcDef.Name;
-
-                    if (!string.IsNullOrEmpty(param.Name))
-                    {
-                        name = TransUtils.GetCanonicalLocalVariableName(param);
-                    }
-                    outputs.Add(new BoogieIdentifierExpr(name));
-                }
-
-                if (context.TranslateFlags.InstrumentGas)
-                {
-                    havocGas(thenBody);
-                }
-                BoogieCallCmd callCmd = new BoogieCallCmd(callee, inputs, outputs);
-                thenBody.AddStatement(callCmd);
-
-                BoogieStmtList elseBody = ifCmd == null ? null : BoogieStmtList.MakeSingletonStmtList(ifCmd);
-                ifCmd = new BoogieIfCmd(guard, thenBody, elseBody);
-            }
-            return ifCmd;
-        }
-
+        
         private string GetHoudiniVarName(int id, ContractDefinition contract)
         {
             return "HoudiniB" + id.ToString() + "_" + contract.Name;
@@ -370,9 +228,9 @@ namespace SolToBoogie
             BoogieProcedure harness = new BoogieProcedure(procName, inParams, outParams);
             context.Program.AddDeclaration(harness);
 
-            List<BoogieVariable> localVars = RemoveThisFromVariables(CollectLocalVars(contract));
+            List<BoogieVariable> localVars = RemoveThisFromVariables(TransUtils.CollectLocalVars(new List<ContractDefinition>() { contract }, context));
             BoogieStmtList procBody = GenerateHavocBlock(contract, localVars);
-            procBody.AddStatement(GenerateChoiceBlock(contract));
+            procBody.AddStatement(TransUtils.GenerateChoiceBlock(new List<ContractDefinition>() { contract }, context));
             BoogieImplementation procImpl = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
             context.Program.AddDeclaration(procImpl);
         }
