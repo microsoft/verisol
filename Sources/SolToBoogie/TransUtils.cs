@@ -501,7 +501,7 @@ namespace SolToBoogie
         /// <param name="context"></param>
         /// <param name="callBackTarget">If non-null, this will be the msg.sender for calling back into the contracts</param>
         /// <returns></returns>
-        public static BoogieIfCmd GenerateChoiceBlock(List<ContractDefinition> contracts, TranslatorContext context, string callBackTarget = null)
+        public static BoogieIfCmd GenerateChoiceBlock(List<ContractDefinition> contracts, TranslatorContext context, Tuple<string, string> callBackTarget = null)
         {
             BoogieIfCmd ifCmd = null;
             int j = 0;
@@ -534,8 +534,8 @@ namespace SolToBoogie
                     List<BoogieExpr> inputs = new List<BoogieExpr>()
                 {
                     // let us just call back into the calling contract
-                    new BoogieIdentifierExpr("this"),
-                    callBackTarget != null ? new BoogieIdentifierExpr(callBackTarget) : new BoogieIdentifierExpr("msgsender_MSG"), 
+                    callBackTarget != null ? new BoogieIdentifierExpr(callBackTarget.Item1) : new BoogieIdentifierExpr("this"),
+                    callBackTarget != null ? new BoogieIdentifierExpr(callBackTarget.Item2) : new BoogieIdentifierExpr("msgsender_MSG"), 
                     new BoogieIdentifierExpr("msgvalue_MSG"),
                 };
                     foreach (VariableDeclaration param in funcDef.Parameters.Parameters)

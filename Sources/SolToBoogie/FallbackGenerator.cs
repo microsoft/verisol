@@ -83,7 +83,7 @@ namespace SolToBoogie
         {
             var fbBody = new BoogieStmtList();
             fbLocalVars.AddRange(TransUtils.CollectLocalVars(context.ContractDefinitions.ToList(), context));
-            fbBody.AddStatement(TransUtils.GenerateChoiceBlock(context.ContractDefinitions.ToList(), context, inParams[1].Name));
+            fbBody.AddStatement(TransUtils.GenerateChoiceBlock(context.ContractDefinitions.ToList(), context, Tuple.Create(inParams[1].Name, inParams[0].Name)));
             return fbBody;
         }
 
