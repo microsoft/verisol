@@ -1,5 +1,3 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
@@ -10,8 +8,8 @@ strategy:
   matrix:
     linux:
       imageName: 'ubuntu-latest'
-    mac:
-      imageName: 'macos-latest'
+#    mac:
+#     imageName: 'macos-latest'
 #    windows:
 #      imageName: 'vs2017-win2016'
 
