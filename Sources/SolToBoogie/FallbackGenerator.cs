@@ -3,6 +3,7 @@
 
 namespace SolToBoogie
 {
+    using System;
     using System.CodeDom.Compiler;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -40,31 +41,53 @@ namespace SolToBoogie
             context.Program.AddDeclaration(procedure);
 
             List<BoogieVariable> localVars = new List<BoogieVariable>();
-            BoogieStmtList procBody = GenerateBody(inParams);
+            var fbUnknownProcName = "Fallback_UnknownType";
+            BoogieStmtList procBody = GenerateBodyOfFallbackDispatch(inParams, fbUnknownProcName);
 
             BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
             context.Program.AddDeclaration(implementation);
 
             // let us havoc all the global variables when fallback_unknowntype is called
-            var fbProcName = "Fallback_UnknownType";
             var modSet = context.Program.Declarations.Where(x => x is BoogieGlobalVariable).Select(x => (BoogieGlobalVariable)x).ToList();
-            BoogieProcedure unknownFbProc = new BoogieProcedure(fbProcName, inParams, outParams, attributes, modSet);
+            BoogieProcedure unknownFbProc = new BoogieProcedure(fbUnknownProcName, inParams, outParams, attributes);
             context.Program.AddDeclaration(unknownFbProc);
 
             // we need to create an implementation as Corral seem to ignore modifies on declarations 
             // https://github.com/boogie-org/corral/issues/98
             BoogieStmtList fbBody = new BoogieStmtList();
-            foreach (var global in modSet)
+            var fbLocalVars = new List<BoogieVariable>();
+
+            if (context.TranslateFlags.ModelStubsAsSkips)
             {
-                fbBody.AddStatement(new BoogieHavocCmd(new BoogieIdentifierExpr(global.Name)));
+                // a stub is just a skip
+            }
+            else if (context.TranslateFlags.ModelStubsAsCallbacks)
+            {
+                fbBody.AppendStmtList(CreateBodyOfUnknownFallback(fbLocalVars, inParams));
+            }
+            else
+            {
+                // default
+                foreach (var global in modSet)
+                {
+                    fbBody.AddStatement(new BoogieHavocCmd(new BoogieIdentifierExpr(global.Name)));
+                }
             }
 
-            BoogieImplementation unknownFbImpl = new BoogieImplementation(fbProcName, inParams, outParams, new List<BoogieVariable>(), fbBody);
+            BoogieImplementation unknownFbImpl = new BoogieImplementation(fbUnknownProcName, inParams, outParams, fbLocalVars, fbBody);
             context.Program.AddDeclaration(unknownFbImpl);
 
         }
 
-        private BoogieStmtList GenerateBody(List<BoogieVariable> inParams)
+        private BoogieStmtList CreateBodyOfUnknownFallback(List<BoogieVariable> fbLocalVars, List<BoogieVariable> inParams)
+        {
+            var fbBody = new BoogieStmtList();
+            fbLocalVars.AddRange(TransUtils.CollectLocalVars(context.ContractDefinitions.ToList(), context));
+            fbBody.AddStatement(TransUtils.GenerateChoiceBlock(context.ContractDefinitions.ToList(), context, inParams[1].Name));
+            return fbBody;
+        }
+
+        private BoogieStmtList GenerateBodyOfFallbackDispatch(List<BoogieVariable> inParams, string fbUnknownProcName)
         {
             //
             // foreach contract C that is not Lib/VeriSol
@@ -74,7 +97,7 @@ namespace SolToBoogie
             //       else 
             //            assume msg.value == 0; 
             // else
-            //     call fallBack_unknownType(from, to, msg.value) 
+            //     call fallBack_unknownType(to, from, msg.value) //we switch the order of first two parameters to ease callbacks
             BoogieIfCmd ifCmd = null;
 
             Debug.Assert(context.ContractDefinitions.Count >= 1, "There should be at least one contract");
@@ -88,7 +111,7 @@ namespace SolToBoogie
             List<BoogieIdentifierExpr> outParams = new List<BoogieIdentifierExpr>();
 
             BoogieStmtList noMatchCase = BoogieStmtList.MakeSingletonStmtList(
-                new BoogieCallCmd("Fallback_UnknownType", arguments, outParams));
+                new BoogieCallCmd(fbUnknownProcName, arguments, outParams));
 
             foreach (var contract in context.ContractDefinitions)
             {

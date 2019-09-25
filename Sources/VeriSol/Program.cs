@@ -17,9 +17,6 @@ namespace VeriSolRunner
     class Program
     {
         public static int Main(string[] args)
-
-
-
         {
             if (args.Length < 2)
             {
@@ -173,6 +170,17 @@ namespace VeriSolRunner
                 translatorFlags.InstrumentGas = true;
             }
 
+            if (args.Any(x => x.Equals("/modelStubsAsSkips")))
+            {
+                translatorFlags.ModelStubsAsSkips = true;
+            }
+            if (args.Any(x => x.Equals("/modelStubsAsCallbacks")))
+            {
+                translatorFlags.ModelStubsAsCallbacks = true;
+            }
+
+
+
             // don't perform verification for some of these omitFlags
             if (tryProofFlag || tryRefutation)
             {
@@ -207,6 +215,8 @@ namespace VeriSolRunner
             Console.WriteLine("\t\t /noInlineAttrs          \tdo not generate any {:inline x} attributes, to speed Corral (cannot use with /tryProof)");
             Console.WriteLine("\t\t /outBpl:<out.bpl>       \tpersist the output Boogie file");
             Console.WriteLine("\t\t /printTransactionSequence \tprints the transaction sequence on console (default false)");
+            Console.WriteLine("\t\t /modelStubsAsSkips       \tany unknown procedure or fallback is treated as skip unsoundly (default treated as havoc entire state)");
+            Console.WriteLine("\t\t /modelStubsAsCallbacks       \tany unknown procedure or fallback is treated as callback to any method of any contract (default treated as havoc entire state)");
         }
 
         private static string GetSolcNameByOSPlatform()
