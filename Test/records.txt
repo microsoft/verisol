@@ -31,7 +31,7 @@ Revert.sol
 Require.sol
 LoopDoWhile.sol
 UsingFor.sol
-#UsingForComplex.sol
+UsingForComplex.sol
 AssertFalse.sol
 MethodDecl.sol
 #StructOfDynamicArray.sol

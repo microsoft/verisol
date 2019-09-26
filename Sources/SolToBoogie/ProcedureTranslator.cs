@@ -2501,6 +2501,22 @@ namespace SolToBoogie
 
             // find the set of libraries that this type is mapped to wiht using
             string typedescr = memberAccess.Expression.TypeDescriptions.TypeString;
+
+            if (memberAccess.Expression.TypeDescriptions.IsStruct() ||
+                memberAccess.Expression.TypeDescriptions.IsContract()
+                )
+            {
+                //struct Foo.Bar storage ref
+                typedescr = typedescr.Split(" ")[1];
+            } 
+            if (memberAccess.Expression.TypeDescriptions.IsArray())
+            {
+                //uint[] storage ref
+                typedescr = typedescr.Split(" ")[0];
+            }
+
+            //struct Foo.Bar[] storage ref should also work
+
             VeriSolAssert(context.UsingMap.ContainsKey(currentContract), $"Expect to see a using A for {typedescr} in this contract {currentContract.Name}");
 
             HashSet<UserDefinedTypeName> usingRange = new HashSet<UserDefinedTypeName>();
@@ -2921,18 +2937,20 @@ namespace SolToBoogie
             BoogieType baseKeyType = MapArrayHelper.InferKeyTypeFromTypeString(baseExpression.TypeDescriptions.TypeString);
             BoogieType baseValType = MapArrayHelper.InferValueTypeFromTypeString(baseExpression.TypeDescriptions.TypeString);
             BoogieExpr baseExpr = null;
-            if (node.BaseExpression is Identifier identifier)
-            {
-                baseExpr = TranslateExpr(identifier);
-            }
-            else if (node.BaseExpression is IndexAccess indexAccess)
-            {
-                baseExpr = TranslateExpr(indexAccess);
-            }
-            else
-            {
-                VeriSolAssert(false, $"Unknown base in index access: {node.BaseExpression}");
-            }
+
+            baseExpr = TranslateExpr(baseExpression);
+            //if (node.BaseExpression is Identifier identifier)
+            //{
+            //    baseExpr = TranslateExpr(identifier);
+            //}
+            //else if (node.BaseExpression is IndexAccess indexAccess)
+            //{
+            //    baseExpr = TranslateExpr(indexAccess);
+            //}
+            //else
+            //{
+            //    VeriSolAssert(false, $"Unknown base in index access: {node.BaseExpression}");
+            //}
 
             BoogieExpr indexAccessExpr = new BoogieMapSelect(baseExpr, indexExpr);
             currentExpr = MapArrayHelper.GetMemoryMapSelectExpr(baseKeyType, baseValType, baseExpr, indexExpr);

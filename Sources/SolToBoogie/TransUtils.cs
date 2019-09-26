@@ -85,6 +85,10 @@ namespace SolToBoogie
             return match;
         }
 
+        public static bool IsArray(this TypeDescription typeDescription)
+        {
+            return IsStaticArray(typeDescription) || IsDynamicArray(typeDescription);
+        }
     }
 
     public static class TransUtils
