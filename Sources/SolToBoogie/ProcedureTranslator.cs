@@ -4,9 +4,13 @@ namespace SolToBoogie
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Diagnostics;
     using System.Globalization;
+    using System.Linq;
     using System.Numerics;
+    using System.Reflection.Metadata;
+    using System.Security.Cryptography.X509Certificates;
     using System.Text;
     using BoogieAST;
     using SolidityAST;
@@ -79,6 +83,9 @@ namespace SolToBoogie
         public override bool Visit(ContractDefinition node)
         {
             preTranslationAction(node);
+
+            context.UsingMap[node] = new Dictionary<UserDefinedTypeName, TypeName>();
+
             currentContract = node;
 
             if (currentContract.ContractKind == EnumContractKind.LIBRARY &&
@@ -114,7 +121,7 @@ namespace SolToBoogie
         {
             foreach(var member in structDefn.Members)
             {
-                VeriSolAssert(!member.TypeDescriptions.TypeString.StartsWith("struct "),
+                VeriSolAssert(!member.TypeDescriptions.IsStruct(),
                     "Do no handle nested structs yet!");
                 var type = TransUtils.GetBoogieTypeFromSolidityTypeName(member.TypeName);
                 var mapType = new BoogieMapType(BoogieType.Ref, type);
@@ -162,7 +169,7 @@ namespace SolToBoogie
             if (type.IsDynamicArray() || type.IsStaticArray())
                 return null;
 
-            if (type.TypeString.Equals("address") || type.TypeString.Equals("address payable") || type.TypeString.StartsWith("contract "))
+            if (type.IsAddress() || type.IsContract())
             {
                 // Skipping dynamic and static array types:
                 var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_ref", new List<BoogieExpr>() { value }, new List<BoogieIdentifierExpr>());
@@ -170,14 +177,15 @@ namespace SolToBoogie
                 callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{name}\""));
                 return callCmd;
             }
-            else if (type.TypeString.StartsWith("uint") || type.TypeString.StartsWith("int") || type.TypeString.StartsWith("string ") || type.TypeString.StartsWith("bytes"))
+            else if (type.IsInt() || type.IsUint() || type.IsString() || type.IsBytes())
+                // TypeString.StartsWith("uint") || type.TypeString.StartsWith("int") || type.TypeString.StartsWith("string ") || type.TypeString.StartsWith("bytes"))
             {
                 var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_int", new List<BoogieExpr>() { value }, new List<BoogieIdentifierExpr>());
                 callCmd.Attributes = new List<BoogieAttribute>();
                 callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{name}\""));
                 return callCmd;
             }
-            else if (type.TypeString.Equals("bool"))
+            else if (type.IsBool())
             {
                 var callCmd = new BoogieCallCmd("boogie_si_record_sol2Bpl_bool", new List<BoogieExpr>() { value }, new List<BoogieIdentifierExpr>());
                 callCmd.Attributes = new List<BoogieAttribute>();
@@ -405,7 +413,7 @@ namespace SolToBoogie
                 if (IsVeriSolContractInvariantFunction(node, procBody, out contractInvs))
                 {
                     //add contract invs as loop invariants to outer loop
-                    Debug.Assert(!contractInvariants.ContainsKey(currentContract.Name), $"More than one function defining the contract invariant for contract {currentContract.Name}");
+                    VeriSolAssert(!contractInvariants.ContainsKey(currentContract.Name), $"More than one function defining the contract invariant for contract {currentContract.Name}");
                     contractInvariants[currentContract.Name] = contractInvs;
                 }
                 else
@@ -1455,7 +1463,7 @@ namespace SolToBoogie
                     }
                     if (callCmd.Callee.Equals("Invariant_VeriSol"))
                     {
-                        Debug.Assert(callCmd.Ins.Count == 4, "Found VeriSol.Invariant(..) with unexpected number of args");
+                        VeriSolAssert(callCmd.Ins.Count == 4, "Found VeriSol.Invariant(..) with unexpected number of args");
                         invariantExprs.Add(callCmd.Ins[3]);
                     } else
                     {
@@ -1480,7 +1488,7 @@ namespace SolToBoogie
                     }
                     if (callCmd.Callee.Equals("ContractInvariant_VeriSol"))
                     {
-                        Debug.Assert(callCmd.Ins.Count == 4, "Found VeriSol.ContractInvariant(..) with unexpected number of args");
+                        VeriSolAssert(callCmd.Ins.Count == 4, "Found VeriSol.ContractInvariant(..) with unexpected number of args");
                         invariantExprs.Add(callCmd.Ins[3]);
                     }
                 }
@@ -1751,7 +1759,7 @@ namespace SolToBoogie
             // RESTRICTION: only handle e.f where e is Identifier | IndexExpr | FunctionCall
             VeriSolAssert(node.Expression is Identifier || node.Expression is IndexAccess || node.Expression is FunctionCall,
                 $"Only handle non-nested structures, found {node.Expression.ToString()}");
-            if (node.Expression.TypeDescriptions.TypeString.StartsWith("struct "))
+            if (node.Expression.TypeDescriptions.IsStruct())
             {
                 var baseExpr = TranslateExpr(node.Expression);
                 var memberMap = node.MemberName + "_" + node.Expression.TypeDescriptions.TypeString.Split(" ")[1];
@@ -1830,6 +1838,7 @@ namespace SolToBoogie
         public override bool Visit(FunctionCall node)
         {
             preTranslationAction(node);
+
             // VeriSolAssert(!(node.Expression is NewExpression), $"new expressions should be handled in assignment");
             if (node.Expression is NewExpression)
             {
@@ -1944,6 +1953,9 @@ namespace SolToBoogie
             {
                 // external function calls
 
+                var memberAccess = node.Expression as MemberAccess;
+                VeriSolAssert(memberAccess != null, $"An external function has to be a member access, found {node.ToString()}");
+
                 // HACK: this is the way to identify the return type is void and hence don't need temporary variable
                 if (node.TypeDescriptions.TypeString != "tuple()")
                 {
@@ -1980,7 +1992,7 @@ namespace SolToBoogie
         private BoogieExpr TranslateVeriSolCodeContractFuncCall(FunctionCall node)
         {
             var verisolFunc = GetVeriSolCodeContractFunction(node);
-            Debug.Assert(verisolFunc != null, $"Unknown VeriSol code contracts function {node.ToString()}");
+            VeriSolAssert(verisolFunc != null, $"Unknown VeriSol code contracts function {node.ToString()}");
             var boogieExprs = node.Arguments.ConvertAll(x => TranslateExpr(x));
             // HACK for Sum
             if (verisolFunc.Equals("_SumMapping_VeriSol"))
@@ -2136,7 +2148,7 @@ namespace SolToBoogie
 
         private void TranslateCallStatement(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
-            Debug.Assert(outParams == null || outParams.Count == 2, "Number of outPArams for call statement should be 2");
+            VeriSolAssert(outParams == null || outParams.Count == 2, "Number of outPArams for call statement should be 2");
             // only handle call.value(x).gas(y)("") 
             var arg0 = node.Arguments[0].ToString();
             if (!string.IsNullOrEmpty(arg0) && !arg0.Equals("\'\'"))
@@ -2170,7 +2182,7 @@ namespace SolToBoogie
 
         private BoogieCallCmd MkFallbackDispatchCallCmd(FunctionCall node, BoogieExpr amountExpr)
         {
-            Debug.Assert(node.Expression is MemberAccess, $"Expecting a call of the form e.send/e.transfer/e.call, but found {node.ToString()}");
+            VeriSolAssert(node.Expression is MemberAccess, $"Expecting a call of the form e.send/e.transfer/e.call, but found {node.ToString()}");
             var memberAccess = node.Expression as MemberAccess;
             var baseExpr = memberAccess.Expression;
 
@@ -2440,6 +2452,12 @@ namespace SolToBoogie
                 return;
             }
 
+            if (IsUsingBasedLibraryCall(memberAccess))
+            {
+                TranslateUsingLibraryCall(node, outParams);
+                return;
+            }
+
             BoogieExpr receiver = TranslateExpr(memberAccess.Expression);
             BoogieExpr msgValueExpr = null;
             if (node.MsgValue != null)
@@ -2474,6 +2492,66 @@ namespace SolToBoogie
             TranslateDynamicDispatchCall(node, outParams, arguments, guard, receiver);
 
             return;
+        }
+
+        private void TranslateUsingLibraryCall(FunctionCall node, List<BoogieIdentifierExpr> outParams)
+        {
+            var memberAccess = node.Expression as MemberAccess;
+            VeriSolAssert(memberAccess != null, $"Expecting a member access expression here {node.ToString()}");
+
+            // find the set of libraries that this type is mapped to wiht using
+            string typedescr = memberAccess.Expression.TypeDescriptions.TypeString;
+            VeriSolAssert(context.UsingMap.ContainsKey(currentContract), $"Expect to see a using A for {typedescr} in this contract {currentContract.Name}");
+
+            HashSet<UserDefinedTypeName> usingRange = new HashSet<UserDefinedTypeName>();
+            foreach(var kv in context.UsingMap[currentContract])
+            {
+                if (kv.Value.ToString().Equals(typedescr))
+                {
+                    usingRange.Add(kv.Key);
+                }
+            }
+            VeriSolAssert(usingRange.Count > 0, $"Expectig at least one using A for B for {typedescr}");
+
+            string signature = TransUtils.InferFunctionSignature(context, node);
+            VeriSolAssert(context.HasFuncSignature(signature), $"Cannot find a function with signature: {signature}");
+            var dynamicTypeToFuncMap = context.GetAllFuncDefinitions(signature);
+            VeriSolAssert(dynamicTypeToFuncMap.Count > 0);
+
+            //intersect the types with a matching function with usingRange
+            var candidateLibraries = new List<Tuple<ContractDefinition, FunctionDefinition>>();
+            foreach(var tf in dynamicTypeToFuncMap)
+            {
+                if (usingRange.Any(x => x.Name.Equals(tf.Key.Name.ToString())))
+                {
+                    candidateLibraries.Add(Tuple.Create(tf.Key, tf.Value));
+                }
+            }
+
+            VeriSolAssert(candidateLibraries.Count == 1, $"Expecting a library call to match exactly one function, found {candidateLibraries.Count}");
+            var funcDefn = candidateLibraries[0];
+            //x.f(y1, y2) in Solidity becomes f_lib(this, this, 0, x, y1, y2)
+            var arguments = new List<BoogieExpr>()
+            {
+                new BoogieIdentifierExpr("this"),
+                new BoogieIdentifierExpr("this"),
+                new BoogieLiteralExpr(BigInteger.Zero), //msg.value
+                TranslateExpr(memberAccess.Expression)
+            };
+            arguments.AddRange(node.Arguments.Select(x => TranslateExpr(x)));
+
+            var callee = TransUtils.GetCanonicalFunctionName(funcDefn.Item2, context);
+            var callCmd = new BoogieCallCmd(callee, arguments, outParams);
+            currentStmtList.AddStatement(callCmd);
+            // throw new NotImplementedException("not done implementing using A for B yet");
+        }
+
+        private bool IsUsingBasedLibraryCall(MemberAccess memberAccess)
+        {
+            // since we only permit "using A for B" for non-contract types
+            // this is sufficient, but not necessary in general since non
+            // contracts (including libraries) do not have support methods
+            return !memberAccess.Expression.TypeDescriptions.IsContract();
         }
 
         private void TranslateInternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
@@ -2864,8 +2942,14 @@ namespace SolToBoogie
         public override bool Visit(UsingForDirective node)
         {
             preTranslationAction(node);
-            VeriSolAssert(false, $"Using unsupported...{node.ToString()}");
-            throw new NotImplementedException();
+            if (node.TypeName is UserDefinedTypeName userType)
+            {
+                VeriSolAssert(!userType.TypeDescriptions.IsContract(), $"VeriSol does not support using A for B where B is a contract name, found {userType.ToString()}");
+            }
+            context.UsingMap[currentContract][node.LibraryName] = node.TypeName;
+            //VeriSolAssert(false, $"Using unsupported...{node.ToString()}");
+            //throw new NotImplementedException();
+            return false;
         }
 
         public override bool Visit(InlineAssembly node)
