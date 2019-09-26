@@ -125,3 +125,4 @@ DAO-buggy-call.sol
 DAO-fixed-call.sol
 DAO-modular-buggy-call.sol
 ERC20-simplified.sol
+block.sol

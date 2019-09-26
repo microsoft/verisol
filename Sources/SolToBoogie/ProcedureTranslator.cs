@@ -1796,6 +1796,25 @@ namespace SolToBoogie
                         currentExpr = new BoogieMapSelect(new BoogieIdentifierExpr("balance_ADDR"), new BoogieIdentifierExpr("this"));
                     }
                     return false;
+                } 
+                else if (identifier.Name.Equals("block"))
+                {
+                    //we will havoc the value
+                    BoogieType bType = null;
+                    if (node.TypeDescriptions.IsInt() || node.TypeDescriptions.IsUint())
+                    {
+                        bType = BoogieType.Int;
+                    } else if (node.TypeDescriptions.IsAddress())
+                    {
+                        bType = BoogieType.Ref;
+                    } else
+                    {
+                        VeriSolAssert(false, $"Unhandled expression {node.ToString()} with return type not equal to uint/address");
+                    }
+                    var tmpVar = MkNewLocalVariableWithType(bType);
+                    currentStmtList.AddStatement(new BoogieHavocCmd(new BoogieIdentifierExpr(tmpVar.Name)));
+                    currentExpr = tmpVar;
+                    return false;
                 }
 
                 VeriSolAssert(context.HasASTNodeId(identifier.ReferencedDeclaration), $"Unknown node: {identifier}");
