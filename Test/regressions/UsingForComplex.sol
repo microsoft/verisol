@@ -1,27 +1,5 @@
-pragma solidity >=0.4.24 <0.6.0;
-
-library Lib {
-    function add(uint _a, uint _b) public pure returns (uint r) {
-        r = _a + _b;
-    }
-}
-
-contract C {
-    using Lib for uint;
-
-     function foo() public {
-        uint x = 1;
-        uint y = 2;
-        uint z = x.add(y);
-        assert (z == 3);
-    }
-}
-
-contract D {
-   function add(uint x, uint y) public returns (uint r)  { return 1;}
-}
-
-/* 
+// Example from
+// https://solidity.readthedocs.io/en/v0.5.11/contracts.html?highlight=using#using-for
 
 pragma solidity >=0.4.16 <0.7.0;
 
@@ -73,9 +51,6 @@ contract C {
     }
 }
 
-
-pragma solidity >=0.4.16 <0.7.0;
-
 library Search {
     function indexOf(uint[] storage self, uint value)
         public
@@ -88,7 +63,7 @@ library Search {
     }
 }
 
-contract C {
+contract D {
     using Search for uint[];
     uint[] data;
 
@@ -106,4 +81,3 @@ contract C {
     }
 }
 
-*/

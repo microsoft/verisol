@@ -15,6 +15,11 @@ contract SimpleDAO {
         return credit[to];
     }
     function withdraw() public {
+        /*
+        VeriSol.Ensures(Old(credit[sender] == 0) ==> this.balance == old(this.balance));
+        VeriSol.Ensures(Old(credit[sender] >= 0) ==> this.balance >= old(this.balance - credit[]));
+        */
+
         uint oldBal = address(this).balance; 
         uint amount = credit[msg.sender];
         if (amount > 0) {

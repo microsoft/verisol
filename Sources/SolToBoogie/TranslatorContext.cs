@@ -86,6 +86,8 @@ namespace SolToBoogie
         // Options flags
         public TranslatorFlags TranslateFlags { get; private set; }
 
+        public Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, TypeName>> UsingMap => usingMap;
+
         // num of fresh identifiers, should be incremented when making new fresh id
         private int freshIdentifierCount = 0;
 
@@ -94,6 +96,10 @@ namespace SolToBoogie
 
         // do we generate inline attributes (required for unbounded verification)
         private bool genInlineAttrInBpl;
+
+        // data structures for using
+        // maps Contract C --> (source, dest), where source is a library type
+        private readonly Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, TypeName>> usingMap; 
 
         public TranslatorContext(HashSet<Tuple<string, string>> ignoreMethods, bool _genInlineAttrInBpl, TranslatorFlags _translateFlags = null)
         {
@@ -121,6 +127,7 @@ namespace SolToBoogie
             ModifierToBoogiePostProc = new Dictionary<string, BoogieProcedure>();
             ModifierToBoogiePreImpl = new Dictionary<string, BoogieImplementation>();
             ModifierToBoogiePostImpl = new Dictionary<string, BoogieImplementation>();
+            usingMap = new Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, TypeName>>();
             IgnoreMethods = ignoreMethods;
             genInlineAttrInBpl = _genInlineAttrInBpl;
             TranslateFlags = _translateFlags;

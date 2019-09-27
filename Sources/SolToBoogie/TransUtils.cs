@@ -15,7 +15,8 @@ namespace SolToBoogie
     {
         public static bool IsInt(this TypeDescription typeDescription)
         {
-            return typeDescription.TypeString.StartsWith("int", StringComparison.CurrentCulture);
+            return !typeDescription.IsDynamicArray() && !typeDescription.IsStaticArray() 
+                && typeDescription.TypeString.StartsWith("int", StringComparison.CurrentCulture);
         }
 
         public static bool IsUint(this TypeDescription typeDescription)
@@ -26,14 +27,50 @@ namespace SolToBoogie
 
         public static bool IsBool(this TypeDescription typeDescription)
         {
-            return typeDescription.TypeString.StartsWith("bool", StringComparison.CurrentCulture);
+            return !typeDescription.IsDynamicArray() && !typeDescription.IsStaticArray()
+                && typeDescription.TypeString.StartsWith("bool", StringComparison.CurrentCulture);
         }
 
         public static bool IsString(this TypeDescription typeDescription)
         {
-            return typeDescription.TypeString.StartsWith("string", StringComparison.CurrentCulture);
+            return !typeDescription.IsDynamicArray() && !typeDescription.IsStaticArray()
+                && typeDescription.TypeString.StartsWith("string", StringComparison.CurrentCulture);
         }
 
+        public static bool IsAddress(this TypeDescription typeDescription)
+        {
+            return !typeDescription.IsDynamicArray() && !typeDescription.IsStaticArray()
+                && (
+                typeDescription.TypeString.Equals("address", StringComparison.CurrentCulture) ||
+                typeDescription.TypeString.Equals("address payable", StringComparison.CurrentCulture));
+        }
+
+        public static bool IsBytes(this TypeDescription typeDescription)
+        {
+            return !typeDescription.IsDynamicArray() && !typeDescription.IsStaticArray()
+                && typeDescription.TypeString.StartsWith("bytes", StringComparison.CurrentCulture);
+        }
+
+        public static bool IsStruct(this TypeDescription typeDescription)
+        {
+            return typeDescription.TypeString.StartsWith("struct ", StringComparison.CurrentCulture);
+        }
+
+        public static bool IsContract(this TypeDescription typeDescription)
+        {
+            return typeDescription.TypeString.StartsWith("contract ", StringComparison.CurrentCulture);
+        }
+
+        public static bool IsEnum(this TypeDescription typeDescription)
+        {
+            return typeDescription.TypeString.StartsWith("enum ", StringComparison.CurrentCulture);
+        }
+
+        public static bool IsElementaryType(this TypeDescription typeDescription)
+        {
+            return typeDescription.IsDynamicArray() || typeDescription.IsStaticArray() ||
+                typeDescription.IsInt() || typeDescription.IsUint() || typeDescription.IsBool() || typeDescription.IsString() || typeDescription.IsBytes();
+        }
         // TODO: Provide a better way to check for dynamic array type
         public static bool IsDynamicArray(this TypeDescription typeDescription)
         {
@@ -48,6 +85,10 @@ namespace SolToBoogie
             return match;
         }
 
+        public static bool IsArray(this TypeDescription typeDescription)
+        {
+            return IsStaticArray(typeDescription) || IsDynamicArray(typeDescription);
+        }
     }
 
     public static class TransUtils
@@ -143,18 +184,18 @@ namespace SolToBoogie
             else if (type is UserDefinedTypeName udt)
             {
                 string typeString = udt.TypeDescriptions.TypeString;
-                if (typeString.StartsWith("enum "))
+                if (udt.TypeDescriptions.IsEnum())
                 {
                     // model enum type using integers
                     return BoogieType.Int;
                 }
-                else if (typeString.StartsWith("contract "))
+                else if (udt.TypeDescriptions.IsContract())
                 {
                     string contractName = typeString.Substring("contract ".Length);
                     // model contract type using Ref
                     return BoogieType.Ref;
                 }
-                else if (typeString.StartsWith("struct "))
+                else if (udt.TypeDescriptions.IsStruct())
                 {
                     string contractName = typeString.Substring("struct ".Length);
                     return BoogieType.Ref;

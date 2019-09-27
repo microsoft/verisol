@@ -30,7 +30,8 @@ OutputParameters.sol
 Revert.sol
 Require.sol
 LoopDoWhile.sol
-#UsingFor.sol
+UsingFor.sol
+UsingForComplex.sol
 AssertFalse.sol
 MethodDecl.sol
 #StructOfDynamicArray.sol
@@ -124,3 +125,7 @@ DAO-buggy-call.sol
 DAO-fixed-call.sol
 DAO-modular-buggy-call.sol
 ERC20-simplified.sol
+block.sol
+harness.sol
+biginitinit.sol
+tx.sol
