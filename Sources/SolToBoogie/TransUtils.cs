@@ -5,6 +5,7 @@ namespace SolToBoogie
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Numerics;
     using System.Text;
     using System.Text.RegularExpressions;
     using BoogieAST;
@@ -23,7 +24,7 @@ namespace SolToBoogie
             if (!typeStr.StartsWith("int", StringComparison.CurrentCulture))
             {
                 //Console.WriteLine($"IsIntWSize: not int type: {typeStr}");
-                sz = 0;
+                sz = uint.MaxValue;
                 return false;
             }
 
@@ -43,7 +44,7 @@ namespace SolToBoogie
             catch (Exception e)
             {
                 Console.WriteLine($"VeriSol translation error in IsIntWSize: unknown intXX type: {e.Message}");
-                sz = 0;
+                sz = uint.MaxValue;
                 return false;
             }
 
@@ -71,7 +72,7 @@ namespace SolToBoogie
             if (!typeStr.StartsWith("uint", StringComparison.CurrentCulture))
             {
                 //Console.WriteLine($"IsUintWSize: not uint type: {typeStr}");
-                sz = 0;
+                sz = uint.MaxValue;
                 return false;
             }
 
@@ -92,13 +93,29 @@ namespace SolToBoogie
             catch (Exception e)
             {
                 Console.WriteLine($"VeriSol translation error in IsUintWSize: unknown uintXX type: {e.Message}");
-                sz = 0;
+                sz = uint.MaxValue;
                 return false;
             }
 
             return true;
         }
         
+        public static bool IsUintConst(this TypeDescription typeDescription, out uint sz)
+        {
+            var type = typeDescription.ToString();
+            if (type.StartsWith("int_const"))
+            {
+                //uint c = uint.Parse(GetNumberFromEnd(type));
+                sz = 256;
+                return sz >= 0 ? true: false;
+            }
+            else
+            {
+                sz = uint.MaxValue;
+                return false;
+            }
+        }
+
         public static bool IsBool(this TypeDescription typeDescription)
         {
             return typeDescription.TypeString.StartsWith("bool", StringComparison.CurrentCulture);

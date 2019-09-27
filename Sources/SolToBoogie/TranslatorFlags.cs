@@ -14,7 +14,7 @@ namespace SolToBoogie
             NoSourceLineInfoFlag = false;
             NoDataValuesInfoFlag = false;
             NoAxiomsFlag = false;
-            UseModularArithmetic = false;
+            UseModularArithmetic = true;
             NoUnsignedAssumesFlag = false;
             NoHarness = false; 
             GenerateInlineAttributes = true;

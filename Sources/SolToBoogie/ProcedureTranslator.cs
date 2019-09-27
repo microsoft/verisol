@@ -7,6 +7,7 @@ namespace SolToBoogie
     using System.Diagnostics;
     using System.Globalization;
     using System.Numerics;
+    using System.Linq;
     using System.Text;
     using BoogieAST;
     using SolidityAST;
@@ -2680,23 +2681,33 @@ namespace SolToBoogie
 
             BoogieExpr binaryExpr = new BoogieBinaryOperation(op, leftExpr, rightExpr);
             //Console.WriteLine("UseModularArithmetic: {0}", context.TranslateFlags.UseModularArithmetic);
+            uint szLeft1 = 0;
+            uint szRight1 = 0;
+            uint szLeft2 = 0;
+            uint szRight2 = 0;
             if (context.TranslateFlags.UseModularArithmetic && (op == BoogieBinaryOperation.Opcode.ADD || op == BoogieBinaryOperation.Opcode.SUB ||
                 op == BoogieBinaryOperation.Opcode.MUL || op == BoogieBinaryOperation.Opcode.DIV))
             {
-                //if (node.LeftExpression.TypeDescriptions.IsUintWSize(out uint szLeft1) && node.RightExpression.TypeDescriptions.IsUintWSize(out uint szRight1))
-                // non-negative int constant for left or right
-                if (node.LeftExpression.TypeDescriptions.IsUintWSize(out uint szLeft1) || node.RightExpression.TypeDescriptions.IsUintWSize(out uint szRight1))
+                bool uintLeft = node.LeftExpression.TypeDescriptions.IsUintWSize(out szLeft1);
+                bool uintRight = node.RightExpression.TypeDescriptions.IsUintWSize(out szRight1);
+                bool leftConst = node.LeftExpression.TypeDescriptions.IsUintConst(out szLeft2);
+                bool rightConst = node.RightExpression.TypeDescriptions.IsUintConst(out szRight2);
+                if (uintLeft || uintRight || leftConst || rightConst)
                 {
                     Console.WriteLine("UseModularArithmetic: binary expr with operands of uint of size {0}", szLeft1);
                     //VeriSolAssert(szLeft1 == szRight1, $"Sizes for uint in a binary expression are different: {node}");
-                    // max value of uint = 2 ^ sz                   
-                    BigInteger maxUIntValue = (BigInteger)Math.Pow(2, szLeft1);
+                    // max value of uint is 2 ^ sz   
+                    // choose min size of all non-zero sizes
+                    List<uint> lst = new List<uint> { szLeft1, szRight1, szLeft2, szRight2 };
+                    var sz = lst.Min();
+                    VeriSolAssert(sz != 0, $"sizes of binary operands are all zero");
+                    BigInteger maxUIntValue = (BigInteger)Math.Pow(2, sz);
                     Console.WriteLine("maxUIntValue is {0}", maxUIntValue);
                     binaryExpr = new BoogieFuncCallExpr("modBpl", new List<BoogieExpr>() { binaryExpr, new BoogieLiteralExpr(maxUIntValue) });                   
                 }
                 //else if (node.LeftExpression.TypeDescriptions.IsIntWSize(out uint szLeft2) && node.RightExpression.TypeDescriptions.IsIntWSize(out uint szRight2))
                 //{
-                    //TODO
+                    //TODO: are there negative int constants? try a test
                     // Value(x op y) = (x op y + 2^k) mod 2^{k+1} – 2^k - 1 
                 //}
             }
