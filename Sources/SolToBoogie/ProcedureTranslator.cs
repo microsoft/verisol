@@ -2802,13 +2802,18 @@ namespace SolToBoogie
                 // most casts are skips, except address cast
                 if (elemType.TypeName.Equals("address") || elemType.TypeName.Equals("address payable"))
                 {
-                    rhsExpr = (BoogieExpr) new BoogieFuncCallExpr("ConstantToRef", new List<BoogieExpr>() { exprToCast });
-                    //try to do a best-effort to detect address(0) 
+                    rhsExpr = (BoogieExpr)exprToCast;
+
+                    // skip by default, unless we have an integer/hex constant
                     if (exprToCast is BoogieLiteralExpr blit)
                     {
                         if (blit.ToString().Equals("0"))
                         {
                             rhsExpr = (BoogieExpr) new BoogieIdentifierExpr("null");
+                        }
+                        else
+                        {
+                            rhsExpr = new BoogieFuncCallExpr("ConstantToRef", new List<BoogieExpr>() { exprToCast });
                         }
                     }
                 }
