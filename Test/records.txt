@@ -129,3 +129,4 @@ block.sol
 harness.sol
 biginitinit.sol
 tx.sol
+ERC20.sol
