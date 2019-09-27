@@ -1728,6 +1728,10 @@ namespace SolToBoogie
             {
                 currentExpr = new BoogieIdentifierExpr("this");
             }
+            else if (node.Name.Equals("now"))
+            {
+                currentExpr = GenerateNonDetExpr(node, "now special variable");
+            }
             else // explicitly defined identifiers
             {
                 VeriSolAssert(context.HasASTNodeId(node.ReferencedDeclaration), $"Unknown node: {node}");
@@ -1811,23 +1815,10 @@ namespace SolToBoogie
                     }
                     return false;
                 } 
-                else if (identifier.Name.Equals("block"))
+                else if (identifier.Name.Equals("block") || identifier.Name.Equals("tx"))
                 {
                     //we will havoc the value
-                    BoogieType bType = null;
-                    if (node.TypeDescriptions.IsInt() || node.TypeDescriptions.IsUint())
-                    {
-                        bType = BoogieType.Int;
-                    } else if (node.TypeDescriptions.IsAddress())
-                    {
-                        bType = BoogieType.Ref;
-                    } else
-                    {
-                        VeriSolAssert(false, $"Unhandled expression {node.ToString()} with return type not equal to uint/address");
-                    }
-                    var tmpVar = MkNewLocalVariableWithType(bType);
-                    currentStmtList.AddStatement(new BoogieHavocCmd(new BoogieIdentifierExpr(tmpVar.Name)));
-                    currentExpr = tmpVar;
+                    currentExpr = GenerateNonDetExpr(node, node.ToString());
                     return false;
                 }
 
@@ -1850,6 +1841,27 @@ namespace SolToBoogie
                 VeriSolAssert(false, $"Unknown expression type for member access: {node}");
                 throw new Exception();
             }
+        }
+
+        private BoogieExpr GenerateNonDetExpr(Expression node, string reason)
+        {
+            BoogieType bType = null;
+            if (node.TypeDescriptions.IsInt() || node.TypeDescriptions.IsUint())
+            {
+                bType = BoogieType.Int;
+            }
+            else if (node.TypeDescriptions.IsAddress())
+            {
+                bType = BoogieType.Ref;
+            }
+            else
+            {
+                VeriSolAssert(false, $"Unhandled expression {node.ToString()} with return type not equal to uint/address");
+            }
+            var tmpVar = MkNewLocalVariableWithType(bType);
+            currentStmtList.AddStatement(new BoogieCommentCmd($"Non-deterministic value to model {reason}"));
+            currentStmtList.AddStatement(new BoogieHavocCmd(new BoogieIdentifierExpr(tmpVar.Name)));
+            return tmpVar;
         }
 
         private BoogieExpr TranslateBalance(MemberAccess node)
@@ -3016,6 +3028,13 @@ namespace SolToBoogie
             preTranslationAction(node);
             VeriSolAssert(false, $"Inline assembly unsupported {node.ToString()}");
             throw new NotImplementedException();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is ProcedureTranslator translator &&
+                   EqualityComparer<BoogieExpr>.Default.Equals(currentExpr, translator.currentExpr) &&
+                   EqualityComparer<Dictionary<string, List<BoogieExpr>>>.Default.Equals(ContractInvariants, translator.ContractInvariants);
         }
     }
 

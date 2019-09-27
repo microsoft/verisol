@@ -18,7 +18,6 @@ contract SimpleDAO {
             bytes memory status;
             (success, status) = msg.sender.call.value(amount)("");
             require(success);
-            assert (false);
             credit[msg.sender] = 0;  // BUG
         }
         uint bal = address(this).balance;
