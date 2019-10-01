@@ -27,13 +27,13 @@ namespace VeriSolRunner.ExternalTools
             }
             else
             {
-                Console.WriteLine($"Skip installing tool {this.settings.Name} as we could find it under {this.settings.CommandPath}.");
+                ExternalToolsManager.Log($"Skip installing tool {this.settings.Name} as we could find it under {this.settings.CommandPath}.");
             }
         }
 
         private string InstallDotnetCliTool()
         {
-            Console.WriteLine($"Installing {this.settings.Name} as we could not find it from {this.settings.CommandPath}.");
+            ExternalToolsManager.Log($"Installing {this.settings.Name} as we could not find it from {this.settings.CommandPath}.");
 
             Process p = new Process();
             p.StartInfo.UseShellExecute = false;
@@ -53,11 +53,11 @@ namespace VeriSolRunner.ExternalTools
 
             if (!String.IsNullOrEmpty(errorMsg))
             {
-                Console.WriteLine($"Installation failed: {errorMsg}");
+                ExternalToolsManager.Log($"Installation failed: {errorMsg}");
             }
             else
             {
-                Console.WriteLine("Done.");
+                ExternalToolsManager.Log("Done.");
             }
 
             return output;
@@ -69,14 +69,14 @@ namespace VeriSolRunner.ExternalTools
 
             if (!File.Exists(z3DependencyPath))
             {
-                Console.WriteLine($"Z3 does not exist under {this.settings.Name}");
-                Console.WriteLine($"Copying {z3.Command} to {z3DependencyPath}");
+                ExternalToolsManager.Log($"Z3 does not exist under {this.settings.Name}");
+                ExternalToolsManager.Log($"Copying {z3.Command} to {z3DependencyPath}");
                 File.Copy(z3.Command, z3DependencyPath);
             }
             else
             {
-                Console.WriteLine($"Z3 already exists under {this.settings.Name}");
-                Console.WriteLine("Skip copying");
+                ExternalToolsManager.Log($"Z3 already exists under {this.settings.Name}");
+                ExternalToolsManager.Log("Skip copying");
             }
         }
 

@@ -99,7 +99,7 @@ namespace VeriSolRunner.ExternalTools
             }
             else
             {
-                Console.WriteLine($"Skip installing tool {this.settings.Name} as we could find it under {this.settings.CommandPath}.");
+                ExternalToolsManager.Log($"Skip installing tool {this.settings.Name} as we could find it under {this.settings.CommandPath}.");
             }
         }
 
@@ -107,40 +107,40 @@ namespace VeriSolRunner.ExternalTools
         {
             if (!Directory.Exists(TempDirectory))
             {
-                Console.WriteLine($"Creating temporary directory {TempDirectory}");
+                ExternalToolsManager.Log($"Creating temporary directory {TempDirectory}");
                 Directory.CreateDirectory(TempDirectory);
             }
             else
             {
                 if (File.Exists(ZipFilePath))
                 {
-                    Console.WriteLine($"Deleting file {ZipFilePath}");
+                    ExternalToolsManager.Log($"Deleting file {ZipFilePath}");
                     File.Delete(ZipFilePath);
                 }
 
                 if (Directory.Exists(ExtractPath))
                 {
-                    Console.WriteLine($"Deleting directory {ExtractPath}");
+                    ExternalToolsManager.Log($"Deleting directory {ExtractPath}");
                     Directory.Delete(ExtractPath, true);
                 }
             }
 
             using (var client = new WebClient())
             {
-                Console.WriteLine($"Downloading {ZipFileName} from {DownloadURL} to {TempDirectory}");
+                ExternalToolsManager.Log($"Downloading {ZipFileName} from {DownloadURL} to {TempDirectory}");
                 client.DownloadFile(DownloadURL, ZipFilePath);
             }
 
-            Console.WriteLine($"Extracting {ZipFileName} to {ExtractPath}");
+            ExternalToolsManager.Log($"Extracting {ZipFileName} to {ExtractPath}");
             ZipFile.ExtractToDirectory(ZipFilePath, ExtractPath);
 
-            Console.WriteLine($"Copying {ExeTempPath} to {Command}");
+            ExternalToolsManager.Log($"Copying {ExeTempPath} to {Command}");
             File.Copy(ExeTempPath, Command);
 
-            Console.WriteLine($"Cleaning up");
+            ExternalToolsManager.Log($"Cleaning up");
             File.Delete(ZipFilePath);
             Directory.Delete(ExtractPath, true);
-            Console.WriteLine($"Done");
+            ExternalToolsManager.Log($"Done");
         }
     }
 }
