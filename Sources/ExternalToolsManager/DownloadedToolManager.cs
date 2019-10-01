@@ -1,6 +1,7 @@
 namespace VeriSolRunner.ExternalTools
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.IO.Compression;
     using System.Net;
@@ -75,11 +76,41 @@ namespace VeriSolRunner.ExternalTools
             if (!Exists())
             {
                 Install();
+                ChangePermission();
             }
             else
             {
                 ExternalToolsManager.Log($"Skip installing tool {this.settings.Name} as we could find it under {this.settings.CommandPath}.");
             }
+        }
+
+        private void ChangePermission()
+        {
+            RunCmd("chmod", $"+x {Command}");
+        }
+
+        private void RunCmd(string cmdName, string arguments)
+        {
+            Process p = new Process();
+            p.StartInfo.UseShellExecute = false;
+            p.StartInfo.RedirectStandardInput = false;
+            p.StartInfo.RedirectStandardOutput = true;
+            p.StartInfo.RedirectStandardError = true;
+            p.StartInfo.CreateNoWindow = true;
+            p.StartInfo.FileName = cmdName;
+            p.StartInfo.Arguments = $"{arguments}";
+            p.Start();
+
+            string outputBinary = p.StandardOutput.ReadToEnd();
+            string errorMsg = p.StandardError.ReadToEnd();
+            if (!String.IsNullOrEmpty(errorMsg))
+            {
+                ExternalToolsManager.Log($"Error: {errorMsg}");
+            }
+
+            ExternalToolsManager.Log(outputBinary);            
+            p.StandardOutput.Close();
+            p.StandardError.Close();
         }
 
         protected virtual void Install()

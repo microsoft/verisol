@@ -4,8 +4,17 @@
 trigger:
 - master
 
+strategy:
+  matrix:
+    linux:
+      imageName: 'ubuntu-latest'
+    windows:
+      imageName: 'vs2017-win2016'
+#    mac:
+#     imageName: 'macos-latest'
+
 pool:
-  vmImage: 'vs2017-win2016'
+  vmImage: $(imageName)
 
 steps:
 - task: DotNetCoreCLI@2
@@ -18,15 +27,19 @@ steps:
   inputs:
     command: custom
     custom: 'tool'
-    arguments: 'install  --global VeriSol --version 0.1.0 --add-source $(Build.SourcesDirectory)/nupkg/'
+    arguments: 'install --global VeriSol --version 0.1.0 --add-source $(Build.SourcesDirectory)/nupkg/'
 
-- script: |
+- bash: |
+   exit
+  displayName: 'Restart bash'
+
+- bash: |
    VeriSol $(Build.SourcesDirectory)/Test/regressions/DAO-Sim-Buggy.sol Mallory /tryProof /tryRefutation:10 /printTransactionSequence
-   type boogie.txt
-   type corral.txt
+   cat boogie.txt
+   cat corral.txt
 
    VeriSol $(Build.SourcesDirectory)/Test/regressions/ERC20-simplified.sol ERC20 /tryProof /tryRefutation:10 /printTransactionSequence
-   type boogie.txt
+   cat boogie.txt
   displayName: 'Run VeriSol on some examples'
 
 - task: DotNetCoreCLI@2
@@ -36,5 +49,9 @@ steps:
     custom: 'tool'
     arguments: 'install --global SolToBoogieTest --version 0.1.0 --add-source $(Build.SourcesDirectory)/nupkg/'
 
-- script: 'VeriSolRegressionRunner $(Build.SourcesDirectory)/Test/'
+- bash: |
+   exit
+  displayName: 'Restart bash'
+
+- bash: 'VeriSolRegressionRunner $(Build.SourcesDirectory)/Test/'
   displayName: 'Run regression tests'
