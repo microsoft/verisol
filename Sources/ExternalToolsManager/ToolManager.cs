@@ -1,16 +1,42 @@
 ﻿namespace VeriSolRunner.ExternalTools
 {
     using System.IO;
+    using System.Runtime.InteropServices;
 
     public abstract class ToolManager
     {
+        protected static string OsName
+        {
+            get
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    return "windows";
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    return "osx";
+                }
+                else
+                {
+                    return "linux";
+                }
+            }
+        }
         protected readonly ToolSourceSettings settings;
 
         public string ExeName
         {
             get
             {
-                return this.settings.Name + ".exe";
+                if (OsName == "windows")
+                {
+                   return this.settings.Name + ".exe";
+                }
+                else
+                {
+                    return this.settings.Name;
+                }
             }
         }
 

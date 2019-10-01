@@ -67,6 +67,12 @@ namespace VeriSolRunner.ExternalTools
         {
             var z3DependencyPath = GetZ3DependencyPath(z3);
 
+            // Workaround: Boogie and Corral are looking for z3.exe, even on linux/mac
+            if (!z3DependencyPath.EndsWith(".exe"))
+            {
+                z3DependencyPath += ".exe";
+            }
+
             if (!File.Exists(z3DependencyPath))
             {
                 ExternalToolsManager.Log($"Z3 does not exist under {this.settings.Name}");

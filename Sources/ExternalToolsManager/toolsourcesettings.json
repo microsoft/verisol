@@ -4,12 +4,12 @@
     "Version": "0.5.10",
     "DownloadURLs": {
       "windows": "https://github.com/ethereum/solidity/releases/download/v0.5.10/solidity-windows.zip",
-      "linux": "https://github.com/ethereum/solidity/releases/download/v0.5.10/solidity_0.5.10.tar.gz",
+      "linux": "https://github.com/ethereum/solidity/releases/download/v0.5.10/solc-static-linux",
       "osx": "https://github.com/ethereum/solidity/releases/download/v0.5.10/solidity_0.5.10.tar.gz"
     },
     "ExePathsWithinZip": {
       "windows": "solc.exe",
-      "linux": "solc.exe",
+      "linux": "solc-static-linux",
       "osx": "solc.exe"
     }
   },

@@ -24,7 +24,7 @@ namespace VeriSolRunner.ExternalTools
 
             var solcSourceSettings = new ToolSourceSettings();
             toolSourceConfig.GetSection("solc").Bind(solcSourceSettings);
-            Solc = new DownloadedToolManager(solcSourceSettings);
+            Solc = new SolcManager(solcSourceSettings);
 
             var z3SourceSettings = new ToolSourceSettings();
             toolSourceConfig.GetSection("z3").Bind(z3SourceSettings);

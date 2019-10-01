@@ -8,30 +8,10 @@ namespace VeriSolRunner.ExternalTools
 
     internal class DownloadedToolManager : ToolManager
     {
-        private static string OsName
-        {
-            get
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    return "windows";
-                }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    return "osx";
-                }
-                else
-                {
-                    return "linux";
-                }
-            }
-        }
-
         private string DownloadURL
         {
             get
             {
-
                 return this.settings.DownloadURLs[OsName];
             }
         }
@@ -40,7 +20,6 @@ namespace VeriSolRunner.ExternalTools
         {
             get
             {
-
                 return this.settings.ExePathsWithinZip[OsName];
             }
         }        
@@ -95,7 +74,7 @@ namespace VeriSolRunner.ExternalTools
 
             if (!Exists())
             {
-                DownloadedAndUnZip();
+                Install();
             }
             else
             {
@@ -103,7 +82,39 @@ namespace VeriSolRunner.ExternalTools
             }
         }
 
-        private void DownloadedAndUnZip()
+        protected virtual void Install()
+        {
+            DownloadAndUnZip();
+        }
+
+        protected void DownloadAndUnZip()
+        {
+            PrepareTempDirectory();
+            Download();
+
+            ExternalToolsManager.Log($"Extracting {ZipFileName} to {ExtractPath}");
+            ZipFile.ExtractToDirectory(ZipFilePath, ExtractPath);
+
+            CopyToCommand(ExeTempPath);
+
+            ExternalToolsManager.Log($"Cleaning up");
+            File.Delete(ZipFilePath);
+            Directory.Delete(ExtractPath, true);
+            ExternalToolsManager.Log($"Done");
+        }
+
+        protected void DownloadAndCopy()
+        {
+            PrepareTempDirectory();
+            Download();
+            CopyToCommand(ZipFilePath);
+
+            ExternalToolsManager.Log($"Cleaning up");
+            File.Delete(ZipFilePath);
+            ExternalToolsManager.Log($"Done");
+        }
+
+        private void PrepareTempDirectory()
         {
             if (!Directory.Exists(TempDirectory))
             {
@@ -124,23 +135,21 @@ namespace VeriSolRunner.ExternalTools
                     Directory.Delete(ExtractPath, true);
                 }
             }
+        }
 
+        private void CopyToCommand(string exeTempPath)
+        {
+            ExternalToolsManager.Log($"Copying {exeTempPath} to {Command}");
+            File.Copy(exeTempPath, Command);
+        }
+
+        private void Download()
+        {
             using (var client = new WebClient())
             {
                 ExternalToolsManager.Log($"Downloading {ZipFileName} from {DownloadURL} to {TempDirectory}");
                 client.DownloadFile(DownloadURL, ZipFilePath);
             }
-
-            ExternalToolsManager.Log($"Extracting {ZipFileName} to {ExtractPath}");
-            ZipFile.ExtractToDirectory(ZipFilePath, ExtractPath);
-
-            ExternalToolsManager.Log($"Copying {ExeTempPath} to {Command}");
-            File.Copy(ExeTempPath, Command);
-
-            ExternalToolsManager.Log($"Cleaning up");
-            File.Delete(ZipFilePath);
-            Directory.Delete(ExtractPath, true);
-            ExternalToolsManager.Log($"Done");
         }
     }
 }
