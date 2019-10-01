@@ -28,12 +28,12 @@
     }
   },
   "Boogie": {
-    "Name": "Boogie",
+    "Name": "boogie",
     "Version": "2.4.1-netcore-alpha",
     "DependencyRelativePath": ".store/boogie/2.4.1-netcore-alpha/boogie/2.4.1-netcore-alpha/tools/netcoreapp2.2/any/"
   },
   "Corral": {
-    "Name": "Corral",
+    "Name": "corral",
     "Version": "2.4.1-netcore-alpha",
     "DependencyRelativePath": ".store/corral/2.4.1-netcore-alpha/corral/2.4.1-netcore-alpha/tools/netcoreapp2.2/any/"
   }
