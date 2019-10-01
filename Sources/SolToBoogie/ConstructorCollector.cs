@@ -22,9 +22,13 @@ namespace SolToBoogie
             {
                 if (child is FunctionDefinition function)
                 {
-                    if (function.IsConstructorForContract(node.Name))
+                    if (function.IsConstructor)
                     {
                         context.AddConstructorToContract(node, function);
+                    }
+                    else if (function.IsFallback)
+                    {
+                        context.AddFallbackToContract(node, function);
                     }
                 }
             }

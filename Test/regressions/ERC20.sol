@@ -1,7 +1,8 @@
 pragma solidity ^0.5.0;
 
 import "./IERC20.sol";
-import "../../math/SafeMath.sol";
+import "./SafeMath.sol"; //import "../../math/SafeMath.sol";
+import "./Libraries/VeriSolContracts.sol"; //change 
 
 /**
  * @dev Implementation of the {IERC20} interface.
@@ -60,6 +61,8 @@ contract ERC20 is IERC20 {
      */
     function transfer(address recipient, uint256 amount) public returns (bool) {
         _transfer(msg.sender, recipient, amount);
+        assert (VeriSol.Old(_balances[msg.sender] + _balances[recipient]) == _balances[msg.sender] + _balances[recipient]);
+        assert (msg.sender == recipient ||  _balances[msg.sender] == VeriSol.Old(_balances[msg.sender] - amount));
         return true;
     }
 

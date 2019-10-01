@@ -30,6 +30,7 @@ namespace SolToBoogie
 
         public static BoogieType InferExprTypeFromTypeString(string typeString)
         {
+            //TODO: use TypeDescriptions::IsInt/IsStruct etc., but need typeDescription instead of typeString
             if (IsArrayTypeString(typeString))
             {
                 return BoogieType.Ref;

@@ -60,7 +60,7 @@ namespace VeriSolRunner
 
         private static void ParseCommandLineArgs(string[] args, out string solidityFile, out string entryPointContractName, out bool tryProofFlag, out bool tryRefutation, out int recursionBound, out ILogger logger, out HashSet<Tuple<string, string>> ignoredMethods,  out bool printTransactionSeq, ref TranslatorFlags translatorFlags)
         {
-            Console.WriteLine($"Command line args ==> {string.Join(",", args.ToList())}");
+            Console.WriteLine($"Command line args ==> {string.Join(", ", args.ToList())}");
             solidityFile = args[0];
             // Debug.Assert(!solidityFile.Contains("/"), $"Illegal solidity file name {solidityFile}"); //the file name can be foo/bar/baz.sol
             entryPointContractName = args[1];
@@ -130,6 +130,22 @@ namespace VeriSolRunner
                 translatorFlags.ModelReverts = true;
             }
 
+            if (args.Any(x => x.Equals("/instrumentGas")))
+            {
+                translatorFlags.InstrumentGas = true;
+            }
+
+            if (args.Any(x => x.Equals("/modelStubsAsSkips")))
+            {
+                translatorFlags.ModelStubsAsSkips = true;
+            }
+            if (args.Any(x => x.Equals("/modelStubsAsCallbacks")))
+            {
+                translatorFlags.ModelStubsAsCallbacks = true;
+            }
+
+
+
             // don't perform verification for some of these omitFlags
             if (tryProofFlag || tryRefutation)
             {
@@ -164,6 +180,8 @@ namespace VeriSolRunner
             Console.WriteLine("\t\t /noInlineAttrs          \tdo not generate any {:inline x} attributes, to speed Corral (cannot use with /tryProof)");
             Console.WriteLine("\t\t /outBpl:<out.bpl>       \tpersist the output Boogie file");
             Console.WriteLine("\t\t /printTransactionSequence \tprints the transaction sequence on console (default false)");
+            Console.WriteLine("\t\t /modelStubsAsSkips       \tany unknown procedure or fallback is treated as skip unsoundly (default treated as havoc entire state)");
+            Console.WriteLine("\t\t /modelStubsAsCallbacks       \tany unknown procedure or fallback is treated as callback to any method of any contract (default treated as havoc entire state)");
         }
 
         private static string GetSolcNameByOSPlatform()
