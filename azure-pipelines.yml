@@ -5,8 +5,18 @@
 
 trigger:
 - master
+
+strategy:
+  matrix:
+    linux:
+      imageName: 'ubuntu-latest'
+    windows:
+      imageName: 'vs2017-win2016'
+#    mac:
+#     imageName: 'macos-latest'
+
 pool:
-  vmImage: 'vs2017-win2016'
+  vmImage: $(imageName)
 
 steps:
 - task: DotNetCoreCLI@2
