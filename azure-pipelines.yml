@@ -36,7 +36,6 @@ steps:
 
    VeriSol $(Build.SourcesDirectory)/Test/regressions/ERC20-simplified.sol ERC20 /tryProof /tryRefutation:10 /printTransactionSequence
    cat boogie.txt
-  pwsh: true
   displayName: 'Run VeriSol on some examples'
 
 - task: DotNetCoreCLI@2
