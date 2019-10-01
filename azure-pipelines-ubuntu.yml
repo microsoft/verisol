@@ -1,0 +1,48 @@
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet build'
+  inputs:
+    projects: '**/VeriSol.sln'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Install VeriSol as dotnet cli tool'
+  inputs:
+    command: custom
+    custom: 'tool'
+    arguments: 'install --global VeriSol --version 0.1.0 --add-source $(Build.SourcesDirectory)/nupkg/'
+
+- bash: |
+   exit
+  displayName: 'Restart bash'
+
+- bash: |
+   VeriSol $(Build.SourcesDirectory)/Test/regressions/DAO-Sim-Buggy.sol Mallory /tryProof /tryRefutation:10 /printTransactionSequence
+   cat boogie.txt
+   cat corral.txt
+
+   VeriSol $(Build.SourcesDirectory)/Test/regressions/ERC20-simplified.sol ERC20 /tryProof /tryRefutation:10 /printTransactionSequence
+   cat boogie.txt
+  displayName: 'Run VeriSol on some examples'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Install SolToBoogieTest as dotnet cli tool'
+  inputs:
+    command: custom
+    custom: 'tool'
+    arguments: 'install --global SolToBoogieTest --version 0.1.0 --add-source $(Build.SourcesDirectory)/nupkg/'
+
+- bash: |
+   exit
+  displayName: 'Restart bash'
+
+- bash: 'VeriSolRegressionRunner $(Build.SourcesDirectory)/Test/'
+  displayName: 'Run regression tests'
