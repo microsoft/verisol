@@ -29,7 +29,7 @@ steps:
     custom: 'tool'
     arguments: 'install --global VeriSol --version 0.1.0 --add-source $(Build.SourcesDirectory)/nupkg/'
 
-- powershell: |
+- pwsh: |
    VeriSol $(Build.SourcesDirectory)/Test/regressions/DAO-Sim-Buggy.sol Mallory /tryProof /tryRefutation:10 /printTransactionSequence
    cat boogie.txt
    cat corral.txt
@@ -46,6 +46,5 @@ steps:
     custom: 'tool'
     arguments: 'install --global SolToBoogieTest --version 0.1.0 --add-source $(Build.SourcesDirectory)/nupkg/'
 
-- powershell: 'VeriSolRegressionRunner $(Build.SourcesDirectory)/Test/'
-  pwsh: true
+- pwsh: 'VeriSolRegressionRunner $(Build.SourcesDirectory)/Test/'
   displayName: 'Run regression tests'
