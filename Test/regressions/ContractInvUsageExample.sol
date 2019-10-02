@@ -9,7 +9,7 @@ contract LoopFor {
 
     function ContractInvariant () private view {
         VeriSol.ContractInvariant(x == y);
-        VeriSol.ContractInvariant(y >= 0, true);
+        VeriSol.ContractInvariant(y >= 0);
     }
 
     // test Loop invariant with for loop
