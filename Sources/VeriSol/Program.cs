@@ -179,6 +179,11 @@ namespace VeriSolRunner
                 translatorFlags.ModelStubsAsCallbacks = true;
             }
 
+            if (args.Any(x => x.Equals("/doModSet")))
+            {
+                translatorFlags.DoModSetAnalysis = true;
+            }
+
 
 
             // don't perform verification for some of these omitFlags
