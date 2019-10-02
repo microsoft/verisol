@@ -32,14 +32,17 @@ library VeriSol {
      */
     function Invariant(bool b) external pure;
      
+    
     /**
-     * Contract invariant
+     * Contract invariant (stronger)
      * 
      * 
      * Calling this function within exactly one view function 
-     * VeriSol.ContractInvariant(I) installs I  as a loop invariant
+     * VeriSol.ContractInvariant(I) installs I  as (i) a loop invariant
      * for the harness that calls public methods in the contract in a 
-     * loop. See https://arxiv.org/abs/1812.08829 (Sec IV A)
+     * loop. See https://arxiv.org/abs/1812.08829 (Sec IV A), and also
+     * (ii) assume for every public method entry, and (iii) ensures for 
+     * every public method, and (iv) before any external method call.
      *
      * It is currently not inherited by derived contracts
      *
@@ -47,7 +50,25 @@ library VeriSol {
      * 
      */
     function ContractInvariant(bool b) external pure;
-    
+
+
+    /**
+     * Contract invariant (weaker)
+     * 
+     * 
+     * Calling this function within exactly one view function 
+     * VeriSol.ContractInvariant(I, false) installs I  as a loop invariant
+     * for the harness that calls public methods in the contract in a 
+     * loop. See https://arxiv.org/abs/1812.08829 (Sec IV A)
+     *
+     * ContractInvariant(p, true) is identical to ContractInvariiant(p)
+     * 
+     * It is currently not inherited by derived contracts
+     *
+     * I should only refer to variables in global scope i.e. state variables.
+     * 
+     */
+    function ContractInvariant(bool b, bool flag) external pure;
 
    /*
     ********************************************************************
