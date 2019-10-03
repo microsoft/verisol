@@ -86,7 +86,10 @@ namespace VeriSolRunner.ExternalTools
 
         private void ChangePermission()
         {
-            RunCmd("chmod", $"+x {Command}");
+            if (OsName == "linux")
+            {
+                RunCmd("chmod", $"+x {Command}");
+            }
         }
 
         private void RunCmd(string cmdName, string arguments)
