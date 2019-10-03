@@ -12,6 +12,9 @@
 - [Z3 theorem prover](https://github.com/Z3Prover/z3/releases)
 - We use **corral** and **boogie** verifiers, which are installed as dotnet cli tools
 
+### Special instruction for MacOS/OSx
+- Follow the instructions [here](https://solidity.readthedocs.io/en/v0.5.11/installing-solidity.html). Perform the following commands using [HomeBrew](http://brew.sh/) installer system: `brew update & brew upgrade & brew tap ethereum/ethereum & brew install solidity`. Homebrew will install `solc` binaries in the folder `/usr/local/Cellar/solidity/0.5.11` (or the number corresponding to the installed `solc` version). Copy the `solc.exe` file to the folder where VeriSol is installed (either dotnet global tools cache or local install directory). 
+
 ## Build VeriSol
 
 Perform the following commands from the root folder:

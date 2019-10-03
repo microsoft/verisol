@@ -197,7 +197,7 @@ namespace VeriSolRunner
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                solcName = "solc-mac";
+                solcName = "solc.exe";
             }
             else
             {
