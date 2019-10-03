@@ -43,7 +43,7 @@ namespace VeriSolRunner
             this.SolidityFilePath = solidityFilePath;
             this.ContractName = contractName;
             this.SolidityFileDir = Path.GetDirectoryName(solidityFilePath);
-            Console.WriteLine($"SpecFilesDir = {SolidityFileDir}");
+            // Console.WriteLine($"SpecFilesDir = {SolidityFileDir}");
             this.CorralPath = corralPath;
             this.BoogiePath = boogiePath;
             this.SolcPath = solcPath;
@@ -98,7 +98,7 @@ namespace VeriSolRunner
             };
 
             var boogieArgString = string.Join(" ", boogieArgs);
-            Console.WriteLine($"\n++ Running {BoogiePath} {boogieArgString} ....");
+            Console.WriteLine($"\n... running {BoogiePath} {boogieArgString}");
             var boogieOut = RunBinary(BoogiePath, boogieArgString);
             var boogieOutFile = "boogie.txt";
             using (var bFile = new StreamWriter(boogieOutFile))
@@ -137,7 +137,7 @@ namespace VeriSolRunner
             };
 
             var corralArgString = string.Join(" ", corralArgs);
-            Console.WriteLine($"\n++ Running {CorralPath} {corralArgString} ....");
+            Console.WriteLine($"\n... running {CorralPath} {corralArgString}");
             var corralOut = RunBinary(CorralPath, corralArgString);
             var corralOutFile = "corral.txt";
             using (var bFile = new StreamWriter(corralOutFile))
@@ -353,7 +353,7 @@ namespace VeriSolRunner
         private bool ExecuteSolToBoogie()
         {
             // compile the program
-            Console.WriteLine($"\n++ Running Solc on {SolidityFilePath}....");
+            Console.WriteLine($"\n... running Solc on {SolidityFilePath}");
 
             SolidityCompiler compiler = new SolidityCompiler();
             CompilerOutput compilerOutput = compiler.Compile(SolcPath, SolidityFilePath);
@@ -371,7 +371,7 @@ namespace VeriSolRunner
             try
             {
                 BoogieTranslator translator = new BoogieTranslator();
-                Console.WriteLine($"\n++ Running SolToBoogie to translate Solidity to Boogie....");
+                Console.WriteLine($"\n... running SolToBoogie to translate Solidity to Boogie");
                 BoogieAST boogieAST = translator.Translate(solidityAST, ignoreMethods, translatorFlags);
 
                 // dump the Boogie program to a file
