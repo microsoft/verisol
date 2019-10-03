@@ -66,7 +66,7 @@ contract ERC20 is IERC20 {
         // the following assertion will fail due to overflow when not using safemath
         //   to detect it,  run with /modularArith flag
         //   to prove it, run ERC20 with /modularArith flag
-        assert (_balances[recipeint] >= VeriSol.Old(_balances[recipient])); 
+        assert (_balances[recipient] >= VeriSol.Old(_balances[recipient])); 
 
         return true;
     }
