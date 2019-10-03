@@ -7,7 +7,7 @@
 ### Dev/Runtime dependencies
 - Install **.NET Core** (version **2.2**) for Windows/Linux/OSX from [here](https://dotnet.microsoft.com/download/dotnet-core/2.2#sdk-2.2.106)
 
-### Dynamically installed at VeriSol runtime (the first time only)
+### Dynamically installed at VeriSol runtime (the first time only) [No action needed]
 - [Solidity compiler](https://github.com/ethereum/solidity/releases/tag/v0.5.10)
 - [Z3 theorem prover](https://github.com/Z3Prover/z3/releases)
 - We use **corral** and **boogie** verifiers, which are installed as dotnet cli tools
@@ -16,21 +16,22 @@
 
 Perform the following commands from the root folder:
 
-    dotnet build Sources\SolToBoogie.sln
+    dotnet build Sources\VeriSol.sln
 
 ## Install VeriSol as dotnet CLI tool
-Install to the global dotnet CLI tools cache so that you can run command  `VeriSol` from anywhere:
+Install to the **global** dotnet CLI tools cache so that you can run command  `VeriSol` from anywhere:
 ```
 dotnet tool install VeriSol --version 0.1.0 --global --add-source %VERISOL_PATH%\nupkg\
 ```
-Or install to a local directory and access the command with full path `%Installed_Path%\VeriSol`
+
+Or, Install to a **local** directory and access the command with full path `%Installed_Path%\VeriSol`
 ```
 dotnet tool install VeriSol --version 0.1.0 --tool-path %Installed_Path%  --add-source %VERISOL_PATH%\nupkg\
 ```
 
 ## Running VeriSol
 
-Assuming VeriSol is installed globally, run 
+Assuming VeriSol is in the path, run 
 
 `VeriSol`
 
