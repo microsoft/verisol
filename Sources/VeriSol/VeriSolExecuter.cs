@@ -194,7 +194,7 @@ namespace VeriSolRunner
             }
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Console.WriteLine($"\tRun the command below to see the trace in a viewer:");
+                Console.WriteLine($"\tRun the command below to see the trace in a viewer (only supported on Windows):");
                 Console.WriteLine($"\t{concExplorerWindowsPath} {corralTraceFileName}");
             }
         }
