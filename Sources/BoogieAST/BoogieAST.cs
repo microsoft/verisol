@@ -228,7 +228,7 @@ namespace BoogieAST
         {
             if (postConditions == null)
                 postConditions = new List<BoogieExpr>();
-            preConditions.AddRange(posts);
+            postConditions.AddRange(posts);
         }
 
     }
