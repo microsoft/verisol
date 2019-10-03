@@ -102,7 +102,7 @@ namespace VeriSolRunner
 
             tryProofFlag = !(args.Any(x => x.Equals("/noPrf")) || args.Any(x => x.Equals("/noChk"))); //args.Any(x => x.Equals("/tryProof"));
             tryRefutation = !args.Any(x => x.Equals("/noChk"));
-            recursionBound = 2;
+            recursionBound = 8;
             var txBounds = args.Where(x => x.StartsWith("/txBound:"));
             if (txBounds.Count() > 0)
             {
