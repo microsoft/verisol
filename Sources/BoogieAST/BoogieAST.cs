@@ -144,16 +144,19 @@ namespace BoogieAST
         public List<BoogieVariable> InParams;
 
         public List<BoogieVariable> OutParams;
-    }
+
+        public List<BoogieGlobalVariable> ModSet;
+     }
 
     public class BoogieProcedure : BoogieDeclWithFormals
     {
-        public BoogieProcedure(string name, List<BoogieVariable> inParams, List<BoogieVariable> outParams, List<BoogieAttribute> attributes = null)
+        public BoogieProcedure(string name, List<BoogieVariable> inParams, List<BoogieVariable> outParams, List<BoogieAttribute> attributes = null, List<BoogieGlobalVariable> modSet = null)
         {
             this.Name = name;
             this.InParams = inParams;
             this.OutParams = outParams;
             this.Attributes = attributes;
+            this.ModSet = modSet;
         }
 
         public override string ToString()
@@ -188,6 +191,13 @@ namespace BoogieAST
                 builder.Append(")");
             }
             builder.AppendLine(";");
+            if (ModSet != null)
+            {
+                foreach(var m in ModSet)
+                {
+                    builder.AppendLine($"modifies {m.Name};");
+                }
+            }
             return builder.ToString();
         }
 

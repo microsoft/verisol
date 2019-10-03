@@ -32,7 +32,7 @@ namespace SolToBoogie
             string outFile = Path.Combine(Directory.GetCurrentDirectory(), args[2]);
 
             string solcName = GetSolcNameByOSPlatform();
-            string solcPath = Path.Combine(workingDirectory, "Tool", solcName);
+            string solcPath = Path.Combine(workingDirectory, "Binaries", solcName);
             SolidityCompiler compiler = new SolidityCompiler();
             CompilerOutput compilerOutput = compiler.Compile(solcPath, filePath);
             HashSet<Tuple<string, string>> ignoredMethods = new HashSet<Tuple<string, string>>();

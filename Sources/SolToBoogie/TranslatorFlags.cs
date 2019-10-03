@@ -20,6 +20,8 @@ namespace SolToBoogie
             GenerateInlineAttributes = true;
             ModelReverts = false;
             InstrumentGas = false;
+            ModelStubsAsCallbacks = false;
+            ModelStubsAsSkips = false;
         }
         /// <summary>
         /// Omit printing sourceFile/sourceLine information
@@ -58,5 +60,9 @@ namespace SolToBoogie
         /// Instrument contracts with gas consumption.
         /// </summary>
         public bool InstrumentGas { get; set; }
+
+        // models of stubs for unknown procedures and fallbacks
+        public bool ModelStubsAsSkips { get; set; }
+        public bool ModelStubsAsCallbacks { get; set; }
     }
 }

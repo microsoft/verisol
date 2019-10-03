@@ -421,7 +421,7 @@ namespace SolidityAST
 
         public bool IsConstructor { get; set; }
 
-        public bool IsConstructorForContract(string contractName) { return IsConstructor || string.IsNullOrEmpty(Name) || Name.Equals(contractName); }
+        public bool IsFallback{ get; set; }
 
         public bool IsDeclaredConst { get; set; }
 
@@ -1648,6 +1648,14 @@ namespace SolidityAST
     public class FunctionCall : Expression
     {
         public List<Expression> Arguments { get; set; }
+
+        // implicit msg.value of a function call
+        // can be modified by foo.value(x)(args)
+        public Expression MsgValue { get; set; }
+
+        // implicit gas budget of a function call
+        // can be modified by foo.gas(x)(args)
+        public Expression MsgGas { get; set; }
 
         public Expression Expression { get; set; }
 

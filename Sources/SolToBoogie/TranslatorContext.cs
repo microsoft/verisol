@@ -47,6 +47,10 @@ namespace SolToBoogie
         // solidity only allows at most one constructor for each contract
         public Dictionary<ContractDefinition, FunctionDefinition> ContractToConstructorMap { get; private set; }
 
+        // explicit fallback defined in each contract
+        // solidity only allows at most one fallback for each contract
+        public Dictionary<ContractDefinition, FunctionDefinition> ContractToFallbackMap { get; private set; }
+
         // all events explicitly defined in each contract
         public Dictionary<ContractDefinition, HashSet<EventDefinition>> ContractToEventsMap { get; private set; }
         public Dictionary<EventDefinition, ContractDefinition> EventToContractMap { get; private set; }
@@ -82,6 +86,8 @@ namespace SolToBoogie
         // Options flags
         public TranslatorFlags TranslateFlags { get; private set; }
 
+        public Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, TypeName>> UsingMap => usingMap;
+
         // num of fresh identifiers, should be incremented when making new fresh id
         private int freshIdentifierCount = 0;
 
@@ -90,6 +96,10 @@ namespace SolToBoogie
 
         // do we generate inline attributes (required for unbounded verification)
         private bool genInlineAttrInBpl;
+
+        // data structures for using
+        // maps Contract C --> (source, dest), where source is a library type
+        private readonly Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, TypeName>> usingMap; 
 
         public TranslatorContext(HashSet<Tuple<string, string>> ignoreMethods, bool _genInlineAttrInBpl, TranslatorFlags _translateFlags = null)
         {
@@ -103,6 +113,7 @@ namespace SolToBoogie
             ContractToArraysMap = new Dictionary<ContractDefinition, HashSet<VariableDeclaration>>();
             StateVarToContractMap = new Dictionary<VariableDeclaration, ContractDefinition>();
             ContractToConstructorMap = new Dictionary<ContractDefinition, FunctionDefinition>();
+            ContractToFallbackMap = new Dictionary<ContractDefinition, FunctionDefinition>();
             ContractToEventsMap = new Dictionary<ContractDefinition, HashSet<EventDefinition>>();
             EventToContractMap = new Dictionary<EventDefinition, ContractDefinition>();
             ContractToFunctionsMap = new Dictionary<ContractDefinition, HashSet<FunctionDefinition>>();
@@ -116,6 +127,7 @@ namespace SolToBoogie
             ModifierToBoogiePostProc = new Dictionary<string, BoogieProcedure>();
             ModifierToBoogiePreImpl = new Dictionary<string, BoogieImplementation>();
             ModifierToBoogiePostImpl = new Dictionary<string, BoogieImplementation>();
+            usingMap = new Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, TypeName>>();
             IgnoreMethods = ignoreMethods;
             genInlineAttrInBpl = _genInlineAttrInBpl;
             TranslateFlags = _translateFlags;
@@ -268,10 +280,18 @@ namespace SolToBoogie
 
         public void AddConstructorToContract(ContractDefinition contract, FunctionDefinition ctor)
         {
-            Debug.Assert(ctor.IsConstructorForContract(contract.Name), $"{ctor.Name} is not a constructor");
-            Debug.Assert(!ContractToConstructorMap.ContainsKey(contract), $"Multiple constructors are defined");
+            Debug.Assert(ctor.IsConstructor, $"{ctor.Name} is not a constructor");
+            Debug.Assert(!ContractToConstructorMap.ContainsKey(contract), $"Multiple constructors are defined for {contract.Name}");
             ContractToConstructorMap[contract] = ctor;
         }
+
+        public void AddFallbackToContract(ContractDefinition contract, FunctionDefinition fallback)
+        {
+            Debug.Assert(fallback.IsFallback, $"{fallback.Name} is not a fallback function");
+            Debug.Assert(!ContractToFallbackMap.ContainsKey(contract), $"Multiple fallbacks are defined for {contract.Name}");
+            ContractToFallbackMap[contract] = fallback;
+        }
+
 
         public bool IsConstructorDefined(ContractDefinition contract)
         {

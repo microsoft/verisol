@@ -94,22 +94,29 @@ namespace VeriSolRunner
 
         private static void ParseCommandLineArgs(string[] args, out string solidityFile, out string entryPointContractName, out bool tryProofFlag, out bool tryRefutation, out int recursionBound, out string solcName, out ILogger logger, out HashSet<Tuple<string, string>> ignoredMethods,  out bool printTransactionSeq, ref TranslatorFlags translatorFlags)
         {
-            Console.WriteLine($"Command line args ==> {string.Join(",", args.ToList())}");
+            Console.WriteLine($"Command line args = {{{string.Join(", ", args.ToList())}}}");
             solidityFile = args[0];
             // Debug.Assert(!solidityFile.Contains("/"), $"Illegal solidity file name {solidityFile}"); //the file name can be foo/bar/baz.sol
             entryPointContractName = args[1];
             Debug.Assert(!entryPointContractName.Contains("/"), $"Illegal contract name {entryPointContractName}");
 
-            tryProofFlag = args.Any(x => x.Equals("/tryProof"));
-            tryRefutation = false;
+            tryProofFlag = !(args.Any(x => x.Equals("/noPrf")) || args.Any(x => x.Equals("/noChk"))); //args.Any(x => x.Equals("/tryProof"));
+            tryRefutation = !args.Any(x => x.Equals("/noChk"));
             recursionBound = 2;
-            if (args.Any(x => x.StartsWith("/tryRefutation:")))
+            var txBounds = args.Where(x => x.StartsWith("/txBound:"));
+            if (txBounds.Count() > 0)
             {
-                Debug.Assert(!tryRefutation, "Multiple declaration of /tryRefutation:k in command line");
-                var arg = args.First(x => x.StartsWith("/tryRefutation:"));
-                tryRefutation = true;
-                recursionBound = int.Parse(arg.Substring("/tryRefutation:".Length));
+                Debug.Assert(txBounds.Count() == 1, $"At most 1 /txBound:k expected, found {txBounds.Count()}");
+                recursionBound = int.Parse(txBounds.First().Substring("/txBound:".Length));
+                Debug.Assert(recursionBound > 0, $"Argument of /txBound:k should be positive, found {recursionBound}");
             }
+            //if (args.Any(x => x.StartsWith("/tryRefutation:")))
+            //{
+            //    Debug.Assert(!tryRefutation, "Multiple declaration of /tryRefutation:k in command line");
+            //    var arg = args.First(x => x.StartsWith("/tryRefutation:"));
+            //    tryRefutation = true;
+            //    recursionBound = int.Parse(arg.Substring("/tryRefutation:".Length));
+            //}
 
             solcName = GetSolcNameByOSPlatform();
             ILoggerFactory loggerFactory = new LoggerFactory().AddConsole(LogLevel.Information);
@@ -174,6 +181,17 @@ namespace VeriSolRunner
                 translatorFlags.InstrumentGas = true;
             }
 
+            if (args.Any(x => x.Equals("/modelStubsAsSkips")))
+            {
+                translatorFlags.ModelStubsAsSkips = true;
+            }
+            if (args.Any(x => x.Equals("/modelStubsAsCallbacks")))
+            {
+                translatorFlags.ModelStubsAsCallbacks = true;
+            }
+
+
+
             // don't perform verification for some of these omitFlags
             if (tryProofFlag || tryRefutation)
             {
@@ -190,24 +208,26 @@ namespace VeriSolRunner
                     "/omitUnsignedSemantics are specified");
             }
 
-            printTransactionSeq = args.Any(x => x.Equals("/printTransactionSequence"));
+            printTransactionSeq = !args.Any(x => x.Equals("/noTxSeq"));
         }
 
         private static void ShowUsage()
         {
             Console.WriteLine("VeriSol: Formal specification and verification tool for Solidity smart contracts");
             Console.WriteLine("Usage:  VeriSol <relative-path-to-solidity-file> <top-level-contractName> [options]");
-            Console.WriteLine("\t options:");
-            Console.WriteLine("\t\t /tryProof               \ttry inductive proofs, default: false");
-            Console.WriteLine("\t\t /tryRefutation:k        \ttry to obtain counterexamples for upto k transactions, default: false");
-            //Console.WriteLine("\t\t /recursionBound:k       \tmax number transactions and loop unrollings per transaction, default: 2");
-            Console.WriteLine("\t\t /bplPrelude:<foo.bpl>   \tany additional Boogie file to be added for axioms or user-supplied boogie invariants");
-            Console.WriteLine("\t\t /ignoreMethod:<method>@<contract>: Ignores translation of the method within contract, and only generates a declaration");
-            Console.WriteLine("\t\t\t\t multiple such pairs can be specified, ignored set is the union");
-            Console.WriteLine("\t\t\t\t a wild card '*' can be used for method, would mean all the methods of the contract");
-            Console.WriteLine("\t\t /noInlineAttrs          \tdo not generate any {:inline x} attributes, to speed Corral (cannot use with /tryProof)");
-            Console.WriteLine("\t\t /outBpl:<out.bpl>       \tpersist the output Boogie file");
-            Console.WriteLine("\t\t /printTransactionSequence \tprints the transaction sequence on console (default false)");
+            Console.WriteLine("options:");
+            Console.WriteLine("\t /noChk                  \tdon't perform verification, default: false");
+            Console.WriteLine("\t /noPrf                  \tdon't perform inductive verification, default: false");
+            Console.WriteLine("\t /txBound:k              \tonly explore counterexamples with at most k transactions/loop unrollings, default: 2");
+            Console.WriteLine("\t /noTxSeq                \tdon't print the transaction sequence on console, default: false)");
+            Console.WriteLine("\t /outBpl:<out.bpl>       \tpersist the output Boogie file");
+            Console.WriteLine("\t /bplPrelude:<foo.bpl>   \tany additional Boogie file to be added for axioms or user-supplied boogie invariants");
+            Console.WriteLine("\t /ignoreMethod:<method>@<contract>: Ignores translation of the method within contract, and only generates a declaration");
+            Console.WriteLine("\t\t\t\t\t multiple such pairs can be specified, ignored set is the union");
+            Console.WriteLine("\t\t\t\t\t a wild card '*' can be used for method, would mean all the methods of the contract");
+            Console.WriteLine("\t /noInlineAttrs          \tdo not generate any {:inline x} attributes, to speed Corral (cannot use with /tryProof)");
+            Console.WriteLine("\t /modelStubsAsSkips       \tany unknown procedure or fallback is treated as skip unsoundly (default treated as havoc entire state)");
+            Console.WriteLine("\t /modelStubsAsCallbacks       \tany unknown procedure or fallback is treated as callback to any method of any contract (default treated as havoc entire state)");
             Console.WriteLine("\t\t /useModularArithmetic         \tuse modular arithmetic for uint (default false)");
         }
 

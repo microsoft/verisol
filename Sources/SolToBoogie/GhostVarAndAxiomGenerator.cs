@@ -172,6 +172,10 @@ namespace SolToBoogie
 
         private void GenerateGlobalVariables()
         {
+            BoogieTypedIdent balanceId = new BoogieTypedIdent("Balance", new BoogieMapType(BoogieType.Ref, BoogieType.Int));
+            BoogieGlobalVariable balanceVar = new BoogieGlobalVariable(balanceId);
+            context.Program.AddDeclaration(balanceVar);
+
             BoogieTypedIdent dtypeId = new BoogieTypedIdent("DType", new BoogieMapType(BoogieType.Ref, contractType));
             BoogieGlobalVariable dtype = new BoogieGlobalVariable(dtypeId);
             context.Program.AddDeclaration(dtype);
@@ -239,7 +243,7 @@ namespace SolToBoogie
             inParams.AddRange(TransUtils.GetDefaultInParams());
             foreach(var member in structDefn.Members)
             {
-                Debug.Assert(!member.TypeDescriptions.TypeString.StartsWith("struct "), "Do no handle nested structs yet!");
+                Debug.Assert(!member.TypeDescriptions.IsStruct(), "Do no handle nested structs yet!");
                 var formalType = TransUtils.GetBoogieTypeFromSolidityTypeName(member.TypeName);
                 var formalName = member.Name;
                 inParams.Add(new BoogieFormalParam(new BoogieTypedIdent(formalName, formalType)));
@@ -259,7 +263,7 @@ namespace SolToBoogie
             foreach (var member in structDefn.Members)
             {
                 //f[this] = f_arg
-                Debug.Assert(!member.TypeDescriptions.TypeString.StartsWith("struct "), "Do no handle nested structs yet!");
+                Debug.Assert(!member.TypeDescriptions.IsStruct(), "Do no handle nested structs yet!");
                 var mapName = member.Name + "_" + structDefn.CanonicalName;
                 var formalName = member.Name;
                 var mapSelectExpr = new BoogieMapSelect(new BoogieIdentifierExpr(mapName), new BoogieIdentifierExpr("this"));
