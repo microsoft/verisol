@@ -39,7 +39,12 @@ namespace SolToBoogie
 
         // to collect contract invariants
         private Dictionary<string, List<BoogieExpr>> contractInvariants = null;
-        
+
+        // used to detect overflows in arithmetic operations ("+", "-", "*", "/")
+        // counts nested FunctionCalls and relational exprs
+        // (overflow detection in those is an unsupported feature)
+        private int countNestedFuncCallsRelExprs = 0;
+
         private static void emitGasCheck(BoogieStmtList newBody)
         {
             BoogieStmtList thenBody = new BoogieStmtList();
@@ -1081,6 +1086,31 @@ namespace SolToBoogie
             return false;
         }
 
+        private BoogieExpr HelperModOper(BoogieExpr rhs, Expression lhsNode)
+        {
+            BoogieExpr res = rhs;
+            if (!context.TranslateFlags.UseModularArithmetic)
+            {
+                return res;
+            }
+            else if (lhsNode is TupleExpression tuple)
+            {
+                VeriSolAssert(false, "Not implemented... tuple in the lhs for overflow detection");
+            }
+            else if (lhsNode.TypeDescriptions.IsUintWSize(out uint sz))
+            {
+                
+                    Console.WriteLine("HelperModOper: UseModularArithmetic: adding mod on the rhs of asgn; lhs is uint of size {0}", sz);
+                    VeriSolAssert(sz != 0, $"size of uint lhs is zero");
+                    BigInteger maxUIntValue = (BigInteger)Math.Pow(2, sz);
+                    Console.WriteLine("HelperModOper: maxUIntValue is {0}", maxUIntValue);
+                    res = new BoogieFuncCallExpr("modBpl", new List<BoogieExpr>() { rhs, new BoogieLiteralExpr(maxUIntValue) });
+                    return res;
+             
+            }
+
+            return res;
+        }
         public override bool Visit(Assignment node)
         {
             preTranslationAction(node);
@@ -1160,8 +1190,8 @@ namespace SolToBoogie
                 }
                 if (!isTupleAssignment)
                 {
-                    if (usedTmpVar || !(lhs[0] is BoogieIdentifierExpr)) //bad bug: was && before!!
-                        currentStmtList.AddStatement(new BoogieAssignCmd(lhs[0], tmpVars[0]));
+                    if (usedTmpVar || !(lhs[0] is BoogieIdentifierExpr)) //bad bug: was && before!!  
+                        currentStmtList.AddStatement(new BoogieAssignCmd(lhs[0], tmpVars[0]));                       
                 } else
                 {
                     for (int i = 0; i < lhs.Count; ++i)
@@ -1186,10 +1216,14 @@ namespace SolToBoogie
                 switch (node.Operator)
                 {
                     case "=":
+                        // TODO: add mod for rhs
+                        // TODO: throw an exception in the helper, if lhs is a tuple
+                        rhs = HelperModOper(rhs, node.LeftHandSide);
                         stmtList.AddStatement(new BoogieAssignCmd(lhs[0], rhs));
                         break;
                     case "+=":
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, lhs[0], rhs)));
+                        //rhs = new BoogieFuncCallExpr("mod", new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, lhs[0], rhs));
+                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], rhs));
                         break;
                     case "-=":
                         stmtList.AddStatement(new BoogieAssignCmd(lhs[0], new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, lhs[0], rhs)));
@@ -1802,6 +1836,7 @@ namespace SolToBoogie
 
         public override bool Visit(FunctionCall node)
         {
+            countNestedFuncCallsRelExprs++;
             preTranslationAction(node);
             // VeriSolAssert(!(node.Expression is NewExpression), $"new expressions should be handled in assignment");
             if (node.Expression is NewExpression)
@@ -1809,6 +1844,7 @@ namespace SolToBoogie
                 BoogieIdentifierExpr tmpVarExpr = MkNewLocalVariableForFunctionReturn(node);
                 TranslateNewStatement(node, tmpVarExpr);
                 currentExpr = tmpVarExpr;
+                countNestedFuncCallsRelExprs--;
                 return false;
             }
 
@@ -1816,6 +1852,8 @@ namespace SolToBoogie
 
             if (functionName.Equals("assert"))
             {
+                // TODO:
+                //countNestedFuncCallsRelExprs--;
                 VeriSolAssert(node.Arguments.Count == 1);
                 BoogieExpr predicate = TranslateExpr(node.Arguments[0]);
                 BoogieAssertCmd assertCmd = new BoogieAssertCmd(predicate);
@@ -1823,6 +1861,8 @@ namespace SolToBoogie
             }
             else if (functionName.Equals("require"))
             {
+                // TODO:
+                //countNestedFuncCallsRelExprs--;
                 VeriSolAssert(node.Arguments.Count == 1 || node.Arguments.Count == 2);
                 BoogieExpr predicate = TranslateExpr(node.Arguments[0]);
                 
@@ -1936,6 +1976,7 @@ namespace SolToBoogie
                 }
 
             }
+            countNestedFuncCallsRelExprs--;
             return false;
         }
 
@@ -2631,6 +2672,11 @@ namespace SolToBoogie
             BoogieExpr leftExpr = TranslateExpr(node.LeftExpression);
             BoogieExpr rightExpr = TranslateExpr(node.RightExpression);
 
+            if (context.TranslateFlags.UseModularArithmetic && countNestedFuncCallsRelExprs > 0 &&
+                (node.Operator == "+" || node.Operator == "-" || node.Operator == "*" || node.Operator == "/" || node.Operator == "%"))
+            {
+                VeriSolAssert(false, $"Unsupported feature in /useModularArithmetic mode: this arithmetic binary expr is inside function call or relational operation: {node}");
+            }
             BoogieBinaryOperation.Opcode op;
             switch (node.Operator)
             {
@@ -2650,21 +2696,27 @@ namespace SolToBoogie
                     op = BoogieBinaryOperation.Opcode.MOD;
                     break;
                 case "==":
+                    countNestedFuncCallsRelExprs++;
                     op = BoogieBinaryOperation.Opcode.EQ;
                     break;
                 case "!=":
+                    countNestedFuncCallsRelExprs++;
                     op = BoogieBinaryOperation.Opcode.NEQ;
                     break;
                 case ">":
+                    countNestedFuncCallsRelExprs++;
                     op = BoogieBinaryOperation.Opcode.GT;
                     break;
                 case ">=":
+                    countNestedFuncCallsRelExprs++;
                     op = BoogieBinaryOperation.Opcode.GE;
                     break;
                 case "<":
+                    countNestedFuncCallsRelExprs++;
                     op = BoogieBinaryOperation.Opcode.LT;
                     break;
                 case "<=":
+                    countNestedFuncCallsRelExprs++;
                     op = BoogieBinaryOperation.Opcode.LE;
                     break;
                 case "&&":
@@ -2680,40 +2732,13 @@ namespace SolToBoogie
             }
 
             BoogieExpr binaryExpr = new BoogieBinaryOperation(op, leftExpr, rightExpr);
-            //Console.WriteLine("UseModularArithmetic: {0}", context.TranslateFlags.UseModularArithmetic);
-            uint szLeft1 = 0;
-            uint szRight1 = 0;
-            uint szLeft2 = 0;
-            uint szRight2 = 0;
-            if (context.TranslateFlags.UseModularArithmetic && (op == BoogieBinaryOperation.Opcode.ADD || op == BoogieBinaryOperation.Opcode.SUB ||
-                op == BoogieBinaryOperation.Opcode.MUL || op == BoogieBinaryOperation.Opcode.DIV))
-            {
-                bool uintLeft = node.LeftExpression.TypeDescriptions.IsUintWSize(out szLeft1);
-                bool uintRight = node.RightExpression.TypeDescriptions.IsUintWSize(out szRight1);
-                bool leftConst = node.LeftExpression.TypeDescriptions.IsUintConst(out szLeft2);
-                bool rightConst = node.RightExpression.TypeDescriptions.IsUintConst(out szRight2);
-                if (uintLeft || uintRight || leftConst || rightConst)
-                {
-                    Console.WriteLine("UseModularArithmetic: binary expr with operands of uint of size {0}", szLeft1);
-                    //VeriSolAssert(szLeft1 == szRight1, $"Sizes for uint in a binary expression are different: {node}");
-                    // max value of uint is 2 ^ sz   
-                    // choose min size of all non-zero sizes
-                    List<uint> lst = new List<uint> { szLeft1, szRight1, szLeft2, szRight2 };
-                    var sz = lst.Min();
-                    VeriSolAssert(sz != 0, $"sizes of binary operands are all zero");
-                    BigInteger maxUIntValue = (BigInteger)Math.Pow(2, sz);
-                    Console.WriteLine("maxUIntValue is {0}", maxUIntValue);
-                    binaryExpr = new BoogieFuncCallExpr("modBpl", new List<BoogieExpr>() { binaryExpr, new BoogieLiteralExpr(maxUIntValue) });                   
-                }
-                //else if (node.LeftExpression.TypeDescriptions.IsIntWSize(out uint szLeft2) && node.RightExpression.TypeDescriptions.IsIntWSize(out uint szRight2))
-                //{
-                    //TODO: are there negative int constants? try a test
-                    // Value(x op y) = (x op y + 2^k) mod 2^{k+1} – 2^k - 1 
-                //}
-            }
-
             currentExpr = binaryExpr;
 
+            if (node.Operator == "==" || node.Operator == "!=" || node.Operator == ">" || node.Operator == ">=" || node.Operator == "<" || node.Operator == "<=")
+            {
+                countNestedFuncCallsRelExprs--;
+            }
+            
             return false;
         }
 
