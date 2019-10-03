@@ -107,7 +107,8 @@ namespace VeriSolRunner
             if (txBounds.Count() > 0)
             {
                 Debug.Assert(txBounds.Count() == 1, $"At most 1 /txBound:k expected, found {txBounds.Count()}");
-                recursionBound = int.Parse(txBounds.First().Substring("/txBound:".Length)); 
+                recursionBound = int.Parse(txBounds.First().Substring("/txBound:".Length));
+                Debug.Assert(recursionBound > 0, $"Argument of /txBound:k should be positive, found {recursionBound}");
             }
             //if (args.Any(x => x.StartsWith("/tryRefutation:")))
             //{
