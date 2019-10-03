@@ -7,27 +7,10 @@
 ### Dev/Runtime dependencies
 - Install **.NET Core** (version **2.2**) for Windows/Linux/OSX from [here](https://dotnet.microsoft.com/download/dotnet-core/2.2#sdk-2.2.106)
 
-<<<<<<< HEAD
-### Dynamically installed at VeriSol runtime
-- [Solidity compiler](https://github.com/ethereum/solidity/releases/tag/v0.5.10), which is downloaded and set up when VeriSol.dll is running for the first time.
-- [Z3 theorem prover](https://github.com/Z3Prover/z3/releases) , which is downloaded and set up when VeriSol.dll is running for the first time.
-=======
-- Install **.NET Core** (version **2.2**) for Windows/Linux/OSX from [here](https://dotnet.microsoft.com/download/dotnet-core/2.2#sdk-2.2.106) 
-- Install the following **Solidity compiler** (version **0.5.10**) binaries for Windows/Linux/OSX from [here](https://github.com/ethereum/solidity/releases/tag/v0.5.10) into the **Binaries** folder.
-   - (Windows) Download `solc.exe`
-   - (Linux) Download `solc-static-linux` binary and use command `chmod +x solc-static-linux` 
-   - (OSX) You need to build `solc` from the source code. The easiest way is to use the [HomeBrew](http://brew.sh/) installer system. Follow the instructions [here](https://solidity.readthedocs.io/en/v0.5.11/installing-solidity.html). Essentially, you need to perform the following commands: `brew update & brew upgrade & brew tap ethereum/ethereum & brew install solidity`. Homebrew will install `solc` binaries in the folder `/usr/local/Cellar/solidity/0.5.11` (or the number corresponding to the installed `solc` version). Copy the `solc` file to  **Binaries** folder and rename it to  `solc-mac`. 
-   
-- Install [Z3 theorem prover](https://github.com/Z3Prover/z3/releases) (ver 4.8.4) binary **z3.exe** (respectively, **z3**) for Windows (respectively, Linux/OSX) into **Binaries** 
-   - For Linux/OSX, create a symbolic link to z3 as follows:
-   
-      `ln -S Binaries/z3 Binaries/z3.exe`
->>>>>>> master
-
-- We use **corral** and **boogie** verifiers, which are installed as dotnet cli tools when VeriSol.dll is running for the first time.
-
-### (Optional) Trace explorer
-- For Windows, we currently use [ConcurrencyExplorer](https://github.com/boogie-org/corral/blob/c446f5e827373c8189dabfb86c0c4ed635f63182/tools/ConcurrencyExplorer.exe) to step through traces. The tool is not available on Linux/OSX. Source code is [here](https://github.com/LeeSanderson/Chess).
+### Dynamically installed at VeriSol runtime (the first time only)
+- [Solidity compiler](https://github.com/ethereum/solidity/releases/tag/v0.5.10)
+- [Z3 theorem prover](https://github.com/Z3Prover/z3/releases)
+- We use **corral** and **boogie** verifiers, which are installed as dotnet cli tools
 
 ## Build VeriSol
 
