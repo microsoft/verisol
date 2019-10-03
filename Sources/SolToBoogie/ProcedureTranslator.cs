@@ -1101,6 +1101,7 @@ namespace SolToBoogie
                 Identifier identifier = new Identifier();
                 identifier.Name = varDecl.Name;
                 identifier.ReferencedDeclaration = varDecl.Id;
+                identifier.TypeDescriptions = varDecl.TypeDescriptions;
 
                 Assignment assignment = new Assignment();
                 assignment.LeftHandSide = identifier;
