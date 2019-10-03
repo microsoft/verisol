@@ -88,7 +88,7 @@ namespace VeriSolRunner
                 //-doModSetAnalysis -inline:spec (was assert) -noinfer -contractInfer -proc:BoogieEntry_* out.bpl
                 //
                 $"-doModSetAnalysis",
-                $"-inline:assert",
+                $"-inline:spec", //was assert to before to fail when reaching recursive functions
                 $"-noinfer",
                 $"-contractInfer",
                 // main method
