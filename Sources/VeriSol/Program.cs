@@ -183,6 +183,10 @@ namespace VeriSolRunner
                 var depth = args.Where(x => x.StartsWith("/inlineDepth:")).First();
                 translatorFlags.InlineDepthForBoogie = int.Parse(depth.Substring("/inlineDepth:".Length));
             }
+            if (args.Any(x => x.Equals("/doModSet")))
+            {
+                translatorFlags.DoModSetAnalysis = true;
+            }
 
             // don't perform verification for some of these omitFlags
             if (tryProofFlag || tryRefutation)

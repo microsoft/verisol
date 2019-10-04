@@ -22,6 +22,7 @@ namespace SolToBoogie
             ModelStubsAsCallbacks = false;
             ModelStubsAsSkips = false;
             InlineDepthForBoogie = 4;
+            DoModSetAnalysis = false;
         }
         /// <summary>
         /// Omit printing sourceFile/sourceLine information
@@ -64,5 +65,8 @@ namespace SolToBoogie
         public int InlineDepthForBoogie { get; set; }
 
         public bool ModelStubsAsCallbacks { get; set; }
+
+        // Do ModSet analysis on the Boogie program.
+        public bool DoModSetAnalysis { get; set; }
     }
 }
