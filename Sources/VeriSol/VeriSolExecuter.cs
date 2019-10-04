@@ -15,6 +15,7 @@ namespace VeriSolRunner
     using System.Reflection;
     using System.Text.RegularExpressions;
     using System.Linq;
+    using Microsoft.Boogie.ExprExtensions;
 
     internal class VeriSolExecutor
     {
@@ -91,6 +92,7 @@ namespace VeriSolRunner
                 $"-inline:spec", //was assert to before to fail when reaching recursive functions
                 $"-noinfer",
                 $"-contractInfer",
+                $"-inlineDepth:{this.translatorFlags.InlineDepthForBoogie}", //contractInfer can perform inlining as well
                 // main method
                 $"-proc:BoogieEntry_*",
                 // Boogie file

@@ -1197,7 +1197,8 @@ namespace SolToBoogie
                 {
                     // assume the type cast is used as: obj = C(var);
                     VeriSolAssert(!isTupleAssignment, "Not expecting a tuple for type cast");
-                    TranslateTypeCast(funcCall, tmpVars[0]); //this is not a procedure call in Boogie
+                    bool isElementaryCast; //not used at this site
+                    TranslateTypeCast(funcCall, tmpVars[0], out isElementaryCast); //this is not a procedure call in Boogie
                     usedTmpVar = false;
                 }
                 else // normal function calls
@@ -1950,11 +1951,12 @@ namespace SolToBoogie
             else if (IsImplicitFunc(node))
             {
                 BoogieIdentifierExpr tmpVarExpr = MkNewLocalVariableForFunctionReturn(node);
+                bool isElementaryCast = false;  
 
                 if (IsContractConstructor(node)) {
                     TranslateNewStatement(node, tmpVarExpr);
                 } else if (IsTypeCast(node)) {
-                    TranslateTypeCast(node, tmpVarExpr);
+                    TranslateTypeCast(node, tmpVarExpr, out isElementaryCast);
                 } else if (IsAbiEncodePackedFunc(node)) {
                     TranslateAbiEncodedFuncCall(node, tmpVarExpr);
                 } else if (IsKeccakFunc(node)) {
@@ -1966,7 +1968,11 @@ namespace SolToBoogie
                     VeriSolAssert(false, $"Unexpected implicit function {node.ToString()}");
                 }
 
-                currentExpr = tmpVarExpr;
+                if (!isElementaryCast)
+                {
+                    // We should not introduce temporaries for address(this).balance in a specification
+                    currentExpr = tmpVarExpr;
+                }
             }
             else if (IsVeriSolCodeContractFunction(node))
             {
@@ -2796,8 +2802,17 @@ namespace SolToBoogie
             return node.Kind.Equals("typeConversion");
         }
 
-        private void TranslateTypeCast(FunctionCall node, BoogieExpr lhs)
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="node"></param>
+        /// <param name="lhs"></param>
+        /// <param name="isElemenentaryTypeCast">indicates if the cast of to an elementary type, often used in specifications</param>
+        private void TranslateTypeCast(FunctionCall node, BoogieExpr lhs, out bool isElemenentaryTypeCast)
         {
+            isElemenentaryTypeCast = false; 
+
             VeriSolAssert(node.Kind.Equals("typeConversion"));
             VeriSolAssert(node.Arguments.Count == 1);
             //VeriSolAssert(node.Arguments[0] is Identifier || node.Arguments[0] is MemberAccess || node.Arguments[0] is Literal || node.Arguments[0] is IndexAccess,
@@ -2818,12 +2833,11 @@ namespace SolToBoogie
                 currentStmtList.AddStatement(new BoogieAssumeCmd(assumeExpr));
                 // lhs := expr;
                 currentStmtList.AddStatement(new BoogieAssignCmd(lhs, exprToCast));
-                return;
             }
             else if (node.Expression is ElementaryTypeNameExpression elemType) // cast to elementary types
             {
-                var rhsExpr = exprToCast;
-
+                isElemenentaryTypeCast = true;
+                BoogieExpr rhsExpr = null;
                 // most casts are skips, except address cast
                 if (elemType.TypeName.Equals("address") || elemType.TypeName.Equals("address payable"))
                 {
@@ -2844,12 +2858,12 @@ namespace SolToBoogie
                 }
                 // lhs := expr;
                 currentStmtList.AddStatement(new BoogieAssignCmd(lhs, rhsExpr));
-                return;
             } 
             else
             {
                 VeriSolAssert(false, $"Unknown type cast: {node.Expression}");
             }
+            return;
         }
 
         private void VeriSolAssert(bool cond, string message = "")

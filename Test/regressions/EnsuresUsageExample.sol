@@ -29,5 +29,14 @@ contract A {
            y++;
            foo();
         }
+        baz();
+    }
+    
+    function baz() private {
+        // assert (false);
+    }
+
+    function bar() private {
+      assert (false); //unreachable
     }
 }

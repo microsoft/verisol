@@ -21,6 +21,7 @@ namespace SolToBoogie
             InstrumentGas = false;
             ModelStubsAsCallbacks = false;
             ModelStubsAsSkips = false;
+            InlineDepthForBoogie = 4;
         }
         /// <summary>
         /// Omit printing sourceFile/sourceLine information
@@ -58,6 +59,10 @@ namespace SolToBoogie
 
         // models of stubs for unknown procedures and fallbacks
         public bool ModelStubsAsSkips { get; set; }
+
+        // this translates to /inlineDepth:k when calling Boogie with /contractInfer
+        public int InlineDepthForBoogie { get; set; }
+
         public bool ModelStubsAsCallbacks { get; set; }
     }
 }
