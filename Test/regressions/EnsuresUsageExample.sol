@@ -37,6 +37,7 @@ contract A {
     }
 
     function bar() private {
-      assert (false); //unreachable
+      assert (false); //unreachable from BoogieEntry_*
+      //however with /contractInfer there is a failure in the command line
     }
 }

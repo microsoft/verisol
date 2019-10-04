@@ -22,6 +22,7 @@ namespace SolToBoogie
             ModelStubsAsCallbacks = false;
             ModelStubsAsSkips = false;
             InlineDepthForBoogie = 4;
+            PerformContractInferce = false;
         }
         /// <summary>
         /// Omit printing sourceFile/sourceLine information
@@ -62,7 +63,7 @@ namespace SolToBoogie
 
         // this translates to /inlineDepth:k when calling Boogie with /contractInfer
         public int InlineDepthForBoogie { get; set; }
-
+        public bool PerformContractInferce { get; set; }
         public bool ModelStubsAsCallbacks { get; set; }
     }
 }

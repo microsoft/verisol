@@ -184,6 +184,8 @@ namespace VeriSolRunner
                 translatorFlags.InlineDepthForBoogie = int.Parse(depth.Substring("/inlineDepth:".Length));
             }
 
+            translatorFlags.PerformContractInferce = args.Any(x => x.StartsWith("/contractInfer")) ;
+
             // don't perform verification for some of these omitFlags
             if (tryProofFlag || tryRefutation)
             {
@@ -208,19 +210,32 @@ namespace VeriSolRunner
             Console.WriteLine("VeriSol: Formal specification and verification tool for Solidity smart contracts");
             Console.WriteLine("Usage:  VeriSol <relative-path-to-solidity-file> <top-level-contractName> [options]");
             Console.WriteLine("options:");
-            Console.WriteLine("\t /noChk                  \tdon't perform verification, default: false");
-            Console.WriteLine("\t /noPrf                  \tdon't perform inductive verification, default: false");
-            Console.WriteLine("\t /txBound:k              \tonly explore counterexamples with at most k transactions/loop unrollings, default: 4");
-            Console.WriteLine("\t /noTxSeq                \tdon't print the transaction sequence on console, default: false)");
-            Console.WriteLine("\t /outBpl:<out.bpl>       \tpersist the output Boogie file");
-            Console.WriteLine("\t /bplPrelude:<foo.bpl>   \tany additional Boogie file to be added for axioms or user-supplied boogie invariants");
-            Console.WriteLine("\t /inlineDepth:k          \tinline nested calls upto depth k when performing modular proof and inference, default 4");
-            Console.WriteLine("\t /ignoreMethod:<method>@<contract>: Ignores translation of the method within contract, and only generates a declaration");
-            Console.WriteLine("\t\t\t\t\t multiple such pairs can be specified, ignored set is the union");
-            Console.WriteLine("\t\t\t\t\t a wild card '*' can be used for method, would mean all the methods of the contract");
-            Console.WriteLine("\t /noInlineAttrs          \tdo not generate any {:inline x} attributes, to speed Corral (cannot use with /tryProof)");
-//          Console.WriteLine("\t /modelStubsAsSkips       \tany unknown procedure or fallback is treated as skip unsoundly (default treated as havoc entire state)");
-            Console.WriteLine("\t /modelStubsAsCallbacks       \tany unknown procedure or fallback is treated as callback to any method of any contract (default treated as havoc entire state)");
+
+            Console.WriteLine("\n------ Controls input/output files --------\n");
+
+            Console.WriteLine("   /outBpl:<out.bpl>        persist the output Boogie file");
+            Console.WriteLine("   /bplPrelude:<foo.bpl>    any additional Boogie file to be added for axioms or user-supplied boogie invariants");
+
+
+            Console.WriteLine("\n------ Controls verification flags --------\n");
+
+            Console.WriteLine("   /noChk                  don't perform verification, default: false");
+            Console.WriteLine("   /noPrf                  don't perform inductive verification, default: false";
+            Console.WriteLine("   /txBound:k              only explore counterexamples with at most k transactions/loop unrollings, default: 4");
+            Console.WriteLine("   /noTxSeq                don't print the transaction sequence on console, default: false)");
+            Console.WriteLine("   /contractInfer          perform Houdini based module invariant inference, default off");
+            Console.WriteLine("   /inlineDepth:k          inline nested calls upto depth k when performing modular proof and inference, default 4");
+
+
+            Console.WriteLine("\n------ Controls translation --------\n");
+
+            Console.WriteLine("   /ignoreMethod:<method>@<contract>: Ignores translation of the method within contract, and only generates a declaration");
+            Console.WriteLine("                           multiple such pairs can be specified, ignored set is the union");
+            Console.WriteLine("                           a wild card '*' can be used for method, would mean all the methods of the contract");
+            Console.WriteLine("   /noInlineAttrs          do not generate any {:inline x} attributes, to speed Corral (cannot use with /tryProof)");
+//          Console.WriteLine("   /modelStubsAsSkips      \tany unknown procedure or fallback is treated as skip unsoundly (default treated as havoc entire state)");
+            Console.WriteLine("   /modelStubsAsCallbacks  any unknown procedure or fallback is treated as callback to any method of any contract (default treated as havoc entire state)");
+
         }
 
         private static string GetSolcNameByOSPlatform()
