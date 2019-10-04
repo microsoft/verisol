@@ -320,6 +320,7 @@ namespace SolToBoogie
             {
                 return false;
             }
+            // we add any pre/post conditions after analyzing the boy later
             BoogieProcedure procedure = new BoogieProcedure(procName, inParams, outParams, attributes);
             context.Program.AddDeclaration(procedure);
 
@@ -423,8 +424,15 @@ namespace SolToBoogie
                 }
                 else
                 {
+                    //extract the specifications from within the body
+                    BoogieStmtList procBodyWoRequires, procBodyWoEnsures;
+                    var preconditions = ExtractSpecifications("Requires_VeriSol", procBody, out procBodyWoRequires);
+                    var postconditions = ExtractSpecifications("Ensures_VeriSol", procBodyWoRequires, out procBodyWoEnsures);
+
+                    procedure.AddPreConditions(preconditions);
+                    procedure.AddPostConditions(postconditions);
                     List<BoogieVariable> localVars = boogieToLocalVarsMap[currentBoogieProc];
-                    BoogieImplementation impelementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
+                    BoogieImplementation impelementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBodyWoEnsures);
                     context.Program.AddDeclaration(impelementation);
                 }
             }
@@ -1189,7 +1197,8 @@ namespace SolToBoogie
                 {
                     // assume the type cast is used as: obj = C(var);
                     VeriSolAssert(!isTupleAssignment, "Not expecting a tuple for type cast");
-                    TranslateTypeCast(funcCall, tmpVars[0]); //this is not a procedure call in Boogie
+                    bool isElementaryCast; //not used at this site
+                    TranslateTypeCast(funcCall, tmpVars[0], out isElementaryCast); //this is not a procedure call in Boogie
                     usedTmpVar = false;
                 }
                 else // normal function calls
@@ -1407,7 +1416,7 @@ namespace SolToBoogie
             BoogieStmtList body = TranslateStatement(node.Body);
 
             BoogieStmtList newBody;
-            var invariants = ExtractInvariants(body, out newBody);
+            var invariants = ExtractSpecifications("Invariant_VeriSol", body, out newBody);
             BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, newBody, invariants);
 
             currentStmtList.AddStatement(whileCmd);
@@ -1434,7 +1443,7 @@ namespace SolToBoogie
             body.AppendStmtList(loopStmt);
 
             BoogieStmtList newBody;
-            var invariants = ExtractInvariants(body, out newBody);
+            var invariants = ExtractSpecifications("Invariant_VeriSol", body, out newBody);
             BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, newBody, invariants);
             stmtList.AddStatement(whileCmd);
 
@@ -1448,15 +1457,18 @@ namespace SolToBoogie
             return false;
         }
 
+
         /// <summary>
-        /// TODO: Remove the Invariant_VeriSol calls from body
+        /// 
         /// </summary>
+        /// <param name="specStringCall">"Invariant_VeriSol", "Ensures_VeriSol", "Requires_VeriSol"</param>
         /// <param name="body"></param>
+        /// <param name="bodyWithoutSpecNodes"></param>
         /// <returns></returns>
-        private List<BoogieExpr> ExtractInvariants(BoogieStmtList body, out BoogieStmtList bodyWithoutInvariants)
+        private List<BoogieExpr> ExtractSpecifications(string specStringCall, BoogieStmtList body, out BoogieStmtList bodyWithoutSpecNodes)
         {
-            bodyWithoutInvariants = new BoogieStmtList();
-            List<BoogieExpr> invariantExprs = new List<BoogieExpr>();
+            bodyWithoutSpecNodes = new BoogieStmtList();
+            List<BoogieExpr> specArguments = new List<BoogieExpr>();
             foreach (var bigBlock in body.BigBlocks)
             {
                 foreach (var stmt in bigBlock.SimpleCmds)
@@ -1464,20 +1476,20 @@ namespace SolToBoogie
                     var callCmd = stmt as BoogieCallCmd;
                     if (callCmd == null)
                     {
-                        bodyWithoutInvariants.AddStatement(stmt);
+                        bodyWithoutSpecNodes.AddStatement(stmt);
                         continue;
                     }
-                    if (callCmd.Callee.Equals("Invariant_VeriSol"))
+                    if (callCmd.Callee.Equals(specStringCall))
                     {
-                        VeriSolAssert(callCmd.Ins.Count == 4, "Found VeriSol.Invariant(..) with unexpected number of args");
-                        invariantExprs.Add(callCmd.Ins[3]);
+                        VeriSolAssert(callCmd.Ins.Count == 4, $"Found {specStringCall}(..) with unexpected number of args");
+                        specArguments.Add(callCmd.Ins[3]);
                     } else
                     {
-                        bodyWithoutInvariants.AddStatement(stmt);
+                        bodyWithoutSpecNodes.AddStatement(stmt);
                     }
                 }
             }
-            return invariantExprs;
+            return specArguments;
         }
 
         private List<BoogieExpr> ExtractContractInvariants(BoogieStmtList body)
@@ -1511,7 +1523,7 @@ namespace SolToBoogie
             BoogieStmtList stmtList = new BoogieStmtList();
 
             BoogieStmtList newBody;
-            var invariants = ExtractInvariants(body, out newBody);
+            var invariants = ExtractSpecifications("Invariant_VeriSol", body, out newBody);
             stmtList.AppendStmtList(newBody);
 
             BoogieWhileCmd whileCmd = new BoogieWhileCmd(guard, newBody, invariants);
@@ -1939,11 +1951,12 @@ namespace SolToBoogie
             else if (IsImplicitFunc(node))
             {
                 BoogieIdentifierExpr tmpVarExpr = MkNewLocalVariableForFunctionReturn(node);
+                bool isElementaryCast = false;  
 
                 if (IsContractConstructor(node)) {
                     TranslateNewStatement(node, tmpVarExpr);
                 } else if (IsTypeCast(node)) {
-                    TranslateTypeCast(node, tmpVarExpr);
+                    TranslateTypeCast(node, tmpVarExpr, out isElementaryCast);
                 } else if (IsAbiEncodePackedFunc(node)) {
                     TranslateAbiEncodedFuncCall(node, tmpVarExpr);
                 } else if (IsKeccakFunc(node)) {
@@ -1955,7 +1968,11 @@ namespace SolToBoogie
                     VeriSolAssert(false, $"Unexpected implicit function {node.ToString()}");
                 }
 
-                currentExpr = tmpVarExpr;
+                if (!isElementaryCast)
+                {
+                    // We should not introduce temporaries for address(this).balance in a specification
+                    currentExpr = tmpVarExpr;
+                }
             }
             else if (IsVeriSolCodeContractFunction(node))
             {
@@ -2059,7 +2076,9 @@ namespace SolToBoogie
                     {
                         // ignore the specifiction functions
                         if (member.MemberName.Equals("Invariant") ||
-                            member.MemberName.Equals("ContractInvariant"))
+                            member.MemberName.Equals("ContractInvariant") ||
+                            member.MemberName.Equals("Requires") ||
+                            member.MemberName.Equals("Ensures"))
                             return false;
                         else
                             return true;
@@ -2783,8 +2802,17 @@ namespace SolToBoogie
             return node.Kind.Equals("typeConversion");
         }
 
-        private void TranslateTypeCast(FunctionCall node, BoogieExpr lhs)
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="node"></param>
+        /// <param name="lhs"></param>
+        /// <param name="isElemenentaryTypeCast">indicates if the cast of to an elementary type, often used in specifications</param>
+        private void TranslateTypeCast(FunctionCall node, BoogieExpr lhs, out bool isElemenentaryTypeCast)
         {
+            isElemenentaryTypeCast = false; 
+
             VeriSolAssert(node.Kind.Equals("typeConversion"));
             VeriSolAssert(node.Arguments.Count == 1);
             //VeriSolAssert(node.Arguments[0] is Identifier || node.Arguments[0] is MemberAccess || node.Arguments[0] is Literal || node.Arguments[0] is IndexAccess,
@@ -2805,16 +2833,14 @@ namespace SolToBoogie
                 currentStmtList.AddStatement(new BoogieAssumeCmd(assumeExpr));
                 // lhs := expr;
                 currentStmtList.AddStatement(new BoogieAssignCmd(lhs, exprToCast));
-                return;
             }
             else if (node.Expression is ElementaryTypeNameExpression elemType) // cast to elementary types
             {
-                var rhsExpr = exprToCast;
-
+                isElemenentaryTypeCast = true;
+                BoogieExpr rhsExpr = exprToCast;
                 // most casts are skips, except address cast
                 if (elemType.TypeName.Equals("address") || elemType.TypeName.Equals("address payable"))
                 {
-                    rhsExpr = (BoogieExpr)exprToCast;
 
                     // skip by default, unless we have an integer/hex constant
                     if (exprToCast is BoogieLiteralExpr blit)
@@ -2829,14 +2855,16 @@ namespace SolToBoogie
                         }
                     }
                 }
+                // lets update currentExpr with rhsExpr. The caller may update it with the temporary
+                currentExpr = rhsExpr; 
                 // lhs := expr;
                 currentStmtList.AddStatement(new BoogieAssignCmd(lhs, rhsExpr));
-                return;
             } 
             else
             {
                 VeriSolAssert(false, $"Unknown type cast: {node.Expression}");
             }
+            return;
         }
 
         private void VeriSolAssert(bool cond, string message = "")

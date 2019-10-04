@@ -21,6 +21,7 @@ namespace SolToBoogie
             InstrumentGas = false;
             ModelStubsAsCallbacks = false;
             ModelStubsAsSkips = false;
+            InlineDepthForBoogie = 4;
             DoModSetAnalysis = false;
         }
         /// <summary>
@@ -59,6 +60,10 @@ namespace SolToBoogie
 
         // models of stubs for unknown procedures and fallbacks
         public bool ModelStubsAsSkips { get; set; }
+
+        // this translates to /inlineDepth:k when calling Boogie with /contractInfer
+        public int InlineDepthForBoogie { get; set; }
+
         public bool ModelStubsAsCallbacks { get; set; }
 
         // Do ModSet analysis on the Boogie program.

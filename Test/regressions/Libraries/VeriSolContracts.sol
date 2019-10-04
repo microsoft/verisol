@@ -47,6 +47,22 @@ library VeriSol {
      * 
      */
     function ContractInvariant(bool b) external pure;
+
+    /**
+     * Postconditions
+     *
+     * Calling this function within a function f VeriSol.Ensures(E) installs
+     * E as a post condition of f. 
+     */
+    function Ensures(bool b) external pure;
+
+    /**
+     * Preconditions
+     *
+     * Calling this function within a function f VeriSol.Requires(E) installs
+     * E as a pre condition of f. 
+     */
+    function Requires(bool b) external pure;
     
 
    /*
@@ -59,6 +75,7 @@ library VeriSol {
      * A new in-built function that returns the sum of all values of a mapping
      * 
      */  
+    function SumMapping(mapping (address => int256) storage a) external pure returns (int256);
     function SumMapping(mapping (address => uint256) storage a) external pure returns (uint256);
 
     /**
@@ -66,7 +83,7 @@ library VeriSol {
      * 
      */  
     function Old(uint x) external pure returns (uint);
-
+    function Old(int x) external pure returns (uint);
     function Old(address x) external pure returns (address);
 
 }

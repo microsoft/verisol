@@ -102,7 +102,7 @@ namespace VeriSolRunner
 
             tryProofFlag = !(args.Any(x => x.Equals("/noPrf")) || args.Any(x => x.Equals("/noChk"))); //args.Any(x => x.Equals("/tryProof"));
             tryRefutation = !args.Any(x => x.Equals("/noChk"));
-            recursionBound = 2;
+            recursionBound = 4;
             var txBounds = args.Where(x => x.StartsWith("/txBound:"));
             if (txBounds.Count() > 0)
             {
@@ -110,13 +110,6 @@ namespace VeriSolRunner
                 recursionBound = int.Parse(txBounds.First().Substring("/txBound:".Length));
                 Debug.Assert(recursionBound > 0, $"Argument of /txBound:k should be positive, found {recursionBound}");
             }
-            //if (args.Any(x => x.StartsWith("/tryRefutation:")))
-            //{
-            //    Debug.Assert(!tryRefutation, "Multiple declaration of /tryRefutation:k in command line");
-            //    var arg = args.First(x => x.StartsWith("/tryRefutation:"));
-            //    tryRefutation = true;
-            //    recursionBound = int.Parse(arg.Substring("/tryRefutation:".Length));
-            //}
 
             solcName = GetSolcNameByOSPlatform();
             ILoggerFactory loggerFactory = new LoggerFactory().AddConsole(LogLevel.Information);
@@ -185,13 +178,15 @@ namespace VeriSolRunner
             {
                 translatorFlags.ModelStubsAsCallbacks = true;
             }
-
+            if (args.Any(x => x.StartsWith("/inlineDepth:")))
+            {
+                var depth = args.Where(x => x.StartsWith("/inlineDepth:")).First();
+                translatorFlags.InlineDepthForBoogie = int.Parse(depth.Substring("/inlineDepth:".Length));
+            }
             if (args.Any(x => x.Equals("/doModSet")))
             {
                 translatorFlags.DoModSetAnalysis = true;
             }
-
-
 
             // don't perform verification for some of these omitFlags
             if (tryProofFlag || tryRefutation)
@@ -219,15 +214,16 @@ namespace VeriSolRunner
             Console.WriteLine("options:");
             Console.WriteLine("\t /noChk                  \tdon't perform verification, default: false");
             Console.WriteLine("\t /noPrf                  \tdon't perform inductive verification, default: false");
-            Console.WriteLine("\t /txBound:k              \tonly explore counterexamples with at most k transactions/loop unrollings, default: 2");
+            Console.WriteLine("\t /txBound:k              \tonly explore counterexamples with at most k transactions/loop unrollings, default: 4");
             Console.WriteLine("\t /noTxSeq                \tdon't print the transaction sequence on console, default: false)");
             Console.WriteLine("\t /outBpl:<out.bpl>       \tpersist the output Boogie file");
             Console.WriteLine("\t /bplPrelude:<foo.bpl>   \tany additional Boogie file to be added for axioms or user-supplied boogie invariants");
+            Console.WriteLine("\t /inlineDepth:k          \tinline nested calls upto depth k when performing modular proof and inference, default 4");
             Console.WriteLine("\t /ignoreMethod:<method>@<contract>: Ignores translation of the method within contract, and only generates a declaration");
             Console.WriteLine("\t\t\t\t\t multiple such pairs can be specified, ignored set is the union");
             Console.WriteLine("\t\t\t\t\t a wild card '*' can be used for method, would mean all the methods of the contract");
             Console.WriteLine("\t /noInlineAttrs          \tdo not generate any {:inline x} attributes, to speed Corral (cannot use with /tryProof)");
-            Console.WriteLine("\t /modelStubsAsSkips       \tany unknown procedure or fallback is treated as skip unsoundly (default treated as havoc entire state)");
+//          Console.WriteLine("\t /modelStubsAsSkips       \tany unknown procedure or fallback is treated as skip unsoundly (default treated as havoc entire state)");
             Console.WriteLine("\t /modelStubsAsCallbacks       \tany unknown procedure or fallback is treated as callback to any method of any contract (default treated as havoc entire state)");
         }
 

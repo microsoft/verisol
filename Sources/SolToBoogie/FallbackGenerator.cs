@@ -57,11 +57,7 @@ namespace SolToBoogie
             BoogieStmtList fbBody = new BoogieStmtList();
             var fbLocalVars = new List<BoogieVariable>();
 
-            if (context.TranslateFlags.ModelStubsAsSkips)
-            {
-                // a stub is just a skip
-            }
-            else if (context.TranslateFlags.ModelStubsAsCallbacks)
+            if (context.TranslateFlags.ModelStubsAsSkips || context.TranslateFlags.ModelStubsAsCallbacks)
             {
                 fbBody.AppendStmtList(CreateBodyOfUnknownFallback(fbLocalVars, inParams));
             }
@@ -81,14 +77,31 @@ namespace SolToBoogie
 
         private BoogieStmtList CreateBodyOfUnknownFallback(List<BoogieVariable> fbLocalVars, List<BoogieVariable> inParams)
         {
-            var fbBody = new BoogieStmtList();
-            fbLocalVars.AddRange(TransUtils.CollectLocalVars(context.ContractDefinitions.ToList(), context));
-            fbBody.AddStatement(TransUtils.GenerateChoiceBlock(context.ContractDefinitions.ToList(), context, Tuple.Create(inParams[1].Name, inParams[0].Name)));
-            return fbBody;
+            var procBody = new BoogieStmtList();
+
+            procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function START "));
+            var balnSender = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("from"));
+            var balnThis = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("to"));
+            var msgVal = new BoogieIdentifierExpr("amount");
+            //assume Balance[msg.sender] >= msg.value
+            procBody.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, balnSender, msgVal)));
+            //balance[from] = balance[from] - msg.value
+            procBody.AddStatement(new BoogieAssignCmd(balnSender, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, balnSender, msgVal)));
+            //balance[to] = balance[to] + msg.value
+            procBody.AddStatement(new BoogieAssignCmd(balnThis, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, balnThis, msgVal)));
+            procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function END "));
+
+            if (context.TranslateFlags.ModelStubsAsCallbacks)
+            {
+                fbLocalVars.AddRange(TransUtils.CollectLocalVars(context.ContractDefinitions.ToList(), context));
+                procBody.AddStatement(TransUtils.GenerateChoiceBlock(context.ContractDefinitions.ToList(), context, Tuple.Create(inParams[1].Name, inParams[0].Name)));
+            }
+            return procBody;
         }
 
         private BoogieStmtList GenerateBodyOfFallbackDispatch(List<BoogieVariable> inParams, string fbUnknownProcName)
         {
+            // Perform the payable logic to transfer balance
             //
             // foreach contract C that is not Lib/VeriSol
             //    if (DT[this] == C)
@@ -148,7 +161,6 @@ namespace SolToBoogie
 
                 ifCmd = new BoogieIfCmd(guard, thenBody, elseBody);
             }
-            
 
             return BoogieStmtList.MakeSingletonStmtList(ifCmd);
         }

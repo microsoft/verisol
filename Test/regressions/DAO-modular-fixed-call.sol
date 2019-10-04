@@ -1,11 +1,14 @@
 pragma solidity >=0.4.24<0.6.0;
 
+import "./Libraries/VeriSolContracts.sol";
+
 // this is a cleaned up example to show reentrancy attack without an explicit adversary
 // to show the bug, comment (respectively uncomment) line with fix (respectively bug)
 // use the file DAO-modular-fixed-call-w-prints.sol to see more values in trace
 
 contract SimpleDAO {
     mapping (address => uint) public credit;
+
     constructor() public {
     }
     function donate() payable public {
@@ -15,10 +18,9 @@ contract SimpleDAO {
         return credit[to];
     }
     function withdraw() public {
-        /*
-        VeriSol.Ensures(Old(credit[sender] == 0) ==> this.balance == old(this.balance));
-        VeriSol.Ensures(Old(credit[sender] >= 0) ==> this.balance >= old(this.balance - credit[]));
-        */
+        // postconditions not needed since Boogie inlineDepth establishes lack of calls beyond depth 1
+        // VeriSol.Ensures(!(VeriSol.Old(credit[msg.sender]) == 0) || address(this).balance == VeriSol.Old(address(this).balance));
+        // VeriSol.Ensures(!(VeriSol.Old(credit[msg.sender]) >= 0) ||  address(this).balance >= VeriSol.Old(address(this).balance - credit[msg.sender]));
 
         uint oldBal = address(this).balance; 
         uint amount = credit[msg.sender];
@@ -30,7 +32,7 @@ contract SimpleDAO {
             require(success);
             // credit[msg.sender] = 0;  // bug
         }
-        uint bal = address(this).balance;
-        assert(bal == oldBal || bal >= (oldBal - amount)); // making it == will fail since donate can be invoked in fallback
+       uint bal = address(this).balance;
+       assert(bal >= (oldBal - amount)); // making it == will fail since donate can be invoked in fallback        
     }
 }
