@@ -12,8 +12,7 @@ The following paper describes the design of VeriSol and application of smart con
 
 ## INSTALL
 
-Instructions for installing and running VeriSol can be found [here](https://github.com/Microsoft/verisol/blob/master/INSTALL.md
-).
+Instructions for installing and running VeriSol can be found [here](INSTALL.md).
 
 ## License
 VeriSol is licensed under the MIT license. 
