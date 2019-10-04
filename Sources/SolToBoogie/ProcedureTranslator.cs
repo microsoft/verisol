@@ -2837,11 +2837,10 @@ namespace SolToBoogie
             else if (node.Expression is ElementaryTypeNameExpression elemType) // cast to elementary types
             {
                 isElemenentaryTypeCast = true;
-                BoogieExpr rhsExpr = null;
+                BoogieExpr rhsExpr = exprToCast;
                 // most casts are skips, except address cast
                 if (elemType.TypeName.Equals("address") || elemType.TypeName.Equals("address payable"))
                 {
-                    rhsExpr = (BoogieExpr)exprToCast;
 
                     // skip by default, unless we have an integer/hex constant
                     if (exprToCast is BoogieLiteralExpr blit)
