@@ -178,9 +178,9 @@ namespace VeriSolRunner
             {
                 translatorFlags.ModelStubsAsCallbacks = true;
             }
-            if (args.Any(x => x.Equals("/inlineDepth:")))
+            if (args.Any(x => x.StartsWith("/inlineDepth:")))
             {
-                var depth = args.Where(x => x.Equals("/inlineDepth:")).First();
+                var depth = args.Where(x => x.StartsWith("/inlineDepth:")).First();
                 translatorFlags.InlineDepthForBoogie = int.Parse(depth.Substring("/inlineDepth:".Length));
             }
 

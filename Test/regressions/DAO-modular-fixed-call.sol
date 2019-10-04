@@ -18,8 +18,9 @@ contract SimpleDAO {
         return credit[to];
     }
     function withdraw() public {
-        VeriSol.Ensures(!(VeriSol.Old(credit[msg.sender]) == 0) || address(this).balance == VeriSol.Old(address(this).balance));
-        VeriSol.Ensures(!(VeriSol.Old(credit[msg.sender]) >= 0) ||  address(this).balance >= VeriSol.Old(address(this).balance - credit[msg.sender]));
+        // postconditions not needed since Boogie inlineDepth establishes lack of calls beyond depth 1
+        // VeriSol.Ensures(!(VeriSol.Old(credit[msg.sender]) == 0) || address(this).balance == VeriSol.Old(address(this).balance));
+        // VeriSol.Ensures(!(VeriSol.Old(credit[msg.sender]) >= 0) ||  address(this).balance >= VeriSol.Old(address(this).balance - credit[msg.sender]));
 
         uint oldBal = address(this).balance; 
         uint amount = credit[msg.sender];
