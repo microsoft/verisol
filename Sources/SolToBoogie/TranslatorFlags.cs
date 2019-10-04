@@ -21,6 +21,7 @@ namespace SolToBoogie
             InstrumentGas = false;
             ModelStubsAsCallbacks = false;
             ModelStubsAsSkips = false;
+            DoModSetAnalysis = false;
         }
         /// <summary>
         /// Omit printing sourceFile/sourceLine information
@@ -59,5 +60,8 @@ namespace SolToBoogie
         // models of stubs for unknown procedures and fallbacks
         public bool ModelStubsAsSkips { get; set; }
         public bool ModelStubsAsCallbacks { get; set; }
+
+        // Do ModSet analysis on the Boogie program.
+        public bool DoModSetAnalysis { get; set; }
     }
 }
