@@ -94,6 +94,12 @@ namespace SolToBoogie
                 reverGenerator.Generate();
             }
 
+            if (context.TranslateFlags.DoModSetAnalysis)
+            {
+                ModSetAnalysis modSetAnalysis = new ModSetAnalysis(context);
+                modSetAnalysis.PerformModSetAnalysis();
+            }
+
             return new BoogieAST(context.Program);
         }
     }

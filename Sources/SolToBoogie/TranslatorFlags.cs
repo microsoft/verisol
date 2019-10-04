@@ -23,6 +23,7 @@ namespace SolToBoogie
             ModelStubsAsSkips = false;
             InlineDepthForBoogie = 4;
             PerformContractInferce = false;
+            DoModSetAnalysis = false;
         }
         /// <summary>
         /// Omit printing sourceFile/sourceLine information
@@ -65,5 +66,8 @@ namespace SolToBoogie
         public int InlineDepthForBoogie { get; set; }
         public bool PerformContractInferce { get; set; }
         public bool ModelStubsAsCallbacks { get; set; }
+
+        // Do ModSet analysis on the Boogie program.
+        public bool DoModSetAnalysis { get; set; }
     }
 }

@@ -2855,6 +2855,8 @@ namespace SolToBoogie
                         }
                     }
                 }
+                // lets update currentExpr with rhsExpr. The caller may update it with the temporary
+                currentExpr = rhsExpr; 
                 // lhs := expr;
                 currentStmtList.AddStatement(new BoogieAssignCmd(lhs, rhsExpr));
             } 

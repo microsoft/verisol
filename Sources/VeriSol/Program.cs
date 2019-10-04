@@ -183,6 +183,10 @@ namespace VeriSolRunner
                 var depth = args.Where(x => x.StartsWith("/inlineDepth:")).First();
                 translatorFlags.InlineDepthForBoogie = int.Parse(depth.Substring("/inlineDepth:".Length));
             }
+            if (args.Any(x => x.Equals("/doModSet")))
+            {
+                translatorFlags.DoModSetAnalysis = true;
+            }
 
             translatorFlags.PerformContractInferce = args.Any(x => x.StartsWith("/contractInfer")) ;
 
@@ -220,9 +224,9 @@ namespace VeriSolRunner
             Console.WriteLine("\n------ Controls verification flags --------\n");
 
             Console.WriteLine("   /noChk                  don't perform verification, default: false");
-            Console.WriteLine("   /noPrf                  don't perform inductive verification, default: false";
+            Console.WriteLine("   /noPrf                  don't perform inductive verification, default: false");
             Console.WriteLine("   /txBound:k              only explore counterexamples with at most k transactions/loop unrollings, default: 4");
-            Console.WriteLine("   /noTxSeq                don't print the transaction sequence on console, default: false)");
+            Console.WriteLine("   /noTxSeq                don't print the transaction sequence on console, default: false");
             Console.WriteLine("   /contractInfer          perform Houdini based module invariant inference, default off");
             Console.WriteLine("   /inlineDepth:k          inline nested calls upto depth k when performing modular proof and inference, default 4");
 

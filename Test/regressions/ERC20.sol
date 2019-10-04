@@ -62,6 +62,9 @@ contract ERC20 is IERC20 {
     function transfer(address recipient, uint256 amount) public returns (bool) {
         _transfer(msg.sender, recipient, amount);
         assert (VeriSol.Old(_balances[msg.sender] + _balances[recipient]) == _balances[msg.sender] + _balances[recipient]);
+        assert (msg.sender == recipient ||  _balances[msg.sender] == VeriSol.Old(_balances[msg.sender] - amount));
+        assert (_balances[recipient] >= VeriSol.Old(_balances[recipient]));
+
         return true;
     }
 
