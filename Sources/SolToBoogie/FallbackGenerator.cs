@@ -57,18 +57,18 @@ namespace SolToBoogie
             BoogieStmtList fbBody = new BoogieStmtList();
             var fbLocalVars = new List<BoogieVariable>();
 
-            if (context.TranslateFlags.ModelStubsAsSkips || context.TranslateFlags.ModelStubsAsCallbacks)
+            if (context.TranslateFlags.ModelStubsAsSkips() || context.TranslateFlags.ModelStubsAsCallbacks())
             {
                 fbBody.AppendStmtList(CreateBodyOfUnknownFallback(fbLocalVars, inParams));
             }
-            else
+            else 
             {
-                // default
+                Debug.Assert(context.TranslateFlags.ModelStubsAsHavocs(), "Unknown option for modeling stubs");
                 foreach (var global in modSet)
                 {
                     fbBody.AddStatement(new BoogieHavocCmd(new BoogieIdentifierExpr(global.Name)));
                 }
-            }
+            } 
 
             BoogieImplementation unknownFbImpl = new BoogieImplementation(fbUnknownProcName, inParams, outParams, fbLocalVars, fbBody);
             context.Program.AddDeclaration(unknownFbImpl);
@@ -77,6 +77,9 @@ namespace SolToBoogie
 
         private BoogieStmtList CreateBodyOfUnknownFallback(List<BoogieVariable> fbLocalVars, List<BoogieVariable> inParams)
         {
+
+            Debug.Assert(context.TranslateFlags.ModelStubsAsSkips() || context.TranslateFlags.ModelStubsAsCallbacks(),
+                "CreateBodyOfUnknownFallback called in unexpected context");
             var procBody = new BoogieStmtList();
 
             procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function START "));
@@ -91,7 +94,7 @@ namespace SolToBoogie
             procBody.AddStatement(new BoogieAssignCmd(balnThis, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, balnThis, msgVal)));
             procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function END "));
 
-            if (context.TranslateFlags.ModelStubsAsCallbacks)
+            if (context.TranslateFlags.ModelStubsAsCallbacks())
             {
                 fbLocalVars.AddRange(TransUtils.CollectLocalVars(context.ContractDefinitions.ToList(), context));
                 procBody.AddStatement(TransUtils.GenerateChoiceBlock(context.ContractDefinitions.ToList(), context, Tuple.Create(inParams[1].Name, inParams[0].Name)));

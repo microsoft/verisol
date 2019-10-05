@@ -170,13 +170,14 @@ namespace VeriSolRunner
                 translatorFlags.InstrumentGas = true;
             }
 
-            if (args.Any(x => x.Equals("/modelStubsAsSkips")))
+            var stubModels = args.Where(x => x.StartsWith("/stubModel:"));
+            if (stubModels.Count() > 0)
             {
-                translatorFlags.ModelStubsAsSkips = true;
-            }
-            if (args.Any(x => x.Equals("/modelStubsAsCallbacks")))
-            {
-                translatorFlags.ModelStubsAsCallbacks = true;
+                Debug.Assert(stubModels.Count() == 1, "Multiple instances of /stubModel:");
+                var model = stubModels.First().Substring("/stubModel:".Length);
+                Debug.Assert(model.Equals("skip") || model.Equals("havoc") || model.Equals("callback"),
+                    $"The argument to /stubModel: can be either {{skip, havoc, callback}}, found {model}");
+                translatorFlags.ModelOfStubs = model;
             }
             if (args.Any(x => x.StartsWith("/inlineDepth:")))
             {
@@ -237,8 +238,10 @@ namespace VeriSolRunner
             Console.WriteLine("                           multiple such pairs can be specified, ignored set is the union");
             Console.WriteLine("                           a wild card '*' can be used for method, would mean all the methods of the contract");
             Console.WriteLine("   /noInlineAttrs          do not generate any {:inline x} attributes, to speed Corral (cannot use with /tryProof)");
-//          Console.WriteLine("   /modelStubsAsSkips      \tany unknown procedure or fallback is treated as skip unsoundly (default treated as havoc entire state)");
-            Console.WriteLine("   /modelStubsAsCallbacks  any unknown procedure or fallback is treated as callback to any method of any contract (default treated as havoc entire state)");
+            Console.WriteLine("   /stubModel:<s>          the model of an unknown procedure or fallback. <s> can be either");
+            Console.WriteLine("                           skip      // treated as noop");
+            Console.WriteLine("                           havoc     // completely scramble the entire global state");
+            Console.WriteLine("                           callback  // treated as a non-deterministic callback into any of the methods of any contract");
 
         }
 
