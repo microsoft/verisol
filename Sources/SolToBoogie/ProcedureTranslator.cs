@@ -2722,7 +2722,10 @@ namespace SolToBoogie
                 BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, outParams);
                 lastCallCmd = callCmd;
                 BoogieStmtList thenBody = BoogieStmtList.MakeSingletonStmtList(callCmd);
-                BoogieStmtList elseBody = ifCmd == null ? null : BoogieStmtList.MakeSingletonStmtList(ifCmd);
+                // BoogieStmtList elseBody = ifCmd == null ? null : BoogieStmtList.MakeSingletonStmtList(ifCmd);
+                BoogieStmtList elseBody = ifCmd == null ? 
+                    BoogieStmtList.MakeSingletonStmtList(new BoogieAssumeCmd(new BoogieLiteralExpr(false))) : 
+                    BoogieStmtList.MakeSingletonStmtList(ifCmd);
 
                 ifCmd = new BoogieIfCmd(guard, thenBody, elseBody);
             }

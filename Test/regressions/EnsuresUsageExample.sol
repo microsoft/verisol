@@ -20,9 +20,7 @@ contract A {
     }
  
     function foo() private {
-        VeriSol.Requires(x + y == n);
         VeriSol.Ensures(x + y == n);
-        VeriSol.Requires(y <= n);
         VeriSol.Ensures(y == n);
         if (y < n) {
            x--;
