@@ -123,7 +123,7 @@ DAO-buggy-value.sol
 DAO-fixed-value.sol
 DAO-buggy-call.sol
 DAO-fixed-call.sol
-DAO-modular-buggy-call.sol
+#DAO-modular-buggy-call.sol, only when /stubModel:callback
 ERC20-simplified.sol
 block.sol
 harness.sol
