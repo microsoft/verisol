@@ -1263,8 +1263,7 @@ namespace SolToBoogie
                         stmtList.AddStatement(new BoogieAssignCmd(lhs[0], rhs));
                         break;
                     case "+=":
-                        //rhs = new BoogieFuncCallExpr("mod", new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, lhs[0], rhs));
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], rhs));
+                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, lhs[0], rhs)));
                         break;
                     case "-=":
                         stmtList.AddStatement(new BoogieAssignCmd(lhs[0], new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, lhs[0], rhs)));
