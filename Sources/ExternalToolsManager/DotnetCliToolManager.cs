@@ -33,7 +33,9 @@ namespace VeriSolRunner.ExternalTools
 
         private string InstallDotnetCliTool()
         {
-            ExternalToolsManager.Log($"Installing {this.settings.Name} as we could not find it from {this.settings.CommandPath}.");
+            var logStr = $"... Installing {this.settings.Name} as we could not find it from {this.settings.CommandPath}.";
+            Console.WriteLine(logStr); // until we have better verbosity for printing
+            ExternalToolsManager.Log(logStr);
 
             Process p = new Process();
             p.StartInfo.UseShellExecute = false;

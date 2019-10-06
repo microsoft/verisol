@@ -181,7 +181,9 @@ namespace VeriSolRunner.ExternalTools
         {
             using (var client = new WebClient())
             {
-                ExternalToolsManager.Log($"Downloading {ZipFileName} from {DownloadURL} to {TempDirectory}");
+                var logStr = $"... Downloading {ZipFileName} from {DownloadURL} to {TempDirectory}";
+                Console.WriteLine(logStr); // until we have better verbosity
+                ExternalToolsManager.Log(logStr);
                 client.DownloadFile(DownloadURL, ZipFilePath);
             }
         }
