@@ -7,12 +7,12 @@
 ### Dev/Runtime dependencies
 - Install **.NET Core** (version **2.2**) for Windows/Linux/OSX from [here](https://dotnet.microsoft.com/download/dotnet-core/2.2#sdk-2.2.106)
 
-### Dynamically installed at VeriSol runtime (the first time only) [No action needed]
+#### The following are dynamically installed at VeriSol runtime (the first time only) [No action needed]
 - [Solidity compiler](https://github.com/ethereum/solidity/releases/tag/v0.5.10)
 - [Z3 theorem prover](https://github.com/Z3Prover/z3/releases)
-- We use **corral** and **boogie** verifiers, which are installed as dotnet cli tools
+- We use [corral](https://github.com/boogie-org/corral) and [boogie](https://github.com/boogie-org/boogie) verifiers, which are installed as dotnet cli tools
 
-### Special instruction for MacOS/OSx
+#### Special instruction for MacOS/OSx
 - Follow the instructions [here](https://solidity.readthedocs.io/en/v0.5.11/installing-solidity.html). Perform the following commands using [HomeBrew](http://brew.sh/) installer system: `brew update & brew upgrade & brew tap ethereum/ethereum & brew install solidity`. Homebrew will install `solc` binaries in the folder `/usr/local/Cellar/solidity/0.5.11` (or the number corresponding to the installed `solc` version). Copy the `solc.exe` file to the folder where VeriSol is installed (either dotnet global tools cache or local install directory). 
 
 ## Build VeriSol
@@ -50,25 +50,27 @@ where
 
   > For Windows, the tool output prints instructions to step through the trace using *ConcurrencyExplorer.exe* binary. 
 
+For the examples below, change directory to Test\regressions\ folder.
+
 ### Example with refutation ###
-`VeriSol Test\regressions\Error.sol AssertFalse`
+`VeriSol Error.sol AssertFalse`
 
 ### Example with verification ###
-`VeriSol Test\regressions\Mapping.sol Mapping`
+`VeriSol Mapping.sol Mapping`
 
 ### Example with Loop Invariants ###
-`VeriSol Test\regressions\LoopInvUsageExample.sol LoopFor`
+`VeriSol LoopInvUsageExample.sol LoopFor`
 
 ### Example with Contract Invariants ###
-`VeriSol Test\regressions\ContractInvUsageExample.sol LoopFor`
+`VeriSol ContractInvUsageExample.sol LoopFor`
 
 ### Example of higly simplified ERC20 ###
-`VeriSol Test\regressions\ERC20-simplified.sol ERC20`
+`VeriSol ERC20-simplified.sol ERC20`
 
 ### Example of higly simplified TheDAO attack ###
-`VeriSol Test\regressions\DAO-Sim-Buggy.sol Mallory`
+`VeriSol DAO-Sim-Buggy.sol Mallory`
 
-`VeriSol Test\regressions\DAO-Sim-Fixed.sol Mallory`
+`VeriSol DAO-Sim-Fixed.sol Mallory`
 
 ## VeriSol Code Contracts library
 The code contract library **VeriSolContracts.sol** is present [here](/Test/regressions/Libraries/VeriSolContracts.sol). This allows adding loop invariants, contract invariants for proofs, and extending the assertion language.  
