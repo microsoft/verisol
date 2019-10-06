@@ -1,0 +1,12 @@
+//Examples where VeriSol performs proof
+//TODO: add them to regressions
+dotnet ..\..\\Binaries\VeriSol.dll Mapping.sol Mapping
+dotnet ..\..\\Binaries\VeriSol.dll LoopInvUsageExample.sol LoopFor
+dotnet ..\..\\Binaries\VeriSol.dll ContractInvUsageExample.sol LoopFor
+dotnet ..\..\\Binaries\VeriSol.dll ERC20-simplified.sol ERC20
+dotnet ..\..\\Binaries\VeriSol.dll ERC20.sol ERC20
+dotnet ..\..\\Binaries\VeriSol.dll EnsuresUsageExample.sol A
+dotnet ..\..\\Binaries\VeriSol.dll DAO-modular-fixed-call.sol SimpleDAO /stubModel:callback /contractInfer
+
+
+

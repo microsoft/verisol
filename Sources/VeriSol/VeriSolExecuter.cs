@@ -15,6 +15,7 @@ namespace VeriSolRunner
     using System.Reflection;
     using System.Linq;
     using VeriSolRunner.ExternalTools;
+    // using Microsoft.Boogie.ExprExtensions;
 
     internal class VeriSolExecutor
     {
@@ -86,9 +87,10 @@ namespace VeriSolRunner
                 //-doModSetAnalysis -inline:spec (was assert) -noinfer -contractInfer -proc:BoogieEntry_* out.bpl
                 //
                 $"-doModSetAnalysis",
-                $"-inline:assert",
+                $"-inline:spec", //was assert to before to fail when reaching recursive functions
                 $"-noinfer",
-                $"-contractInfer",
+                translatorFlags.PerformContractInferce? $"-contractInfer" : "",
+                $"-inlineDepth:{translatorFlags.InlineDepthForBoogie}", //contractInfer can perform inlining as well
                 // main method
                 $"-proc:BoogieEntry_*",
                 // Boogie file
@@ -96,24 +98,24 @@ namespace VeriSolRunner
             };
 
             var boogieArgString = string.Join(" ", boogieArgs);
-            Console.WriteLine($"\n++ Running {BoogiePath} {boogieArgString} ....");
+            Console.WriteLine($"... running {BoogiePath} {boogieArgString}");
             var boogieOut = RunBinary(BoogiePath, boogieArgString);
             var boogieOutFile = "boogie.txt";
             using (var bFile = new StreamWriter(boogieOutFile))
             {
                 bFile.Write(boogieOut);
             }
-            Console.WriteLine($"\tFinished Boogie, output in {boogieOutFile}....\n");
+            // Console.WriteLine($"\tFinished Boogie, output in {boogieOutFile}....\n");
 
             // compare Corral output against expected output
             if (CompareBoogieOutput(boogieOut))
             {
-                Console.WriteLine($"\t*** Proof found! Formal Verification successful!");
+                Console.WriteLine($"\t*** Proof found! Formal Verification successful! (see {boogieOutFile})");
                 return true;
             }
             else
             {
-                Console.WriteLine($"\t*** Did not find a proof");
+                Console.WriteLine($"\t*** Did not find a proof (see {boogieOutFile})");
                 return false;
             }
         }
@@ -135,24 +137,24 @@ namespace VeriSolRunner
             };
 
             var corralArgString = string.Join(" ", corralArgs);
-            Console.WriteLine($"\n++ Running {CorralPath} {corralArgString} ....");
+            Console.WriteLine($"... running {CorralPath} {corralArgString}");
             var corralOut = RunBinary(CorralPath, corralArgString);
             var corralOutFile = "corral.txt";
             using (var bFile = new StreamWriter(corralOutFile))
             {
                 bFile.Write(corralOut);
             }
-            Console.WriteLine($"\tFinished corral, output in {corralOutFile}....\n");
+            // Console.WriteLine($"\tFinished corral, output in {corralOutFile}....\n");
 
             // compare Corral output against expected output
             if (CompareCorralOutput("Program has no bugs", corralOut))
             {
-                Console.WriteLine($"\t*** Formal Verification successful upto {CorralRecursionLimit} transactions");
+                Console.WriteLine($"\t*** Formal Verification successful upto {CorralRecursionLimit} transactions (see {corralOutFile})");
                 return true;
             }
             else if (corralOut.Contains("Execution trace:"))
             {
-                Console.WriteLine($"\t*** Found a counterexample");
+                Console.WriteLine($"\t*** Found a counterexample (see {corralOutFile})");
 
                 if (printTransactionSequence)
                 {
@@ -173,7 +175,7 @@ namespace VeriSolRunner
             }
             else 
             {
-                Console.WriteLine($"\t*** Corral may have aborted abnormally, see corral.txt");
+                Console.WriteLine($"\t*** Corral may have aborted abnormally (see {corralOutFile})");
                 return false;
             }
 
@@ -186,6 +188,7 @@ namespace VeriSolRunner
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
+                Console.WriteLine($"\tRun the command below to see the trace in a viewer (only supported on Windows):");
                 Console.WriteLine($"\t{concExplorerName} {corralTraceFileName}");
             }
         }
@@ -344,7 +347,7 @@ namespace VeriSolRunner
         private bool ExecuteSolToBoogie()
         {
             // compile the program
-            Console.WriteLine($"\n++ Running Solc on {SolidityFilePath}....");
+            Console.WriteLine($"... running Solc on {SolidityFilePath}");
 
             SolidityCompiler compiler = new SolidityCompiler();
             CompilerOutput compilerOutput = compiler.Compile(SolcPath, SolidityFilePath);
@@ -362,7 +365,7 @@ namespace VeriSolRunner
             try
             {
                 BoogieTranslator translator = new BoogieTranslator();
-                Console.WriteLine($"\n++ Running SolToBoogie to translate Solidity to Boogie....");
+                Console.WriteLine($"... running SolToBoogie to translate Solidity to Boogie");
                 BoogieAST boogieAST = translator.Translate(solidityAST, ignoreMethods, translatorFlags);
 
                 // dump the Boogie program to a file

@@ -42,39 +42,36 @@ to view options and their meanings.
 
 A common usage:
 
-`VeriSol foo.sol Bar /tryProof /tryRefutation:6 /printTransactionSequence`
+`VeriSol foo.sol Bar`
 
 where 
    - *foo.sol* is the top-level Solidity file
    - *Bar* is the name of the top-level contract to analyze
-   - */tryProof* attempts to find proof of correctness of the specifications in foo.sol
-   - */tryRefutation:6* attempts to find a violation of specifications in foo.sol up to *6* transactions to *Bar*.
-   - */printTransactionSequence* prints the transaction sequence of a defect on console (default false)
 
   > For Windows, the tool output prints instructions to step through the trace using *ConcurrencyExplorer.exe* binary. 
 
 ### Example with refutation ###
-`VeriSol Test\regressions\Error.sol AssertFalse /tryProof /tryRefutation:6 /printTransactionSequence`
+`VeriSol Test\regressions\Error.sol AssertFalse`
 
 ### Example with verification ###
-`VeriSol Test\regressions\Mapping.sol Mapping /tryProof /tryRefutation:6 /printTransactionSequence`
+`VeriSol Test\regressions\Mapping.sol Mapping`
 
 ### Example with Loop Invariants ###
-`VeriSol Test\regressions\LoopInvUsageExample.sol LoopFor /tryProof /tryRefutation:10 /printTransactionSequence`
+`VeriSol Test\regressions\LoopInvUsageExample.sol LoopFor`
 
 ### Example with Contract Invariants ###
-`VeriSol Test\regressions\ContractInvUsageExample.sol LoopFor /tryProof /tryRefutation:10 /printTransactionSequence`
+`VeriSol Test\regressions\ContractInvUsageExample.sol LoopFor`
 
 ### Example of higly simplified ERC20 ###
-`VeriSol Test\regressions\ERC20-simplified.sol ERC20 /tryProof /tryRefutation:10 /printTransactionSequence`
+`VeriSol Test\regressions\ERC20-simplified.sol ERC20`
 
 ### Example of higly simplified TheDAO attack ###
-`VeriSol Test\regressions\DAO-Sim-Buggy.sol Mallory /tryProof /tryRefutation:10 /printTransactionSequence`
+`VeriSol Test\regressions\DAO-Sim-Buggy.sol Mallory`
 
-`VeriSol Test\regressions\DAO-Sim-Fixed.sol Mallory /tryProof /tryRefutation:10 /printTransactionSequence`
+`VeriSol Test\regressions\DAO-Sim-Fixed.sol Mallory`
 
 ## VeriSol Code Contracts library
-The code contract library **VeriSolContracts.sol** is present [here](https://github.com/microsoft/verisol/blob/master/Test/regressions/Libraries/VeriSolContracts.sol). This allows adding loop invariants, contract invariants for proofs, and extending the assertion language.  
+The code contract library **VeriSolContracts.sol** is present [here](/Test/regressions/Libraries/VeriSolContracts.sol). This allows adding loop invariants, contract invariants for proofs, and extending the assertion language.  
 
 ## Regression script
 

@@ -150,13 +150,17 @@ namespace BoogieAST
 
     public class BoogieProcedure : BoogieDeclWithFormals
     {
-        public BoogieProcedure(string name, List<BoogieVariable> inParams, List<BoogieVariable> outParams, List<BoogieAttribute> attributes = null, List<BoogieGlobalVariable> modSet = null)
+        List<BoogieExpr> preConditions;
+        List<BoogieExpr> postConditions;
+        public BoogieProcedure(string name, List<BoogieVariable> inParams, List<BoogieVariable> outParams, List<BoogieAttribute> attributes = null, List<BoogieGlobalVariable> modSet = null, List<BoogieExpr> pre = null, List<BoogieExpr> post = null)
         {
             this.Name = name;
             this.InParams = inParams;
             this.OutParams = outParams;
             this.Attributes = attributes;
             this.ModSet = modSet;
+            this.preConditions = pre;
+            this.postConditions = post;
         }
 
         public override string ToString()
@@ -198,7 +202,33 @@ namespace BoogieAST
                     builder.AppendLine($"modifies {m.Name};");
                 }
             }
+            if (preConditions != null)
+            {
+                foreach (var e in preConditions)
+                {
+                    builder.AppendLine($"requires({e.ToString()});");
+                }
+            }
+            if (postConditions != null)
+            {
+                foreach (var e in postConditions)
+                {
+                    builder.AppendLine($"ensures({e.ToString()});");
+                }
+            }
             return builder.ToString();
+        }
+        public void AddPreConditions(List<BoogieExpr> pres)
+        {
+            if (preConditions == null)
+                preConditions = new List<BoogieExpr>();
+            preConditions.AddRange(pres);
+        }
+        public void AddPostConditions(List<BoogieExpr> posts)
+        {
+            if (postConditions == null)
+                postConditions = new List<BoogieExpr>();
+            postConditions.AddRange(posts);
         }
 
     }
