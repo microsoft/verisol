@@ -181,10 +181,10 @@ namespace VeriSolRunner
             Console.WriteLine("Usage:  VeriSol <relative-path-to-solidity-file> <top-level-contractName> [options]");
             Console.WriteLine("options:");
 
-            Console.WriteLine("\n------ Controls input/output files --------\n");
+            // Console.WriteLine("\n------ Controls input/output files --------\n");
 
-            Console.WriteLine("   /outBpl:<out.bpl>        persist the output Boogie file");
-            Console.WriteLine("   /bplPrelude:<foo.bpl>    any additional Boogie file to be added for axioms or user-supplied boogie invariants");
+            // Console.WriteLine("   /outBpl:<out.bpl>        persist the output Boogie file");
+            // Console.WriteLine("   /bplPrelude:<foo.bpl>    any additional Boogie file to be added for axioms or user-supplied boogie invariants");
 
 
             Console.WriteLine("\n------ Controls verification flags --------\n");
