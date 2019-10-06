@@ -1259,7 +1259,7 @@ namespace SolToBoogie
                     case "=":
                         // TODO: add mod for rhs
                         // TODO: throw an exception in the helper, if lhs is a tuple
-                        rhs = HelperModOper(rhs, node.LeftHandSide);
+                        // rhs = HelperModOper(rhs, node.LeftHandSide);
                         stmtList.AddStatement(new BoogieAssignCmd(lhs[0], rhs));
                         break;
                     case "+=":
@@ -1388,6 +1388,20 @@ namespace SolToBoogie
             if (typeDesc!=null && typeDesc.IsUint())
             {
                 var ge0 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, boogieExpr, new BoogieLiteralExpr(BigInteger.Zero));
+
+                if (context.TranslateFlags.UseModularArithmetic)
+                {
+                    var isUint = typeDesc.IsUintWSize(out uint sz);
+                    if (isUint)
+                    {
+                        VeriSolAssert(sz != 0, $"size of uint lhs is zero");
+                        BigInteger maxUIntValue = (BigInteger)Math.Pow(2, sz);
+                        var tmp = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.LT, boogieExpr, new BoogieLiteralExpr(maxUIntValue));
+                        ge0 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, ge0, tmp);
+                    }
+                }
+
+
                 var assumePositiveCmd = new BoogieAssumeCmd(ge0);
                 currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(assumePositiveCmd));
             }
@@ -2963,11 +2977,11 @@ namespace SolToBoogie
             BoogieExpr leftExpr = TranslateExpr(node.LeftExpression);
             BoogieExpr rightExpr = TranslateExpr(node.RightExpression);
 
-            if (context.TranslateFlags.UseModularArithmetic && countNestedFuncCallsRelExprs > 0 &&
-                (node.Operator == "+" || node.Operator == "-" || node.Operator == "*" || node.Operator == "/" || node.Operator == "%"))
-            {
-                VeriSolAssert(false, $"Unsupported feature in /useModularArithmetic mode: this arithmetic binary expr is inside function call or relational operation: {node}");
-            }
+            //if (context.TranslateFlags.UseModularArithmetic && countNestedFuncCallsRelExprs > 0 &&
+            //    (node.Operator == "+" || node.Operator == "-" || node.Operator == "*" || node.Operator == "/" || node.Operator == "%"))
+            //{
+            //    VeriSolAssert(false, $"Unsupported feature in /useModularArithmetic mode: this arithmetic binary expr is inside function call or relational operation: {node}");
+            //}
             BoogieBinaryOperation.Opcode op;
             switch (node.Operator)
             {
@@ -3025,10 +3039,26 @@ namespace SolToBoogie
             BoogieExpr binaryExpr = new BoogieBinaryOperation(op, leftExpr, rightExpr);
             currentExpr = binaryExpr;
 
-            if (node.Operator == "==" || node.Operator == "!=" || node.Operator == ">" || node.Operator == ">=" || node.Operator == "<" || node.Operator == "<=")
+            if (context.TranslateFlags.UseModularArithmetic)
             {
-                countNestedFuncCallsRelExprs--;
+                if (node.Operator == "+" || node.Operator == "-" || node.Operator == "*" || node.Operator == "/")
+                {
+                    if (node.LeftExpression.TypeDescriptions != null)
+                    {
+                        var isUint = node.LeftExpression.TypeDescriptions.IsUintWSize(out uint sz);
+                        if (isUint)
+                        {
+                            VeriSolAssert(sz != 0, $"size of uint lhs is zero");
+                            BigInteger maxUIntValue = (BigInteger)Math.Pow(2, sz);
+                            currentExpr = new BoogieFuncCallExpr("modBpl", new List<BoogieExpr>() { binaryExpr, new BoogieLiteralExpr(maxUIntValue) });
+                        }
+                    }
+                }
             }
+            //if (node.Operator == "==" || node.Operator == "!=" || node.Operator == ">" || node.Operator == ">=" || node.Operator == "<" || node.Operator == "<=")
+            //{
+            //    countNestedFuncCallsRelExprs--;
+            //}
             
             return false;
         }
