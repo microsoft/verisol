@@ -1642,15 +1642,6 @@ namespace SolToBoogie
             {
                 expr.Accept(this);
                 VeriSolAssert(currentExpr != null);
-                // TranslateTypeCast()
-                //if (((FunctionCall) expr).Expression is ElementaryTypeNameExpression)
-                //{
-                //    currentExpr = TranslateExpr(((FunctionCall) expr).Arguments[0]);
-                //}
-                //else
-                //{
-                //    throw new NotImplementedException("Cannot handle non-elementary type cast");
-                //}
             }
             else if(expr is TupleExpression tuple)
             {

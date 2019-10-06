@@ -18,7 +18,6 @@ contract SimpleDAO {
         return credit[to];
     }
     function withdraw() public {
-        // this postcondition helps with the proof
         VeriSol.Ensures(!(VeriSol.Old(credit[msg.sender]) == 0) || address(this).balance == VeriSol.Old(address(this).balance));
 
         uint oldBal = address(this).balance; 
