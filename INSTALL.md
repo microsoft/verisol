@@ -48,7 +48,7 @@ where
    - *foo.sol* is the top-level Solidity file
    - *Bar* is the name of the top-level contract to analyze
 
-  > For Windows, the tool output prints instructions to step through the trace using *ConcurrencyExplorer.exe* binary. 
+  > For Windows, the tool output prints instructions to step through the trace using [**ConcurrencyExplorer.exe**](https://github.com/boogie-org/corral/tree/master/tools) binary, whose sources are [here](https://github.com/LeeSanderson/Chess)
 
 For the examples below, change directory to Test\regressions\ folder.
 
