@@ -21,12 +21,12 @@ Perform the following commands from the root folder:
 ## Install VeriSol as dotnet CLI tool
 Install to the **global** dotnet CLI tools cache so that you can run command  `VeriSol` from anywhere:
 ```
-dotnet tool install VeriSol --version 0.1.0 --global --add-source %VERISOL_PATH%\nupkg\
+dotnet tool install VeriSol --version 0.1.0-alpha --global --add-source %VERISOL_PATH%\nupkg\
 ```
 
 Or, Install to a **local** directory and access the command with full path `%Installed_Path%\VeriSol`
 ```
-dotnet tool install VeriSol --version 0.1.0 --tool-path %Installed_Path%  --add-source %VERISOL_PATH%\nupkg\
+dotnet tool install VeriSol --version 0.1.0-alpha --tool-path %Installed_Path%  --add-source %VERISOL_PATH%\nupkg\
 ```
 
 #### Special instruction for MacOS/OSx
@@ -79,7 +79,7 @@ The code contract library **VeriSolContracts.sol** is present [here](/Test/regre
 
 To run the regressions test, first install SolToBoogieTest
 ```
-dotnet tool install --global SolToBoogieTest --version 0.1.0 --add-source %VERISOL_PATH%\nupkg\
+dotnet tool install --global SolToBoogieTest --version 0.1.0-alpha --add-source %VERISOL_PATH%\nupkg\
 ```
 
 Then run command `VeriSolRegressionRunner`
