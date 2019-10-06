@@ -58,7 +58,7 @@ namespace SolToBoogieTest
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                solcName = "solc.exe";
+                solcName = "solc";
             }
             else
             {

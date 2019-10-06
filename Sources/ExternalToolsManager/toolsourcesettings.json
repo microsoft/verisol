@@ -10,7 +10,7 @@
     "ExePathsWithinZip": {
       "windows": "solc.exe",
       "linux": "solc-static-linux",
-      "osx": "solc.exe"
+      "osx": "solc"
     }
   },
   "z3": {
