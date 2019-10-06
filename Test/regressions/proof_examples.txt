@@ -6,7 +6,7 @@ dotnet ..\..\\Binaries\VeriSol.dll ContractInvUsageExample.sol LoopFor
 dotnet ..\..\\Binaries\VeriSol.dll ERC20-simplified.sol ERC20
 dotnet ..\..\\Binaries\VeriSol.dll ERC20.sol ERC20
 dotnet ..\..\\Binaries\VeriSol.dll EnsuresUsageExample.sol A
-dotnet ..\..\\Binaries\VeriSol.dll DAO-modular-fixed-call.sol SimpleDAO /modelStubsAsCallbacks
+dotnet ..\..\\Binaries\VeriSol.dll DAO-modular-fixed-call.sol SimpleDAO /stubModel:callback /contractInfer
 
 
 

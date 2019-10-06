@@ -57,18 +57,18 @@ namespace SolToBoogie
             BoogieStmtList fbBody = new BoogieStmtList();
             var fbLocalVars = new List<BoogieVariable>();
 
-            if (context.TranslateFlags.ModelStubsAsSkips || context.TranslateFlags.ModelStubsAsCallbacks)
+            if (context.TranslateFlags.ModelStubsAsSkips() || context.TranslateFlags.ModelStubsAsCallbacks())
             {
                 fbBody.AppendStmtList(CreateBodyOfUnknownFallback(fbLocalVars, inParams));
             }
-            else
+            else 
             {
-                // default
+                Debug.Assert(context.TranslateFlags.ModelStubsAsHavocs(), "Unknown option for modeling stubs");
                 foreach (var global in modSet)
                 {
                     fbBody.AddStatement(new BoogieHavocCmd(new BoogieIdentifierExpr(global.Name)));
                 }
-            }
+            } 
 
             BoogieImplementation unknownFbImpl = new BoogieImplementation(fbUnknownProcName, inParams, outParams, fbLocalVars, fbBody);
             context.Program.AddDeclaration(unknownFbImpl);
@@ -77,11 +77,14 @@ namespace SolToBoogie
 
         private BoogieStmtList CreateBodyOfUnknownFallback(List<BoogieVariable> fbLocalVars, List<BoogieVariable> inParams)
         {
+
+            Debug.Assert(context.TranslateFlags.ModelStubsAsSkips() || context.TranslateFlags.ModelStubsAsCallbacks(),
+                "CreateBodyOfUnknownFallback called in unexpected context");
             var procBody = new BoogieStmtList();
 
             procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function START "));
-            var balnSender = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("from"));
-            var balnThis = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("to"));
+            var balnSender = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr(inParams[0].Name));
+            var balnThis = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr(inParams[1].Name));
             var msgVal = new BoogieIdentifierExpr("amount");
             //assume Balance[msg.sender] >= msg.value
             procBody.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, balnSender, msgVal)));
@@ -91,10 +94,13 @@ namespace SolToBoogie
             procBody.AddStatement(new BoogieAssignCmd(balnThis, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, balnThis, msgVal)));
             procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function END "));
 
-            if (context.TranslateFlags.ModelStubsAsCallbacks)
+            if (context.TranslateFlags.ModelStubsAsCallbacks())
             {
                 fbLocalVars.AddRange(TransUtils.CollectLocalVars(context.ContractDefinitions.ToList(), context));
-                procBody.AddStatement(TransUtils.GenerateChoiceBlock(context.ContractDefinitions.ToList(), context, Tuple.Create(inParams[1].Name, inParams[0].Name)));
+                // if (*) fn1(from, *, ...) 
+                // we only redirect the calling contract, but the msg.sender need not be to, as it can call into anohter contract that calls 
+                // into from 
+                procBody.AddStatement(TransUtils.GenerateChoiceBlock(context.ContractDefinitions.ToList(), context, Tuple.Create(inParams[0].Name, inParams[1].Name)));
             }
             return procBody;
         }
@@ -103,6 +109,8 @@ namespace SolToBoogie
         {
             // Perform the payable logic to transfer balance
             //
+            // Fallback(from, to, amount)
+            // 
             // foreach contract C that is not Lib/VeriSol
             //    if (DT[this] == C)
             //       if C has a fallback f
@@ -110,26 +118,32 @@ namespace SolToBoogie
             //       else 
             //            assume msg.value == 0; 
             // else
-            //     call fallBack_unknownType(to, from, msg.value) //we switch the order of first two parameters to ease callbacks
+            //    if stubModel == callback
+            //     call fallBack_unknownType(from, to, amout) //we switch the order of first two parameters to ease callbacks
+            //    else if stubmodel == havoc
+            //      havoc all global state, except local state of this contract
+            //    else 
+            //      skip //default
             BoogieIfCmd ifCmd = null;
 
             Debug.Assert(context.ContractDefinitions.Count >= 1, "There should be at least one contract");
 
-            List<BoogieExpr> arguments = new List<BoogieExpr>()
-                {
-                    new BoogieIdentifierExpr(inParams[1].Name),
-                    new BoogieIdentifierExpr(inParams[0].Name),
-                    new BoogieIdentifierExpr(inParams[2].Name)
-                };
             List<BoogieIdentifierExpr> outParams = new List<BoogieIdentifierExpr>();
 
+            List<BoogieExpr> unkwnFnArgs = new List<BoogieExpr>()
+                {
+                    new BoogieIdentifierExpr(inParams[0].Name),
+                    new BoogieIdentifierExpr(inParams[1].Name),
+                    new BoogieIdentifierExpr(inParams[2].Name)
+                };
+
+            // fbUnknown(from, to, amount) 
             BoogieStmtList noMatchCase = BoogieStmtList.MakeSingletonStmtList(
-                new BoogieCallCmd(fbUnknownProcName, arguments, outParams));
+                new BoogieCallCmd(fbUnknownProcName, unkwnFnArgs, outParams));
 
             foreach (var contract in context.ContractDefinitions)
             {
                 if (contract.ContractKind == EnumContractKind.LIBRARY) continue;
-
 
                 FunctionDefinition function = context.ContractToFallbackMap.ContainsKey(contract) ?
                     context.ContractToFallbackMap[contract] : null;
@@ -142,7 +156,15 @@ namespace SolToBoogie
 
                 if (function != null)
                 {
+                    List<BoogieExpr> arguments = new List<BoogieExpr>()
+                {
+                    new BoogieIdentifierExpr(inParams[1].Name),
+                    new BoogieIdentifierExpr(inParams[0].Name),
+                    new BoogieIdentifierExpr(inParams[2].Name)
+                };
+
                     string callee = TransUtils.GetCanonicalFunctionName(function, context);
+                    // to.fallback(from, amount), thus need to switch param0 and param1
                     thenBody = BoogieStmtList.MakeSingletonStmtList(new BoogieCallCmd(callee, arguments, outParams));
                 }
                 else

@@ -20,9 +20,7 @@ contract A {
     }
  
     function foo() private {
-        VeriSol.Requires(x + y == n);
         VeriSol.Ensures(x + y == n);
-        VeriSol.Requires(y <= n);
         VeriSol.Ensures(y == n);
         if (y < n) {
            x--;
@@ -37,6 +35,7 @@ contract A {
     }
 
     function bar() private {
-      assert (false); //unreachable
+      assert (false); //unreachable from BoogieEntry_*
+      //however with /contractInfer there is a failure in the command line
     }
 }
