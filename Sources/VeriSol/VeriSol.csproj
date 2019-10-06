@@ -14,6 +14,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>VeriSol</ToolCommandName>
+    <Description>A formal specification and verification tool for Solidity</Description>
   </PropertyGroup>
 
   <Import Project="..\VeriSol.props" />
