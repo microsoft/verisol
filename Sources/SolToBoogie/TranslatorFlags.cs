@@ -20,8 +20,10 @@ namespace SolToBoogie
             GenerateInlineAttributes = true;
             ModelReverts = false;
             InstrumentGas = false;
-            ModelStubsAsCallbacks = false;
-            ModelStubsAsSkips = false;
+            ModelOfStubs = "skip"; //default
+            InlineDepthForBoogie = 4;
+            PerformContractInferce = false;
+            DoModSetAnalysis = false;
         }
         /// <summary>
         /// Omit printing sourceFile/sourceLine information
@@ -62,7 +64,16 @@ namespace SolToBoogie
         public bool InstrumentGas { get; set; }
 
         // models of stubs for unknown procedures and fallbacks
-        public bool ModelStubsAsSkips { get; set; }
-        public bool ModelStubsAsCallbacks { get; set; }
+        public string ModelOfStubs { get; set; }
+        public bool ModelStubsAsHavocs() { return ModelOfStubs.Equals("havoc"); }
+        public bool ModelStubsAsSkips() { return ModelOfStubs.Equals("skip"); }
+        public bool ModelStubsAsCallbacks() { return ModelOfStubs.Equals("callback"); }
+
+        // this translates to /inlineDepth:k when calling Boogie with /contractInfer
+        public int InlineDepthForBoogie { get; set; }
+        public bool PerformContractInferce { get; set; }
+
+        // Do ModSet analysis on the Boogie program.
+        public bool DoModSetAnalysis { get; set; }
     }
 }
