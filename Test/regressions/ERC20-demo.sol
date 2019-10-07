@@ -95,11 +95,12 @@ contract ERC20 is IERC20 {
      *
      * - `spender` cannot be the zero address.
      */
+/*
     function approve(address spender, uint256 value) public returns (bool) {
         _approve(msg.sender, spender, value);
         return true;
     }
-
+*/
     /**
      * @dev See {IERC20-transferFrom}.
      *
@@ -112,12 +113,13 @@ contract ERC20 is IERC20 {
      * - the caller must have allowance for `sender`'s tokens of at least
      * `amount`.
      */
+/*
     function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
         _transfer(sender, recipient, amount);
         _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount));
         return true;
     }
-
+*/
     /**
      * @dev Atomically increases the allowance granted to `spender` by the caller.
      *
@@ -130,11 +132,12 @@ contract ERC20 is IERC20 {
      *
      * - `spender` cannot be the zero address.
      */
+/*
     function increaseAllowance(address spender, uint256 addedValue) public returns (bool) {
         _approve(msg.sender, spender, _allowances[msg.sender][spender].add(addedValue));
         return true;
     }
-
+*/
     /**
      * @dev Atomically decreases the allowance granted to `spender` by the caller.
      *
@@ -149,11 +152,12 @@ contract ERC20 is IERC20 {
      * - `spender` must have allowance for the caller of at least
      * `subtractedValue`.
      */
-    function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool) {
+/*  
+   function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool) {
         _approve(msg.sender, spender, _allowances[msg.sender][spender].sub(subtractedValue));
         return true;
     }
-
+*/
     /**
      * @dev Moves tokens `amount` from `sender` to `recipient`.
      *
@@ -172,8 +176,8 @@ contract ERC20 is IERC20 {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
 
-        // _balances[sender] = _balances[sender] - amount; // bug not using safemath
-        _balances[sender] = _balances[sender].sub(amount);
+         _balances[sender] = _balances[sender] - amount; // bug not using safemath
+        //_balances[sender] = _balances[sender].sub(amount);
         _balances[recipient] = _balances[recipient].add(amount);
         emit Transfer(sender, recipient, amount);
     }
