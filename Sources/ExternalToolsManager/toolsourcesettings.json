@@ -1,0 +1,40 @@
+{
+  "solc": {
+    "Name": "solc",
+    "Version": "0.5.10",
+    "DownloadURLs": {
+      "windows": "https://github.com/ethereum/solidity/releases/download/v0.5.10/solidity-windows.zip",
+      "linux": "https://github.com/ethereum/solidity/releases/download/v0.5.10/solc-static-linux",
+      "osx": "https://github.com/ethereum/solidity/releases/download/v0.5.10/solidity_0.5.10.tar.gz"
+    },
+    "ExePathsWithinZip": {
+      "windows": "solc.exe",
+      "linux": "solc-static-linux",
+      "osx": "solc"
+    }
+  },
+  "z3": {
+    "Name": "z3",
+    "Version": "4.8.4",
+    "DownloadURLs": {
+      "windows": "https://github.com/Z3Prover/z3/releases/download/z3-4.8.4/z3-4.8.4.d6df51951f4c-x64-win.zip",
+      "linux": "https://github.com/Z3Prover/z3/releases/download/z3-4.8.4/z3-4.8.4.d6df51951f4c-x64-ubuntu-16.04.zip",
+      "osx": "https://github.com/Z3Prover/z3/releases/download/z3-4.8.4/z3-4.8.4.d6df51951f4c-x64-osx-10.14.1.zip"
+    },
+    "ExePathsWithinZip": {
+      "windows": "z3-4.8.4.d6df51951f4c-x64-win/bin/z3.exe",
+      "linux": "z3-4.8.4.d6df51951f4c-x64-ubuntu-16.04/bin/z3",
+      "osx": "z3-4.8.4.d6df51951f4c-x64-osx-10.14.1/bin/z3"
+    }
+  },
+  "Boogie": {
+    "Name": "boogie",
+    "Version": "2.4.1-netcore-alpha",
+    "DependencyRelativePath": ".store/boogie/2.4.1-netcore-alpha/boogie/2.4.1-netcore-alpha/tools/netcoreapp2.2/any/"
+  },
+  "Corral": {
+    "Name": "corral",
+    "Version": "2.4.1-netcore-alpha",
+    "DependencyRelativePath": ".store/corral/2.4.1-netcore-alpha/corral/2.4.1-netcore-alpha/tools/netcoreapp2.2/any/"
+  }
+}

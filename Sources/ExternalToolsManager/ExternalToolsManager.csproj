@@ -1,20 +1,7 @@
 ﻿<Project>
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <AssemblyName>VeriSol</AssemblyName>
     <TargetFramework>netcoreapp2.2</TargetFramework>
-    <HighEntropyVA>true</HighEntropyVA>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <PackageId>VeriSol</PackageId>
-    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-    <RepositoryUrl>https://github.com/microsoft/verisol</RepositoryUrl>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackAsTool>true</PackAsTool>
-    <ToolCommandName>VeriSol</ToolCommandName>
-    <Description>A formal specification and verification tool for Solidity</Description>
   </PropertyGroup>
 
   <Import Project="..\VeriSol.props" />
@@ -27,18 +14,13 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.1.1" />
-    <ProjectReference Include="..\ExternalToolsManager\ExternalToolsManager.csproj" />
-    <ProjectReference Include="..\SolidityAST\SolidityAST.csproj" />
-    <ProjectReference Include="..\BoogieAST\BoogieAST.csproj" />
-    <ProjectReference Include="..\SolToBoogie\SolToBoogie.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="$(RepositoryROOT)\LICENSE.txt" Pack="true" PackagePath="LICENSE.txt">
+    <None Update="toolsourcesettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
-
 </Project>

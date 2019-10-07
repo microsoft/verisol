@@ -33,6 +33,7 @@ namespace SolToBoogie
         private void GenerateFunctions()
         {
             context.Program.AddDeclaration(GenerateConstToRefFunction());
+            context.Program.AddDeclaration(GenerateModFunction());
             context.Program.AddDeclaration(GenerateKeccakFunction());
             context.Program.AddDeclaration(GenerateAbiEncodedFunctionOneArg());
             context.Program.AddDeclaration(GenerateVeriSolSumFunction());
@@ -112,6 +113,21 @@ namespace SolToBoogie
                 new List<BoogieVariable>() { outVar },
                 null);
         }
+
+        private BoogieFunction GenerateModFunction()
+        {
+            //function for arithmetic "modulo" operation for unsigned integers
+            string functionName = "modBpl";
+            var inVar1 = new BoogieFormalParam(new BoogieTypedIdent("x", BoogieType.Int));
+            var inVar2 = new BoogieFormalParam(new BoogieTypedIdent("y", BoogieType.Int));
+            var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", BoogieType.Int));
+            return new BoogieFunction(
+                functionName,
+                new List<BoogieVariable>() { inVar1, inVar2 },
+                new List<BoogieVariable>() { outVar },
+                new List<BoogieAttribute> { new BoogieAttribute("bvbuiltin", "\"" + "mod" + "\"") });
+        }
+
         private BoogieFunction GenerateVeriSolSumFunction()
         {
             //function for [Ref]int to int

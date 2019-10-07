@@ -1,1 +1,0 @@
-Place the solc binaries in this folder.

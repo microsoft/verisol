@@ -8,52 +8,42 @@ strategy:
   matrix:
     linux:
       imageName: 'ubuntu-latest'
+    windows:
+      imageName: 'vs2017-win2016'
 #    mac:
 #     imageName: 'macos-latest'
-#    windows:
-#      imageName: 'vs2017-win2016'
 
 pool:
   vmImage: $(imageName)
-  
-steps:
-- checkout: self
-  submodules: recursive
-- script: |
-    wget https://github.com/Z3Prover/z3/releases/download/z3-4.8.4/z3-4.8.4.d6df51951f4c-x64-ubuntu-14.04.zip
-    unzip z3*.zip
-    cp z3-4.8.4.d6df51951f4c-x64-ubuntu-14.04/bin/z3* $(Build.SourcesDirectory)/Binaries/
-    ln -s $(Build.SourcesDirectory)/Binaries/z3 $(Build.SourcesDirectory)/Binaries/z3.exe 
-  displayName: 'Download z3 and create symbolic link'
-- script: |
-    wget https://github.com/ethereum/solidity/releases/download/v0.5.10/solc-static-linux
-    chmod +x solc-static-linux
-    cp solc-static-linux $(Build.SourcesDirectory)/Binaries/
-  displayName: 'get solc linux'
 
-# do this before all your .NET Core tasks
-- task: UseDotNet@2
-  displayName: 'Use .NET Core sdk'
-  inputs:
-    packageType: sdk
-    version: 2.2.203 # https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/tool/dotnet-core-tool-installer?view=azure-devops
+steps:
 - task: DotNetCoreCLI@2
-  displayName: Build
+  displayName: 'dotnet build'
   inputs:
-    command: build
-    projects: '**/SolToBoogie.sln'    
-- script: |
-     ls -R $(Build.SourcesDirectory)/corral/
-     ls -R  $(Build.SourcesDirectory)/Sources/SolToBoogieTest/
-     ls -R $(Build.SourcesDirectory)/Binaries
-  displayName: 'inspect dirs and copy corral and boogie dependencies'
-- script: |
-     dotnet $(Build.SourcesDirectory)/Binaries/VeriSol.dll Test/regressions/DAO-Sim-Buggy.sol Mallory /tryProof /tryRefutation:10 /printTransactionSequence
-     cat boogie.txt
-     cat corral.txt
-     dotnet $(Build.SourcesDirectory)/Binaries/VeriSol.dll Test/regressions/ERC20-simplified.sol ERC20 /tryProof /tryRefutation:10 /printTransactionSequence
-     cat boogie.txt
+    projects: '**/VeriSol.sln'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Install VeriSol as dotnet cli tool'
+  inputs:
+    command: custom
+    custom: 'tool'
+    arguments: 'install --tool-path $(Build.SourcesDirectory)/Tools/ VeriSol --version 0.1.1-alpha --add-source $(Build.SourcesDirectory)/nupkg/'
+
+- pwsh: |
+   $(Build.SourcesDirectory)/Tools/VeriSol $(Build.SourcesDirectory)/Test/regressions/DAO-Sim-Buggy.sol Mallory /tryProof /tryRefutation:10 /printTransactionSequence
+   cat boogie.txt
+   cat corral.txt
+
+   $(Build.SourcesDirectory)/Tools/VeriSol $(Build.SourcesDirectory)/Test/regressions/ERC20-simplified.sol ERC20 /tryProof /tryRefutation:10 /printTransactionSequence
+   cat boogie.txt
   displayName: 'Run VeriSol on some examples'
-- script: | 
-     dotnet $(Build.SourcesDirectory)/Binaries/SolToBoogieTest.dll $(Build.SourcesDirectory)/Test/
+
+- task: DotNetCoreCLI@2
+  displayName: 'Install SolToBoogieTest as dotnet cli tool'
+  inputs:
+    command: custom
+    custom: 'tool'
+    arguments: 'install --tool-path $(Build.SourcesDirectory)/Tools/ SolToBoogieTest --version 0.1.1-alpha --add-source $(Build.SourcesDirectory)/nupkg/'
+
+- pwsh: '$(Build.SourcesDirectory)/Tools/VeriSolRegressionRunner $(Build.SourcesDirectory)/Test/'
   displayName: 'Run regression tests'

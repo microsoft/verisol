@@ -14,6 +14,7 @@ namespace SolToBoogie
             NoSourceLineInfoFlag = false;
             NoDataValuesInfoFlag = false;
             NoAxiomsFlag = false;
+            UseModularArithmetic = false;
             NoUnsignedAssumesFlag = false;
             NoHarness = false; 
             GenerateInlineAttributes = true;
@@ -36,6 +37,10 @@ namespace SolToBoogie
         /// Do not print axioms (except for allocation)
         /// </summary>
         public bool NoAxiomsFlag { get; set; }
+        /// <summary>
+        /// Do not emit underflow/overflow assumes for unsigned operations x
+        /// </summary>
+        public bool UseModularArithmetic { get; set; }
         /// <summary>
         /// Do not emit x >= 0 for unsigned expressions x
         /// </summary>

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,28 +6,20 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>VeriSolRegressionRunner</ToolCommandName>
-    <VeriSolPublishDir>..\..\Binaries\</VeriSolPublishDir>
   </PropertyGroup>
+
+  <Import Project="..\VeriSol.props" />
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.1.1" />
+    <ProjectReference Include="..\ExternalToolsManager\ExternalToolsManager.csproj" />
     <ProjectReference Include="..\SolidityAST\SolidityAST.csproj" />
     <ProjectReference Include="..\BoogieAST\BoogieAST.csproj" />
     <ProjectReference Include="..\SolToBoogie\SolToBoogie.csproj" />
-    <ProjectReference Include="..\..\corral\cba-NetCore.csproj" />
-    <ProjectReference Include="..\..\corral\boogie\Source\BoogieDriver\BoogieDriver-NetCore.csproj" />
   </ItemGroup>
 
-   <ItemGroup>
-        <CorralFiles Include="..\..\corral\bin\Debug\netcoreapp2.2\corral.runtimeconfig.json"/>
-        <SolToBoogieTestDlls Include="$(OutDir)\**\*.*"/>
-   </ItemGroup> 
-  <Target Name="CopySolToBoogieTestDlls" AfterTargets="Publish">
-        <Copy
-            SourceFiles="@(SolToBoogieTestDlls)"
-            DestinationFolder="$(VeriSolPublishDir)\"
-        />
-    </Target>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
 </Project>

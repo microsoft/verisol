@@ -6,10 +6,10 @@ namespace VeriSolRunner
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
-    using System.Reflection;
     using System.Runtime.InteropServices;
     using Microsoft.Extensions.Logging;
     using SolToBoogie;
+    using VeriSolRunner.ExternalTools;
 
     /// <summary>
     /// Top level application to run VeriSol to target proofs as well as scalable counterexamples
@@ -24,7 +24,9 @@ namespace VeriSolRunner
                 return 1;
             }
 
-            string solidityFile, entryPointContractName, solcName;
+            ExternalToolsManager.EnsureAllExisted();
+
+            string solidityFile, entryPointContractName;
             bool tryProofFlag, tryRefutation;
             int recursionBound;
             ILogger logger;
@@ -37,51 +39,15 @@ namespace VeriSolRunner
                 out tryProofFlag,
                 out tryRefutation,
                 out recursionBound,
-                out solcName,
                 out logger,
                 out ignoredMethods,
                 out printTransactionSequence, 
                 ref translatorFlags);
 
-            var assemblyLocation = Assembly.GetExecutingAssembly().Location;
-            string solcPath = Path.Combine(
-                    Path.GetDirectoryName(assemblyLocation),
-                    solcName);
-            if (!File.Exists(solcPath))
-            {
-                ShowUsage();
-                Console.WriteLine($"Cannot find {solcName} at {solcPath}");
-                return 1;
-            }
-
-            string corralPath = Path.Combine(
-                    Path.GetDirectoryName(assemblyLocation),
-                    "corral.dll");
-            if (!File.Exists(corralPath))
-            {
-                ShowUsage();
-                Console.WriteLine($"Cannot find corral.dll at {corralPath}");
-                return 1;
-            }
-
-            string boogiePath = Path.Combine(
-                    Path.GetDirectoryName(assemblyLocation),
-                    "BoogieDriver.dll");
-            if (!File.Exists(boogiePath))
-            {
-                ShowUsage();
-                Console.WriteLine($"Cannot find BoogieDriver.dll at {boogiePath}");
-                return 1;
-            }
-
             var verisolExecuter =
                 new VeriSolExecutor(
                     Path.Combine(Directory.GetCurrentDirectory(), solidityFile), 
                     entryPointContractName,
-                    corralPath,
-                    boogiePath,
-                    solcPath,
-                    solcName,
                     recursionBound,
                     ignoredMethods,
                     tryRefutation,
@@ -92,7 +58,7 @@ namespace VeriSolRunner
             return verisolExecuter.Execute();
         }
 
-        private static void ParseCommandLineArgs(string[] args, out string solidityFile, out string entryPointContractName, out bool tryProofFlag, out bool tryRefutation, out int recursionBound, out string solcName, out ILogger logger, out HashSet<Tuple<string, string>> ignoredMethods,  out bool printTransactionSeq, ref TranslatorFlags translatorFlags)
+        private static void ParseCommandLineArgs(string[] args, out string solidityFile, out string entryPointContractName, out bool tryProofFlag, out bool tryRefutation, out int recursionBound, out ILogger logger, out HashSet<Tuple<string, string>> ignoredMethods,  out bool printTransactionSeq, ref TranslatorFlags translatorFlags)
         {
             Console.WriteLine($"Command line args = {{{string.Join(", ", args.ToList())}}}");
             solidityFile = args[0];
@@ -111,7 +77,6 @@ namespace VeriSolRunner
                 Debug.Assert(recursionBound > 0, $"Argument of /txBound:k should be positive, found {recursionBound}");
             }
 
-            solcName = GetSolcNameByOSPlatform();
             ILoggerFactory loggerFactory = new LoggerFactory().AddConsole(LogLevel.Information);
             logger = loggerFactory.CreateLogger("VeriSol");
             ignoredMethods = new HashSet<Tuple<string, string>>();
@@ -146,6 +111,10 @@ namespace VeriSolRunner
             if (args.Any(x => x.Equals("/omitDataValuesInTrace")))
             {
                 translatorFlags.NoDataValuesInfoFlag = true;
+            }
+            if (args.Any(x => x.Equals("/useModularArithmetic")))
+            {
+                translatorFlags.UseModularArithmetic = true;
             }
             if (args.Any(x => x.Equals("/omitUnsignedSemantics")))
             {
@@ -196,7 +165,7 @@ namespace VeriSolRunner
             {
                 Debug.Assert(!translatorFlags.NoHarness &&
                     !translatorFlags.NoAxiomsFlag &&
-                    !translatorFlags.NoUnsignedAssumesFlag &&
+                    !translatorFlags.NoUnsignedAssumesFlag &&                   
                     !translatorFlags.NoDataValuesInfoFlag &&
                     !translatorFlags.NoSourceLineInfoFlag,
                     "Cannot perform verification when any of " +
@@ -215,11 +184,9 @@ namespace VeriSolRunner
             Console.WriteLine("VeriSol: Formal specification and verification tool for Solidity smart contracts");
             Console.WriteLine("Usage:  VeriSol <relative-path-to-solidity-file> <top-level-contractName> [options]");
             Console.WriteLine("options:");
-
-            Console.WriteLine("\n------ Controls input/output files --------\n");
-
-            Console.WriteLine("   /outBpl:<out.bpl>        persist the output Boogie file");
-            Console.WriteLine("   /bplPrelude:<foo.bpl>    any additional Boogie file to be added for axioms or user-supplied boogie invariants");
+            // Console.WriteLine("\n------ Controls input/output files --------\n");
+            // Console.WriteLine("   /outBpl:<out.bpl>        persist the output Boogie file");
+            // Console.WriteLine("   /bplPrelude:<foo.bpl>    any additional Boogie file to be added for axioms or user-supplied boogie invariants");
 
 
             Console.WriteLine("\n------ Controls verification flags --------\n");
@@ -242,6 +209,7 @@ namespace VeriSolRunner
             Console.WriteLine("                           skip      // treated as noop");
             Console.WriteLine("                           havoc     // completely scramble the entire global state");
             Console.WriteLine("                           callback  // treated as a non-deterministic callback into any of the methods of any contract");
+            Console.WriteLine("   /useModularArithmetic   uses modular arithmetic for unsigned integers (experimental), default unbounded integers");
 
         }
 
@@ -258,7 +226,7 @@ namespace VeriSolRunner
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                solcName = "solc-mac";
+                solcName = "solc";
             }
             else
             {

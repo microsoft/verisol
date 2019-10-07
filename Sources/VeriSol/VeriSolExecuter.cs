@@ -13,9 +13,9 @@ namespace VeriSolRunner
     using System.IO;
     using System.Runtime.InteropServices;
     using System.Reflection;
-    using System.Text.RegularExpressions;
     using System.Linq;
-    using Microsoft.Boogie.ExprExtensions;
+    using VeriSolRunner.ExternalTools;
+    // using Microsoft.Boogie.ExprExtensions;
 
     internal class VeriSolExecutor
     {
@@ -25,7 +25,6 @@ namespace VeriSolRunner
         private string CorralPath;
         private string BoogiePath;
         private string SolcPath;
-        private string SolcName;
         private bool TryProof;
         private bool TryRefutation;
         // private bool GenInlineAttrs;
@@ -39,16 +38,15 @@ namespace VeriSolRunner
         private TranslatorFlags translatorFlags;
         private bool printTransactionSequence = false; 
 
-        public VeriSolExecutor(string solidityFilePath, string contractName, string corralPath, string boogiePath, string solcPath, string solcName, int corralRecursionLimit, HashSet<Tuple<string, string>> ignoreMethods, bool tryRefutation, bool tryProofFlag, ILogger logger, bool _printTransactionSequence, TranslatorFlags _translatorFlags = null)
+        public VeriSolExecutor(string solidityFilePath, string contractName, int corralRecursionLimit, HashSet<Tuple<string, string>> ignoreMethods, bool tryRefutation, bool tryProofFlag, ILogger logger, bool _printTransactionSequence, TranslatorFlags _translatorFlags = null)
         {
             this.SolidityFilePath = solidityFilePath;
             this.ContractName = contractName;
             this.SolidityFileDir = Path.GetDirectoryName(solidityFilePath);
-            // Console.WriteLine($"SpecFilesDir = {SolidityFileDir}");
-            this.CorralPath = corralPath;
-            this.BoogiePath = boogiePath;
-            this.SolcPath = solcPath;
-            this.SolcName = solcName;
+            Console.WriteLine($"SpecFilesDir = {SolidityFileDir}");
+            this.CorralPath = ExternalToolsManager.Corral.Command;
+            this.BoogiePath = ExternalToolsManager.Boogie.Command;
+            this.SolcPath = ExternalToolsManager.Solc.Command;
             this.CorralRecursionLimit = corralRecursionLimit;
             this.ignoreMethods = new HashSet<Tuple<string, string>>(ignoreMethods);
             this.Logger = logger;
@@ -186,18 +184,12 @@ namespace VeriSolRunner
         private void DisplayTraceUsingConcurrencyExplorer()
         {
             var assemblyLocation = Assembly.GetExecutingAssembly().Location;
-            string concExplorerWindowsPath = Path.Combine(
-                Path.GetDirectoryName(assemblyLocation),
-                "concurrencyExplorer",
-                "ConcurrencyExplorer.exe");
-            if (!File.Exists(concExplorerWindowsPath))
-            {
-                throw new Exception($"Cannot find ConcurrencyExplorer.exe at {concExplorerWindowsPath}");
-            }
+            string concExplorerName = "ConcurrencyExplorer.exe";
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Console.WriteLine($"\tRun the command below to see the trace in a viewer (only supported on Windows):");
-                Console.WriteLine($"\t{concExplorerWindowsPath} {corralTraceFileName}");
+                Console.WriteLine($"\t{concExplorerName} {corralTraceFileName}");
             }
         }
 
@@ -391,7 +383,7 @@ namespace VeriSolRunner
             return true;
         }
 
-        private string RunBinary(string binaryPath, string binaryArguments)
+        private string RunBinary(string cmdName, string arguments)
         {
             Process p = new Process();
             p.StartInfo.UseShellExecute = false;
@@ -399,8 +391,8 @@ namespace VeriSolRunner
             p.StartInfo.RedirectStandardOutput = true;
             p.StartInfo.RedirectStandardError = true;
             p.StartInfo.CreateNoWindow = true;
-            p.StartInfo.FileName = "dotnet";
-            p.StartInfo.Arguments = $"{binaryPath} {binaryArguments}";
+            p.StartInfo.FileName = cmdName;
+            p.StartInfo.Arguments = $"{arguments}";
             p.Start();
 
             string outputBinary = p.StandardOutput.ReadToEnd();

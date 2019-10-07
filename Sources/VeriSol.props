@@ -1,0 +1,17 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <RepositoryROOT Condition=" '$(RepositoryROOT)' == '' ">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), `.gitignore`))</RepositoryROOT>
+    <OutputPath>$(RepositoryROOT)\bin\$(Configuration)</OutputPath>
+    <BaseIntermediateOutputPath>$(RepositoryROOT)\obj\$(Configuration)\$(TargetFramework)\$(MSBuildProjectName)</BaseIntermediateOutputPath>
+    <PackageOutputPath>$(RepositoryROOT)\nupkg</PackageOutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <VersionPrefix>0.1.1-alpha</VersionPrefix>
+  </PropertyGroup>
+
+</Project>

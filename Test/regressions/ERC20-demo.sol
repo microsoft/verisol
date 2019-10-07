@@ -38,6 +38,19 @@ contract ERC20 is IERC20 {
     uint256 private _totalSupply;
 
     /**
+     * A dummy constructor
+     */
+    constructor (uint256 totalSupply) public {
+       require(msg.sender != address(0));
+       _totalSupply = totalSupply;
+       _balances[msg.sender] = totalSupply;
+    }
+
+    function contractInvariant() private view {
+        VeriSol.ContractInvariant(_totalSupply == VeriSol.SumMapping(_balances));
+    }
+
+    /**
      * @dev See {IERC20-totalSupply}.
      */
     function totalSupply() public view returns (uint256) {
@@ -61,9 +74,9 @@ contract ERC20 is IERC20 {
      */
     function transfer(address recipient, uint256 amount) public returns (bool) {
         _transfer(msg.sender, recipient, amount);
-        assert (VeriSol.Old(_balances[msg.sender] + _balances[recipient]) == _balances[msg.sender] + _balances[recipient]);
-        assert (msg.sender == recipient ||  _balances[msg.sender] == VeriSol.Old(_balances[msg.sender] - amount));
-        assert (_balances[recipient] >= VeriSol.Old(_balances[recipient]));
+        //assert (VeriSol.Old(_balances[msg.sender] + _balances[recipient]) == _balances[msg.sender] + _balances[recipient]);
+        //assert (msg.sender == recipient ||  _balances[msg.sender] == VeriSol.Old(_balances[msg.sender] - amount));
+        //assert (_balances[recipient] >= VeriSol.Old(_balances[recipient]));
 
         return true;
     }
@@ -150,7 +163,7 @@ contract ERC20 is IERC20 {
      * Emits a {Transfer} event.
      *
      * Requirements:
-     * 
+     *
      * - `sender` cannot be the zero address.
      * - `recipient` cannot be the zero address.
      * - `sender` must have a balance of at least `amount`.
@@ -159,6 +172,7 @@ contract ERC20 is IERC20 {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
 
+        // _balances[sender] = _balances[sender] - amount; // bug not using safemath
         _balances[sender] = _balances[sender].sub(amount);
         _balances[recipient] = _balances[recipient].add(amount);
         emit Transfer(sender, recipient, amount);

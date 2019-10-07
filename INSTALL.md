@@ -1,85 +1,109 @@
-# Installing and running VeriSol
+# Install VeriSol
 
  > We use "\\" to denote path separators for Windows. Substitute theseparator "/" for Linux/OSX in instructions below. 
 
+- Install **.NET Core** (version **2.2**) for Windows/Linux/OSX from [here](https://dotnet.microsoft.com/download/dotnet-core/2.2#sdk-2.2.106)
 
-## Dependencies
+The following are dynamically installed at VeriSol runtime (the first time only) [Solidity compiler](https://github.com/ethereum/solidity/releases/tag/v0.5.10), [Z3 theorem prover](https://github.com/Z3Prover/z3/releases), [Corral](https://github.com/boogie-org/corral) and [Boogie](https://github.com/boogie-org/boogie) verifiers, the latter two are installed as dotnet cli tools.
 
-- Install **.NET Core** (version **2.2**) for Windows/Linux/OSX from [here](https://dotnet.microsoft.com/download/dotnet-core/2.2#sdk-2.2.106) 
-- Install the following **Solidity compiler** (version **0.5.10**) binaries for Windows/Linux/OSX from [here](https://github.com/ethereum/solidity/releases/tag/v0.5.10) into the **Binaries** folder.
-   - (Windows) Download `solc.exe`
-   - (Linux) Download `solc-static-linux` binary and use command `chmod +x solc-static-linux` 
-   - (OSX) You need to build `solc` from the source code. The easiest way is to use the [HomeBrew](http://brew.sh/) installer system. Follow the instructions [here](https://solidity.readthedocs.io/en/v0.5.11/installing-solidity.html). Essentially, you need to perform the following commands: `brew update & brew upgrade & brew tap ethereum/ethereum & brew install solidity`. Homebrew will install `solc` binaries in the folder `/usr/local/Cellar/solidity/0.5.11` (or the number corresponding to the installed `solc` version). Copy the `solc` file to  **Binaries** folder and rename it to  `solc-mac`. 
-   
-- Install [Z3 theorem prover](https://github.com/Z3Prover/z3/releases) (ver 4.8.4) binary **z3.exe** (respectively, **z3**) for Windows (respectively, Linux/OSX) into **Binaries** 
-   - For Linux/OSX, create a symbolic link to z3 as follows:
-   
-      `ln -S Binaries/z3 Binaries/z3.exe`
+Follow either **Nuget** package installation directly, or after building the **sources**.
 
-- We use **corral** and **boogie** verifiers, which are present as submodules. Run a recursive git submodule update from the root folder 
+### Install from nuget.org
+Install to the **global** dotnet CLI tools cache so that you can run command  `VeriSol` from anywhere:
+```
+dotnet tool install VeriSol --version 0.1.1-alpha --global
+```
 
-      git submodule update --recursive --init
+### Install from sources
 
+Perform the following set of commands:
+```
+git clone https://github.com/microsoft/verisol.git
+```
 
-### (Optional) 
-   - For Windows, we currently use  [ConcurrencyExplorer](https://github.com/LeeSanderson/Chess) in Corral\Tools\ to step through traces. It is unclear if one can build the sources of *ConcurencyExplorer* for Linux/OSX from [here](https://github.com/LeeSanderson/Chess). If that works, copy the *ConcurrencyExplorer.exe* binary to Corral\Tools\.
+From %VERISOL_PATH%  (the root folder of the repository), perform
 
-## Build VeriSol
+```
+dotnet build Sources\VeriSol.sln
+```
 
-Perform the following commands from the root folder:
+Install to the **global** dotnet CLI tools cache so that you can run command  `VeriSol` from anywhere:
+```
+dotnet tool install VeriSol --version 0.1.1-alpha --global --add-source %VERISOL_PATH%\nupkg\
+```
 
-    dotnet build Sources\SolToBoogie.sln
+Or, Install to a **local** directory and access the command with full path `%Installed_Path%\VeriSol`
+```
+dotnet tool install VeriSol --version 0.1.1-alpha --tool-path %Installed_Path%  --add-source %VERISOL_PATH%\nupkg\
+```
 
-## Running VeriSol
+### Special instruction for MacOS/OSx (for both installation)
+- Follow the instructions [here](https://solidity.readthedocs.io/en/v0.5.11/installing-solidity.html). Perform the following commands using [HomeBrew](http://brew.sh/) installer system: `brew update & brew upgrade & brew tap ethereum/ethereum & brew install solidity`. Homebrew will install `solc` binaries in the folder `/usr/local/Cellar/solidity/<version>/bin`. Copy the `solc` binary to the folder where VeriSol is installed (either dotnet global tools cache or local install directory specified above). 
 
-Assuming in the root folder of this repository, run 
+# Running VeriSol
 
-`dotnet Binaries\VeriSol.dll`
+Assuming VeriSol is in the path, run 
+
+`VeriSol`
 
 to view options and their meanings. 
 
 A common usage:
 
-`dotnet Binaries\VeriSol.dll foo.sol Bar 
+`VeriSol foo.sol Bar`
 
 where 
    - *foo.sol* is the top-level Solidity file
    - *Bar* is the name of the top-level contract to analyze
 
-  > For Windows, the tool output prints instructions to step through the trace using *ConcurrencyExplorer.exe* binary. 
+  > For Windows, the tool output prints instructions to step through the trace using [**ConcurrencyExplorer.exe**](https://github.com/boogie-org/corral/tree/master/tools) binary, whose sources are [here](https://github.com/LeeSanderson/Chess)
+
+For the examples below, change directory to Test\regressions\ folder.
 
 ### Example with refutation ###
-`dotnet Binaries\VeriSol.dll Test\regressions\Error.sol AssertFalse`
+`VeriSol Error.sol AssertFalse`
 
 ### Example with verification ###
-`dotnet Binaries\VeriSol.dll Test\regressions\Mapping.sol Mapping`
+`VeriSol Mapping.sol Mapping`
 
 ### Example with Loop Invariants ###
-`dotnet Binaries\VeriSol.dll Test\regressions\LoopInvUsageExample.sol LoopFor`
+`VeriSol LoopInvUsageExample.sol LoopFor`
 
 ### Example with Contract Invariants ###
-`dotnet Binaries\VeriSol.dll Test\regressions\ContractInvUsageExample.sol LoopFor`
+`VeriSol ContractInvUsageExample.sol LoopFor`
 
 ### Example of higly simplified ERC20 ###
-`dotnet Binaries\VeriSol.dll Test\regressions\ERC20-simplified.sol ERC20`
+`VeriSol ERC20-simplified.sol ERC20`
 
 ### Example of higly simplified TheDAO attack ###
-`dotnet Binaries\VeriSol.dll Test\regressions\DAO-Sim-Buggy.sol Mallory`
+`VeriSol DAO-Sim-Buggy.sol Mallory`
 
-`dotnet Binaries\VeriSol.dll Test\regressions\DAO-Sim-Fixed.sol Mallory`
+`VeriSol DAO-Sim-Fixed.sol Mallory`
 
 ## VeriSol Code Contracts library
-The code contract library **VeriSolContracts.sol** is present [here](https://github.com/microsoft/verisol/blob/master/Test/regressions/Libraries/VeriSolContracts.sol). This allows adding loop invariants, contract invariants for proofs, and extending the assertion language.  
+The code contract library **VeriSolContracts.sol** is present [here](/Test/regressions/Libraries/VeriSolContracts.sol). This allows adding loop invariants, contract invariants for proofs, and extending the assertion language.  
 
-## Regression script
+# Regression script 
+First, follow the installation instructions from **sources**
 
-To run the regressions from the root (%VERISOL_PATH%) of the installation, run:
--  `dotnet Binaries\SolToBoogieTest.dll  %VERISOL_PATH%\Test\`
+To run the regressions test, first install SolToBoogieTest
+```
+dotnet tool install --global SolToBoogieTest --version 0.1.1-alpha --add-source %VERISOL_PATH%\nupkg\
+```
+
+Then run command `VeriSolRegressionRunner`
+```
+VeriSolRegressionRunner %VERISOL_PATH%\Test\
+```
 
 All regressions are expected to pass. 
 
 To run a subset of examples during testing, add an optional parameter to limit the above run to a subset of tests that match a prefix string *<prefix>* (e.g. using Array will only run regresssions with Array in their prefix)
 
-`dotnet Binaries\SolToBoogieTest.dll %VERISOL_PATH%\Test\ [<prefix>]`
+```
+VeriSolRegressionRunner %VERISOL_PATH%\Test\ [<prefix>]
+```
+
+
 
 
