@@ -44,11 +44,6 @@ namespace SolToBoogie
         // to collect contract invariants
         private Dictionary<string, List<BoogieExpr>> contractInvariants = null;
 
-        // used to detect overflows in arithmetic operations ("+", "-", "*", "/")
-        // counts nested FunctionCalls and relational exprs
-        // (overflow detection in those is an unsupported feature)
-        private int countNestedFuncCallsRelExprs = 0;
-
         private static void emitGasCheck(BoogieStmtList newBody)
         {
             BoogieStmtList thenBody = new BoogieStmtList();
@@ -1416,17 +1411,6 @@ namespace SolToBoogie
             }
         }
         
-        private void AddOverUnderflowAssumesForUints(BoogieExpr boogieExpr, TypeDescription typeDesc)
-        {
-            // Placeholder in case we need the axioms
-            // skip based on a flag
-            if (!context.TranslateFlags.UseModularArithmetic)
-                return;
-
-            // Add: assume (lower-bound <= e && e <= upperbound);
-            // Compute lower and upper bounds:
-            string type = typeDesc.TypeString;
-        }
         private void emitRevertLogic(BoogieStmtList revertLogic)
         {
             BoogieAssignCmd setRevert = new BoogieAssignCmd(new BoogieIdentifierExpr("revert"), new BoogieLiteralExpr(true));
@@ -1945,7 +1929,6 @@ namespace SolToBoogie
 
         public override bool Visit(FunctionCall node)
         {
-            countNestedFuncCallsRelExprs++;
             preTranslationAction(node);
 
             // VeriSolAssert(!(node.Expression is NewExpression), $"new expressions should be handled in assignment");
@@ -1954,7 +1937,6 @@ namespace SolToBoogie
                 BoogieIdentifierExpr tmpVarExpr = MkNewLocalVariableForFunctionReturn(node);
                 TranslateNewStatement(node, tmpVarExpr);
                 currentExpr = tmpVarExpr;
-                countNestedFuncCallsRelExprs--;
                 return false;
             }
 
@@ -2105,7 +2087,6 @@ namespace SolToBoogie
                 }
 
             }
-            countNestedFuncCallsRelExprs--;
             return false;
         }
 
@@ -2999,11 +2980,6 @@ namespace SolToBoogie
             BoogieExpr leftExpr = TranslateExpr(node.LeftExpression);
             BoogieExpr rightExpr = TranslateExpr(node.RightExpression);
 
-            //if (context.TranslateFlags.UseModularArithmetic && countNestedFuncCallsRelExprs > 0 &&
-            //    (node.Operator == "+" || node.Operator == "-" || node.Operator == "*" || node.Operator == "/" || node.Operator == "%"))
-            //{
-            //    VeriSolAssert(false, $"Unsupported feature in /useModularArithmetic mode: this arithmetic binary expr is inside function call or relational operation: {node}");
-            //}
             BoogieBinaryOperation.Opcode op;
             switch (node.Operator)
             {
@@ -3023,27 +2999,21 @@ namespace SolToBoogie
                     op = BoogieBinaryOperation.Opcode.MOD;
                     break;
                 case "==":
-                    countNestedFuncCallsRelExprs++;
                     op = BoogieBinaryOperation.Opcode.EQ;
                     break;
                 case "!=":
-                    countNestedFuncCallsRelExprs++;
                     op = BoogieBinaryOperation.Opcode.NEQ;
                     break;
                 case ">":
-                    countNestedFuncCallsRelExprs++;
                     op = BoogieBinaryOperation.Opcode.GT;
                     break;
                 case ">=":
-                    countNestedFuncCallsRelExprs++;
                     op = BoogieBinaryOperation.Opcode.GE;
                     break;
                 case "<":
-                    countNestedFuncCallsRelExprs++;
                     op = BoogieBinaryOperation.Opcode.LT;
                     break;
                 case "<=":
-                    countNestedFuncCallsRelExprs++;
                     op = BoogieBinaryOperation.Opcode.LE;
                     break;
                 case "&&":
@@ -3077,10 +3047,6 @@ namespace SolToBoogie
                     }
                 }
             }
-            //if (node.Operator == "==" || node.Operator == "!=" || node.Operator == ">" || node.Operator == ">=" || node.Operator == "<" || node.Operator == "<=")
-            //{
-            //    countNestedFuncCallsRelExprs--;
-            //}
             
             return false;
         }

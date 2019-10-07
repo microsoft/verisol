@@ -15,11 +15,10 @@ contract ERC20 is IERC20 {
     mapping (address => uint256) private _balances;
     uint256 private _totalSupply;
 
-/*
     function contractInvariant() private view {
         VeriSol.ContractInvariant(_totalSupply == VeriSol.SumMapping(_balances));
     }
-*/
+
     /**
      * A dummy constructor
      */

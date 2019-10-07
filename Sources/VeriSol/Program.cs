@@ -245,6 +245,7 @@ namespace VeriSolRunner
             Console.WriteLine("                           skip      // treated as noop");
             Console.WriteLine("                           havoc     // completely scramble the entire global state");
             Console.WriteLine("                           callback  // treated as a non-deterministic callback into any of the methods of any contract");
+            Console.WriteLine("   /useModularArithmetic   uses modular arithmetic for unsigned integers (experimental), default unbounded integers");
 
         }
 
