@@ -9,6 +9,7 @@ namespace SolToBoogie
     using System.Globalization;
     using System.Linq;
     using System.Numerics;
+    using System.Linq;
     using System.Reflection.Metadata;
     using System.Security.Cryptography.X509Certificates;
     using System.Text;
@@ -42,7 +43,7 @@ namespace SolToBoogie
 
         // to collect contract invariants
         private Dictionary<string, List<BoogieExpr>> contractInvariants = null;
-        
+
         private static void emitGasCheck(BoogieStmtList newBody)
         {
             BoogieStmtList thenBody = new BoogieStmtList();
@@ -1103,6 +1104,7 @@ namespace SolToBoogie
                 Identifier identifier = new Identifier();
                 identifier.Name = varDecl.Name;
                 identifier.ReferencedDeclaration = varDecl.Id;
+                identifier.TypeDescriptions = varDecl.TypeDescriptions;
 
                 Assignment assignment = new Assignment();
                 assignment.LeftHandSide = identifier;
@@ -1127,6 +1129,31 @@ namespace SolToBoogie
             return false;
         }
 
+        private BoogieExpr HelperModOper(BoogieExpr rhs, Expression lhsNode)
+        {
+            BoogieExpr res = rhs;
+            if (!context.TranslateFlags.UseModularArithmetic)
+            {
+                return res;
+            }
+            else if (lhsNode is TupleExpression tuple)
+            {
+                VeriSolAssert(false, "Not implemented... tuple in the lhs for overflow detection");
+            }
+            else if (lhsNode.TypeDescriptions.IsUintWSize(out uint sz))
+            {
+                
+                    Console.WriteLine("HelperModOper: UseModularArithmetic: adding mod on the rhs of asgn; lhs is uint of size {0}", sz);
+                    VeriSolAssert(sz != 0, $"size of uint lhs is zero");
+                    BigInteger maxUIntValue = (BigInteger)Math.Pow(2, sz);
+                    Console.WriteLine("HelperModOper: maxUIntValue is {0}", maxUIntValue);
+                    res = new BoogieFuncCallExpr("modBpl", new List<BoogieExpr>() { rhs, new BoogieLiteralExpr(maxUIntValue) });
+                    return res;
+             
+            }
+
+            return res;
+        }
         public override bool Visit(Assignment node)
         {
             preTranslationAction(node);
@@ -1208,8 +1235,8 @@ namespace SolToBoogie
                 }
                 if (!isTupleAssignment)
                 {
-                    if (usedTmpVar || !(lhs[0] is BoogieIdentifierExpr)) //bad bug: was && before!!
-                        currentStmtList.AddStatement(new BoogieAssignCmd(lhs[0], tmpVars[0]));
+                    if (usedTmpVar || !(lhs[0] is BoogieIdentifierExpr)) //bad bug: was && before!!  
+                        currentStmtList.AddStatement(new BoogieAssignCmd(lhs[0], tmpVars[0]));                       
                 } else
                 {
                     for (int i = 0; i < lhs.Count; ++i)
@@ -1234,6 +1261,9 @@ namespace SolToBoogie
                 switch (node.Operator)
                 {
                     case "=":
+                        // TODO: add mod for rhs
+                        // TODO: throw an exception in the helper, if lhs is a tuple
+                        // rhs = HelperModOper(rhs, node.LeftHandSide);
                         stmtList.AddStatement(new BoogieAssignCmd(lhs[0], rhs));
                         break;
                     case "+=":
@@ -1362,6 +1392,20 @@ namespace SolToBoogie
             if (typeDesc!=null && typeDesc.IsUint())
             {
                 var ge0 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, boogieExpr, new BoogieLiteralExpr(BigInteger.Zero));
+
+                if (context.TranslateFlags.UseModularArithmetic)
+                {
+                    var isUint = typeDesc.IsUintWSize(out uint sz);
+                    if (isUint)
+                    {
+                        VeriSolAssert(sz != 0, $"size of uint lhs is zero");
+                        BigInteger maxUIntValue = (BigInteger)Math.Pow(2, sz);
+                        var tmp = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.LT, boogieExpr, new BoogieLiteralExpr(maxUIntValue));
+                        ge0 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, ge0, tmp);
+                    }
+                }
+
+
                 var assumePositiveCmd = new BoogieAssumeCmd(ge0);
                 currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(assumePositiveCmd));
             }
@@ -1900,6 +1944,8 @@ namespace SolToBoogie
 
             if (functionName.Equals("assert"))
             {
+                // TODO:
+                //countNestedFuncCallsRelExprs--;
                 VeriSolAssert(node.Arguments.Count == 1);
                 BoogieExpr predicate = TranslateExpr(node.Arguments[0]);
                 BoogieAssertCmd assertCmd = new BoogieAssertCmd(predicate);
@@ -1907,6 +1953,8 @@ namespace SolToBoogie
             }
             else if (functionName.Equals("require"))
             {
+                // TODO:
+                //countNestedFuncCallsRelExprs--;
                 VeriSolAssert(node.Arguments.Count == 1 || node.Arguments.Count == 2);
                 BoogieExpr predicate = TranslateExpr(node.Arguments[0]);
 
@@ -2980,9 +3028,26 @@ namespace SolToBoogie
                     break;
             }
 
-            BoogieBinaryOperation binaryExpr = new BoogieBinaryOperation(op, leftExpr, rightExpr);
+            BoogieExpr binaryExpr = new BoogieBinaryOperation(op, leftExpr, rightExpr);
             currentExpr = binaryExpr;
 
+            if (context.TranslateFlags.UseModularArithmetic)
+            {
+                if (node.Operator == "+" || node.Operator == "-" || node.Operator == "*" || node.Operator == "/")
+                {
+                    if (node.LeftExpression.TypeDescriptions != null)
+                    {
+                        var isUint = node.LeftExpression.TypeDescriptions.IsUintWSize(out uint sz);
+                        if (isUint)
+                        {
+                            VeriSolAssert(sz != 0, $"size of uint lhs is zero");
+                            BigInteger maxUIntValue = (BigInteger)Math.Pow(2, sz);
+                            currentExpr = new BoogieFuncCallExpr("modBpl", new List<BoogieExpr>() { binaryExpr, new BoogieLiteralExpr(maxUIntValue) });
+                        }
+                    }
+                }
+            }
+            
             return false;
         }
 

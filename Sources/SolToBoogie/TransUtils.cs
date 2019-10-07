@@ -6,6 +6,7 @@ namespace SolToBoogie
     using System.Collections.Generic;
     using System.ComponentModel.DataAnnotations;
     using System.Diagnostics;
+    using System.Numerics;
     using System.Text;
     using System.Text.RegularExpressions;
     using BoogieAST;
@@ -19,10 +20,102 @@ namespace SolToBoogie
                 && typeDescription.TypeString.StartsWith("int", StringComparison.CurrentCulture);
         }
 
+        public static bool IsIntWSize(this TypeDescription typeDescription, out uint sz)
+        {
+            string typeStr = typeDescription.TypeString;
+            if (!typeStr.StartsWith("int", StringComparison.CurrentCulture))
+            {
+                //Console.WriteLine($"IsIntWSize: not int type: {typeStr}");
+                sz = uint.MaxValue;
+                return false;
+            }
+
+            //Console.WriteLine($"IsIntWSize: int type: {typeStr}");
+            try
+            {
+                if (typeStr.Equals("int") || (typeStr.Contains("const")))
+                {
+                    sz = 256;
+                }
+                else
+                {
+                    sz = uint.Parse(GetNumberFromEnd(typeStr));
+                }
+                //Console.WriteLine("int, intKK or int_const type, size is {0}", sz);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"VeriSol translation error in IsIntWSize: unknown intXX type: {e.Message}");
+                sz = uint.MaxValue;
+                return false;
+            }
+
+            return true;
+        }
         public static bool IsUint(this TypeDescription typeDescription)
         {
             return !typeDescription.IsDynamicArray() && !typeDescription.IsStaticArray()
                 && typeDescription.TypeString.StartsWith("uint", StringComparison.CurrentCulture);
+        }
+
+        public static string GetNumberFromEnd(string text)
+        {
+            int i = text.Length - 1;
+            while (i >= 0)
+            {
+                if (!char.IsNumber(text[i])) break;
+                i--;
+            }
+            return text.Substring(i + 1);
+        }
+        public static bool IsUintWSize(this TypeDescription typeDescription, out uint sz)
+        {
+            string typeStr = typeDescription.TypeString;
+            if (!typeStr.StartsWith("uint", StringComparison.CurrentCulture))
+            {
+                //Console.WriteLine($"IsUintWSize: not uint type: {typeStr}");
+                sz = uint.MaxValue;
+                return false;
+            }
+
+            //Console.WriteLine($"IsUintWSize: uint type: {typeStr}");
+            try
+            {
+                if (typeStr.Equals("uint") || (typeStr.Contains("const")))
+                {
+                    sz = 256;
+                }
+                else
+                {
+                    sz = uint.Parse(GetNumberFromEnd(typeStr));
+                }
+
+                //Console.WriteLine("uint, uintKK or uint_const type, size is {0}", sz);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"VeriSol translation error in IsUintWSize: unknown uintXX type: {e.Message}");
+                sz = uint.MaxValue;
+                return false;
+            }
+
+            return true;
+        }
+        
+        public static bool IsUintConst(this TypeDescription typeDescription, out uint sz)
+        {
+            var type = typeDescription.ToString();
+            if (type.StartsWith("int_const"))
+            {
+                //uint c = uint.Parse(GetNumberFromEnd(type));
+                sz = 256;
+                return sz >= 0 ? true: false;
+            }
+            else
+            {
+                sz = uint.MaxValue;
+                return false;
+            }
         }
 
         public static bool IsBool(this TypeDescription typeDescription)

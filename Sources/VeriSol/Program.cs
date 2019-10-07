@@ -112,6 +112,10 @@ namespace VeriSolRunner
             {
                 translatorFlags.NoDataValuesInfoFlag = true;
             }
+            if (args.Any(x => x.Equals("/useModularArithmetic")))
+            {
+                translatorFlags.UseModularArithmetic = true;
+            }
             if (args.Any(x => x.Equals("/omitUnsignedSemantics")))
             {
                 translatorFlags.NoUnsignedAssumesFlag = true;
@@ -161,7 +165,7 @@ namespace VeriSolRunner
             {
                 Debug.Assert(!translatorFlags.NoHarness &&
                     !translatorFlags.NoAxiomsFlag &&
-                    !translatorFlags.NoUnsignedAssumesFlag &&
+                    !translatorFlags.NoUnsignedAssumesFlag &&                   
                     !translatorFlags.NoDataValuesInfoFlag &&
                     !translatorFlags.NoSourceLineInfoFlag,
                     "Cannot perform verification when any of " +
@@ -180,9 +184,7 @@ namespace VeriSolRunner
             Console.WriteLine("VeriSol: Formal specification and verification tool for Solidity smart contracts");
             Console.WriteLine("Usage:  VeriSol <relative-path-to-solidity-file> <top-level-contractName> [options]");
             Console.WriteLine("options:");
-
             // Console.WriteLine("\n------ Controls input/output files --------\n");
-
             // Console.WriteLine("   /outBpl:<out.bpl>        persist the output Boogie file");
             // Console.WriteLine("   /bplPrelude:<foo.bpl>    any additional Boogie file to be added for axioms or user-supplied boogie invariants");
 
@@ -207,6 +209,7 @@ namespace VeriSolRunner
             Console.WriteLine("                           skip      // treated as noop");
             Console.WriteLine("                           havoc     // completely scramble the entire global state");
             Console.WriteLine("                           callback  // treated as a non-deterministic callback into any of the methods of any contract");
+            Console.WriteLine("   /useModularArithmetic   uses modular arithmetic for unsigned integers (experimental), default unbounded integers");
 
         }
 

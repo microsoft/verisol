@@ -281,7 +281,15 @@ namespace SolToBoogie
                 new BoogieIdentifierExpr("this"),
             };
             body.AddStatement(new BoogieCallCmd(callee, inputs, null));
-            return new BoogieWhileCmd(new BoogieLiteralExpr(true), body);
+
+            List<BoogiePredicateCmd> candidateInvs = new List<BoogiePredicateCmd>();
+            // add the contract invariant if present
+            if (contractInvariants.ContainsKey(contract.Name))
+            {
+                contractInvariants[contract.Name].ForEach(x => candidateInvs.Add(new BoogieLoopInvCmd(x)));
+            }
+
+            return new BoogieWhileCmd(new BoogieLiteralExpr(true), body, candidateInvs);
         }
 
         private List<BoogieVariable> RemoveThisFromVariables(List<BoogieVariable> variables)

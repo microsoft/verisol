@@ -2,7 +2,8 @@ pragma solidity ^0.5.0;
 
 import "./IERC20.sol";
 import "./SafeMath.sol";
-import "./Libraries/VeriSolContracts.sol";
+import "./Libraries/VeriSolContracts.sol"; //change 
+
 
 /**
  * A highly simplified Token to express basic specifications
@@ -15,9 +16,6 @@ contract ERC20 is IERC20 {
     mapping (address => uint256) private _balances;
     uint256 private _totalSupply;
 
-    function contractInvariant() private view {
-        VeriSol.ContractInvariant(_totalSupply == VeriSol.SumMapping(_balances));
-    }
 
     /**
      * A dummy constructor
@@ -55,8 +53,11 @@ contract ERC20 is IERC20 {
 
         _transfer(msg.sender, recipient, amount); 
 
-        assert ( msg.sender == recipient ||   _balances[msg.sender] == oldBalanceSender - amount);
-        
+        //assert (/* msg.sender == recipient ||  */ _balances[msg.sender] == oldBalanceSender - amount);
+        // the following assertion will fail due to overflow when not using safemath
+        //   to detect it,  run with /modularArith flag
+        //   to prove it, run ERC20 with /modularArith flag
+        assert (msg.sender == recipient || _balances[recipient] >= VeriSol.Old(_balances[recipient])); 
         return true;
     }
 
@@ -80,10 +81,8 @@ contract ERC20 is IERC20 {
         require(_balances[sender] >= amount);
 
         _balances[sender] = SafeMath.sub(_balances[sender], amount);
-        _balances[recipient] = _balances[recipient] +  amount; // 
-        // _balances[recipient] = SafeMath.add(_balances[recipient], amount);
-        // assert(_totalSupply == VeriSol.SumMapping(_balances)); // it helps prove module invariant
-        assert(_balances[recipient] >= VeriSol.Old(_balances[recipient]));
+			
+		_balances[recipient] = _balances[recipient] + amount; // nosafemath //_balances[recipient] = _balances[recipient].add(amount);
     }
 }
 
