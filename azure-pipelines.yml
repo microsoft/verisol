@@ -27,7 +27,7 @@ steps:
   inputs:
     command: custom
     custom: 'tool'
-    arguments: 'install --tool-path $(Build.SourcesDirectory)/Tools/ VeriSol --version 0.1.0-alpha --add-source $(Build.SourcesDirectory)/nupkg/'
+    arguments: 'install --tool-path $(Build.SourcesDirectory)/Tools/ VeriSol --version 0.1.1-alpha --add-source $(Build.SourcesDirectory)/nupkg/'
 
 - pwsh: |
    $(Build.SourcesDirectory)/Tools/VeriSol $(Build.SourcesDirectory)/Test/regressions/DAO-Sim-Buggy.sol Mallory /tryProof /tryRefutation:10 /printTransactionSequence
@@ -43,7 +43,7 @@ steps:
   inputs:
     command: custom
     custom: 'tool'
-    arguments: 'install --tool-path $(Build.SourcesDirectory)/Tools/ SolToBoogieTest --version 0.1.0-alpha --add-source $(Build.SourcesDirectory)/nupkg/'
+    arguments: 'install --tool-path $(Build.SourcesDirectory)/Tools/ SolToBoogieTest --version 0.1.1-alpha --add-source $(Build.SourcesDirectory)/nupkg/'
 
 - pwsh: '$(Build.SourcesDirectory)/Tools/VeriSolRegressionRunner $(Build.SourcesDirectory)/Test/'
   displayName: 'Run regression tests'

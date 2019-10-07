@@ -3,33 +3,48 @@
  > We use "\\" to denote path separators for Windows. Substitute theseparator "/" for Linux/OSX in instructions below. 
 
 
-## Dependencies
-### Dev/Runtime dependencies
+## Install
 - Install **.NET Core** (version **2.2**) for Windows/Linux/OSX from [here](https://dotnet.microsoft.com/download/dotnet-core/2.2#sdk-2.2.106)
 
-#### The following are dynamically installed at VeriSol runtime (the first time only) [No action needed]
+The following are dynamically installed at VeriSol runtime (the first time only) [No action needed]
 - [Solidity compiler](https://github.com/ethereum/solidity/releases/tag/v0.5.10)
 - [Z3 theorem prover](https://github.com/Z3Prover/z3/releases)
-- We use [corral](https://github.com/boogie-org/corral) and [boogie](https://github.com/boogie-org/boogie) verifiers, which are installed as dotnet cli tools
+- [Corral](https://github.com/boogie-org/corral) and [Boogie](https://github.com/boogie-org/boogie) verifiers, which are installed as dotnet cli tools
 
-## Build VeriSol
+Follow either **Nuget** package installation directly, or after building the **sources**.
 
-Perform the following commands from the root folder:
-
-    dotnet build Sources\VeriSol.sln
-
-## Install VeriSol as dotnet CLI tool
+#### Install from nuget.org
 Install to the **global** dotnet CLI tools cache so that you can run command  `VeriSol` from anywhere:
 ```
-dotnet tool install VeriSol --version 0.1.0-alpha --global --add-source %VERISOL_PATH%\nupkg\
+dotnet tool install VeriSol --version 0.1.1-alpha --global
 ```
 
 Or, Install to a **local** directory and access the command with full path `%Installed_Path%\VeriSol`
 ```
-dotnet tool install VeriSol --version 0.1.0-alpha --tool-path %Installed_Path%  --add-source %VERISOL_PATH%\nupkg\
+dotnet tool install VeriSol --version 0.1.1-alpha --tool-path %Installed_Path%
 ```
 
-#### Special instruction for MacOS/OSx
+#### Install from sources
+
+Perform the following set of commands:
+```
+git clone https://github.com/microsoft/verisol.git
+dotnet build Sources\VeriSol.sln
+```
+
+Let %VERISOL_PATH% be the root folder of the repository. 
+
+Install to the **global** dotnet CLI tools cache so that you can run command  `VeriSol` from anywhere:
+```
+dotnet tool install VeriSol --version 0.1.1-alpha --global --add-source %VERISOL_PATH%\nupkg\
+```
+
+Or, Install to a **local** directory and access the command with full path `%Installed_Path%\VeriSol`
+```
+dotnet tool install VeriSol --version 0.1.1-alpha --tool-path %Installed_Path%  --add-source %VERISOL_PATH%\nupkg\
+```
+
+### Special instruction for MacOS/OSx
 - Follow the instructions [here](https://solidity.readthedocs.io/en/v0.5.11/installing-solidity.html). Perform the following commands using [HomeBrew](http://brew.sh/) installer system: `brew update & brew upgrade & brew tap ethereum/ethereum & brew install solidity`. Homebrew will install `solc` binaries in the folder `/usr/local/Cellar/solidity/<version>/bin`. Copy the `solc` binary to the folder where VeriSol is installed (either dotnet global tools cache or local install directory specified above). 
 
 ## Running VeriSol
@@ -75,11 +90,12 @@ For the examples below, change directory to Test\regressions\ folder.
 ## VeriSol Code Contracts library
 The code contract library **VeriSolContracts.sol** is present [here](/Test/regressions/Libraries/VeriSolContracts.sol). This allows adding loop invariants, contract invariants for proofs, and extending the assertion language.  
 
-## Regression script
+## Regression script 
+First, follow the installation instructions from **sources**
 
 To run the regressions test, first install SolToBoogieTest
 ```
-dotnet tool install --global SolToBoogieTest --version 0.1.0-alpha --add-source %VERISOL_PATH%\nupkg\
+dotnet tool install --global SolToBoogieTest --version 0.1.1-alpha --add-source %VERISOL_PATH%\nupkg\
 ```
 
 Then run command `VeriSolRegressionRunner`
@@ -94,5 +110,7 @@ To run a subset of examples during testing, add an optional parameter to limit t
 ```
 VeriSolRegressionRunner %VERISOL_PATH%\Test\ [<prefix>]
 ```
+
+
 
 
