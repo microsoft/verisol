@@ -5,19 +5,16 @@ contract UintTest {
   
   uint8 z8;
   uint8 a8;
+  uint8 x;
+  uint8 y;
   
   constructor () public {
   }
   
-  function test(uint8 x8, uint8 y8) public {
-	 z8 = x8 - y8;
-	 require(x8 >= y8);  
-	 
-	 a8 = z8 + y8;
-	 require(a8 >= z8);
-	 
-	 // Fails with /useModularArithmetic (x8 = 304, y8 = 256);
-	 // passes otherwise
-	 assert(a8 == x8);
+  function test(uint8 x, uint8 y) public {
+	 require(x > 256 - 2);   
+	 a8 = x + 3;                                                                                                     
+     require(a8 >= x);        //fails with mod arithm; holds otherwise
+	 assert (false);          //not reachable with mod arithm; reachable otherwise
   }
 }
