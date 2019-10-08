@@ -1154,6 +1154,26 @@ namespace SolToBoogie
 
             return res;
         }
+
+        private BoogieExpr AddModuloOp(BoogieExpr expr, TypeDescription type)
+        {
+            //Console.WriteLine("In AddModuloOp");
+            if (context.TranslateFlags.UseModularArithmetic)
+            {
+                if (type != null)
+                {
+                    var isUint = type.IsUintWSize(out uint sz);
+                    if (isUint)
+                    {
+                        VeriSolAssert(sz != 0, $"size in AddModuloOp is zero");
+                        BigInteger maxUIntValue = (BigInteger)Math.Pow(2, sz);
+                        return (BoogieExpr)new BoogieFuncCallExpr("modBpl", new List<BoogieExpr>() { expr, new BoogieLiteralExpr(maxUIntValue) });
+                    }
+                }
+            }
+            return expr;
+        }
+
         public override bool Visit(Assignment node)
         {
             preTranslationAction(node);
@@ -1267,7 +1287,9 @@ namespace SolToBoogie
                         stmtList.AddStatement(new BoogieAssignCmd(lhs[0], rhs));
                         break;
                     case "+=":
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, lhs[0], rhs)));
+                        BoogieExpr assignedExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, lhs[0], rhs);
+                        assignedExpr = AddModuloOp(assignedExpr, node.LeftHandSide.TypeDescriptions);
+                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], assignedExpr));
                         break;
                     case "-=":
                         stmtList.AddStatement(new BoogieAssignCmd(lhs[0], new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, lhs[0], rhs)));
