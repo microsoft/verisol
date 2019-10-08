@@ -23,7 +23,7 @@ namespace VeriSolRunner.ExternalTools
             {
                 return this.settings.ExePathsWithinZip[OsName];
             }
-        }        
+        }
 
         private string ZipFileName
         {
@@ -111,7 +111,7 @@ namespace VeriSolRunner.ExternalTools
                 ExternalToolsManager.Log($"Error: {errorMsg}");
             }
 
-            ExternalToolsManager.Log(outputBinary);            
+            ExternalToolsManager.Log(outputBinary);
             p.StandardOutput.Close();
             p.StandardError.Close();
         }
@@ -146,6 +146,14 @@ namespace VeriSolRunner.ExternalTools
             ExternalToolsManager.Log($"Cleaning up");
             File.Delete(ZipFilePath);
             ExternalToolsManager.Log($"Done");
+        }
+
+        protected void CreateSymbolicLink()
+        {
+            if (OsName == "osx")
+            {
+                RunCmd("ln", $"-s {DownloadURL} {Command}");
+            }
         }
 
         private void PrepareTempDirectory()
