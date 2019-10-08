@@ -1,10 +1,10 @@
 # Install VeriSol
 
- > We use "\\" to denote path separators for Windows. Substitute theseparator "/" for Linux/OSX in instructions below. 
+ > We use "\\" to denote path separators for Windows. Substitute theseparator "/" for Linux/OSX in instructions below.
 
 - Install **.NET Core** (version **2.2**) for Windows/Linux/OSX from [here](https://dotnet.microsoft.com/download/dotnet-core/2.2#sdk-2.2.106)
 
-The following are dynamically installed at VeriSol runtime (the first time only) [Solidity compiler](https://github.com/ethereum/solidity/releases/tag/v0.5.10), [Z3 theorem prover](https://github.com/Z3Prover/z3/releases), [Corral](https://github.com/boogie-org/corral) and [Boogie](https://github.com/boogie-org/boogie) verifiers, the latter two are installed as dotnet cli tools.
+The following are dynamically installed at VeriSol runtime (the first time only) [Solidity compiler](https://github.com/ethereum/solidity/releases/tag/v0.5.10) (for Windows and Linux only), [Z3 theorem prover](https://github.com/Z3Prover/z3/releases), [Corral](https://github.com/boogie-org/corral) and [Boogie](https://github.com/boogie-org/boogie) verifiers, the latter two are installed as dotnet cli tools.
 
 Follow either **Nuget** package installation directly, or after building the **sources**.
 
@@ -33,21 +33,21 @@ dotnet tool install VeriSol --version 0.1.1-alpha --global --add-source %VERISOL
 ```
 
 ### Special instruction for MacOS/OSx (for both installation)
-- Follow the instructions [here](https://solidity.readthedocs.io/en/v0.5.11/installing-solidity.html). Perform the following commands using [HomeBrew](http://brew.sh/) installer system: `brew update & brew upgrade & brew tap ethereum/ethereum & brew install solidity`. Homebrew will install `solc` binaries in the folder `/usr/local/Cellar/solidity/<version>/bin`. Copy the `solc` binary to the folder where VeriSol is installed (run `where VeriSol` or `which VeriSol` to find the folder). 
+- Follow the instructions [here](https://solidity.readthedocs.io/en/v0.5.11/installing-solidity.html). Perform the following commands using [HomeBrew](http://brew.sh/) installer system: `brew update & brew upgrade & brew tap ethereum/ethereum & brew install solidity`. Homebrew will install `solc` binaries in the folder `/usr/local/Cellar/solidity/<version>/bin`.
 
 # Running VeriSol
 
-Assuming VeriSol is in the path, run 
+Assuming VeriSol is in the path, run
 
 `VeriSol`
 
-to view options and their meanings. 
+to view options and their meanings.
 
 A common usage:
 
 `VeriSol foo.sol Bar`
 
-where 
+where
    - *foo.sol* is the top-level Solidity file
    - *Bar* is the name of the top-level contract to analyze
 
@@ -76,9 +76,9 @@ For the examples below, change directory to Test\regressions\ folder.
 `VeriSol DAO-Sim-Fixed.sol Mallory`
 
 ## VeriSol Code Contracts library
-The code contract library **VeriSolContracts.sol** is present [here](/Test/regressions/Libraries/VeriSolContracts.sol). This allows adding loop invariants, contract invariants for proofs, and extending the assertion language.  
+The code contract library **VeriSolContracts.sol** is present [here](/Test/regressions/Libraries/VeriSolContracts.sol). This allows adding loop invariants, contract invariants for proofs, and extending the assertion language.
 
-# Regression script 
+# Regression script
 First, follow the installation instructions from **sources**
 
 To run the regressions test, first install SolToBoogieTest
@@ -91,7 +91,7 @@ Then run command `VeriSolRegressionRunner`
 VeriSolRegressionRunner %VERISOL_PATH%\Test\
 ```
 
-All regressions are expected to pass. 
+All regressions are expected to pass.
 
 To run a subset of examples during testing, add an optional parameter to limit the above run to a subset of tests that match a prefix string *<prefix>* (e.g. using Array will only run regresssions with Array in their prefix)
 
