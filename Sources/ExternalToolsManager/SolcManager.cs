@@ -12,9 +12,13 @@ namespace VeriSolRunner.ExternalTools
             {
                 DownloadAndUnZip();
             }
-            else if (OsName == "linux" || OsName == "osx")
+            else if (OsName == "linux")
             {
                 DownloadAndCopy();
+            }
+            else if (OsName == "osx")
+            {
+                CreateSymbolicLink();
             }
         }
     }
