@@ -10,7 +10,7 @@ namespace VeriSolRunner.ExternalTools
         {
             get
             {
-                return this.settings.CommandPath + this.settings.DependencyRelativePath;
+                return Path.Combine(this.settings.CommandPath, this.settings.DependencyRelativePath);
             }
         }
 
