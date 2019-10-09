@@ -1278,6 +1278,7 @@ namespace SolToBoogie
 
                 BoogieExpr rhs = TranslateExpr(node.RightHandSide);
                 BoogieStmtList stmtList = new BoogieStmtList();
+                BoogieExpr assignedExpr = new BoogieExpr();
                 switch (node.Operator)
                 {
                     case "=":
@@ -1287,18 +1288,24 @@ namespace SolToBoogie
                         stmtList.AddStatement(new BoogieAssignCmd(lhs[0], rhs));
                         break;
                     case "+=":
-                        BoogieExpr assignedExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, lhs[0], rhs);
+                        assignedExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, lhs[0], rhs);
                         assignedExpr = AddModuloOp(assignedExpr, node.LeftHandSide.TypeDescriptions);
                         stmtList.AddStatement(new BoogieAssignCmd(lhs[0], assignedExpr));
                         break;
                     case "-=":
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, lhs[0], rhs)));
+                        assignedExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, lhs[0], rhs);
+                        assignedExpr = AddModuloOp(assignedExpr, node.LeftHandSide.TypeDescriptions);
+                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], assignedExpr));
                         break;
                     case "*=":
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.MUL, lhs[0], rhs)));
+                        assignedExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.MUL, lhs[0], rhs);
+                        assignedExpr = AddModuloOp(assignedExpr, node.LeftHandSide.TypeDescriptions);
+                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], assignedExpr));
                         break;
                     case "/=":
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.DIV, lhs[0], rhs)));
+                        assignedExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.DIV, lhs[0], rhs);
+                        assignedExpr = AddModuloOp(assignedExpr, node.LeftHandSide.TypeDescriptions);
+                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], assignedExpr));
                         break;
                     default:
                         VeriSolAssert(false,  $"Unknown assignment operator: {node.Operator}");
