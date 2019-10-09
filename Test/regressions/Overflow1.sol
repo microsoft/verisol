@@ -4,7 +4,7 @@ pragma solidity >=0.4.24 <0.6.0;
 // The test passes with /useModularArithmetic option and fails otherwise
 contract UintTest {
   
-  uint8 z8;
+  int z;
   uint8 a8;
   uint8 x;
   uint8 y;
@@ -13,9 +13,11 @@ contract UintTest {
   }
   
   function test(uint8 x, uint8 y) public {
-	 require(x > 256 - 2);   
-	 a8 = x + 3;                                                                                                     
-     require(a8 >= x);        //fails with mod arithm; holds otherwise
-	 assert (false);          //not reachable with mod arithm; reachable otherwise
+     z = 256;
+     require(x > z - 2); 
+	 a8 = x;
+	 a8 += 3;
+	 require(a8 >= x);      //fails with mod arithm; holds otherwise
+     assert(false);         //not reachable with mod arithm; reachable otherwise
   }
 }
