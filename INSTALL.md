@@ -31,6 +31,9 @@ Install to the **global** dotnet CLI tools cache so that you can run command  `V
 ```
 dotnet tool install VeriSol --version 0.1.1-alpha --global --add-source %VERISOL_PATH%\nupkg\
 ```
+You may need to uninstall a previous version first. Use `dotnet tool uninstall --global VeriSol` first then. 
+
+(For VeriSol Developers) One can use VeriSol without performing the install steps directly as a dotnet Core dll. Run the following command instead `dotnet %VERISOL_PATH%\bin\Debug\VeriSol.dll`.
 
 ### Special instruction for MacOS/OSx (for both installation)
 - Follow the instructions [here](https://solidity.readthedocs.io/en/v0.5.11/installing-solidity.html). Perform the following commands using [HomeBrew](http://brew.sh/) installer system: `brew update & brew upgrade & brew tap ethereum/ethereum & brew install solidity`. Homebrew will install `solc` binaries in the folder `/usr/local/Cellar/solidity/<version>/bin`.

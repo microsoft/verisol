@@ -44,7 +44,7 @@
         {
             get
             {
-                return this.settings.CommandPath + this.ExeName;
+                return Path.Combine(this.settings.CommandPath, this.ExeName);
             }
         }
 
