@@ -1,6 +1,6 @@
 pragma solidity >=0.4.24 <0.6.0;
 
-// Test uint8 overflow with and without /useModularArithmetic option
+// Test uint8 overflow of "+=" with and without /useModularArithmetic option
 // The test passes with /useModularArithmetic option and fails otherwise
 contract UintTest {
   

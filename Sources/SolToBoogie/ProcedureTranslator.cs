@@ -1157,7 +1157,6 @@ namespace SolToBoogie
 
         private BoogieExpr AddModuloOp(BoogieExpr expr, TypeDescription type)
         {
-            //Console.WriteLine("In AddModuloOp");
             if (context.TranslateFlags.UseModularArithmetic)
             {
                 if (type != null)
@@ -1641,6 +1640,7 @@ namespace SolToBoogie
                 {
                     var oper = unaryOperation.Operator.Equals("++") ? BoogieBinaryOperation.Opcode.ADD : BoogieBinaryOperation.Opcode.SUB;
                     BoogieExpr rhs = new BoogieBinaryOperation(oper, lhs, new BoogieLiteralExpr(1));
+                    rhs = AddModuloOp(rhs, unaryOperation.SubExpression.TypeDescriptions);
                     BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, rhs);
                     currentStmtList.AddStatement(assignCmd);
                     //print the value
