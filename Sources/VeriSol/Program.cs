@@ -157,6 +157,11 @@ namespace VeriSolRunner
             {
                 translatorFlags.DoModSetAnalysis = true;
             }
+            if (args.Any(x => x.Equals("/removeScopeInVarName")))
+            {
+                // do not document this option, only needed for equivalence checking in Symdiff
+                translatorFlags.RemoveScopeInVarName = true;
+            }
 
             translatorFlags.PerformContractInferce = args.Any(x => x.StartsWith("/contractInfer")) ;
 
@@ -167,13 +172,15 @@ namespace VeriSolRunner
                     !translatorFlags.NoAxiomsFlag &&
                     !translatorFlags.NoUnsignedAssumesFlag &&                   
                     !translatorFlags.NoDataValuesInfoFlag &&
-                    !translatorFlags.NoSourceLineInfoFlag,
+                    !translatorFlags.NoSourceLineInfoFlag &&
+                    !translatorFlags.RemoveScopeInVarName,
                     "Cannot perform verification when any of " +
                     "/omitSourceLineInfo, " +
                     "/omitDataValuesInTrace, " +
                     "/omitAxioms, " +
                     "/omitHarness, " +
-                    "/omitUnsignedSemantics are specified");
+                    "/omitUnsignedSemantics, " + 
+                    "/removeScopeInVarName are specified");
             }
 
             printTransactionSeq = !args.Any(x => x.Equals("/noTxSeq"));

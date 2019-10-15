@@ -31,7 +31,7 @@ namespace SolToBoogie
             foreach (var parameter in modifier.Parameters.Parameters)
             {
                 string name = null;
-                name = TransUtils.GetCanonicalLocalVariableName(parameter);
+                name = TransUtils.GetCanonicalLocalVariableName(parameter, context);
                 BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(parameter.TypeName);
                 modifierInParams.Add(new BoogieFormalParam(new BoogieTypedIdent(name, type)));
             }
