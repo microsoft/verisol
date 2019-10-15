@@ -770,9 +770,10 @@ namespace SolToBoogie
             
             List<BoogieVariable> inParams = TransUtils.GetDefaultInParams();
             List<BoogieVariable> outParams = new List<BoogieVariable>();
-            List<BoogieAttribute> attributes = new List<BoogieAttribute>()
+            List<BoogieAttribute> attributes = new List<BoogieAttribute>();
+            if (context.TranslateFlags.GenerateInlineAttributes)
             {
-                new BoogieAttribute("inline", 1),
+                attributes.Add(new BoogieAttribute("inline", 1));
             };
             BoogieProcedure procedure = new BoogieProcedure(procName, inParams, outParams, attributes);
             context.Program.AddDeclaration(procedure);
@@ -849,9 +850,11 @@ namespace SolToBoogie
             {
                 new BoogieAttribute("constructor"),
                 new BoogieAttribute("public"),
-                new BoogieAttribute("inline", 1),
             };
-
+            if (context.TranslateFlags.GenerateInlineAttributes)
+            {
+                attributes.Add(new BoogieAttribute("inline", 1));
+            };
             BoogieProcedure procedure = new BoogieProcedure(procName, inParams, outParams, attributes);
             context.Program.AddDeclaration(procedure);
 

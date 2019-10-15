@@ -182,7 +182,7 @@ namespace VeriSolRunner
                     "/omitUnsignedSemantics, " + 
                     "/removeScopeInVarName are specified");
             }
-
+            
             printTransactionSeq = !args.Any(x => x.Equals("/noTxSeq"));
         }
 

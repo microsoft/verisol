@@ -32,9 +32,10 @@ namespace SolToBoogie
             };
             List<BoogieVariable> outParams = new List<BoogieVariable>();
 
-            List<BoogieAttribute> attributes = new List<BoogieAttribute>()
+            List<BoogieAttribute> attributes = new List<BoogieAttribute>();
+            if (context.TranslateFlags.GenerateInlineAttributes)
             {
-                new BoogieAttribute("inline", 1),
+                attributes.Add(new BoogieAttribute("inline", 1));
             };
             var procName = "FallbackDispatch";
             BoogieProcedure procedure = new BoogieProcedure(procName, inParams, outParams, attributes);
