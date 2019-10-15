@@ -277,6 +277,9 @@ namespace SolToBoogie
 
         private void GenerateBoogieRecord(string typeName, BoogieType btype)
         {
+            if (context.TranslateFlags.NoDataValuesInfoFlag)
+                return; 
+
             // generate the internal one without base constructors
             string procName = "boogie_si_record_sol2Bpl_" + typeName;
             var inVar = new BoogieFormalParam(new BoogieTypedIdent("x", btype));
