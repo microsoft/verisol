@@ -9,10 +9,6 @@ namespace SolToBoogie
     using System.Globalization;
     using System.Linq;
     using System.Numerics;
-    using System.Linq;
-    using System.Reflection.Metadata;
-    using System.Security.Cryptography.X509Certificates;
-    using System.Text;
     using BoogieAST;
     using SolidityAST;
 
@@ -1004,7 +1000,7 @@ namespace SolToBoogie
                 }
                 else
                 {
-                    name = TransUtils.GetCanonicalLocalVariableName(parameter);
+                    name = TransUtils.GetCanonicalLocalVariableName(parameter, context);
                 }
                 BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(parameter.TypeName);
                 var boogieParam = new BoogieFormalParam(new BoogieTypedIdent(name, type));
@@ -1087,7 +1083,7 @@ namespace SolToBoogie
             preTranslationAction(node);
             foreach (VariableDeclaration varDecl in node.Declarations)
             {
-                string name = TransUtils.GetCanonicalLocalVariableName(varDecl);
+                string name = TransUtils.GetCanonicalLocalVariableName(varDecl, context);
                 BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(varDecl.TypeName);
                 var boogieVariable = new BoogieLocalVariable(new BoogieTypedIdent(name, type));
                  boogieToLocalVarsMap[currentBoogieProc].Add(boogieVariable);
@@ -1120,7 +1116,7 @@ namespace SolToBoogie
                 List<BoogieIdentifierExpr> varsToHavoc = new List<BoogieIdentifierExpr>();
                 foreach (VariableDeclaration varDecl in node.Declarations)
                 {
-                    string varIdent = TransUtils.GetCanonicalLocalVariableName(varDecl);
+                    string varIdent = TransUtils.GetCanonicalLocalVariableName(varDecl, context);
                     varsToHavoc.Add(new BoogieIdentifierExpr(varIdent));
                 }
                 BoogieHavocCmd havocCmd = new BoogieHavocCmd(varsToHavoc);
@@ -1354,7 +1350,7 @@ namespace SolToBoogie
                     {
                         string retVarName = String.IsNullOrEmpty(retVarDecl.Name) ?
                             $"__ret_{retParamCount}_" :
-                            TransUtils.GetCanonicalLocalVariableName(retVarDecl);
+                            TransUtils.GetCanonicalLocalVariableName(retVarDecl, context);
                         BoogieIdentifierExpr retVar = new BoogieIdentifierExpr(retVarName);
                         BoogieAssignCmd assignCmd = new BoogieAssignCmd(retVar, bTupleExpr.Arguments[retParamCount++]);
                         currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(assignCmd)); //TODO: simultaneous updates
@@ -1366,7 +1362,7 @@ namespace SolToBoogie
                     var retVarDecl = currentFunction.ReturnParameters.Parameters[0];
                     string retVarName = String.IsNullOrEmpty(retVarDecl.Name) ?
                         $"__ret_{retParamCount++}_" :
-                        TransUtils.GetCanonicalLocalVariableName(retVarDecl);
+                        TransUtils.GetCanonicalLocalVariableName(retVarDecl, context);
                     BoogieIdentifierExpr retVar = new BoogieIdentifierExpr(retVarName);
                     BoogieAssignCmd assignCmd = new BoogieAssignCmd(retVar, retExpr);
                     currentStmtList.AppendStmtList(BoogieStmtList.MakeSingletonStmtList(assignCmd)); //TODO: simultaneous updates
@@ -1795,7 +1791,7 @@ namespace SolToBoogie
                 }
                 else
                 {
-                    string name = TransUtils.GetCanonicalLocalVariableName(varDecl);
+                    string name = TransUtils.GetCanonicalLocalVariableName(varDecl, context);
                     BoogieIdentifierExpr identifier = new BoogieIdentifierExpr(name);
                     currentExpr = identifier;
                 }
