@@ -1,12 +1,10 @@
 # Install VeriSol
 
- > We use "\\" to denote path separators for Windows. Substitute theseparator "/" for Linux/OSX in instructions below.
-
 - Install **.NET Core** (version **2.2**) for Windows/Linux/OSX from [here](https://dotnet.microsoft.com/download/dotnet-core/2.2#sdk-2.2.106)
 
 The following are dynamically installed at VeriSol runtime (the first time only) [Solidity compiler](https://github.com/ethereum/solidity/releases/tag/v0.5.10) (for Windows and Linux only), [Z3 theorem prover](https://github.com/Z3Prover/z3/releases), [Corral](https://github.com/boogie-org/corral) and [Boogie](https://github.com/boogie-org/boogie) verifiers, the latter two are installed as dotnet cli tools.
 
-Follow either **Nuget** package installation directly, or after building the **sources**.
+- Follow either **Nuget** package installation directly, or after building the **sources**.
 
 ### Install from nuget.org
 Install to the **global** dotnet CLI tools cache so that you can run command  `VeriSol` from anywhere:
@@ -29,11 +27,11 @@ dotnet build Sources\VeriSol.sln
 
 Install to the **global** dotnet CLI tools cache so that you can run command  `VeriSol` from anywhere:
 ```
-dotnet tool install VeriSol --version 0.1.1-alpha --global --add-source %VERISOL_PATH%\nupkg\
+dotnet tool install VeriSol --version 0.1.1-alpha --global --add-source %VERISOL_PATH%/nupkg/
 ```
 You may need to uninstall a previous version first. Use `dotnet tool uninstall --global VeriSol` first then. 
 
-(For VeriSol Developers) One can use VeriSol without performing the install steps directly as a dotnet Core dll. Run the following command instead `dotnet %VERISOL_PATH%\bin\Debug\VeriSol.dll`.
+**For VeriSol Developers** One can use VeriSol without performing the install steps directly as a dotnet Core dll. Run the following command instead `dotnet %VERISOL_PATH%/bin/Debug/VeriSol.dll`.
 
 ### Special instruction for MacOS/OSx (for both installation)
 - Follow the instructions [here](https://solidity.readthedocs.io/en/v0.5.11/installing-solidity.html). Perform the following commands using [HomeBrew](http://brew.sh/) installer system: `brew update & brew upgrade & brew tap ethereum/ethereum & brew install solidity`. Homebrew will install `solc` binaries in the folder `/usr/local/Cellar/solidity/<version>/bin`.
@@ -86,12 +84,12 @@ First, follow the installation instructions from **sources**
 
 To run the regressions test, first install SolToBoogieTest
 ```
-dotnet tool install --global SolToBoogieTest --version 0.1.1-alpha --add-source %VERISOL_PATH%\nupkg\
+dotnet tool install --global SolToBoogieTest --version 0.1.1-alpha --add-source %VERISOL_PATH%/nupkg/
 ```
 
 Then run command `VeriSolRegressionRunner`
 ```
-VeriSolRegressionRunner %VERISOL_PATH%\Test\
+VeriSolRegressionRunner %VERISOL_PATH%/Test/
 ```
 
 All regressions are expected to pass.
@@ -99,7 +97,7 @@ All regressions are expected to pass.
 To run a subset of examples during testing, add an optional parameter to limit the above run to a subset of tests that match a prefix string *<prefix>* (e.g. using Array will only run regresssions with Array in their prefix)
 
 ```
-VeriSolRegressionRunner %VERISOL_PATH%\Test\ [<prefix>]
+VeriSolRegressionRunner %VERISOL_PATH%/Test/ [<prefix>]
 ```
 
 
