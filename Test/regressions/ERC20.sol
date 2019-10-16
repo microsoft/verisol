@@ -231,4 +231,10 @@ contract ERC20 is IERC20 {
         _burn(account, amount);
         _approve(account, msg.sender, _allowances[account][msg.sender].sub(amount));
     }
+
+     function contractInvariant() private view {
+         VeriSol.ContractInvariant(_totalSupply == VeriSol.SumMapping(_balances));
+     }
+
+
 }
