@@ -314,8 +314,12 @@ namespace SolToBoogie
                 ContractToEventsMap[contract] = new HashSet<EventDefinition>();
             }
 
-            Debug.Assert(!ContractToEventsMap[contract].Contains(eventDef), $"Duplicated event definition: {eventDef.Name} in {contract.Name}");
-            ContractToEventsMap[contract].Add(eventDef);
+            //Debug.Assert(!ContractToEventsMap[contract].Contains(eventDef), $"Duplicated event definition: {eventDef.Name} in {contract.Name}");
+            // For the case A <: B <: C and A has event E, it will be added to B and then to A through both B and C
+            if (!ContractToEventsMap[contract].Contains(eventDef))
+            {
+                ContractToEventsMap[contract].Add(eventDef);
+            }
         }
 
         public bool HasEventNameInContract(ContractDefinition contract, string eventName)
