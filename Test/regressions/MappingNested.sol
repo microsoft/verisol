@@ -8,7 +8,7 @@ contract MappingNested {
   
 
     constructor() public {
-        assert(m[0][22] == 0); 
+        // assert(m[0][22] == 0); 
 
         m[10][20] = 11;
         m[20][10] = 21;
