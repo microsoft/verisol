@@ -159,7 +159,7 @@ contract ERC20 is IERC20 {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
 
-        _balances[sender] = _balances[sender].sub(amount);
+        _balances[sender] = _balances[sender] - amount; // _balances[sender].sub(amount); // BUG
         _balances[recipient] = _balances[recipient].add(amount);
         emit Transfer(sender, recipient, amount);
     }
@@ -231,4 +231,10 @@ contract ERC20 is IERC20 {
         _burn(account, amount);
         _approve(account, msg.sender, _allowances[account][msg.sender].sub(amount));
     }
+
+     function contractInvariant() private view {
+         VeriSol.ContractInvariant(_totalSupply == VeriSol.SumMapping(_balances));
+     }
+
+
 }

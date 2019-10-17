@@ -527,58 +527,7 @@ namespace SolToBoogie
             {
                 if (varDecl.TypeName is ElementaryTypeName elementaryType)
                 {
-                    if (elementaryType.TypeDescriptions.TypeString.Equals("address") || elementaryType.TypeDescriptions.TypeString.Equals("address payable"))
-                    {
-                        string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
-                        BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
-                        BoogieExpr rhs = new BoogieIdentifierExpr("null");
-                        if (varDecl.Value != null)
-                        {
-                            VeriSolAssert(varDecl.Value is FunctionCall, $"We only support initialization of hte form address x = address(...);, found {varDecl.Value.ToString()}");
-                            rhs = TranslateExpr(varDecl.Value);
-                        }
-                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, rhs);
-                        currentStmtList.AddStatement(assignCmd);
-                    }
-                    else if (elementaryType.TypeDescriptions.TypeString.Equals("bool"))
-                    {
-                        string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
-                        BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
-                        bool value = false;
-                        if (varDecl.Value != null && varDecl.Value.ToString() == "true")
-                        {
-                            value = true;
-                        }
-                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(value));
-                        currentStmtList.AddStatement(assignCmd);
-                    }
-                    else if (elementaryType.TypeDescriptions.TypeString.Equals("string")) 
-                    {
-                        string x = "";
-                        if (varDecl.Value != null)
-                        {
-                            x = varDecl.Value.ToString();
-                            x=x.Substring(1, x.Length - 2);  //to strip off the single quotations
-                        }
-                        int hashCode = x.GetHashCode();
-                        BigInteger num = new BigInteger(hashCode);
-                        string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
-                        BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
-                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(num));
-                        currentStmtList.AddStatement(assignCmd);
-                    }
-                    else //it is integer valued
-                    {
-                        string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
-                        BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
-                        var bigInt = (BoogieExpr) new BoogieLiteralExpr(BigInteger.Zero);
-                        if (varDecl.Value!=null)
-                        {
-                            bigInt = TranslateExpr(varDecl.Value); //TODO: any complex expression will crash
-                        }
-                        BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, bigInt);
-                        currentStmtList.AddStatement(assignCmd);
-                    }
+                    GenerateInitializationForElementaryTypes(varDecl, elementaryType);
                 }
             }
 
@@ -587,127 +536,11 @@ namespace SolToBoogie
             {
                 if (varDecl.TypeName is Mapping mapping)
                 {
-                    BoogieMapSelect lhsMap = CreateDistinctArrayMappingAddress(currentStmtList, varDecl);
-
-                    //nested arrays (only 1 level for now)
-                    if (mapping.ValueType is ArrayTypeName array)
-                    {
-                        Console.WriteLine($"Warning: A mapping with nested array {varDecl.Name} of valuetype {mapping.ValueType.ToString()}");
-                        currentStmtList.AddStatement(new BoogieCommentCmd($"Initialize length of 1-level nested array in {varDecl.Name}"));
-
-
-                        // Issue with inferring Array[] expressions in GetBoogieTypesFromMapping (TODO: use GetBoogieTypesFromMapping after fix)
-                        var mapKeyType = MapArrayHelper.InferExprTypeFromTypeString(mapping.KeyType.TypeDescriptions.ToString());
-                        string mapName = MapArrayHelper.GetMemoryMapName(mapKeyType, BoogieType.Ref);
-                        string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
-                        var varExpr = new BoogieIdentifierExpr(varName);
-                        //lhs is Mem_t_ref[x[this]]
-                        var lhs0 = new BoogieMapSelect(new BoogieIdentifierExpr(mapName),
-                            new BoogieMapSelect(varExpr, new BoogieIdentifierExpr("this")));
-                        var qVar1 = QVarGenerator.NewQVar(0, 0);
-                        //lhs is Mem_t_ref[x[this]][i]
-                        var lhs1 = new BoogieMapSelect(lhs0, qVar1);
-                        //Length[Mem_t_ref[x[this]][i]] == 0
-                        var bodyExpr = new BoogieBinaryOperation(
-                            BoogieBinaryOperation.Opcode.EQ,
-                            new BoogieMapSelect(new BoogieIdentifierExpr("Length"), lhs1),
-                            new BoogieLiteralExpr(0));
-                        var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1 }, new List<BoogieType>() { mapKeyType}, bodyExpr);
-                        currentStmtList.AddStatement(new BoogieAssumeCmd(qExpr));
-
-                        //Nested arrays are disjoint and disjoint from other addresses
-                        BoogieExpr allocExpr = new BoogieMapSelect(new BoogieIdentifierExpr("Alloc"), lhs1);
-                        var negAllocExpr = new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, allocExpr);
-                        var negAllocQExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1 }, new List<BoogieType>() { mapKeyType }, negAllocExpr);
-                        //assume forall i !Alloc[M_t_ref[x[this]][i]]
-                        currentStmtList.AddStatement(new BoogieAssumeCmd(negAllocQExpr));
-                        //call HavocAllocMany()
-                        currentStmtList.AddStatement(new BoogieCallCmd("HavocAllocMany", new List<BoogieExpr>(), new List<BoogieIdentifierExpr>()));
-                        //assume forall i. Alloc[M_t_ref[x[this]][i]]
-                        var allocQExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1 }, new List<BoogieType>() { mapKeyType }, allocExpr);
-                        currentStmtList.AddStatement(new BoogieAssumeCmd(allocQExpr));
-
-                        //Two different keys/indices within the same array are distinct
-                        //forall i, j: i != j ==> M_t_ref[x[this]][i] != M_t_ref[x[this]][j]
-                        var qVar2 = QVarGenerator.NewQVar(0, 1);
-                        var lhs2 = new BoogieMapSelect(lhs0, qVar2);
-                        var distinctQVars = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, qVar1, qVar2);
-                        var distinctLhs = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, lhs1, lhs2);
-                        var triggers = new List<BoogieExpr>() { lhs1, lhs2};
-
-                        var neqExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, distinctQVars, distinctLhs);
-                        var distinctQExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1, qVar2 }, new List<BoogieType>() { mapKeyType, mapKeyType }, neqExpr, triggers);
-                        currentStmtList.AddStatement(new BoogieAssumeCmd(distinctQExpr));
-                    }
-                    else if (mapping.ValueType is UserDefinedTypeName userTypeName ||
-                        mapping.ValueType.ToString().Equals("address") ||
-                        mapping.ValueType.ToString().Equals("address payable") ||
-                        mapping.ValueType.ToString().StartsWith("bytes")
-                        )
-                    {
-                        currentStmtList.AddStatement(new BoogieCommentCmd($"Initialize address/contract mapping {varDecl.Name}"));
-
-                        BoogieType mapKeyType;
-                        BoogieMapSelect lhs;
-                        GetBoogieTypesFromMapping(varDecl, mapping, out mapKeyType, out lhs);
-                        var qVar = QVarGenerator.NewQVar(0, 0);
-                        BoogieExpr zeroExpr = new BoogieIdentifierExpr("null");
-
-                        if (mapping.ValueType.ToString().StartsWith("bytes"))
-                            zeroExpr = new BoogieLiteralExpr(BigInteger.Zero);
-
-                        var bodyExpr = new BoogieBinaryOperation(
-                            BoogieBinaryOperation.Opcode.EQ,
-                            new BoogieMapSelect(lhs, qVar),
-                            zeroExpr);
-                        var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar }, new List<BoogieType>() { mapKeyType }, bodyExpr);
-                        currentStmtList.AddStatement(new BoogieAssumeCmd(qExpr));
-                    }
-                    else if (mapping.ValueType.ToString().Equals("bool"))
-                    {
-                        currentStmtList.AddStatement(new BoogieCommentCmd($"Initialize Boolean mapping {varDecl.Name}"));
-
-                        BoogieType mapKeyType;
-                        BoogieMapSelect lhs;
-                        GetBoogieTypesFromMapping(varDecl, mapping, out mapKeyType, out lhs);
-                        var qVar = QVarGenerator.NewQVar(0, 0);
-                        var bodyExpr = new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, new BoogieMapSelect(lhs, qVar));
-                        var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar }, new List<BoogieType>() { mapKeyType }, bodyExpr);
-                        currentStmtList.AddStatement(new BoogieAssumeCmd(qExpr));
-                    }
-                    // TODO: Cleanup, StartsWith("uint") can include uint[12] as well. 
-                    else if (mapping.ValueType.ToString().StartsWith("uint") ||
-                        mapping.ValueType.ToString().StartsWith("int"))
-                    {
-                        currentStmtList.AddStatement(new BoogieCommentCmd($"Initialize Integer mapping {varDecl.Name}"));
-
-                        BoogieType mapKeyType;
-                        BoogieMapSelect lhs;
-                        GetBoogieTypesFromMapping(varDecl, mapping, out mapKeyType, out lhs);
-                        var qVar = QVarGenerator.NewQVar(0, 0);
-                        var bodyExpr = new BoogieBinaryOperation(
-                            BoogieBinaryOperation.Opcode.EQ, 
-                            new BoogieMapSelect(lhs, qVar),
-                            new BoogieLiteralExpr(0));
-                        var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar }, new List<BoogieType>() { mapKeyType }, bodyExpr);
-                        currentStmtList.AddStatement(new BoogieAssumeCmd(qExpr));
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Warning: A mapping with complex value type {varDecl.Name} of valuetype {mapping.ValueType.ToString()}");
-                    }
-
+                    GenerateInitializationForMappingStateVar(varDecl, mapping);
                 }
                 else if (varDecl.TypeName is ArrayTypeName array)
                 {
-                    BoogieMapSelect lhsMap = CreateDistinctArrayMappingAddress(currentStmtList, varDecl);
-
-                    // lets also initialize the array Lengths (only for Arrays declared in this class)
-                    var lengthMapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("Length"), lhsMap);
-                    var lengthExpr = array.Length == null ? new BoogieLiteralExpr(BigInteger.Zero) : TranslateExpr(array.Length);
-                    // var lengthEqualsZero = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lengthMapSelect, new BoogieLiteralExpr(0));
-                    var lengthConstraint = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lengthMapSelect, lengthExpr);
-                    currentStmtList.AddStatement(new BoogieAssumeCmd(lengthConstraint));
+                    GenerateInitializationForArrayStateVar(varDecl, array);
                 }
             }
 
@@ -717,6 +550,196 @@ namespace SolToBoogie
             // TODO: add the initializations outside of constructors
 
             return currentStmtList;
+        }
+
+        private void GenerateInitializationForArrayStateVar(VariableDeclaration varDecl, ArrayTypeName array)
+        {
+            BoogieMapSelect lhsMap = CreateDistinctArrayMappingAddress(currentStmtList, varDecl);
+
+            // lets also initialize the array Lengths (only for Arrays declared in this class)
+            var lengthMapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("Length"), lhsMap);
+            var lengthExpr = array.Length == null ? new BoogieLiteralExpr(BigInteger.Zero) : TranslateExpr(array.Length);
+            // var lengthEqualsZero = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lengthMapSelect, new BoogieLiteralExpr(0));
+            var lengthConstraint = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lengthMapSelect, lengthExpr);
+            currentStmtList.AddStatement(new BoogieAssumeCmd(lengthConstraint));
+        }
+
+        private void GenerateInitializationForMappingStateVar(VariableDeclaration varDecl, Mapping mapping)
+        {
+            BoogieMapSelect lhsMap = CreateDistinctArrayMappingAddress(currentStmtList, varDecl);
+
+            //nested arrays (only 1 level for now)
+            if (mapping.ValueType is ArrayTypeName array)
+            {
+                Console.WriteLine($"Warning: A mapping with nested array {varDecl.Name} of valuetype {mapping.ValueType.ToString()}");
+
+                InitializeNestedArrayMappingStateVar(varDecl, mapping);
+            }
+            else if (mapping.ValueType is Mapping mappingNested)
+            {
+                InitializeNestedArrayMappingStateVar(varDecl, mapping);
+                // TODO: add the initialization of m[i][j]
+            }
+            else if (mapping.ValueType is UserDefinedTypeName userTypeName ||
+                mapping.ValueType.ToString().Equals("address") ||
+                mapping.ValueType.ToString().Equals("address payable") ||
+                mapping.ValueType.ToString().StartsWith("bytes")
+                )
+            {
+                currentStmtList.AddStatement(new BoogieCommentCmd($"Initialize address/contract mapping {varDecl.Name}"));
+
+                BoogieType mapKeyType;
+                BoogieMapSelect lhs;
+                GetBoogieTypesFromMapping(varDecl, mapping, out mapKeyType, out lhs);
+                var qVar = QVarGenerator.NewQVar(0, 0);
+                BoogieExpr zeroExpr = new BoogieIdentifierExpr("null");
+
+                if (mapping.ValueType.ToString().StartsWith("bytes"))
+                    zeroExpr = new BoogieLiteralExpr(BigInteger.Zero);
+
+                var bodyExpr = new BoogieBinaryOperation(
+                    BoogieBinaryOperation.Opcode.EQ,
+                    new BoogieMapSelect(lhs, qVar),
+                    zeroExpr);
+                var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar }, new List<BoogieType>() { mapKeyType }, bodyExpr);
+                currentStmtList.AddStatement(new BoogieAssumeCmd(qExpr));
+            }
+            else if (mapping.ValueType.ToString().Equals("bool"))
+            {
+                currentStmtList.AddStatement(new BoogieCommentCmd($"Initialize Boolean mapping {varDecl.Name}"));
+
+                BoogieType mapKeyType;
+                BoogieMapSelect lhs;
+                GetBoogieTypesFromMapping(varDecl, mapping, out mapKeyType, out lhs);
+                var qVar = QVarGenerator.NewQVar(0, 0);
+                var bodyExpr = new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, new BoogieMapSelect(lhs, qVar));
+                var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar }, new List<BoogieType>() { mapKeyType }, bodyExpr);
+                currentStmtList.AddStatement(new BoogieAssumeCmd(qExpr));
+            }
+            // TODO: Cleanup, StartsWith("uint") can include uint[12] as well. 
+            else if (mapping.ValueType.ToString().StartsWith("uint") ||
+                mapping.ValueType.ToString().StartsWith("int"))
+            {
+                currentStmtList.AddStatement(new BoogieCommentCmd($"Initialize Integer mapping {varDecl.Name}"));
+
+                BoogieType mapKeyType;
+                BoogieMapSelect lhs;
+                GetBoogieTypesFromMapping(varDecl, mapping, out mapKeyType, out lhs);
+                var qVar = QVarGenerator.NewQVar(0, 0);
+                var bodyExpr = new BoogieBinaryOperation(
+                    BoogieBinaryOperation.Opcode.EQ,
+                    new BoogieMapSelect(lhs, qVar),
+                    new BoogieLiteralExpr(0));
+                var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar }, new List<BoogieType>() { mapKeyType }, bodyExpr);
+                currentStmtList.AddStatement(new BoogieAssumeCmd(qExpr));
+            }
+            else
+            {
+                Console.WriteLine($"Warning: A mapping with complex value type {varDecl.Name} of valuetype {mapping.ValueType.ToString()}");
+            }
+        }
+
+        private void GenerateInitializationForElementaryTypes(VariableDeclaration varDecl, ElementaryTypeName elementaryType)
+        {
+            if (elementaryType.TypeDescriptions.TypeString.Equals("address") || elementaryType.TypeDescriptions.TypeString.Equals("address payable"))
+            {
+                string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
+                BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
+                BoogieExpr rhs = new BoogieIdentifierExpr("null");
+                if (varDecl.Value != null)
+                {
+                    VeriSolAssert(varDecl.Value is FunctionCall, $"We only support initialization of hte form address x = address(...);, found {varDecl.Value.ToString()}");
+                    rhs = TranslateExpr(varDecl.Value);
+                }
+                BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, rhs);
+                currentStmtList.AddStatement(assignCmd);
+            }
+            else if (elementaryType.TypeDescriptions.TypeString.Equals("bool"))
+            {
+                string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
+                BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
+                bool value = false;
+                if (varDecl.Value != null && varDecl.Value.ToString() == "true")
+                {
+                    value = true;
+                }
+                BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(value));
+                currentStmtList.AddStatement(assignCmd);
+            }
+            else if (elementaryType.TypeDescriptions.TypeString.Equals("string"))
+            {
+                string x = "";
+                if (varDecl.Value != null)
+                {
+                    x = varDecl.Value.ToString();
+                    x = x.Substring(1, x.Length - 2);  //to strip off the single quotations
+                }
+                int hashCode = x.GetHashCode();
+                BigInteger num = new BigInteger(hashCode);
+                string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
+                BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
+                BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, new BoogieLiteralExpr(num));
+                currentStmtList.AddStatement(assignCmd);
+            }
+            else //it is integer valued
+            {
+                string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
+                BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
+                var bigInt = (BoogieExpr)new BoogieLiteralExpr(BigInteger.Zero);
+                if (varDecl.Value != null)
+                {
+                    bigInt = TranslateExpr(varDecl.Value); //TODO: any complex expression will crash
+                }
+                BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, bigInt);
+                currentStmtList.AddStatement(assignCmd);
+            }
+        }
+
+        private void InitializeNestedArrayMappingStateVar(VariableDeclaration varDecl, Mapping mapping)
+        {
+            currentStmtList.AddStatement(new BoogieCommentCmd($"Initialize length of 1-level nested array in {varDecl.Name}"));
+            // Issue with inferring Array[] expressions in GetBoogieTypesFromMapping (TODO: use GetBoogieTypesFromMapping after fix)
+            var mapKeyType = MapArrayHelper.InferExprTypeFromTypeString(mapping.KeyType.TypeDescriptions.ToString());
+            string mapName = MapArrayHelper.GetMemoryMapName(mapKeyType, BoogieType.Ref);
+            string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
+            var varExpr = new BoogieIdentifierExpr(varName);
+            //lhs is Mem_t_ref[x[this]]
+            var lhs0 = new BoogieMapSelect(new BoogieIdentifierExpr(mapName),
+                new BoogieMapSelect(varExpr, new BoogieIdentifierExpr("this")));
+            var qVar1 = QVarGenerator.NewQVar(0, 0);
+            //lhs is Mem_t_ref[x[this]][i]
+            var lhs1 = new BoogieMapSelect(lhs0, qVar1);
+            //Length[Mem_t_ref[x[this]][i]] == 0
+            var bodyExpr = new BoogieBinaryOperation(
+                BoogieBinaryOperation.Opcode.EQ,
+                new BoogieMapSelect(new BoogieIdentifierExpr("Length"), lhs1),
+                new BoogieLiteralExpr(0));
+            var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1 }, new List<BoogieType>() { mapKeyType }, bodyExpr);
+            currentStmtList.AddStatement(new BoogieAssumeCmd(qExpr));
+
+            //Nested arrays are disjoint and disjoint from other addresses
+            BoogieExpr allocExpr = new BoogieMapSelect(new BoogieIdentifierExpr("Alloc"), lhs1);
+            var negAllocExpr = new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, allocExpr);
+            var negAllocQExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1 }, new List<BoogieType>() { mapKeyType }, negAllocExpr);
+            //assume forall i !Alloc[M_t_ref[x[this]][i]]
+            currentStmtList.AddStatement(new BoogieAssumeCmd(negAllocQExpr));
+            //call HavocAllocMany()
+            currentStmtList.AddStatement(new BoogieCallCmd("HavocAllocMany", new List<BoogieExpr>(), new List<BoogieIdentifierExpr>()));
+            //assume forall i. Alloc[M_t_ref[x[this]][i]]
+            var allocQExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1 }, new List<BoogieType>() { mapKeyType }, allocExpr);
+            currentStmtList.AddStatement(new BoogieAssumeCmd(allocQExpr));
+
+            //Two different keys/indices within the same array are distinct
+            //forall i, j: i != j ==> M_t_ref[x[this]][i] != M_t_ref[x[this]][j]
+            var qVar2 = QVarGenerator.NewQVar(0, 1);
+            var lhs2 = new BoogieMapSelect(lhs0, qVar2);
+            var distinctQVars = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, qVar1, qVar2);
+            var distinctLhs = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, lhs1, lhs2);
+            var triggers = new List<BoogieExpr>() { lhs1, lhs2 };
+
+            var neqExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, distinctQVars, distinctLhs);
+            var distinctQExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1, qVar2 }, new List<BoogieType>() { mapKeyType, mapKeyType }, neqExpr, triggers);
+            currentStmtList.AddStatement(new BoogieAssumeCmd(distinctQExpr));
         }
 
         private BoogieMapSelect CreateDistinctArrayMappingAddress(BoogieStmtList stmtList, VariableDeclaration varDecl)
