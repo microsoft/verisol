@@ -68,29 +68,59 @@ namespace SolToBoogie
             }
             return text.Substring(i + 1);
         }
+
+        // Returns uintXX type of an unsigned integer constant, where XX is 8, 16, 24, ..., 256
+        private static int GetConstantSize(BigInteger constant)
+        {
+            BigInteger power = 1;
+            int size = 0;
+            while (power <= constant)
+            {
+                //power *= 2;
+                power <<= 1;
+                size++;
+            }
+
+            if (power == constant) size--;
+
+            if (size <= 8) return 8;
+            else if (size > 256) return -1;
+            else if (size % 8 == 0) return size;
+            else return 8 * (size / 8) + 8;
+        }
         public static bool IsUintWSize(this TypeDescription typeDescription, out uint sz)
         {
             string typeStr = typeDescription.TypeString;
-            if (!typeStr.StartsWith("uint", StringComparison.CurrentCulture))
+            if (!typeStr.StartsWith("uint", StringComparison.CurrentCulture) && !typeStr.Contains("const"))
             {
-                //Console.WriteLine($"IsUintWSize: not uint type: {typeStr}");
                 sz = uint.MaxValue;
                 return false;
             }
 
-            //Console.WriteLine($"IsUintWSize: uint type: {typeStr}");
             try
             {
-                if (typeStr.Equals("uint") || (typeStr.Contains("const")))
+                if (typeStr.Equals("uint"))
                 {
                     sz = 256;
+                }
+                else if (typeStr.Contains("const"))
+                {
+                    var spl = typeStr.Split(" ");
+                    string constString = typeStr.Split(" ")[spl.Length - 1];
+                    int res = GetConstantSize(BigInteger.Parse(constString));
+                    if (res == -1)
+                    {
+                        // Constant > 2^256
+                        Console.WriteLine($"VeriSol translation error in IsUintWSize: unknown uintXX type: uint constant > 2^256");
+                        sz = uint.MaxValue;
+                        return false;
+                    }
+                    else sz = (uint) GetConstantSize(BigInteger.Parse(constString));
                 }
                 else
                 {
                     sz = uint.Parse(GetNumberFromEnd(typeStr));
                 }
-
-                //Console.WriteLine("uint, uintKK or uint_const type, size is {0}", sz);
             }
             catch (Exception e)
             {

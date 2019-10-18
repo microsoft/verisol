@@ -80,7 +80,7 @@ namespace SolToBoogie
             genInlineAttrsInBpl = _genInlineAttrsInBpl;
             contractInvariants = new Dictionary<string, List<BoogieExpr>>();
         }
-
+        
         public override bool Visit(ContractDefinition node)
         {
             preTranslationAction(node);
@@ -1281,9 +1281,6 @@ namespace SolToBoogie
                 switch (node.Operator)
                 {
                     case "=":
-                        // TODO: add mod for rhs
-                        // TODO: throw an exception in the helper, if lhs is a tuple
-                        // rhs = HelperModOper(rhs, node.LeftHandSide);
                         stmtList.AddStatement(new BoogieAssignCmd(lhs[0], rhs));
                         break;
                     case "+=":
@@ -3064,13 +3061,15 @@ namespace SolToBoogie
             {
                 if (node.Operator == "+" || node.Operator == "-" || node.Operator == "*" || node.Operator == "/")
                 {
-                    if (node.LeftExpression.TypeDescriptions != null)
+                    if (node.LeftExpression.TypeDescriptions != null && node.RightExpression.TypeDescriptions != null)
                     {
-                        var isUint = node.LeftExpression.TypeDescriptions.IsUintWSize(out uint sz);
-                        if (isUint)
+                        var isUintLeft = node.LeftExpression.TypeDescriptions.IsUintWSize(out uint szLeft);
+                        var isUintRight = node.LeftExpression.TypeDescriptions.IsUintWSize(out uint szRight);
+                        if (isUintLeft && isUintRight)
                         {
-                            VeriSolAssert(sz != 0, $"size of uint lhs is zero");
-                            BigInteger maxUIntValue = (BigInteger)Math.Pow(2, sz);
+                            VeriSolAssert(szLeft != 0, $"size of uint lhs in binary expr is zero");
+                            VeriSolAssert(szRight != 0, $"size of uint rhs in binary expr is zero");
+                            BigInteger maxUIntValue = (BigInteger)Math.Pow(2, Math.Max(szLeft, szRight));
                             currentExpr = new BoogieFuncCallExpr("modBpl", new List<BoogieExpr>() { binaryExpr, new BoogieLiteralExpr(maxUIntValue) });
                         }
                     }

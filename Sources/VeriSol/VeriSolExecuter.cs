@@ -213,7 +213,13 @@ namespace VeriSolRunner
                 // Strip braces from the 2nd string:
                 if (strSplit[1].Length > 2)
                 {
-                    if (strSplit[1].StartsWith("(") && strSplit[1].EndsWith(")"))
+                    if (strSplit[1].StartsWith("(ASSERTION FAILS"))
+                    {
+                        // To avoid splitting the assert (which could contain "=="
+                        // in the "ASSERT FAILS" line;
+                        strSplit[1] = strSplit[1].Replace(", ", ",");
+                    }
+                    else if (strSplit[1].StartsWith("(") && strSplit[1].EndsWith(")"))
                     {
                         strSplit[1] = strSplit[1].Substring(1, strSplit[1].Length - 2);
                     }
@@ -271,7 +277,7 @@ namespace VeriSolRunner
             List<string> resultArray = new List<string>();
 
             // this is a list of (line#, element)
-            // element \in {CALL foo, RETURM from foo, x = e, ASSERTION FAILS, ...}
+            // element \in {CALL foo, RETURN from foo, x = e, ASSERTION FAILS, ...}
             for (int i = 0; i < trace.Count(); i++)
             {
                 var elem = trace[i].Item2;
@@ -313,7 +319,7 @@ namespace VeriSolRunner
                 {
                     resultArray.Add($"{trace[i].Item1}: ASSERTION FAILS!");
                 }
-                else if (elem.Contains("="))
+                else if (elem.Contains("=") && !elem.Contains("=="))
                 {
 
                     if (collectArgs)
