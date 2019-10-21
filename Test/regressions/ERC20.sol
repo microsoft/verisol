@@ -37,6 +37,17 @@ contract ERC20 is IERC20 {
 
     uint256 private _totalSupply;
 
+
+    /**
+     * A dummy constructor
+     */
+    constructor (uint256 totalSupply) public {
+       require(msg.sender != address(0));
+       _totalSupply = totalSupply;
+       _balances[msg.sender] = totalSupply;
+    }
+
+
     /**
      * @dev See {IERC20-totalSupply}.
      */
