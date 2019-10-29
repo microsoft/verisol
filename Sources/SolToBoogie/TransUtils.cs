@@ -88,12 +88,13 @@ namespace SolToBoogie
             else if (size % 8 == 0) return size;
             else return 8 * (size / 8) + 8;
         }
-        public static bool IsUintWSize(this TypeDescription typeDescription, out uint sz)
+
+        public static bool IsUintWSize(this TypeDescription typeDescription, Expression expr, out uint sz)
         {
             string typeStr = typeDescription.TypeString;
             if (!typeStr.StartsWith("uint", StringComparison.CurrentCulture) && !typeStr.Contains("const"))
             {
-                sz = uint.MaxValue;
+                sz = 256;
                 return false;
             }
 
@@ -102,48 +103,140 @@ namespace SolToBoogie
                 if (typeStr.Equals("uint"))
                 {
                     sz = 256;
+                    return true;
                 }
                 else if (typeStr.Contains("const"))
                 {
-                    var spl = typeStr.Split(" ");
-                    string constString = typeStr.Split(" ")[spl.Length - 1];
-                    int res = GetConstantSize(BigInteger.Parse(constString));
-                    if (res == -1)
+                    if (expr is Literal)
                     {
-                        // Constant > 2^256
-                        Console.WriteLine($"VeriSol translation error in IsUintWSize: unknown uintXX type: uint constant > 2^256");
-                        sz = uint.MaxValue;
+                        Literal constExpr = (Literal)expr;
+                        if (typeDescription.IsUintConst(constExpr, out BigInteger value, out uint size))
+                        {
+                            sz = size;
+                            return true;
+                        }
+                        else
+                        {
+                            //Console.WriteLine($"VeriSol translation error in IsUintWSize: unknown constant type");
+                            sz = 256;
+                            // Constant is too big: the error is managed in IsUintConst:
+                            return true;
+                        }
+                    }
+                    else if (expr is BinaryOperation)
+                    {
+                        // Expr is a constant expression:
+                        //if (typeDescription.TypeString.Contains("omitted"))
+                        //{
+                            // Large constant which is abbreviated in the typeDescription:
+                            // Create the value:                         
+                         BinaryOperation binaryOperationExpr = (BinaryOperation)expr;
+                                //var opCode = TranslateOpcode(binaryOperationExpr.Operator);
+                         if (binaryOperationExpr.LeftExpression is Literal && binaryOperationExpr.RightExpression is Literal)
+                         {
+                             sz = 256;
+                             return true;
+                                    //var leftLiteral = (Literal)binaryOperationExpr.LeftExpression;
+                                    //var rightLiteral = (Literal)binaryOperationExpr.RightExpression;
+
+                                    //var leftValue = BigInteger.Parse(leftLiteral.Value);
+                                    //var rightValue = BigInteger.Parse(rightLiteral.Value);
+                                    //exprValue = new BoogieBinaryOperation(opCode, new BoogieLiteralExpr((BigInteger)leftValue), new BoogieLiteralExpr((BigInteger)rightValue));
+                         }
+                         else
+                         {
+                            Console.WriteLine($"Error in IsUintWSize: expr with 'const' in type {expr} is neither Literal nor BinaryOperation with Literal operands");
+                            sz = 256;
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Error in IsUintWSize: expr with 'const' in type {expr} is neither Literal nor BinaryOperation");
+                        sz = 256;
                         return false;
                     }
-                    else sz = (uint) GetConstantSize(BigInteger.Parse(constString));
                 }
                 else
                 {
                     sz = uint.Parse(GetNumberFromEnd(typeStr));
+                    return true;
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine($"VeriSol translation error in IsUintWSize: unknown uintXX type: {e.Message}");
-                sz = uint.MaxValue;
+                Console.WriteLine($"VeriSol translation error: exception in IsUintWSize: {e.Message}");
+                sz = 256;
                 return false;
             }
-
-            return true;
         }
-        
-        public static bool IsUintConst(this TypeDescription typeDescription, out uint sz)
+
+        public static bool IsUintConst(this TypeDescription typeDescription, /*Literal constant,*/ Expression constant, out BigInteger value, out uint sz)
         {
-            var type = typeDescription.ToString();
-            if (type.StartsWith("int_const"))
+            sz = 256;
+            try
             {
-                //uint c = uint.Parse(GetNumberFromEnd(type));
-                sz = 256;
-                return sz >= 0 ? true: false;
+                var type = typeDescription.ToString();
+                if (type.StartsWith("int_const"))
+                {
+                    if (constant is Literal)
+                    {
+                        string constStr = ((Literal)constant).Value;
+                        value = BigInteger.Parse(constStr);
+                        int res = GetConstantSize(value);
+                        if (res == -1)
+                        {
+                            // Constant > 2^256: 
+                            Console.WriteLine($"VeriSol translation error in IsUintConst: uint constant > 2^256");
+                            sz = 256;
+                            return true;
+                        }
+                        else
+                        {
+                            sz = (uint)res;
+                            return true;
+                        }
+                    }
+                    else if (constant is BinaryOperation)
+                    {
+                        BinaryOperation binaryConstantExpr = (BinaryOperation)constant;
+                        //var opCode = TranslateOpcode(binaryOperationExpr.Operator);
+                        if (binaryConstantExpr.LeftExpression is Literal && binaryConstantExpr.RightExpression is Literal)
+                        {
+                            //value = ((Literal)binaryConstantExpr).Value;
+                            //TODO:
+                            value = 0;
+                            sz = 256;
+                            return true;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Error in IsUintConst: constant expression is neither Literal nor BinaryOperation with Literal operands");
+                            value = 0;
+                            sz = 256;
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Error in IsUintConst: constant expression is neither Literal nor BinaryOperation");
+                        value = 0;
+                        sz = 256;
+                        return false;
+                    }                      
+                }
+                else
+                {
+                    sz = 256;
+                    value = 0;
+                    return false;
+                }
             }
-            else
+            catch (Exception e)
             {
-                sz = uint.MaxValue;
+                Console.WriteLine($"VeriSol translation error: exception in IsUintConst: {e.Message}");
+                value = 0;
+                sz = 256;
                 return false;
             }
         }

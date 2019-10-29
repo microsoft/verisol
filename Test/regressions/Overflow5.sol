@@ -15,15 +15,13 @@ contract UintTest {
   
   function batchTransfer(address[] memory receivers, uint256 value) public {
     uint256 amount = receivers.length * value;  // amount could overflow and be 0
-	require(amount == 0);	
-	assert(false);
+	//require(value > 0 && balances[msg.sender] >= amount);
+	require(amount > 0);	//fails with mod arithm, holds otherwise
+	assert(false);          //not reachable with mod arithm, reachable otherwise
 	
-	
-    require(balances[msg.sender] >= amount);
-
     balances[msg.sender] = balances[msg.sender].sub(amount);
-    for (uint256 i = 0; i < receivers.length; i++) {
-        balances[receivers[i]] = balances[receivers[i]].add(value);
-    }
+    //for (uint256 i = 0; i < receivers.length; i++) {
+    //    balances[receivers[i]] = balances[receivers[i]].add(value);
+    //}
 }
 }
