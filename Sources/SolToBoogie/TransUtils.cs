@@ -25,7 +25,6 @@ namespace SolToBoogie
             string typeStr = typeDescription.TypeString;
             if (!typeStr.StartsWith("int", StringComparison.CurrentCulture))
             {
-                //Console.WriteLine($"IsIntWSize: not int type: {typeStr}");
                 sz = uint.MaxValue;
                 return false;
             }
@@ -41,7 +40,6 @@ namespace SolToBoogie
                 {
                     sz = uint.Parse(GetNumberFromEnd(typeStr));
                 }
-                //Console.WriteLine("int, intKK or int_const type, size is {0}", sz);
             }
             catch (Exception e)
             {
@@ -123,7 +121,7 @@ namespace SolToBoogie
             }
         }
 
-        public static bool IsUintConst(this TypeDescription typeDescription, /*Literal constant,*/ Expression constant, out BigInteger value, out uint sz)
+        public static bool IsUintConst(this TypeDescription typeDescription, Expression constant, out BigInteger value, out uint sz)
         {
             sz = 256;
             try
@@ -161,7 +159,7 @@ namespace SolToBoogie
                             if (typeDescription.TypeString.Contains("omitted"))
                             {
                                 // Large constant which is abbreviated in the typeDescription: 
-                                // This would probably never happens, because Solidity compiler reports type errors for such constants
+                                // This would probably never happen, because Solidity compiler reports type errors for such constants
                                 Console.WriteLine($"Unsupported in IsUintConst: constant expression contains large constant(s)");
                                 value = 0;
                                 sz = 256;

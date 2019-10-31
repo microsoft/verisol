@@ -3098,7 +3098,6 @@ namespace SolToBoogie
                                 currentExpr = new BoogieFuncCallExpr("modBpl", new List<BoogieExpr>() { binaryExpr, new BoogieLiteralExpr(maxUIntValue) });
                             }        
                         }
-                        //}
                     }
                 }
             }
