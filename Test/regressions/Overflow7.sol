@@ -18,8 +18,6 @@ contract UintTest {
      z = -1;
 	 u = -z;
      require(x < u + 1);  
-	 //u = -x;
-	 //require(u == -1);
 	 a8 = uint8(-z);
 	 a8--;
 	 a8--;

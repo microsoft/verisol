@@ -16,7 +16,6 @@ contract UintTest {
   function test(uint8 x, uint8 y) public {
      z = 1;
      require(x < z + 1);  
-     assert(2 == 2);
 	 a8 = x;
 	 b8 = 2;
 	 a8 -= b8;

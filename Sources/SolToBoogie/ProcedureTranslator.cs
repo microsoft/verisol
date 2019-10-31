@@ -3063,11 +3063,10 @@ namespace SolToBoogie
                 {
 
                     binaryExpr = new BoogieLiteralExpr((BigInteger)Math.Pow((double)valueLeft, (double)valueRight));
-                    //return false;
                 }
                 else
                 {
-                    Console.WriteLine($"VeriSol translation error: power operation for non-constants is not supported");
+                    Console.WriteLine($"VeriSol translation error: power operation for non-constants or with constant subexpressions is not supported; hint: use temps for subexpressions");
                     return false;
                 }
             }

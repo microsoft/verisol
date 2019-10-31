@@ -17,8 +17,10 @@ contract UintTest {
   
   function test(uint8 x, uint8 y) public  {
 	 z1 = 254;
-	 // TODO: diff results for: z1+1+1; 1+z1+1; 1+1+z1;
-	 z = 1 + z1 + 1;
+	 // Same results for: z1+1+1; 1+z1+1; 1+1+z1;
+	 //z = 1 + z1 + 1;           //OK
+	 //z = z1 + 1 + 1;             //OK
+	 z = 1 + 1 + z1;
      require(x > z - 2); 
 	 a8 = x + 3;
 	 require(a8 >= x);      //fails with mod arithm; holds otherwise

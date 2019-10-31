@@ -26,7 +26,7 @@ contract UintTest {
 		require(y8 >= x);        //fails with mod arithm; holds otherwise (checked) 
 		assert (false);          //not reachable with mod arithm; reachable otherwise (checked)
 	 }
-	 else if (
+	 //else if (
 	 
 	 assert(false);
   }

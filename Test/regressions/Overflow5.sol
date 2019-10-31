@@ -2,9 +2,8 @@ pragma solidity >=0.4.24 <0.6.0;
 
 import "./SafeMath.sol"; 
 
-// This test is identical to Overflow1 and is therefore redundant.
-// Test uint8 overflow of "+=" with and without /useModularArithmetic option
-// The test passes with /useModularArithmetic option and fails otherwise
+
+// The test ?? with /useModularArithmetic option and ?? otherwise
 contract UintTest {
   using SafeMath for uint256;
   

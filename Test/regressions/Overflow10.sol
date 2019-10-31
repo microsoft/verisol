@@ -13,6 +13,8 @@ contract UintTest {
   
   function test(uint x, uint y) public {
 	require(x > 2**256 - 2);
+	//require(x > 115792089237316195423570985008687907853269984665640564039457584007913129639938 - 2); //Solidity error
+	//a = 11579208923731619542357098500868790785326998466;       //OK
 	a = x + 3;
 	require(a >= x);   //fails with mod arithm; holds otherwise (a overflows)
 	assert(false);     //not reachable with mod arithm; reachable otherwise

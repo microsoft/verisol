@@ -107,55 +107,7 @@ namespace SolToBoogie
                 }
                 else if (typeStr.Contains("const"))
                 {
-                    if (expr is Literal)
-                    {
-                        Literal constExpr = (Literal)expr;
-                        if (typeDescription.IsUintConst(constExpr, out BigInteger value, out uint size))
-                        {
-                            sz = size;
-                            return true;
-                        }
-                        else
-                        {
-                            //Console.WriteLine($"VeriSol translation error in IsUintWSize: unknown constant type");
-                            sz = 256;
-                            // Constant is too big: the error is managed in IsUintConst:
-                            return true;
-                        }
-                    }
-                    else if (expr is BinaryOperation)
-                    {
-                        // Expr is a constant expression:
-                        //if (typeDescription.TypeString.Contains("omitted"))
-                        //{
-                            // Large constant which is abbreviated in the typeDescription:
-                            // Create the value:                         
-                         BinaryOperation binaryOperationExpr = (BinaryOperation)expr;
-                                //var opCode = TranslateOpcode(binaryOperationExpr.Operator);
-                         if (binaryOperationExpr.LeftExpression is Literal && binaryOperationExpr.RightExpression is Literal)
-                         {
-                             sz = 256;
-                             return true;
-                                    //var leftLiteral = (Literal)binaryOperationExpr.LeftExpression;
-                                    //var rightLiteral = (Literal)binaryOperationExpr.RightExpression;
-
-                                    //var leftValue = BigInteger.Parse(leftLiteral.Value);
-                                    //var rightValue = BigInteger.Parse(rightLiteral.Value);
-                                    //exprValue = new BoogieBinaryOperation(opCode, new BoogieLiteralExpr((BigInteger)leftValue), new BoogieLiteralExpr((BigInteger)rightValue));
-                         }
-                         else
-                         {
-                            Console.WriteLine($"Error in IsUintWSize: expr with 'const' in type {expr} is neither Literal nor BinaryOperation with Literal operands");
-                            sz = 256;
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Error in IsUintWSize: expr with 'const' in type {expr} is neither Literal nor BinaryOperation");
-                        sz = 256;
-                        return false;
-                    }
+                    return IsUintConst(typeDescription, expr, out BigInteger value, out sz);
                 }
                 else
                 {
@@ -200,18 +152,31 @@ namespace SolToBoogie
                     else if (constant is BinaryOperation)
                     {
                         BinaryOperation binaryConstantExpr = (BinaryOperation)constant;
-                        //var opCode = TranslateOpcode(binaryOperationExpr.Operator);
+
                         if (binaryConstantExpr.LeftExpression is Literal && binaryConstantExpr.RightExpression is Literal)
                         {
-                            //value = ((Literal)binaryConstantExpr).Value;
-                            //TODO:
-                            value = 0;
-                            sz = 256;
-                            return true;
+                            // Get expression value from TypeDescriptions (but not if the constant is too big)
+                            string typeStr = binaryConstantExpr.TypeDescriptions.TypeString;
+
+                            if (typeDescription.TypeString.Contains("omitted"))
+                            {
+                                // Large constant which is abbreviated in the typeDescription: 
+                                // This would probably never happens, because Solidity compiler reports type errors for such constants
+                                Console.WriteLine($"Unsupported in IsUintConst: constant expression contains large constant(s)");
+                                value = 0;
+                                sz = 256;
+                                return false;
+                            }
+                            else
+                            {
+                                value = BigInteger.Parse(GetNumberFromEnd(typeStr));
+                                sz = 256;
+                                return true;
+                            }                         
                         }
                         else
                         {
-                            Console.WriteLine($"Error in IsUintConst: constant expression is neither Literal nor BinaryOperation with Literal operands");
+                            Console.WriteLine($"Unsupported in IsUintConst: constant expression is neither Literal nor BinaryOperation with Literal operands; hint: use temps for subexpressions");
                             value = 0;
                             sz = 256;
                             return false;
@@ -219,7 +184,8 @@ namespace SolToBoogie
                     }
                     else
                     {
-                        Console.WriteLine($"Error in IsUintConst: constant expression is neither Literal nor BinaryOperation");
+                        // TODO: constant is TupleExpression:
+                        Console.WriteLine($"Unsupported in IsUintConst: constant expression is neither Literal nor BinaryOperation; hint: use temps for subexpressions");
                         value = 0;
                         sz = 256;
                         return false;

@@ -31,7 +31,8 @@ contract UintTest {
 	  
       //x16 = -x;               // Solidity: not allowed (size issue); Verisol reports same error
       //x16 = x;
-	  x16 = int16(x);          //test this TODO
+	  //x16 = int16(x);          // Solidity error
+	  x16 = uint16(x);
       x256 = x16;             // Solidity: implicit cast
       //x = +x;               // Solidity: not allowed; Verisol reports same error
       assert (x256 == x1);    // holds
