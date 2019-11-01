@@ -174,7 +174,10 @@ namespace SolToBoogie
                         }
                         else
                         {
-                            Console.WriteLine($"Unsupported in IsUintConst: constant expression is neither Literal nor BinaryOperation with Literal operands; hint: use temps for subexpressions");
+                            // TODO: The warning below could probably be suppressed:
+                            // this is the case of exprs like (2+2+2...), where left and right expressions are BinaryOperation;
+                            // in these cases, "value" is never used (it is only used for power operation on two literals)
+                            Console.WriteLine($"Warning in IsUintConst: constant expression is neither Literal nor BinaryOperation with Literal operands; hint: use temps for subexpressions");
                             value = 0;
                             sz = 256;
                             return false;
@@ -183,7 +186,7 @@ namespace SolToBoogie
                     else
                     {
                         // TODO: constant is TupleExpression:
-                        Console.WriteLine($"Unsupported in IsUintConst: constant expression is neither Literal nor BinaryOperation; hint: use temps for subexpressions");
+                        Console.WriteLine($"Warning in IsUintConst: constant expression is neither Literal nor BinaryOperation; hint: use temps for subexpressions");
                         value = 0;
                         sz = 256;
                         return false;
