@@ -162,7 +162,7 @@ namespace SolToBoogieTest
                 BoogieTranslator translator = new BoogieTranslator();
                 var translatorFlags = new TranslatorFlags();
                 translatorFlags.GenerateInlineAttributes = false;
-                if (!(corralConfig.TranslatorOptions == null))
+                if (corralConfig.TranslatorOptions != null)
                 {
                     translatorFlags.UseModularArithmetic = ParseTranslatorFlags(corralConfig.TranslatorOptions);
                 }
