@@ -127,11 +127,27 @@ namespace SolToBoogieTest
             return (failedCount == 0)? 0 : 1;
         }
 
-        private bool ParseTranslatorFlags(string options)
+        private void ParseTranslatorFlags(TranslatorFlags translatorFlags, string args)
         {
-            var allOptions = options.Split("/");
-            return allOptions.Any(x => x.StartsWith("useModularArithmetic"));
+            string solidityFile, entryPointContractName;
+            bool tryProofFlag, tryRefutation;
+            int recursionBound;
+            ILogger logger;
+            HashSet<Tuple<string, string>> ignoredMethods;
+            bool printTransactionSequence = false;
+            SolToBoogie.ParseUtils.ParseCommandLineArgs(args.Split(" "),
+                out solidityFile,
+                out entryPointContractName,
+                out tryProofFlag,
+                out tryRefutation,
+                out recursionBound,
+                out logger,
+                out ignoredMethods,
+                out printTransactionSequence,
+                ref translatorFlags);
         }
+
+
 
         public BatchExeResult Execute(string filename, out string expected, out string current)
         {
@@ -164,7 +180,7 @@ namespace SolToBoogieTest
                 translatorFlags.GenerateInlineAttributes = false;
                 if (corralConfig.TranslatorOptions != null)
                 {
-                    translatorFlags.UseModularArithmetic = ParseTranslatorFlags(corralConfig.TranslatorOptions);
+                    ParseTranslatorFlags(translatorFlags, corralConfig.TranslatorOptions);
                 }
                 
                 BoogieAST boogieAST = translator.Translate(solidityAST, new HashSet<Tuple<string, string>>(), translatorFlags);
