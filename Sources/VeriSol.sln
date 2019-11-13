@@ -15,7 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SolToBoogieTest", "SolToBoo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VeriSol", "VeriSol\VeriSol.csproj", "{2362BC10-65A2-419D-8A41-0FE33FF4FC16}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExternalToolsManager", "ExternalToolsManager\ExternalToolsManager.csproj", "{BF09262B-4902-4B54-8888-A9BDB65AF0D0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExternalToolsManager", "ExternalToolsManager\ExternalToolsManager.csproj", "{BF09262B-4902-4B54-8888-A9BDB65AF0D0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

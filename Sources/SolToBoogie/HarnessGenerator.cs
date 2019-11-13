@@ -148,7 +148,7 @@ namespace SolToBoogie
                 FunctionDefinition ctor = context.GetConstructorByContract(contract);
                 foreach (VariableDeclaration param in ctor.Parameters.Parameters)
                 {
-                    string name = TransUtils.GetCanonicalLocalVariableName(param);
+                    string name = TransUtils.GetCanonicalLocalVariableName(param, context);
                     inputs.Add(new BoogieIdentifierExpr(name));
 
                     if (param.TypeName is ArrayTypeName array)
@@ -311,7 +311,7 @@ namespace SolToBoogie
 
             foreach (VariableDeclaration param in funcDef.Parameters.Parameters)
             {
-                string name = TransUtils.GetCanonicalLocalVariableName(param);
+                string name = TransUtils.GetCanonicalLocalVariableName(param, context);
                 BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(param.TypeName);
                 BoogieVariable localVar = new BoogieLocalVariable(new BoogieTypedIdent(name, type));
                 parameters.Add(localVar);
@@ -325,7 +325,7 @@ namespace SolToBoogie
 
                 if (!string.IsNullOrEmpty(param.Name))
                 {
-                    name = TransUtils.GetCanonicalLocalVariableName(param);
+                    name = TransUtils.GetCanonicalLocalVariableName(param, context);
                 }
                 BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(param.TypeName);
                 BoogieVariable localVar = new BoogieLocalVariable(new BoogieTypedIdent(name, type));

@@ -4,8 +4,9 @@ pragma solidity >=0.4.24 <0.6.0;
 
 contract ArrayLength {
     uint[] a;
+    uint[][] b;
 
-    constructor (uint[] d) 
+    constructor (uint[] memory d) public 
     {
        require(d.length == 2);
        a.push(11);
@@ -13,9 +14,9 @@ contract ArrayLength {
 
     }
 
-    function test(uint[] b) {
+    function test(uint[] memory b) public {
      
-       uint[] c;
+       uint[] storage c = b[0];
   
        b[0] = 33;
        assert (a[0] == 11);

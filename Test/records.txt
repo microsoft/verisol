@@ -34,6 +34,7 @@ Const.sol
 #Overflow9Mod.sol
 #Overflow10.sol 
 #Overflow10Mod.sol
+UIntMod.sol
 ReturnMult.sol
 #MappingToStruct.sol
 Logical.sol
@@ -165,3 +166,4 @@ biginitinit.sol
 tx.sol
 ERC20.sol
 A__AssetTransfer_Workbench.sol
+NestedMappingAlias.sol

@@ -249,10 +249,11 @@ namespace SolToBoogie
                 inParams.Add(new BoogieFormalParam(new BoogieTypedIdent(formalName, formalType)));
             }
 
-            List<BoogieVariable> outParams = new List<BoogieVariable>(); 
-            List<BoogieAttribute> attributes = new List<BoogieAttribute>()
+            List<BoogieVariable> outParams = new List<BoogieVariable>();
+            List<BoogieAttribute> attributes = new List<BoogieAttribute>();
+            if (context.TranslateFlags.GenerateInlineAttributes)
             {
-                new BoogieAttribute("inline", 1),
+                attributes.Add(new BoogieAttribute("inline", 1));
             };
             BoogieProcedure procedure = new BoogieProcedure(procName, inParams, outParams, attributes);
             context.Program.AddDeclaration(procedure);
@@ -276,6 +277,9 @@ namespace SolToBoogie
 
         private void GenerateBoogieRecord(string typeName, BoogieType btype)
         {
+            if (context.TranslateFlags.NoDataValuesInfoFlag)
+                return; 
+
             // generate the internal one without base constructors
             string procName = "boogie_si_record_sol2Bpl_" + typeName;
             var inVar = new BoogieFormalParam(new BoogieTypedIdent("x", btype));
@@ -297,9 +301,10 @@ namespace SolToBoogie
             {
                 outVar
             };
-            List<BoogieAttribute> attributes = new List<BoogieAttribute>()
+            List<BoogieAttribute> attributes = new List<BoogieAttribute>();
+            if (context.TranslateFlags.GenerateInlineAttributes)
             {
-                new BoogieAttribute("inline", 1),
+                attributes.Add(new BoogieAttribute("inline", 1));
             };
             BoogieProcedure procedure = new BoogieProcedure(procName, inParams, outParams, attributes);
             context.Program.AddDeclaration(procedure);
@@ -331,9 +336,10 @@ namespace SolToBoogie
             string procName = "HavocAllocMany";
             List<BoogieVariable> inParams = new List<BoogieVariable>();
             List<BoogieVariable> outParams = new List<BoogieVariable>();
-            List<BoogieAttribute> attributes = new List<BoogieAttribute>()
+            List<BoogieAttribute> attributes = new List<BoogieAttribute>();
+            if (context.TranslateFlags.GenerateInlineAttributes)
             {
-                new BoogieAttribute("inline", 1),
+                attributes.Add(new BoogieAttribute("inline", 1));
             };
             BoogieProcedure procedure = new BoogieProcedure(procName, inParams, outParams, attributes);
             context.Program.AddDeclaration(procedure);

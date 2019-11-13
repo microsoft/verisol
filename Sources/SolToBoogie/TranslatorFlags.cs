@@ -24,6 +24,7 @@ namespace SolToBoogie
             InlineDepthForBoogie = 4;
             PerformContractInferce = false;
             DoModSetAnalysis = false;
+            RemoveScopeInVarName = false;
         }
         /// <summary>
         /// Omit printing sourceFile/sourceLine information
@@ -75,5 +76,8 @@ namespace SolToBoogie
 
         // Do ModSet analysis on the Boogie program.
         public bool DoModSetAnalysis { get; set; }
+
+        // remove the scoping from variable name (risky and not exposed)
+        public bool RemoveScopeInVarName { get; set; }
     }
 }
