@@ -4,8 +4,12 @@ contract ArrayNestedFixedSize {
 
     // NOTE: the number of columns comes first in the declaration!
     uint[3][2] a;
+    bool[2][2] aa;
 
-    constructor() {}
+    constructor() {
+        assert (a[0][1] == 0);
+        assert (!aa[0][1]);
+    }
 
     function test() public {
         uint[3] b;

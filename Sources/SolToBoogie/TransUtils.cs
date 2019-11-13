@@ -404,11 +404,12 @@ namespace SolToBoogie
 
         public static string GetCanonicalVariableName(VariableDeclaration varDecl, TranslatorContext context)
         {
-            return varDecl.StateVariable ? GetCanonicalStateVariableName(varDecl, context) : GetCanonicalLocalVariableName(varDecl);
+            return varDecl.StateVariable ? GetCanonicalStateVariableName(varDecl, context) : GetCanonicalLocalVariableName(varDecl, context);
         }
 
-        public static string GetCanonicalLocalVariableName(VariableDeclaration varDecl)
+        public static string GetCanonicalLocalVariableName(VariableDeclaration varDecl, TranslatorContext context)
         {
+            if (context.TranslateFlags.RemoveScopeInVarName) return varDecl.Name; // not recommended
             return varDecl.Name + "_s" + varDecl.Scope.ToString();
         }
 
@@ -684,7 +685,7 @@ namespace SolToBoogie
                     {
                         foreach (VariableDeclaration param in funcDef.Parameters.Parameters)
                         {
-                            string name = TransUtils.GetCanonicalLocalVariableName(param);
+                            string name = TransUtils.GetCanonicalLocalVariableName(param, context);
                             if (!uniqueVarNames.Contains(name))
                             {
                                 BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(param.TypeName);
@@ -701,7 +702,7 @@ namespace SolToBoogie
                             string name = $"__ret_{retParamCount++}_" + funcDef.Name;
                             if (!string.IsNullOrEmpty(param.Name))
                             {
-                                name = TransUtils.GetCanonicalLocalVariableName(param);
+                                name = TransUtils.GetCanonicalLocalVariableName(param, context);
                             }
                             if (!uniqueVarNames.Contains(name))
                             {
@@ -764,7 +765,7 @@ namespace SolToBoogie
                 };
                     foreach (VariableDeclaration param in funcDef.Parameters.Parameters)
                     {
-                        string name = TransUtils.GetCanonicalLocalVariableName(param);
+                        string name = TransUtils.GetCanonicalLocalVariableName(param, context);
                         inputs.Add(new BoogieIdentifierExpr(name));
                         if (param.TypeName is ArrayTypeName array)
                         {
@@ -783,7 +784,7 @@ namespace SolToBoogie
                         string name = $"__ret_{retParamCount++}_" + funcDef.Name;
                         if (!string.IsNullOrEmpty(param.Name))
                         {
-                            name = TransUtils.GetCanonicalLocalVariableName(param);
+                            name = TransUtils.GetCanonicalLocalVariableName(param, context);
                         }
                         outputs.Add(new BoogieIdentifierExpr(name));
                     }
