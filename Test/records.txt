@@ -160,8 +160,8 @@ DAO-buggy-call.sol
 DAO-fixed-call.sol
 #DAO-modular-buggy-call.sol, only when /stubModel:callback
 ERC20-simplified.sol
-ERC20-demo.sol
-ERC20-demoMod.sol
+#ERC20-demo.sol
+#ERC20-demoMod.sol
 block.sol
 harness.sol
 biginitinit.sol
