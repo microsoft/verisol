@@ -135,16 +135,17 @@ namespace SolToBoogieTest
             ILogger logger;
             HashSet<Tuple<string, string>> ignoredMethods;
             bool printTransactionSequence = false;
-            SolToBoogie.ParseUtils.ParseCommandLineArgs(args.Split(" "),
-                out solidityFile,
-                out entryPointContractName,
-                out tryProofFlag,
-                out tryRefutation,
-                out recursionBound,
-                out logger,
-                out ignoredMethods,
-                out printTransactionSequence,
-                ref translatorFlags);
+            string verisolCmdLineArgs = "Foo Bar " + args; //Parser expects dirst two args to be present 
+            SolToBoogie.ParseUtils.ParseCommandLineArgs(verisolCmdLineArgs.Split(" "),
+            out solidityFile,
+            out entryPointContractName,
+            out tryProofFlag,
+            out tryRefutation,
+            out recursionBound,
+            out logger,
+            out ignoredMethods,
+            out printTransactionSequence,
+            ref translatorFlags);
         }
 
 
