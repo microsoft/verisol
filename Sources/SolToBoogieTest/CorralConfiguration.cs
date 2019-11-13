@@ -7,6 +7,9 @@ namespace SolToBoogieTest
     public class CorralConfiguration
     {
         [JsonProperty]
+        public readonly string TranslatorOptions;
+
+        [JsonProperty]
         public readonly int RecursionBound;
 
         [JsonProperty]

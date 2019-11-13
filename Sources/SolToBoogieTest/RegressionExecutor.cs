@@ -5,6 +5,7 @@ namespace SolToBoogieTest
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Runtime.InteropServices;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
@@ -126,6 +127,29 @@ namespace SolToBoogieTest
             return (failedCount == 0)? 0 : 1;
         }
 
+        private void ParseTranslatorFlags(TranslatorFlags translatorFlags, string args)
+        {
+            string solidityFile, entryPointContractName;
+            bool tryProofFlag, tryRefutation;
+            int recursionBound;
+            ILogger logger;
+            HashSet<Tuple<string, string>> ignoredMethods;
+            bool printTransactionSequence = false;
+            string verisolCmdLineArgs = "Foo Bar " + args; //Parser expects dirst two args to be present 
+            SolToBoogie.ParseUtils.ParseCommandLineArgs(verisolCmdLineArgs.Split(" "),
+            out solidityFile,
+            out entryPointContractName,
+            out tryProofFlag,
+            out tryRefutation,
+            out recursionBound,
+            out logger,
+            out ignoredMethods,
+            out printTransactionSequence,
+            ref translatorFlags);
+        }
+
+
+
         public BatchExeResult Execute(string filename, out string expected, out string current)
         {
             BatchExeResult result = BatchExeResult.SolcError;
@@ -144,12 +168,22 @@ namespace SolToBoogieTest
             // build the Solidity AST from solc output
             AST solidityAST = new AST(compilerOutput, Path.GetDirectoryName(filePath));
 
+            // read the corral configuration from Json
+            string configJsonPath = Path.Combine(configDirectory, Path.GetFileNameWithoutExtension(filename) + ".json");
+            string jsonString = File.ReadAllText(configJsonPath);
+            CorralConfiguration corralConfig = JsonConvert.DeserializeObject<CorralConfiguration>(jsonString);
+
             // translate Solidity to Boogie
             try
             {
                 BoogieTranslator translator = new BoogieTranslator();
                 var translatorFlags = new TranslatorFlags();
                 translatorFlags.GenerateInlineAttributes = false;
+                if (corralConfig.TranslatorOptions != null)
+                {
+                    ParseTranslatorFlags(translatorFlags, corralConfig.TranslatorOptions);
+                }
+                
                 BoogieAST boogieAST = translator.Translate(solidityAST, new HashSet<Tuple<string, string>>(), translatorFlags);
 
                 // dump the Boogie program to a file
@@ -166,9 +200,9 @@ namespace SolToBoogieTest
             }
 
             // read the corral configuration from Json
-            string configJsonPath = Path.Combine(configDirectory, Path.GetFileNameWithoutExtension(filename) + ".json");
-            string jsonString = File.ReadAllText(configJsonPath);
-            CorralConfiguration corralConfig = JsonConvert.DeserializeObject<CorralConfiguration>(jsonString);
+            //string configJsonPath = Path.Combine(configDirectory, Path.GetFileNameWithoutExtension(filename) + ".json");
+            //string jsonString = File.ReadAllText(configJsonPath);
+            //CorralConfiguration corralConfig = JsonConvert.DeserializeObject<CorralConfiguration>(jsonString);
 
             string corralOutput = RunCorral(corralConfig);
             expected = corralConfig.ExpectedResult;
