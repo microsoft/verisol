@@ -2945,6 +2945,21 @@ namespace SolToBoogie
                         }
                     }
                 }
+
+                // We do not handle downcasts between unsigned integers, when /useModularArithmetic option is enabled:
+                if (context.TranslateFlags.UseModularArithmetic)
+                {
+                    bool argTypeIsUint = node.Arguments[0].TypeDescriptions.IsUintWSize(node.Arguments[0], out uint argSz);
+                    if (argTypeIsUint && elemType.ToString().StartsWith("uint"))
+                    {
+                        uint castSz = uint.Parse(Extensions.GetNumberFromEnd(elemType.ToString()));
+                        if (argSz > castSz)
+                        {
+                            Console.WriteLine($"Warning: downcasts are not handled with /useModularArithmetic option");
+                        }
+                    }
+                }
+                
                 // lets update currentExpr with rhsExpr. The caller may update it with the temporary
                 currentExpr = rhsExpr; 
                 // lhs := expr;

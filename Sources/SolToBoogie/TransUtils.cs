@@ -121,6 +121,7 @@ namespace SolToBoogie
             }
         }
 
+        // "Out" parameter "value" is only used when IsUintConst is called in the context off a BinaryOperation on constants with the power operator.
         public static bool IsUintConst(this TypeDescription typeDescription, Expression constant, out BigInteger value, out uint sz)
         {
             sz = 256;
@@ -137,7 +138,7 @@ namespace SolToBoogie
                         if (res == -1)
                         {
                             // Constant > 2^256: 
-                            Console.WriteLine($"VeriSol translation error in IsUintConst: uint constant > 2^256");
+                            Console.WriteLine($"Warning: uint constant > 2**256");
                             sz = 256;
                             return true;
                         }
@@ -160,7 +161,9 @@ namespace SolToBoogie
                             {
                                 // Large constant which is abbreviated in the typeDescription: 
                                 // This would probably never happen, because Solidity compiler reports type errors for such constants
-                                Console.WriteLine($"Unsupported in IsUintConst: constant expression contains large constant(s)");
+                                Console.WriteLine($"Warning: constant expression contains large constant(s);");
+                                Console.WriteLine($"if the large constant is an operand in a power operation,");
+                                Console.WriteLine($"modulo arithmetic check will not work correctly");
                                 value = 0;
                                 sz = 256;
                                 return false;
