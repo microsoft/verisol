@@ -8,6 +8,10 @@ Uint8-Overflow.sol
 Uint8-OverflowMod.sol
 Uint8-Overflow-expr.sol
 Uint8-Overflow-exprMod.sol
+Uint8-Overflow-DownCasts.sol
+Uint8-Overflow-DownCastsMod.sol
+Uint8-Overflow-UpCasts.sol
+Uint8-Overflow-UpCastsMod.sol
 Uint256-Overflow.sol
 Uint256-OverflowMod.sol
 Overflow-Literals3.sol

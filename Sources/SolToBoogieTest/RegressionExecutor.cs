@@ -123,6 +123,8 @@ namespace SolToBoogieTest
             }
 
             logger.LogInformation($"{passedCount} passed {failedCount} failed");
+            // To allow time for logging the last summary line:
+            System.Threading.Thread.Sleep(100);
             DeleteTemporaryFiles();
             return (failedCount == 0)? 0 : 1;
         }

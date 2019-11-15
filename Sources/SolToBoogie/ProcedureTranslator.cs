@@ -1111,6 +1111,11 @@ namespace SolToBoogie
             {
                 string name = TransUtils.GetCanonicalLocalVariableName(varDecl, context);
                 BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(varDecl.TypeName);
+                // Issue a warning for intXX variables in case /useModularArithemtic option is used:
+                if (context.TranslateFlags.UseModularArithmetic && varDecl.TypeDescriptions.IsInt())
+                {
+                    Console.WriteLine($"Warning: signed integer arithmetic is not handled with /useModularArithmetic option");
+                }
                 var boogieVariable = new BoogieLocalVariable(new BoogieTypedIdent(name, type));
                  boogieToLocalVarsMap[currentBoogieProc].Add(boogieVariable);
             }
