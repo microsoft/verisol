@@ -135,6 +135,12 @@ namespace SolToBoogie
             BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(varDecl.TypeName);
             BoogieMapType mapType = new BoogieMapType(BoogieType.Ref, type);
 
+            // Issue a warning for intXX variables in case /useModularArithemtic option is used:
+            if (context.TranslateFlags.UseModularArithmetic && varDecl.TypeDescriptions.IsInt())
+            {
+                Console.WriteLine($"Warning: signed integer arithmetic is not handled with /useModularArithmetic option");
+            }
+
             if (varDecl.TypeName is Mapping)
             {
                 context.Program.AddDeclaration(new BoogieGlobalVariable(new BoogieTypedIdent(name, mapType)));
@@ -554,6 +560,12 @@ namespace SolToBoogie
 
         private void GenerateInitializationForArrayStateVar(VariableDeclaration varDecl, ArrayTypeName array)
         {
+            // Issue a warning for intXX type in case /useModularArithemtic option is used:
+            if (context.TranslateFlags.UseModularArithmetic && array.BaseType.ToString().StartsWith("int"))
+            {
+                Console.WriteLine($"Warning: signed integer arithmetic is not handled with /useModularArithmetic option");
+            }
+
             BoogieMapSelect lhsMap = CreateDistinctArrayMappingAddress(currentStmtList, varDecl);
 
             // lets also initialize the array Lengths (only for Arrays declared in this class)
@@ -620,6 +632,12 @@ namespace SolToBoogie
             else if (mapping.ValueType.ToString().StartsWith("uint") ||
                 mapping.ValueType.ToString().StartsWith("int"))
             {
+                // Issue a warning for intXX type in case /useModularArithemtic option is used:
+                if (context.TranslateFlags.UseModularArithmetic && mapping.ValueType.ToString().StartsWith("int"))
+                {
+                    Console.WriteLine($"Warning: signed integer arithmetic is not handled with /useModularArithmetic option");
+                }
+
                 currentStmtList.AddStatement(new BoogieCommentCmd($"Initialize Integer mapping {varDecl.Name}"));
 
                 BoogieType mapKeyType;
@@ -683,6 +701,12 @@ namespace SolToBoogie
             }
             else //it is integer valued
             {
+                // Issue a warning for intXX variables in case /useModularArithemtic option is used:
+                if (context.TranslateFlags.UseModularArithmetic && varDecl.TypeDescriptions.IsInt())
+                {
+                    Console.WriteLine($"Warning: signed integer arithmetic is not handled with /useModularArithmetic option");
+                }
+
                 string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
                 BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
                 var bigInt = (BoogieExpr)new BoogieLiteralExpr(BigInteger.Zero);
@@ -1018,6 +1042,12 @@ namespace SolToBoogie
             var retParamCount = 0;
             foreach (VariableDeclaration parameter in node.Parameters)
             {
+                // Issue a warning for intXX variables in case /useModularArithemtic option is used:
+                if (context.TranslateFlags.UseModularArithmetic && parameter.TypeDescriptions.IsInt())
+                {
+                    Console.WriteLine($"Warning: signed integer arithmetic is not handled with /useModularArithmetic option");
+                }
+
                 string name = null;
                 if (String.IsNullOrEmpty(parameter.Name))
                 {
