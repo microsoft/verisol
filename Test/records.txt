@@ -28,6 +28,8 @@ Overflow3.sol
 Overflow3Mod.sol
 Overflow4.sol
 Overflow4Mod.sol
+Overflow5.sol
+Overflow5Mod.sol
 Overflow6.sol
 Overflow6Mod.sol
 Overflow7.sol
