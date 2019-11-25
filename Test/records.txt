@@ -5,6 +5,8 @@ Uint-1Mod.sol
 UInt-2.sol
 Uint-2Mod.sol
 Uint8-Overflow.sol
+Uint8-Overflow-Neg.sol
+Uint8-Overflow-NegMod.sol
 Uint8-OverflowMod.sol
 Uint8-Overflow-expr.sol
 Uint8-Overflow-exprMod.sol
