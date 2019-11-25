@@ -79,9 +79,6 @@ For the examples below, change directory to Test\regressions\ folder.
 ### Other examples
 A few more examples with non-default options can be found [here](https://github.com/microsoft/verisol/wiki/Experimental--options-in-VeriSol).  
 
-## VeriSol Code Contracts library
-The code contract library **VeriSolContracts.sol** is present [here](/Test/regressions/Libraries/VeriSolContracts.sol). This allows adding loop invariants, contract invariants for proofs, and extending the assertion language.
-
 # Regression script
 First, follow the installation instructions from **sources**
 
