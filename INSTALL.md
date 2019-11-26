@@ -79,6 +79,8 @@ For the examples below, change directory to Test\regressions\ folder.
 ### Other examples
 A few more examples with non-default options can be found [here](https://github.com/microsoft/verisol/wiki/Experimental--options-in-VeriSol).  
 
+Here is a recommended [blog post from OpenZeppelin](https://forum.openzeppelin.com/t/formal-verification-of-erc20-implementations-with-verisol/1824) describing the use of VeriSol for formalizing functional correctness of ERC20. 
+
 # Regression script
 First, follow the installation instructions from **sources**
 
