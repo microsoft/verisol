@@ -19,6 +19,7 @@ contract UintTest {
 	 a8 = x;
 	 b8 = 0;
 	 a8 = addition(a8+1, b8+2);
+	 //a8 = addition(a8+1, b8+500);
      require(a8 >= x);        //fails with mod arithm; holds otherwise
 	 assert (false);          //not reachable with mod arithm; reachable otherwise
   }
