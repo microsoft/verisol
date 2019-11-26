@@ -18,9 +18,9 @@ contract UintTest {
      require(x > 256 - 2);     
 	 a8 = x;
 	 b8 = 0;
-	 a8 = addition(a8+1, b8+2);
-	 bool b = a8 >= x && x > 254;
-     require(a8 >= x);        //fails with mod arithm; holds otherwise
+	 //a8 = addition(a8+1, b8+2);
+	 bool b = (a8 + b8 + 3) >= x && x > 254;
+     require(b);        //fails with mod arithm; holds otherwise
 	 assert (false);          //not reachable with mod arithm; reachable otherwise
   }
   
