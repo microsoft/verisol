@@ -76,7 +76,7 @@ namespace SolToBoogie
             genInlineAttrsInBpl = _genInlineAttrsInBpl;
             contractInvariants = new Dictionary<string, List<BoogieExpr>>();
         }
-
+        
         public override bool Visit(ContractDefinition node)
         {
             preTranslationAction(node);
@@ -134,6 +134,12 @@ namespace SolToBoogie
             string name = TransUtils.GetCanonicalStateVariableName(varDecl, context);
             BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(varDecl.TypeName);
             BoogieMapType mapType = new BoogieMapType(BoogieType.Ref, type);
+
+            // Issue a warning for intXX variables in case /useModularArithemtic option is used:
+            if (context.TranslateFlags.UseModularArithmetic && varDecl.TypeDescriptions.IsInt())
+            {
+                Console.WriteLine($"Warning: signed integer arithmetic is not handled with /useModularArithmetic option");
+            }
 
             if (varDecl.TypeName is Mapping)
             {
@@ -556,6 +562,12 @@ namespace SolToBoogie
 
         private void GenerateInitializationForArrayStateVar(VariableDeclaration varDecl, ArrayTypeName array)
         {
+            // Issue a warning for intXX type in case /useModularArithemtic option is used:
+            if (context.TranslateFlags.UseModularArithmetic && array.BaseType.ToString().StartsWith("int"))
+            {
+                Console.WriteLine($"Warning: signed integer arithmetic is not handled with /useModularArithmetic option");
+            }
+
             BoogieMapSelect lhsMap = CreateDistinctArrayMappingAddress(currentStmtList, varDecl);
 
             // lets also initialize the array Lengths (only for Arrays declared in this class)
@@ -622,6 +634,12 @@ namespace SolToBoogie
             else if (mapping.ValueType.ToString().StartsWith("uint") ||
                 mapping.ValueType.ToString().StartsWith("int"))
             {
+                // Issue a warning for intXX type in case /useModularArithemtic option is used:
+                if (context.TranslateFlags.UseModularArithmetic && mapping.ValueType.ToString().StartsWith("int"))
+                {
+                    Console.WriteLine($"Warning: signed integer arithmetic is not handled with /useModularArithmetic option");
+                }
+
                 currentStmtList.AddStatement(new BoogieCommentCmd($"Initialize Integer mapping {varDecl.Name}"));
 
                 BoogieType mapKeyType;
@@ -685,6 +703,12 @@ namespace SolToBoogie
             }
             else //it is integer valued
             {
+                // Issue a warning for intXX variables in case /useModularArithemtic option is used:
+                if (context.TranslateFlags.UseModularArithmetic && varDecl.TypeDescriptions.IsInt())
+                {
+                    Console.WriteLine($"Warning: signed integer arithmetic is not handled with /useModularArithmetic option");
+                }
+
                 string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
                 BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr(varName), new BoogieIdentifierExpr("this"));
                 var bigInt = (BoogieExpr)new BoogieLiteralExpr(BigInteger.Zero);
@@ -1020,6 +1044,12 @@ namespace SolToBoogie
             var retParamCount = 0;
             foreach (VariableDeclaration parameter in node.Parameters)
             {
+                // Issue a warning for intXX variables in case /useModularArithemtic option is used:
+                if (context.TranslateFlags.UseModularArithmetic && parameter.TypeDescriptions.IsInt())
+                {
+                    Console.WriteLine($"Warning: signed integer arithmetic is not handled with /useModularArithmetic option");
+                }
+
                 string name = null;
                 if (String.IsNullOrEmpty(parameter.Name))
                 {
@@ -1113,6 +1143,11 @@ namespace SolToBoogie
             {
                 string name = TransUtils.GetCanonicalLocalVariableName(varDecl, context);
                 BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(varDecl.TypeName);
+                // Issue a warning for intXX variables in case /useModularArithemtic option is used:
+                if (context.TranslateFlags.UseModularArithmetic && varDecl.TypeDescriptions.IsInt())
+                {
+                    Console.WriteLine($"Warning: signed integer arithmetic is not handled with /useModularArithmetic option");
+                }
                 var boogieVariable = new BoogieLocalVariable(new BoogieTypedIdent(name, type));
                  boogieToLocalVarsMap[currentBoogieProc].Add(boogieVariable);
             }
@@ -1153,31 +1188,50 @@ namespace SolToBoogie
             return false;
         }
 
-        private BoogieExpr HelperModOper(BoogieExpr rhs, Expression lhsNode)
-        {
-            BoogieExpr res = rhs;
-            if (!context.TranslateFlags.UseModularArithmetic)
-            {
-                return res;
-            }
-            else if (lhsNode is TupleExpression tuple)
-            {
-                VeriSolAssert(false, "Not implemented... tuple in the lhs for overflow detection");
-            }
-            else if (lhsNode.TypeDescriptions.IsUintWSize(out uint sz))
-            {
+        //private BoogieExpr HelperModOper(BoogieExpr rhs, Expression lhsNode)
+        //{
+        //    BoogieExpr res = rhs;
+        //    if (!context.TranslateFlags.UseModularArithmetic)
+        //    {
+        //        return res;
+        //    }
+        //    else if (lhsNode is TupleExpression tuple)
+        //    {
+        //        VeriSolAssert(false, "Not implemented... tuple in the lhs for overflow detection");
+        //    }
+        //    else if (lhsNode.TypeDescriptions.IsUintWSize(out uint sz))
+        //    {
                 
-                    Console.WriteLine("HelperModOper: UseModularArithmetic: adding mod on the rhs of asgn; lhs is uint of size {0}", sz);
-                    VeriSolAssert(sz != 0, $"size of uint lhs is zero");
-                    BigInteger maxUIntValue = (BigInteger)Math.Pow(2, sz);
-                    Console.WriteLine("HelperModOper: maxUIntValue is {0}", maxUIntValue);
-                    res = new BoogieFuncCallExpr("modBpl", new List<BoogieExpr>() { rhs, new BoogieLiteralExpr(maxUIntValue) });
-                    return res;
+        //            Console.WriteLine("HelperModOper: UseModularArithmetic: adding mod on the rhs of asgn; lhs is uint of size {0}", sz);
+        //            VeriSolAssert(sz != 0, $"size of uint lhs is zero");
+        //            BigInteger maxUIntValue = (BigInteger)Math.Pow(2, sz);
+        //            Console.WriteLine("HelperModOper: maxUIntValue is {0}", maxUIntValue);
+        //            res = new BoogieFuncCallExpr("modBpl", new List<BoogieExpr>() { rhs, new BoogieLiteralExpr(maxUIntValue) });
+        //            return res;
              
-            }
+        //    }
 
-            return res;
+        //    return res;
+        //}
+
+        private BoogieExpr AddModuloOp(Expression srcExpr, BoogieExpr expr, TypeDescription type)
+        {
+            if (context.TranslateFlags.UseModularArithmetic)
+            {
+                if (type != null)
+                {
+                    var isUint = type.IsUintWSize(srcExpr, out uint sz);
+                    if (isUint)
+                    {
+                        VeriSolAssert(sz != 0, $"size in AddModuloOp is zero");
+                        BigInteger maxUIntValue = (BigInteger)Math.Pow(2, sz);
+                        return (BoogieExpr)new BoogieFuncCallExpr("modBpl", new List<BoogieExpr>() { expr, new BoogieLiteralExpr(maxUIntValue) });
+                    }
+                }
+            }
+            return expr;
         }
+
         public override bool Visit(Assignment node)
         {
             preTranslationAction(node);
@@ -1282,25 +1336,31 @@ namespace SolToBoogie
 
                 BoogieExpr rhs = TranslateExpr(node.RightHandSide);
                 BoogieStmtList stmtList = new BoogieStmtList();
+                BoogieExpr assignedExpr = new BoogieExpr();
                 switch (node.Operator)
                 {
                     case "=":
-                        // TODO: add mod for rhs
-                        // TODO: throw an exception in the helper, if lhs is a tuple
-                        // rhs = HelperModOper(rhs, node.LeftHandSide);
                         stmtList.AddStatement(new BoogieAssignCmd(lhs[0], rhs));
                         break;
                     case "+=":
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, lhs[0], rhs)));
+                        assignedExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, lhs[0], rhs);
+                        assignedExpr = AddModuloOp(node.LeftHandSide, assignedExpr, node.LeftHandSide.TypeDescriptions);
+                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], assignedExpr));
                         break;
                     case "-=":
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, lhs[0], rhs)));
+                        assignedExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, lhs[0], rhs);
+                        assignedExpr = AddModuloOp(node.LeftHandSide, assignedExpr, node.LeftHandSide.TypeDescriptions);
+                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], assignedExpr));
                         break;
                     case "*=":
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.MUL, lhs[0], rhs)));
+                        assignedExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.MUL, lhs[0], rhs);
+                        assignedExpr = AddModuloOp(node.LeftHandSide, assignedExpr, node.LeftHandSide.TypeDescriptions);
+                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], assignedExpr));
                         break;
                     case "/=":
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.DIV, lhs[0], rhs)));
+                        assignedExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.DIV, lhs[0], rhs);
+                        assignedExpr = AddModuloOp(node.LeftHandSide, assignedExpr, node.LeftHandSide.TypeDescriptions);
+                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], assignedExpr));
                         break;
                     default:
                         VeriSolAssert(false,  $"Unknown assignment operator: {node.Operator}");
@@ -1406,7 +1466,7 @@ namespace SolToBoogie
             return false;
         }
 
-        private void AddAssumeForUints(BoogieExpr boogieExpr, TypeDescription typeDesc)
+        private void AddAssumeForUints(Expression expr, BoogieExpr boogieExpr, TypeDescription typeDesc)
         {
             // skip based on a flag
             if (context.TranslateFlags.NoUnsignedAssumesFlag)
@@ -1419,7 +1479,7 @@ namespace SolToBoogie
 
                 if (context.TranslateFlags.UseModularArithmetic)
                 {
-                    var isUint = typeDesc.IsUintWSize(out uint sz);
+                    var isUint = typeDesc.IsUintWSize(expr, out uint sz);
                     if (isUint)
                     {
                         VeriSolAssert(sz != 0, $"size of uint lhs is zero");
@@ -1678,6 +1738,7 @@ namespace SolToBoogie
                 {
                     var oper = unaryOperation.Operator.Equals("++") ? BoogieBinaryOperation.Opcode.ADD : BoogieBinaryOperation.Opcode.SUB;
                     BoogieExpr rhs = new BoogieBinaryOperation(oper, lhs, new BoogieLiteralExpr(1));
+                    rhs = AddModuloOp(unaryOperation.SubExpression, rhs, unaryOperation.SubExpression.TypeDescriptions);
                     BoogieAssignCmd assignCmd = new BoogieAssignCmd(lhs, rhs);
                     currentStmtList.AddStatement(assignCmd);
                     //print the value
@@ -1688,7 +1749,7 @@ namespace SolToBoogie
                         callCmd.Attributes.Add(new BoogieAttribute("cexpr", $"\"{unaryOperation.SubExpression.ToString()}\""));
                         currentStmtList.AddStatement(callCmd);
                     }
-                    AddAssumeForUints(lhs, unaryOperation.TypeDescriptions);
+                    AddAssumeForUints(unaryOperation, lhs, unaryOperation.TypeDescriptions);
                 }
                 else if (unaryOperation.Operator.Equals("delete"))
                 {
@@ -1773,7 +1834,7 @@ namespace SolToBoogie
             // TODO: Many times the type is unknown...
             if(expr.TypeDescriptions!=null) //  && currentExpr is BoogieIdentifierExpr)
             {
-                AddAssumeForUints(currentExpr, expr.TypeDescriptions);
+                AddAssumeForUints(expr, currentExpr, expr.TypeDescriptions);
             }
 
             return currentExpr;
@@ -2224,7 +2285,7 @@ namespace SolToBoogie
             var newBoogieVar =  MkNewLocalVariableWithType(boogieTypeCall);
 
             Debug.Assert(currentStmtList != null);
-            AddAssumeForUints(newBoogieVar, node.TypeDescriptions);
+            AddAssumeForUints(node, newBoogieVar, node.TypeDescriptions);
 
             return newBoogieVar;
         }
@@ -2966,6 +3027,21 @@ namespace SolToBoogie
                         }
                     }
                 }
+
+                // We do not handle downcasts between unsigned integers, when /useModularArithmetic option is enabled:
+                if (context.TranslateFlags.UseModularArithmetic)
+                {
+                    bool argTypeIsUint = node.Arguments[0].TypeDescriptions.IsUintWSize(node.Arguments[0], out uint argSz);
+                    if (argTypeIsUint && elemType.ToString().StartsWith("uint"))
+                    {
+                        uint castSz = uint.Parse(Extensions.GetNumberFromEnd(elemType.ToString()));
+                        if (argSz > castSz)
+                        {
+                            Console.WriteLine($"Warning: downcasts are not handled with /useModularArithmetic option");
+                        }
+                    }
+                }
+                
                 // lets update currentExpr with rhsExpr. The caller may update it with the temporary
                 currentExpr = rhsExpr; 
                 // lhs := expr;
@@ -3017,7 +3093,7 @@ namespace SolToBoogie
                         currentStmtList.AddStatement(new BoogieAssignCmd(tempVar, expr));
 
                         // Add assume tempVar>=0 for uint
-                        AddAssumeForUints(tempVar, node.SubExpression.TypeDescriptions);
+                        AddAssumeForUints(node.SubExpression, tempVar, node.SubExpression.TypeDescriptions);
 
 
                         currentExpr = tempVar;
@@ -3061,6 +3137,11 @@ namespace SolToBoogie
                 case "*":
                     op = BoogieBinaryOperation.Opcode.MUL;
                     break;
+                case "**":
+                    // Handled below for constants only
+                    // TODO: Need to introduce opcode for power operation
+                    op = BoogieBinaryOperation.Opcode.MUL;
+                    break;
                 case "/":
                     op = BoogieBinaryOperation.Opcode.DIV;
                     break;
@@ -3097,21 +3178,48 @@ namespace SolToBoogie
                     break;
             }
 
-            BoogieExpr binaryExpr = new BoogieBinaryOperation(op, leftExpr, rightExpr);
+            BoogieExpr binaryExpr;
+            if (node.Operator == "**")
+            {
+                if (node.LeftExpression.TypeDescriptions.IsUintConst(node.LeftExpression, out BigInteger valueLeft, out uint szLeft) &&
+                    node.RightExpression.TypeDescriptions.IsUintConst(node.RightExpression, out BigInteger valueRight, out uint szRight))
+                {
+
+                    binaryExpr = new BoogieLiteralExpr((BigInteger)Math.Pow((double)valueLeft, (double)valueRight));
+                }
+                else
+                {
+                    Console.WriteLine($"VeriSol translation error: power operation for non-constants or with constant subexpressions is not supported; hint: use temps for subexpressions");
+                    return false;
+                }
+            }
+            else
+            {
+                binaryExpr = new BoogieBinaryOperation(op, leftExpr, rightExpr);
+            }
             currentExpr = binaryExpr;
 
             if (context.TranslateFlags.UseModularArithmetic)
             {
+                //if (node.Operator == "+" || node.Operator == "-" || node.Operator == "*" || node.Operator == "/" || node.Operator == "**")
                 if (node.Operator == "+" || node.Operator == "-" || node.Operator == "*" || node.Operator == "/")
                 {
-                    if (node.LeftExpression.TypeDescriptions != null)
+                    if (node.LeftExpression.TypeDescriptions != null && node.RightExpression.TypeDescriptions != null)
                     {
-                        var isUint = node.LeftExpression.TypeDescriptions.IsUintWSize(out uint sz);
-                        if (isUint)
+                        var isUintLeft = node.LeftExpression.TypeDescriptions.IsUintWSize(node.LeftExpression, out uint szLeft);
+                        var isUintRight = node.RightExpression.TypeDescriptions.IsUintWSize(node.RightExpression, out uint szRight);
+                        var isUintConstLeft = node.LeftExpression.TypeDescriptions.IsUintConst(node.LeftExpression, out BigInteger valueLeft, out uint szLeftConst);
+                        var isUintConstRight = node.RightExpression.TypeDescriptions.IsUintConst(node.RightExpression, out BigInteger valueRight, out uint szRightConst);
+                        // If both operands are literals, do not use "modBpl" for the binary operation:
+                        if (isUintLeft && isUintRight)
                         {
-                            VeriSolAssert(sz != 0, $"size of uint lhs is zero");
-                            BigInteger maxUIntValue = (BigInteger)Math.Pow(2, sz);
-                            currentExpr = new BoogieFuncCallExpr("modBpl", new List<BoogieExpr>() { binaryExpr, new BoogieLiteralExpr(maxUIntValue) });
+                            if (!isUintConstLeft || !isUintConstRight)
+                            {
+                                VeriSolAssert(szLeft != 0, $"size of uint lhs in binary expr is zero");
+                                VeriSolAssert(szRight != 0, $"size of uint rhs in binary expr is zero");
+                                BigInteger maxUIntValue = (BigInteger)Math.Pow(2, Math.Max(szLeft, szRight));
+                                currentExpr = new BoogieFuncCallExpr("modBpl", new List<BoogieExpr>() { binaryExpr, new BoogieLiteralExpr(maxUIntValue) });
+                            }        
                         }
                     }
                 }

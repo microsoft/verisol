@@ -241,6 +241,8 @@ contract ERC20 is IERC20 {
 
         _allowances[owner][spender] = value;
         emit Approval(owner, spender, value);
+        // VeriSol.Modifies(_allowances, [(owner, spender)]);
+        // VeriSol.Emits(Approval);
     }
 
     /**

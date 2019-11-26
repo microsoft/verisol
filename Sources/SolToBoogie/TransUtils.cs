@@ -25,7 +25,6 @@ namespace SolToBoogie
             string typeStr = typeDescription.TypeString;
             if (!typeStr.StartsWith("int", StringComparison.CurrentCulture))
             {
-                //Console.WriteLine($"IsIntWSize: not int type: {typeStr}");
                 sz = uint.MaxValue;
                 return false;
             }
@@ -41,7 +40,6 @@ namespace SolToBoogie
                 {
                     sz = uint.Parse(GetNumberFromEnd(typeStr));
                 }
-                //Console.WriteLine("int, intKK or int_const type, size is {0}", sz);
             }
             catch (Exception e)
             {
@@ -68,52 +66,147 @@ namespace SolToBoogie
             }
             return text.Substring(i + 1);
         }
-        public static bool IsUintWSize(this TypeDescription typeDescription, out uint sz)
+
+        // Returns uintXX type of an unsigned integer constant, where XX is 8, 16, 24, ..., 256
+        private static int GetConstantSize(BigInteger constant)
+        {
+            BigInteger power = 1;
+            int size = 0;
+            while (power <= constant)
+            {
+                //power *= 2;
+                power <<= 1;
+                size++;
+            }
+
+            if (power == constant) size--;
+
+            if (size <= 8) return 8;
+            else if (size > 256) return -1;
+            else if (size % 8 == 0) return size;
+            else return 8 * (size / 8) + 8;
+        }
+
+        public static bool IsUintWSize(this TypeDescription typeDescription, Expression expr, out uint sz)
         {
             string typeStr = typeDescription.TypeString;
-            if (!typeStr.StartsWith("uint", StringComparison.CurrentCulture))
+            if (!typeStr.StartsWith("uint", StringComparison.CurrentCulture) && !typeStr.Contains("const"))
             {
-                //Console.WriteLine($"IsUintWSize: not uint type: {typeStr}");
-                sz = uint.MaxValue;
+                sz = 256;
                 return false;
             }
 
-            //Console.WriteLine($"IsUintWSize: uint type: {typeStr}");
             try
             {
-                if (typeStr.Equals("uint") || (typeStr.Contains("const")))
+                if (typeStr.Equals("uint"))
                 {
                     sz = 256;
+                    return true;
+                }
+                else if (typeStr.Contains("const"))
+                {
+                    return IsUintConst(typeDescription, expr, out BigInteger value, out sz);
                 }
                 else
                 {
                     sz = uint.Parse(GetNumberFromEnd(typeStr));
+                    return true;
                 }
-
-                //Console.WriteLine("uint, uintKK or uint_const type, size is {0}", sz);
             }
             catch (Exception e)
             {
-                Console.WriteLine($"VeriSol translation error in IsUintWSize: unknown uintXX type: {e.Message}");
-                sz = uint.MaxValue;
+                Console.WriteLine($"VeriSol translation error: exception in IsUintWSize: {e.Message}");
+                sz = 256;
                 return false;
             }
-
-            return true;
         }
-        
-        public static bool IsUintConst(this TypeDescription typeDescription, out uint sz)
+
+        // "Out" parameter "value" is only used when IsUintConst is called in the context off a BinaryOperation on constants with the power operator.
+        public static bool IsUintConst(this TypeDescription typeDescription, Expression constant, out BigInteger value, out uint sz)
         {
-            var type = typeDescription.ToString();
-            if (type.StartsWith("int_const"))
+            sz = 256;
+            try
             {
-                //uint c = uint.Parse(GetNumberFromEnd(type));
-                sz = 256;
-                return sz >= 0 ? true: false;
+                var type = typeDescription.ToString();
+                if (type.StartsWith("int_const"))
+                {
+                    if (constant is Literal)
+                    {
+                        string constStr = ((Literal)constant).Value;
+                        value = BigInteger.Parse(constStr);
+                        int res = GetConstantSize(value);
+                        if (res == -1)
+                        {
+                            // Constant > 2^256: 
+                            Console.WriteLine($"Warning: uint constant > 2**256");
+                            sz = 256;
+                            return true;
+                        }
+                        else
+                        {
+                            sz = (uint)res;
+                            return true;
+                        }
+                    }
+                    else if (constant is BinaryOperation)
+                    {
+                        BinaryOperation binaryConstantExpr = (BinaryOperation)constant;
+
+                        if (binaryConstantExpr.LeftExpression is Literal && binaryConstantExpr.RightExpression is Literal)
+                        {
+                            // Get expression value from TypeDescriptions (but not if the constant is too big)
+                            string typeStr = binaryConstantExpr.TypeDescriptions.TypeString;
+
+                            if (typeDescription.TypeString.Contains("omitted"))
+                            {
+                                // Large constant which is abbreviated in the typeDescription: 
+                                // This would probably never happen, because Solidity compiler reports type errors for such constants
+                                Console.WriteLine($"Warning: constant expression contains large constant(s);");
+                                Console.WriteLine($"if the large constant is an operand in a power operation,");
+                                Console.WriteLine($"modulo arithmetic check will not work correctly");
+                                value = 0;
+                                sz = 256;
+                                return false;
+                            }
+                            else
+                            {
+                                value = BigInteger.Parse(GetNumberFromEnd(typeStr));
+                                sz = 256;
+                                return true;
+                            }                         
+                        }
+                        else
+                        {
+                            // TODO: The warning below could probably be suppressed:
+                            // this is the case of exprs like (2+2+2...), where left and right expressions are BinaryOperation;
+                            // in these cases, "value" is never used (it is only used for power operation on two literals)
+                            Console.WriteLine($"Warning in IsUintConst: constant expression is neither Literal nor BinaryOperation with Literal operands; hint: use temps for subexpressions");
+                            value = 0;
+                            sz = 256;
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        // TODO: constant is TupleExpression:
+                        Console.WriteLine($"Warning in IsUintConst: constant expression is neither Literal nor BinaryOperation; hint: use temps for subexpressions");
+                        value = 0;
+                        sz = 256;
+                        return false;
+                    }                      
+                }
+                else
+                {
+                    sz = 256;
+                    value = 0;
+                    return false;
+                }
             }
-            else
+            catch (Exception e)
             {
-                sz = uint.MaxValue;
+                Console.WriteLine($"VeriSol translation error: exception in IsUintConst: {e.Message}");
+                value = 0;
+                sz = 256;
                 return false;
             }
         }
