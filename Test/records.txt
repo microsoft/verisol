@@ -170,6 +170,7 @@ DAO-fixed-call.sol
 ERC20-simplified.sol
 #ERC20-demo.sol
 #ERC20-demoMod.sol
+ERC20-modifies.sol
 block.sol
 harness.sol
 biginitinit.sol
