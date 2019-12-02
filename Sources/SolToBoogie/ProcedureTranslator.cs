@@ -428,14 +428,16 @@ namespace SolToBoogie
                 else
                 {
                     //extract the specifications from within the body
-                    BoogieStmtList procBodyWoRequires, procBodyWoEnsures;
+                    BoogieStmtList procBodyWoRequires, procBodyWoEnsures, procBodyWoModifies;
                     var preconditions = ExtractSpecifications("Requires_VeriSol", procBody, out procBodyWoRequires);
                     var postconditions = ExtractSpecifications("Ensures_VeriSol", procBodyWoRequires, out procBodyWoEnsures);
+                    var modifies = ExtractSpecifications("Modifies_VeriSol", procBodyWoEnsures, out procBodyWoModifies);
 
                     procedure.AddPreConditions(preconditions);
                     procedure.AddPostConditions(postconditions);
+                    procedure.AddPostConditions(modifies);
                     List<BoogieVariable> localVars = boogieToLocalVarsMap[currentBoogieProc];
-                    BoogieImplementation impelementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBodyWoEnsures);
+                    BoogieImplementation impelementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBodyWoModifies);
                     context.Program.AddDeclaration(impelementation);
                 }
             }
@@ -1607,8 +1609,17 @@ namespace SolToBoogie
                     }
                     if (callCmd.Callee.Equals(specStringCall))
                     {
-                        VeriSolAssert(callCmd.Ins.Count == 4, $"Found {specStringCall}(..) with unexpected number of args");
-                        specArguments.Add(callCmd.Ins[3]);
+                        //first 3 args are {this, msg.sender, msg.value}
+                        if (specStringCall.Equals("Modifies_VeriSol"))
+                        {
+                            VeriSolAssert(callCmd.Ins.Count == 5, $"For Modifies clause, found {specStringCall}(..) with unexpected number of args (expected 5)");
+                            specArguments.Add(TranslateModifiesStmt(callCmd.Ins[3], callCmd.Ins[4]));
+                        }
+                        else
+                        {
+                            VeriSolAssert(callCmd.Ins.Count == 4, $"Found {specStringCall}(..) with unexpected number of args (expected 4)");
+                            specArguments.Add(callCmd.Ins[3]);
+                        }
                     } else
                     {
                         bodyWithoutSpecNodes.AddStatement(stmt);
@@ -1616,6 +1627,39 @@ namespace SolToBoogie
                 }
             }
             return specArguments;
+        }
+
+        private BoogieExpr TranslateModifiesStmt(BoogieExpr boogieExpr1, BoogieExpr boogieExpr2)
+        {
+            //has to be M_ref_int[mapp[this]] instead of mapp[this]
+            var mapName = MapArrayHelper.GetMemoryMapName(BoogieType.Ref, BoogieType.Int);
+            var mappingExpr = new BoogieMapSelect(new BoogieIdentifierExpr(mapName), boogieExpr1);
+
+            //boogieExpr2 is a tuple, we need to flatten it into an array
+            var boogieTupleExpr = boogieExpr2 as BoogieTupleExpr;
+            VeriSolAssert(boogieTupleExpr != null, $"Expecting tuple expression, found {boogieExpr2.ToString()}");
+            VeriSolAssert(boogieTupleExpr.Arguments.Count > 0, $"Expecting non-tuple expression, found {boogieExpr2.ToString()}");
+            VeriSolAssert(boogieTupleExpr.Arguments.Count < 10, $"Expecting tuple expression of size < 10, found {boogieExpr2.ToString()}");
+
+            // forall x: Ref :: x == m1 || x == m2 ... || x == mi || map[x] == old(map[x])
+            var qVar1 = QVarGenerator.NewQVar(0, 0);
+            var bodyExpr = (BoogieExpr)new BoogieLiteralExpr(false);
+            for (int i = 0; i < boogieTupleExpr.Arguments.Count; i++)
+            {
+                bodyExpr =
+                    new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, bodyExpr,
+                       (new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, qVar1, boogieTupleExpr.Arguments[i])));
+            }
+            var mapExpr = new BoogieMapSelect(mappingExpr, (BoogieExpr)qVar1);
+            var oldMapExpr = new BoogieFuncCallExpr("old", new List<BoogieExpr>() { mapExpr });
+            var eqExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, mapExpr, oldMapExpr);
+            bodyExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, bodyExpr, eqExpr);
+            var qBodyExpr = new BoogieQuantifiedExpr(true,
+                new List<BoogieIdentifierExpr>() { qVar1 },
+                new List<BoogieType>() { BoogieType.Ref },
+                bodyExpr
+                );
+            return qBodyExpr;
         }
 
         private List<BoogieExpr> ExtractContractInvariants(BoogieStmtList body)
@@ -2186,7 +2230,7 @@ namespace SolToBoogie
                 boogieExprs[0] = new BoogieMapSelect(new BoogieIdentifierExpr(mapName), boogieExprs[0]);
             }
             return new BoogieFuncCallExpr(verisolFunc, boogieExprs);
-        }
+            }
 
         private bool IsVeriSolCodeContractFunction(FunctionCall node)
         {
@@ -2200,7 +2244,8 @@ namespace SolToBoogie
                         if (member.MemberName.Equals("Invariant") ||
                             member.MemberName.Equals("ContractInvariant") ||
                             member.MemberName.Equals("Requires") ||
-                            member.MemberName.Equals("Ensures"))
+                            member.MemberName.Equals("Ensures") ||
+                            member.MemberName.Equals("Modifies"))
                             return false;
                         else
                             return true;
@@ -2222,6 +2267,8 @@ namespace SolToBoogie
                             return "_SumMapping_VeriSol";
                         if (member.MemberName.Equals("Old"))
                             return "old"; //map it old(..) in Boogie
+                        if (member.MemberName.Equals("Modifies"))
+                            return "Modifies"; //map it modifies and forall(..) in Boogie
                         else
                             return null;
                     }

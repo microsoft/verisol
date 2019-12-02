@@ -14,7 +14,13 @@ The following paper describes the design of VeriSol and application of smart con
 
 Instructions for installing and running VeriSol can be found [here](INSTALL.md).
 
+## VeriSol Code Contracts library
+
+The code contract library **VeriSolContracts.sol** is present [here](/Test/regressions/Libraries/VeriSolContracts.sol). This allows adding specifications in the form of pre/post conditions, loop invariants, contract invariants, modifies clauses, and extending the assertion language with constructs such as old, sum, etc.
+
+
 ## License
+
 VeriSol is licensed under the MIT license. 
 
 ## Contributing
