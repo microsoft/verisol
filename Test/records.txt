@@ -42,6 +42,11 @@ Overflow9.sol
 Overflow9Mod.sol
 Overflow10.sol 
 Overflow10Mod.sol
+Overflow11.sol
+Overflow12.sol 
+Overflow12Mod.sol
+Overflow13.sol 
+Overflow13Mod.sol
 #UIntMod.sol
 ReturnMult.sol
 #MappingToStruct.sol
