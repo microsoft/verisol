@@ -75,6 +75,7 @@ Require.sol
 LoopDoWhile.sol
 UsingFor.sol
 UsingForComplex.sol
+UsingInBase.sol
 AssertFalse.sol
 MethodDecl.sol
 #StructOfDynamicArray.sol

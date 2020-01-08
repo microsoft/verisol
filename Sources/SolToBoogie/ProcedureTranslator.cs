@@ -2758,14 +2758,21 @@ namespace SolToBoogie
             VeriSolAssert(context.UsingMap.ContainsKey(currentContract), $"Expect to see a using A for {typedescr} in this contract {currentContract.Name}");
 
             HashSet<UserDefinedTypeName> usingRange = new HashSet<UserDefinedTypeName>();
-            foreach(var kv in context.UsingMap[currentContract])
+
+            // may need to look into base contracts as well (UsingInBase.sol)
+            foreach (int id in currentContract.LinearizedBaseContracts)
             {
-                if (kv.Value.ToString().Equals(typedescr))
+                ContractDefinition baseContract = context.GetASTNodeById(id) as ContractDefinition;
+                Debug.Assert(baseContract != null);
+                foreach (var kv in context.UsingMap[baseContract])
                 {
-                    usingRange.Add(kv.Key);
+                    if (kv.Value.ToString().Equals(typedescr))
+                    {
+                        usingRange.Add(kv.Key);
+                    }
                 }
             }
-            VeriSolAssert(usingRange.Count > 0, $"Expectig at least one using A for B for {typedescr}");
+            VeriSolAssert(usingRange.Count > 0, $"Expecting at least one using A for B for {typedescr}");
 
             string signature = TransUtils.InferFunctionSignature(context, node);
             VeriSolAssert(context.HasFuncSignature(signature), $"Cannot find a function with signature: {signature}");
