@@ -300,7 +300,9 @@ namespace SolToBoogie
             PrintArguments(node, inParams, currentStmtList);
 
             // output parameters
+            isReturnParameterList = true;
             node.ReturnParameters.Accept(this);
+            isReturnParameterList = false;
             List<BoogieVariable> outParams = currentParamList;
 
             var assumesForParamsAndReturn = currentStmtList;
@@ -1036,6 +1038,7 @@ namespace SolToBoogie
 
         // updated in the visitor of parameter list
         private List<BoogieVariable> currentParamList;
+        private bool isReturnParameterList = false;
         
         public override bool Visit(ParameterList node)
         {
@@ -1053,8 +1056,10 @@ namespace SolToBoogie
                 string name = null;
                 if (String.IsNullOrEmpty(parameter.Name))
                 {
-                    //name = "__ret";
-                    name = $"__ret_{retParamCount++}_" ;
+                    if (isReturnParameterList)
+                        name = $"__ret_{retParamCount++}_" ;
+                    else
+                        name = $"__param_{retParamCount++}_";
                 }
                 else
                 {
