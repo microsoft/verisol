@@ -2764,6 +2764,7 @@ namespace SolToBoogie
             {
                 ContractDefinition baseContract = context.GetASTNodeById(id) as ContractDefinition;
                 Debug.Assert(baseContract != null);
+                if (!context.UsingMap.ContainsKey(baseContract)) continue;
                 foreach (var kv in context.UsingMap[baseContract])
                 {
                     if (kv.Value.ToString().Equals(typedescr))
