@@ -807,6 +807,7 @@ namespace SolToBoogie
         }
 
         // generate the default empty constructors, including an internal one without base ctors, and an actual one with base ctors
+        // TODO: refactor this code with the code to generate constructor code when definition is present
         private void GenerateDefaultConstructor(ContractDefinition contract)
         {
             // generate the internal one without base constructors
@@ -856,7 +857,14 @@ namespace SolToBoogie
                 ContractDefinition baseContract = context.GetASTNodeById(id) as ContractDefinition;
                 VeriSolAssert(baseContract != null);
 
-                string callee = TransUtils.GetCanonicalConstructorName(baseContract) + "_NoBaseCtor";
+                string callee = TransUtils.GetCanonicalConstructorName(baseContract);
+                if (baseContract.Name == contract.Name)
+                {
+                    // for current contract, call the body that does not have the base calls
+                    // for base contracts, call the wrapper constructor 
+                    callee += "_NoBaseCtor";
+                }
+
                 List<BoogieExpr> inputs = new List<BoogieExpr>();
                 List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
 
@@ -873,9 +881,30 @@ namespace SolToBoogie
                 }
                 else // no argument for this base constructor
                 {
-                    foreach (BoogieVariable param in inParams)
+
+                    if (baseContract.Name == contract.Name)
                     {
-                        inputs.Add(new BoogieIdentifierExpr(param.TypedIdent.Name));
+                        // only do this for the derived contract
+                        foreach (BoogieVariable param in inParams)
+                        {
+                            inputs.Add(new BoogieIdentifierExpr(param.TypedIdent.Name));
+                        }
+                    }
+                    else
+                    {
+
+                        // Do we call the constructor or assume that it is invoked in teh base contract?
+                        /* Assume it is invoked in the constructor for the base contract if the parameter list is non-empty (HACK) */
+                        // Issue #101
+                        var baseCtr = context.IsConstructorDefined(baseContract) ? context.GetConstructorByContract(baseContract) : null;
+                        if (baseCtr != null && baseCtr.Parameters.Length() > 0)
+                        {
+                            Console.WriteLine($"Warning!!: Base constructor { callee} has non-empty parameters but not specified in implicit ctor of {currentContract.Name}...assuming it is invoked from a base contract");
+                            continue;
+                        }
+                        inputs.Add(new BoogieIdentifierExpr("this"));
+                        inputs.Add(new BoogieIdentifierExpr("msgsender_MSG"));
+                        inputs.Add(new BoogieIdentifierExpr("msgvalue_MSG"));
                     }
                 }
                 BoogieCallCmd callCmd = new BoogieCallCmd(callee, inputs, outputs);
@@ -985,7 +1014,6 @@ namespace SolToBoogie
                             if (baseCtr != null && baseCtr.Parameters.Length() > 0)
                             {
                                 Console.WriteLine($"Warning!!: Base constructor { callee} has non-empty parameters but not specified in { ctor.Name}...assuming it is invoked from a base contract");
-                                currentStmtList = null;
                                 continue;
                             }
                             inputs.Add(new BoogieIdentifierExpr("this"));
@@ -998,6 +1026,8 @@ namespace SolToBoogie
                     ctorBody.AddStatement(callCmd);
                     currentStmtList = null;
                 }
+
+
 
                 localVars.AddRange(boogieToLocalVarsMap[currentBoogieProc]);
                 BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, ctorBody);

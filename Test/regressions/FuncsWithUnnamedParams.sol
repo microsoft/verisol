@@ -8,5 +8,15 @@ contract Test {
   constructor () public {
   }
   
-  function test(uint8) public returns (uint8);
+  function foo(uint x) public returns (uint y) 
+  {
+     return x;
+  }  
+
+
+  function test(uint8, address) public returns (uint8)
+  {
+     revert("");
+     return 1;
+  }
 }

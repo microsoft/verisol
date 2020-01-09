@@ -686,9 +686,14 @@ namespace SolToBoogie
                 {
                     if (funcDef.Visibility == EnumVisibility.PUBLIC || funcDef.Visibility == EnumVisibility.EXTERNAL)
                     {
+                        var inpParamCount = 0;
                         foreach (VariableDeclaration param in funcDef.Parameters.Parameters)
                         {
-                            string name = TransUtils.GetCanonicalLocalVariableName(param, context);
+                            string name = $"__arg_{inpParamCount++}_" + funcDef.Name;
+                            if (!string.IsNullOrEmpty(param.Name))
+                            {
+                                name = TransUtils.GetCanonicalLocalVariableName(param, context);
+                            }
                             if (!uniqueVarNames.Contains(name))
                             {
                                 BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(param.TypeName);
@@ -766,9 +771,14 @@ namespace SolToBoogie
                     callBackTarget != null ? new BoogieIdentifierExpr(callBackTarget.Item2) : new BoogieIdentifierExpr("msgsender_MSG"), 
                     new BoogieIdentifierExpr("msgvalue_MSG"),
                 };
+                    var inpParamCount = 0;
                     foreach (VariableDeclaration param in funcDef.Parameters.Parameters)
                     {
-                        string name = TransUtils.GetCanonicalLocalVariableName(param, context);
+                        string name = $"__arg_{inpParamCount++}_" + funcDef.Name;
+                        if (!string.IsNullOrEmpty(param.Name))
+                        {
+                            name = TransUtils.GetCanonicalLocalVariableName(param, context);
+                        }
                         inputs.Add(new BoogieIdentifierExpr(name));
                         if (param.TypeName is ArrayTypeName array)
                         {
@@ -788,7 +798,9 @@ namespace SolToBoogie
                         if (!string.IsNullOrEmpty(param.Name))
                         {
                             name = TransUtils.GetCanonicalLocalVariableName(param, context);
+
                         }
+
                         outputs.Add(new BoogieIdentifierExpr(name));
                     }
 

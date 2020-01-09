@@ -48,6 +48,7 @@ ReturnMult.sol
 Logical.sol
 Inheritance.sol
 ConstructorChaining.sol
+ConstructorChainingImplicit.sol
 InheritWithConstructorArgs.sol
 TypeCast.sol
 AddressCast.sol
