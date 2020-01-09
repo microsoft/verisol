@@ -75,6 +75,7 @@ Require.sol
 LoopDoWhile.sol
 UsingFor.sol
 UsingForComplex.sol
+UsingInBase.sol
 AssertFalse.sol
 MethodDecl.sol
 #StructOfDynamicArray.sol
@@ -178,3 +179,4 @@ tx.sol
 ERC20.sol
 A__AssetTransfer_Workbench.sol
 NestedMappingAlias.sol
+FuncsWithUnnamedParams.sol

@@ -81,8 +81,6 @@ namespace SolToBoogie
         {
             preTranslationAction(node);
 
-            context.UsingMap[node] = new Dictionary<UserDefinedTypeName, TypeName>();
-
             currentContract = node;
 
             if (currentContract.ContractKind == EnumContractKind.LIBRARY &&
@@ -300,7 +298,9 @@ namespace SolToBoogie
             PrintArguments(node, inParams, currentStmtList);
 
             // output parameters
+            isReturnParameterList = true;
             node.ReturnParameters.Accept(this);
+            isReturnParameterList = false;
             List<BoogieVariable> outParams = currentParamList;
 
             var assumesForParamsAndReturn = currentStmtList;
@@ -1036,6 +1036,7 @@ namespace SolToBoogie
 
         // updated in the visitor of parameter list
         private List<BoogieVariable> currentParamList;
+        private bool isReturnParameterList = false;
         
         public override bool Visit(ParameterList node)
         {
@@ -1053,8 +1054,10 @@ namespace SolToBoogie
                 string name = null;
                 if (String.IsNullOrEmpty(parameter.Name))
                 {
-                    //name = "__ret";
-                    name = $"__ret_{retParamCount++}_" ;
+                    if (isReturnParameterList)
+                        name = $"__ret_{retParamCount++}_" ;
+                    else
+                        name = $"__param_{retParamCount++}_";
                 }
                 else
                 {
@@ -2753,14 +2756,22 @@ namespace SolToBoogie
             VeriSolAssert(context.UsingMap.ContainsKey(currentContract), $"Expect to see a using A for {typedescr} in this contract {currentContract.Name}");
 
             HashSet<UserDefinedTypeName> usingRange = new HashSet<UserDefinedTypeName>();
-            foreach(var kv in context.UsingMap[currentContract])
+
+            // may need to look into base contracts as well (UsingInBase.sol)
+            foreach (int id in currentContract.LinearizedBaseContracts)
             {
-                if (kv.Value.ToString().Equals(typedescr))
+                ContractDefinition baseContract = context.GetASTNodeById(id) as ContractDefinition;
+                Debug.Assert(baseContract != null);
+                if (!context.UsingMap.ContainsKey(baseContract)) continue;
+                foreach (var kv in context.UsingMap[baseContract])
                 {
-                    usingRange.Add(kv.Key);
+                    if (kv.Value.ToString().Equals(typedescr))
+                    {
+                        usingRange.Add(kv.Key);
+                    }
                 }
             }
-            VeriSolAssert(usingRange.Count > 0, $"Expectig at least one using A for B for {typedescr}");
+            VeriSolAssert(usingRange.Count > 0, $"Expecting at least one using A for B for {typedescr}");
 
             string signature = TransUtils.InferFunctionSignature(context, node);
             VeriSolAssert(context.HasFuncSignature(signature), $"Cannot find a function with signature: {signature}");
@@ -3271,19 +3282,6 @@ namespace SolToBoogie
 
             BoogieExpr indexAccessExpr = new BoogieMapSelect(baseExpr, indexExpr);
             currentExpr = MapArrayHelper.GetMemoryMapSelectExpr(baseKeyType, baseValType, baseExpr, indexExpr);
-            return false;
-        }
-
-        public override bool Visit(UsingForDirective node)
-        {
-            preTranslationAction(node);
-            if (node.TypeName is UserDefinedTypeName userType)
-            {
-                VeriSolAssert(!userType.TypeDescriptions.IsContract(), $"VeriSol does not support using A for B where B is a contract name, found {userType.ToString()}");
-            }
-            context.UsingMap[currentContract][node.LibraryName] = node.TypeName;
-            //VeriSolAssert(false, $"Using unsupported...{node.ToString()}");
-            //throw new NotImplementedException();
             return false;
         }
 
