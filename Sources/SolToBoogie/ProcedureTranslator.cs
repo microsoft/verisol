@@ -81,8 +81,6 @@ namespace SolToBoogie
         {
             preTranslationAction(node);
 
-            context.UsingMap[node] = new Dictionary<UserDefinedTypeName, TypeName>();
-
             currentContract = node;
 
             if (currentContract.ContractKind == EnumContractKind.LIBRARY &&
@@ -3284,19 +3282,6 @@ namespace SolToBoogie
 
             BoogieExpr indexAccessExpr = new BoogieMapSelect(baseExpr, indexExpr);
             currentExpr = MapArrayHelper.GetMemoryMapSelectExpr(baseKeyType, baseValType, baseExpr, indexExpr);
-            return false;
-        }
-
-        public override bool Visit(UsingForDirective node)
-        {
-            preTranslationAction(node);
-            if (node.TypeName is UserDefinedTypeName userType)
-            {
-                VeriSolAssert(!userType.TypeDescriptions.IsContract(), $"VeriSol does not support using A for B where B is a contract name, found {userType.ToString()}");
-            }
-            context.UsingMap[currentContract][node.LibraryName] = node.TypeName;
-            //VeriSolAssert(false, $"Using unsupported...{node.ToString()}");
-            //throw new NotImplementedException();
             return false;
         }
 

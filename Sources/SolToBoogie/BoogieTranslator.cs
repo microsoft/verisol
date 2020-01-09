@@ -73,6 +73,10 @@ namespace SolToBoogie
             ModifierCollector modifierCollector = new ModifierCollector(context);
             sourceUnits.Accept(modifierCollector);
 
+            // collect all using using definitions
+            UsingCollector usingCollector = new UsingCollector(context);
+            sourceUnits.Accept(usingCollector);
+
             // translate procedures
             ProcedureTranslator procTranslator = new ProcedureTranslator(context, generateInlineAttributesInBpl);
             sourceUnits.Accept(procTranslator);
