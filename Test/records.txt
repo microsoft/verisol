@@ -47,7 +47,7 @@ ReturnMult.sol
 #MappingToStruct.sol
 Logical.sol
 Inheritance.sol
-#ConstructorChaining.sol
+ConstructorChaining.sol
 InheritWithConstructorArgs.sol
 TypeCast.sol
 AddressCast.sol

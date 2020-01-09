@@ -933,8 +933,13 @@ namespace SolToBoogie
                     // since we are not translating any statements, currentStmtList remains null
                     currentStmtList = new BoogieStmtList();
 
-                    string callee = TransUtils.GetCanonicalConstructorName(baseContract) + "_NoBaseCtor" ;
-                    
+                    string callee = TransUtils.GetCanonicalConstructorName(baseContract);
+                    if (baseContract.Name == contract.Name)
+                    {
+                        // for current contract, call the body that does not have the base calls
+                        // for base contracts, call the wrapper constructor 
+                        callee += "_NoBaseCtor";
+                    }
                     List<BoogieExpr> inputs = new List<BoogieExpr>();
                     List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
 

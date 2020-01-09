@@ -9,6 +9,6 @@ contract B is A {
     constructor (uint a) A(a) public {x++;}
 }
 
-contract C is B {
+contract C is A, B {
     constructor (uint a) B(a) public {x++; assert (x == a + 2);}
 }
