@@ -868,7 +868,7 @@ namespace SolToBoogie
                 List<BoogieExpr> inputs = new List<BoogieExpr>();
                 List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
 
-                InheritanceSpecifier inheritanceSpecifier = GetInheritanceSpecifierOfBase(contract, baseContract);
+                InheritanceSpecifier inheritanceSpecifier = GetInheritanceSpecifieWithArgsOfBase(contract, baseContract);
                 if (inheritanceSpecifier != null)
                 {
                     inputs.Add(new BoogieIdentifierExpr("this"));
@@ -892,15 +892,15 @@ namespace SolToBoogie
                     }
                     else
                     {
-
                         // Do we call the constructor or assume that it is invoked in teh base contract?
-                        /* Assume it is invoked in the constructor for the base contract if the parameter list is non-empty (HACK) */
-                        // Issue #101
+                        // since it needs argument, we cannot invoke it here (Issue #101)
                         var baseCtr = context.IsConstructorDefined(baseContract) ? context.GetConstructorByContract(baseContract) : null;
                         if (baseCtr != null && baseCtr.Parameters.Length() > 0)
                         {
-                            Console.WriteLine($"Warning!!: Base constructor { callee} has non-empty parameters but not specified in implicit ctor of {currentContract.Name}...assuming it is invoked from a base contract");
                             continue;
+                        } else if (!currentContract.BaseContracts.Any(x => x.BaseName.Name.Equals(baseContract.Name)))
+                        {
+                            Console.WriteLine($"Warning!!: Invoking base constructor { callee} that is not explicitly in inheritance list of {currentContract.Name}...");
                         }
                         inputs.Add(new BoogieIdentifierExpr("this"));
                         inputs.Add(new BoogieIdentifierExpr("msgsender_MSG"));
@@ -972,7 +972,7 @@ namespace SolToBoogie
                     List<BoogieExpr> inputs = new List<BoogieExpr>();
                     List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
 
-                    InheritanceSpecifier inheritanceSpecifier = GetInheritanceSpecifierOfBase(contract, baseContract);
+                    InheritanceSpecifier inheritanceSpecifier = GetInheritanceSpecifieWithArgsOfBase(contract, baseContract);
                     ModifierInvocation modifierInvocation = GetModifierInvocationOfBase(ctor, baseContract);
                     if (inheritanceSpecifier != null)
                     {
@@ -1006,15 +1006,17 @@ namespace SolToBoogie
                         }
                         else
                         {
-
                             // Do we call the constructor or assume that it is invoked in teh base contract?
-                            /* Assume it is invoked in the constructor for the base contract if the parameter list is non-empty (HACK) */ 
-                            // Issue #101
+                            // Do we call the constructor or assume that it is invoked in teh base contract?
+                            // since it needs argument, we cannot invoke it here (Issue #101)
                             var baseCtr = context.IsConstructorDefined(baseContract) ? context.GetConstructorByContract(baseContract) : null;
                             if (baseCtr != null && baseCtr.Parameters.Length() > 0)
                             {
-                                Console.WriteLine($"Warning!!: Base constructor { callee} has non-empty parameters but not specified in { ctor.Name}...assuming it is invoked from a base contract");
                                 continue;
+                            }
+                            else if (!currentContract.BaseContracts.Any(x => x.BaseName.Name.Equals(baseContract.Name)))
+                            {
+                                Console.WriteLine($"Warning!!: Invoking base constructor { callee} that is not explicitly called in the inheritance/modifier list specified in { ctor.Name}...");
                             }
                             inputs.Add(new BoogieIdentifierExpr("this"));
                             inputs.Add(new BoogieIdentifierExpr("msgsender_MSG"));
@@ -1038,7 +1040,7 @@ namespace SolToBoogie
         // get the inheritance specifier of `baseContract' in contract definition `contract' if it specifies arguments
         // return null if there is no matching inheritance specifier
         // NOTE: two inheritance specifiers having the same name leads to a compile error
-        private InheritanceSpecifier GetInheritanceSpecifierOfBase(ContractDefinition contract, ContractDefinition baseContract)
+        private InheritanceSpecifier GetInheritanceSpecifieWithArgsOfBase(ContractDefinition contract, ContractDefinition baseContract)
         {
             foreach (InheritanceSpecifier inheritanceSpecifier in contract.BaseContracts)
             {

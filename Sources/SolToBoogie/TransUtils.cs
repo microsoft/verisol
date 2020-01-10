@@ -706,7 +706,6 @@ namespace SolToBoogie
                         var retParamCount = 0;
                         foreach (VariableDeclaration param in funcDef.ReturnParameters.Parameters)
                         {
-                            //string name = "__ret" + funcDef.Name;
                             string name = $"__ret_{retParamCount++}_" + funcDef.Name;
                             if (!string.IsNullOrEmpty(param.Name))
                             {
