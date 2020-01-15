@@ -360,6 +360,7 @@ namespace SolToBoogie
                     case "address":
                     case "address payable":
                         return BoogieType.Ref;
+                    case "bytes4":
                     case "bytes32":
                     case "bytes":
                         return BoogieType.Int;
