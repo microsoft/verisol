@@ -2,26 +2,26 @@ pragma solidity >=0.4.24 <0.6.0;
 
 import "SafeMath.sol";
 
-library Counters {
+library Lib {
 	using SafeMath for uint256;
 	
 	struct Counter {
-		uint256 _value;  //default: 0
+		uint256 value;  //default: 0
 	}
 	
 	function decrement(Counter storage counter) internal {
-        counter._value = counter._value.sub(1);
+        counter.value = counter.value.sub(1);
     }
 
 }
-contract NonFungibleBasic {
-    using Counters for Counters.Counter;
+contract A {
+    using Lib for Lib.Counter;
 	
-	mapping (address => Counters.Counter) private _ownedTokensCount;
+	mapping (address => Lib.Counter) private count;
 
-    function _burn(address owner, uint256 tokenId) internal {
+    function foo(address x, uint256 id) internal {
 
-        _ownedTokensCount[owner].decrement();
+        count[x].decrement();
  
     }
 }
