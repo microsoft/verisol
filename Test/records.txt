@@ -47,7 +47,9 @@ ReturnMult.sol
 #MappingToStruct.sol
 Logical.sol
 Inheritance.sol
-#ConstructorChaining.sol
+ConstructorChaining.sol
+ConstructorChaining2.sol
+ConstructorChainingImplicit.sol
 InheritWithConstructorArgs.sol
 TypeCast.sol
 AddressCast.sol
@@ -75,6 +77,7 @@ Require.sol
 LoopDoWhile.sol
 UsingFor.sol
 UsingForComplex.sol
+UsingInBase.sol
 AssertFalse.sol
 MethodDecl.sol
 #StructOfDynamicArray.sol
@@ -178,3 +181,4 @@ tx.sol
 ERC20.sol
 A__AssetTransfer_Workbench.sol
 NestedMappingAlias.sol
+FuncsWithUnnamedParams.sol

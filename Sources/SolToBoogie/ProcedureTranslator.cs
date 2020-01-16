@@ -81,8 +81,6 @@ namespace SolToBoogie
         {
             preTranslationAction(node);
 
-            context.UsingMap[node] = new Dictionary<UserDefinedTypeName, TypeName>();
-
             currentContract = node;
 
             if (currentContract.ContractKind == EnumContractKind.LIBRARY &&
@@ -300,7 +298,9 @@ namespace SolToBoogie
             PrintArguments(node, inParams, currentStmtList);
 
             // output parameters
+            isReturnParameterList = true;
             node.ReturnParameters.Accept(this);
+            isReturnParameterList = false;
             List<BoogieVariable> outParams = currentParamList;
 
             var assumesForParamsAndReturn = currentStmtList;
@@ -807,6 +807,7 @@ namespace SolToBoogie
         }
 
         // generate the default empty constructors, including an internal one without base ctors, and an actual one with base ctors
+        // TODO: refactor this code with the code to generate constructor code when definition is present
         private void GenerateDefaultConstructor(ContractDefinition contract)
         {
             // generate the internal one without base constructors
@@ -856,11 +857,18 @@ namespace SolToBoogie
                 ContractDefinition baseContract = context.GetASTNodeById(id) as ContractDefinition;
                 VeriSolAssert(baseContract != null);
 
-                string callee = TransUtils.GetCanonicalConstructorName(baseContract) + "_NoBaseCtor";
+                string callee = TransUtils.GetCanonicalConstructorName(baseContract);
+                if (baseContract.Name == contract.Name)
+                {
+                    // for current contract, call the body that does not have the base calls
+                    // for base contracts, call the wrapper constructor 
+                    callee += "_NoBaseCtor";
+                }
+
                 List<BoogieExpr> inputs = new List<BoogieExpr>();
                 List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
 
-                InheritanceSpecifier inheritanceSpecifier = GetInheritanceSpecifierOfBase(contract, baseContract);
+                InheritanceSpecifier inheritanceSpecifier = GetInheritanceSpecifieWithArgsOfBase(contract, baseContract);
                 if (inheritanceSpecifier != null)
                 {
                     inputs.Add(new BoogieIdentifierExpr("this"));
@@ -873,9 +881,30 @@ namespace SolToBoogie
                 }
                 else // no argument for this base constructor
                 {
-                    foreach (BoogieVariable param in inParams)
+
+                    if (baseContract.Name == contract.Name)
                     {
-                        inputs.Add(new BoogieIdentifierExpr(param.TypedIdent.Name));
+                        // only do this for the derived contract
+                        foreach (BoogieVariable param in inParams)
+                        {
+                            inputs.Add(new BoogieIdentifierExpr(param.TypedIdent.Name));
+                        }
+                    }
+                    else
+                    {
+                        // Do we call the constructor or assume that it is invoked in teh base contract?
+                        // since it needs argument, we cannot invoke it here (Issue #101)
+                        var baseCtr = context.IsConstructorDefined(baseContract) ? context.GetConstructorByContract(baseContract) : null;
+                        if (baseCtr != null && baseCtr.Parameters.Length() > 0)
+                        {
+                            continue;
+                        } else if (!currentContract.BaseContracts.Any(x => x.BaseName.Name.Equals(baseContract.Name)))
+                        {
+                            Console.WriteLine($"Warning!!: Invoking base constructor { callee} that is not explicitly in inheritance list of {currentContract.Name}...");
+                        }
+                        inputs.Add(new BoogieIdentifierExpr("this"));
+                        inputs.Add(new BoogieIdentifierExpr("msgsender_MSG"));
+                        inputs.Add(new BoogieIdentifierExpr("msgvalue_MSG"));
                     }
                 }
                 BoogieCallCmd callCmd = new BoogieCallCmd(callee, inputs, outputs);
@@ -933,12 +962,17 @@ namespace SolToBoogie
                     // since we are not translating any statements, currentStmtList remains null
                     currentStmtList = new BoogieStmtList();
 
-                    string callee = TransUtils.GetCanonicalConstructorName(baseContract) + "_NoBaseCtor" ;
-                    
+                    string callee = TransUtils.GetCanonicalConstructorName(baseContract);
+                    if (baseContract.Name == contract.Name)
+                    {
+                        // for current contract, call the body that does not have the base calls
+                        // for base contracts, call the wrapper constructor 
+                        callee += "_NoBaseCtor";
+                    }
                     List<BoogieExpr> inputs = new List<BoogieExpr>();
                     List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
 
-                    InheritanceSpecifier inheritanceSpecifier = GetInheritanceSpecifierOfBase(contract, baseContract);
+                    InheritanceSpecifier inheritanceSpecifier = GetInheritanceSpecifieWithArgsOfBase(contract, baseContract);
                     ModifierInvocation modifierInvocation = GetModifierInvocationOfBase(ctor, baseContract);
                     if (inheritanceSpecifier != null)
                     {
@@ -972,16 +1006,17 @@ namespace SolToBoogie
                         }
                         else
                         {
-
                             // Do we call the constructor or assume that it is invoked in teh base contract?
-                            /* Assume it is invoked in the constructor for the base contract if the parameter list is non-empty (HACK) */ 
-                            // Issue #101
+                            // Do we call the constructor or assume that it is invoked in teh base contract?
+                            // since it needs argument, we cannot invoke it here (Issue #101)
                             var baseCtr = context.IsConstructorDefined(baseContract) ? context.GetConstructorByContract(baseContract) : null;
                             if (baseCtr != null && baseCtr.Parameters.Length() > 0)
                             {
-                                Console.WriteLine($"Warning!!: Base constructor { callee} has non-empty parameters but not specified in { ctor.Name}...assuming it is invoked from a base contract");
-                                currentStmtList = null;
                                 continue;
+                            }
+                            else if (!currentContract.BaseContracts.Any(x => x.BaseName.Name.Equals(baseContract.Name)))
+                            {
+                                Console.WriteLine($"Warning!!: Invoking base constructor { callee} that is not explicitly called in the inheritance/modifier list specified in { ctor.Name}...");
                             }
                             inputs.Add(new BoogieIdentifierExpr("this"));
                             inputs.Add(new BoogieIdentifierExpr("msgsender_MSG"));
@@ -994,6 +1029,8 @@ namespace SolToBoogie
                     currentStmtList = null;
                 }
 
+
+
                 localVars.AddRange(boogieToLocalVarsMap[currentBoogieProc]);
                 BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, ctorBody);
                 context.Program.AddDeclaration(implementation);
@@ -1003,7 +1040,7 @@ namespace SolToBoogie
         // get the inheritance specifier of `baseContract' in contract definition `contract' if it specifies arguments
         // return null if there is no matching inheritance specifier
         // NOTE: two inheritance specifiers having the same name leads to a compile error
-        private InheritanceSpecifier GetInheritanceSpecifierOfBase(ContractDefinition contract, ContractDefinition baseContract)
+        private InheritanceSpecifier GetInheritanceSpecifieWithArgsOfBase(ContractDefinition contract, ContractDefinition baseContract)
         {
             foreach (InheritanceSpecifier inheritanceSpecifier in contract.BaseContracts)
             {
@@ -1036,6 +1073,7 @@ namespace SolToBoogie
 
         // updated in the visitor of parameter list
         private List<BoogieVariable> currentParamList;
+        private bool isReturnParameterList = false;
         
         public override bool Visit(ParameterList node)
         {
@@ -1053,8 +1091,10 @@ namespace SolToBoogie
                 string name = null;
                 if (String.IsNullOrEmpty(parameter.Name))
                 {
-                    //name = "__ret";
-                    name = $"__ret_{retParamCount++}_" ;
+                    if (isReturnParameterList)
+                        name = $"__ret_{retParamCount++}_" ;
+                    else
+                        name = $"__param_{retParamCount++}_";
                 }
                 else
                 {
@@ -2766,14 +2806,22 @@ namespace SolToBoogie
             VeriSolAssert(context.UsingMap.ContainsKey(currentContract), $"Expect to see a using A for {typedescr} in this contract {currentContract.Name}");
 
             HashSet<UserDefinedTypeName> usingRange = new HashSet<UserDefinedTypeName>();
-            foreach(var kv in context.UsingMap[currentContract])
+
+            // may need to look into base contracts as well (UsingInBase.sol)
+            foreach (int id in currentContract.LinearizedBaseContracts)
             {
-                if (kv.Value.ToString().Equals(typedescr))
+                ContractDefinition baseContract = context.GetASTNodeById(id) as ContractDefinition;
+                Debug.Assert(baseContract != null);
+                if (!context.UsingMap.ContainsKey(baseContract)) continue;
+                foreach (var kv in context.UsingMap[baseContract])
                 {
-                    usingRange.Add(kv.Key);
+                    if (kv.Value.ToString().Equals(typedescr))
+                    {
+                        usingRange.Add(kv.Key);
+                    }
                 }
             }
-            VeriSolAssert(usingRange.Count > 0, $"Expectig at least one using A for B for {typedescr}");
+            VeriSolAssert(usingRange.Count > 0, $"Expecting at least one using A for B for {typedescr}");
 
             string signature = TransUtils.InferFunctionSignature(context, node);
             VeriSolAssert(context.HasFuncSignature(signature), $"Cannot find a function with signature: {signature}");
@@ -3284,19 +3332,6 @@ namespace SolToBoogie
 
             BoogieExpr indexAccessExpr = new BoogieMapSelect(baseExpr, indexExpr);
             currentExpr = MapArrayHelper.GetMemoryMapSelectExpr(baseKeyType, baseValType, baseExpr, indexExpr);
-            return false;
-        }
-
-        public override bool Visit(UsingForDirective node)
-        {
-            preTranslationAction(node);
-            if (node.TypeName is UserDefinedTypeName userType)
-            {
-                VeriSolAssert(!userType.TypeDescriptions.IsContract(), $"VeriSol does not support using A for B where B is a contract name, found {userType.ToString()}");
-            }
-            context.UsingMap[currentContract][node.LibraryName] = node.TypeName;
-            //VeriSolAssert(false, $"Using unsupported...{node.ToString()}");
-            //throw new NotImplementedException();
             return false;
         }
 
