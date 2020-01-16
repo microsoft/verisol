@@ -2414,9 +2414,19 @@ namespace SolToBoogie
                 new List<BoogieIdentifierExpr>() {retVar});
             
             currentStmtList.AddStatement(callStmt);
-            
-            var assumeStmt = new BoogieAssumeCmd(retVar);
-            currentStmtList.AddStatement(assumeStmt);
+
+            if (!context.TranslateFlags.ModelReverts)
+            {
+                var assumeStmt = new BoogieAssumeCmd(retVar);
+                currentStmtList.AddStatement(assumeStmt);
+            }
+            else
+            {
+                var revertLogic = new BoogieStmtList();
+                emitRevertLogic(revertLogic);
+                currentStmtList.AddStatement(new BoogieIfCmd(new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, retVar), revertLogic, null));
+            }
+
             return;
         }
 
