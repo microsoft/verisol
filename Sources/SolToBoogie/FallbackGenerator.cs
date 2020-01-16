@@ -76,13 +76,13 @@ namespace SolToBoogie
 
             var sendProcName = "send";
             
-            outParams.Add( new BoogieFormalParam(new BoogieTypedIdent("success", BoogieType.Bool)));
-            BoogieProcedure sendProc = new BoogieProcedure(sendProcName, inParams, outParams, attributes);
+            var sendOutParams = new List<BoogieVariable>(){ new BoogieFormalParam(new BoogieTypedIdent("success", BoogieType.Bool))};
+            BoogieProcedure sendProc = new BoogieProcedure(sendProcName, inParams, sendOutParams, attributes);
 
             context.Program.AddDeclaration(sendProc);
 
-            BoogieStmtList sendBody = CreateBodyOfSend(inParams, outParams, procName);
-            context.Program.AddDeclaration(new BoogieImplementation(sendProcName, inParams, outParams, localVars, sendBody));
+            BoogieStmtList sendBody = CreateBodyOfSend(inParams, sendOutParams, procName);
+            context.Program.AddDeclaration(new BoogieImplementation(sendProcName, inParams, sendOutParams, localVars, sendBody));
         }
 
         private BoogieStmtList CreateBodyOfSend(List<BoogieVariable> inParams, List<BoogieVariable> outParams, string fbProcName)
