@@ -493,7 +493,7 @@ namespace SolToBoogie
 
             var successId = new BoogieIdentifierExpr("success");
 
-            var revertId = new BoogieIdentifierExpr("__revert");
+            var revertId = new BoogieIdentifierExpr("revert");
 
             var exceptionId = new BoogieIdentifierExpr("__exception");
 
@@ -612,7 +612,7 @@ namespace SolToBoogie
 
             var successId = new BoogieIdentifierExpr("success");
 
-            var revertId = new BoogieIdentifierExpr("__revert");
+            var revertId = new BoogieIdentifierExpr("revert");
 
             var exceptionId = new BoogieIdentifierExpr("__exception");
 
