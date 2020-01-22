@@ -97,6 +97,10 @@ namespace SolToBoogie
             {
                 return BoogieType.Ref;
             }
+            else if (typeString.StartsWith("bytes"))
+            {
+                return BoogieType.Int;
+            }
             else
             {
                 throw new SystemException($"Unknown type string during InferKeyTypeFromTypeString: {typeString}");
@@ -118,6 +122,10 @@ namespace SolToBoogie
             else if (typeString == "bytes calldata")
             {
                 return BoogieType.Ref;
+            }
+            else if (typeString.StartsWith("bytes"))
+            {
+                return BoogieType.Int;
             }
             else
             {
