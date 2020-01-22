@@ -74,6 +74,42 @@ namespace SolToBoogie
             BoogieImplementation unknownFbImpl = new BoogieImplementation(fbUnknownProcName, inParams, outParams, fbLocalVars, fbBody);
             context.Program.AddDeclaration(unknownFbImpl);
 
+            var sendProcName = "send";
+            
+            var sendOutParams = new List<BoogieVariable>(){ new BoogieFormalParam(new BoogieTypedIdent("success", BoogieType.Bool))};
+            BoogieProcedure sendProc = new BoogieProcedure(sendProcName, inParams, sendOutParams, attributes);
+
+            context.Program.AddDeclaration(sendProc);
+
+            BoogieStmtList sendBody = CreateBodyOfSend(inParams, sendOutParams, procName);
+            context.Program.AddDeclaration(new BoogieImplementation(sendProcName, inParams, sendOutParams, localVars, sendBody));
+        }
+
+        private BoogieStmtList CreateBodyOfSend(List<BoogieVariable> inParams, List<BoogieVariable> outParams, string fbProcName)
+        {
+            var fromIdExp = new BoogieIdentifierExpr(inParams[0].Name);
+            var amtIdExp = new BoogieIdentifierExpr(inParams[2].Name);
+            var guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE,
+                new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), fromIdExp),
+                amtIdExp);
+
+            // call FallbackDispatch(from, to, amount)
+            var toIdExpr = new BoogieIdentifierExpr(inParams[1].Name);
+            var callStmt = new BoogieCallCmd(
+                fbProcName,
+                new List<BoogieExpr>() { fromIdExp, toIdExpr, amtIdExp},
+                new List<BoogieIdentifierExpr>()
+            );
+
+            var thenBody = new BoogieStmtList();
+            var successIdExp = new BoogieIdentifierExpr(outParams[0].Name);
+            thenBody.AddStatement(callStmt); 
+            thenBody.AddStatement(new BoogieAssignCmd(successIdExp, new BoogieLiteralExpr(true)));
+
+            var elseBody = new BoogieAssignCmd(successIdExp, new BoogieLiteralExpr(false));
+
+            return BoogieStmtList.MakeSingletonStmtList(new BoogieIfCmd(guard, thenBody,
+                BoogieStmtList.MakeSingletonStmtList(elseBody)));
         }
 
         private BoogieStmtList CreateBodyOfUnknownFallback(List<BoogieVariable> fbLocalVars, List<BoogieVariable> inParams)

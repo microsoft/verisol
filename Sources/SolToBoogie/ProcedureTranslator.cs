@@ -2445,11 +2445,28 @@ namespace SolToBoogie
         private void TranslateTransferCallStmt(FunctionCall node)
         {
             var amountExpr = TranslateExpr(node.Arguments[0]);
+            var memberAccess = node.Expression as MemberAccess;
+            var baseExpr = memberAccess.Expression;
+            var retVar = MkNewLocalVariableWithType(BoogieType.Bool);
 
-            // call FallbackDispatch(from, to, amount)
-            BoogieCallCmd callStmt = MkFallbackDispatchCallCmd(node, amountExpr);
-
+            var callStmt = new BoogieCallCmd("send",
+                new List<BoogieExpr>() {new BoogieIdentifierExpr("this"), TranslateExpr(baseExpr), amountExpr},
+                new List<BoogieIdentifierExpr>() {retVar});
+            
             currentStmtList.AddStatement(callStmt);
+
+            if (!context.TranslateFlags.ModelReverts)
+            {
+                var assumeStmt = new BoogieAssumeCmd(retVar);
+                currentStmtList.AddStatement(assumeStmt);
+            }
+            else
+            {
+                var revertLogic = new BoogieStmtList();
+                emitRevertLogic(revertLogic);
+                currentStmtList.AddStatement(new BoogieIfCmd(new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, retVar), revertLogic, null));
+            }
+
             return;
         }
 
@@ -2469,21 +2486,17 @@ namespace SolToBoogie
 
         private void TranslateSendCallStmt(FunctionCall node, BoogieIdentifierExpr returnExpr, BoogieExpr amountExpr)
         {
-            var guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE,
-                new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("this")),
-                amountExpr);
-
-            // call FallbackDispatch(from, to, amount)
-            var callStmt = MkFallbackDispatchCallCmd(node, amountExpr);
-
-            var thenBody = new BoogieStmtList();
-            thenBody.AddStatement(callStmt); 
-            thenBody.AddStatement(new BoogieAssignCmd(returnExpr, new BoogieLiteralExpr(true)));
-
-            var elseBody = new BoogieAssignCmd(returnExpr, new BoogieLiteralExpr(false));
-
-            currentStmtList.AddStatement(new BoogieIfCmd(guard, thenBody, BoogieStmtList.MakeSingletonStmtList(elseBody)));
-            return;
+            var memberAccess = node.Expression as MemberAccess;
+            var baseExpr = memberAccess.Expression;
+            
+            var ins = new List<BoogieExpr>();
+            ins.Add(new BoogieIdentifierExpr("this"));
+            ins.Add(TranslateExpr(baseExpr));
+            ins.Add(amountExpr);
+         
+            var outs = new List<BoogieIdentifierExpr>();
+            outs.Add(returnExpr);
+            currentStmtList.AddStatement(new BoogieCallCmd("send", ins, outs));
         }
 
         private void TranslateNewStatement(FunctionCall node, BoogieExpr lhs)
