@@ -34,7 +34,7 @@ You may need to uninstall a previous version first. Use `dotnet tool uninstall -
 **For VeriSol Developers** One can use VeriSol without performing the install steps directly as a dotnet Core dll. Run the following command instead `dotnet %VERISOL_PATH%/bin/Debug/VeriSol.dll`.
 
 ### Special instruction for MacOS/OSx (for both installation)
-- Follow the instructions [here](https://solidity.readthedocs.io/en/v0.5.11/installing-solidity.html). Perform the following commands using [HomeBrew](http://brew.sh/) installer system: `brew update & brew upgrade & brew tap ethereum/ethereum & brew install solidity`. Homebrew will install `solc` binaries in the folder `/usr/local/Cellar/solidity/<version>/bin`.
+- Follow the instructions [here](https://solidity.readthedocs.io/en/v0.5.11/installing-solidity.html). Perform the following commands using [HomeBrew](http://brew.sh/) installer system: `brew update & brew upgrade & brew tap ethereum/ethereum & brew install https://raw.githubusercontent.com/ethereum/homebrew-ethereum/7fa7027f20cca27f76c679d0c5b35ee3c565f284/solidity.rb`. Homebrew will install `solc` binaries in the folder `/usr/local/Cellar/solidity/<version>/bin`.
 
 # Running VeriSol
 
