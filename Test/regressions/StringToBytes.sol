@@ -7,14 +7,26 @@ contract Test {
   constructor () public {
   }
   
-  function foo(bytes memory x) public returns (bytes memory y) 
+  function foo(bytes memory x) public 
   {
-     return x;
+	z = "a";
   }  
 
-  function test() public returns (bytes memory)
+  function test() public 
   {
-	 foo("");
+	 //foo("");
+	 //Case #1:
+	 //bytes memory a = new bytes(0);
+	 //foo(a);
+	 
+	 //Case #2:
+	 foo(new bytes(0));      //VeriSol translation error in TranslateNewStatement
+	 
+	 //bytes memory a;
+	 //bytes is same as byte[]
+	 //assert (a.length == 0);
+	 //bytes memory b = delete a;
+	 //foo(a);	 
 	 //z = foo("");     //solc detects error
   }
 }

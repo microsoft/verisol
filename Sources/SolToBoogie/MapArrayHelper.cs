@@ -97,7 +97,7 @@ namespace SolToBoogie
             {
                 return BoogieType.Ref;
             }
-            else if (typeString.StartsWith("bytes"))
+            else if (typeString.StartsWith("bytes") && !typeString.Equals("bytes"))
             {
                 return BoogieType.Int;
             }
@@ -123,7 +123,7 @@ namespace SolToBoogie
             {
                 return BoogieType.Ref;
             }
-            else if (typeString.StartsWith("bytes"))
+            else if (typeString.StartsWith("bytes") && !typeString.Equals("bytes"))
             {
                 return BoogieType.Int;
             }
