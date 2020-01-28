@@ -805,7 +805,8 @@ namespace SolToBoogie
 
                     if (context.TranslateFlags.InstrumentGas)
                     {
-                        havocGas(thenBody);
+                        var gasVar = new BoogieIdentifierExpr("gas");
+                        thenBody.AddStatement(new BoogieAssignCmd(gasVar, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, gasVar, new BoogieLiteralExpr(TranslatorContext.TX_GAS_COST))));
                     }
                     BoogieCallCmd callCmd = new BoogieCallCmd(callee, inputs, outputs);
                     thenBody.AddStatement(callCmd);

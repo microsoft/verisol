@@ -54,7 +54,8 @@ namespace SolToBoogie
         {
             if (context.TranslateFlags.InstrumentGas)
             {
-                if (node.GasCost > 0)
+                // Some times solc will give a positive gas cost to some "weird" (i.e., outside a transaction or function) nodes.
+                if (node.GasCost > 0 && currentStmtList != null)
                     // gas := gas - node.GasCost
                     currentStmtList.AddStatement(new BoogieAssignCmd(new BoogieIdentifierExpr("gas"), 
                         new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, new BoogieIdentifierExpr("gas"), new BoogieLiteralExpr(node.GasCost))));
@@ -2438,12 +2439,25 @@ namespace SolToBoogie
             }
 
             var amountExpr = node.MsgValue != null ? TranslateExpr(node.MsgValue) : new BoogieLiteralExpr(BigInteger.Zero);
-            TranslateSendCallStmt(node, tmpVarExpr, amountExpr);
+            TranslateSendCallStmt(node, tmpVarExpr, amountExpr, true);
             currentExpr = tmpVarExpr;
         }
 
         private void TranslateTransferCallStmt(FunctionCall node)
         {
+            var tmpGas = context.TranslateFlags.InstrumentGas ? MkNewLocalVariableWithType(BoogieType.Int) : null;
+            var gasVar = context.TranslateFlags.InstrumentGas ? new BoogieIdentifierExpr("gas") : null;
+            
+            if (context.TranslateFlags.InstrumentGas)
+            {
+                var callStipend = new BoogieLiteralExpr(TranslatorContext.CALL_GAS_STIPEND);
+                
+                currentStmtList.AddStatement(new BoogieAssignCmd(tmpGas, gasVar));
+                currentStmtList.AddStatement(new BoogieIfCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GT, gasVar, callStipend), 
+                    BoogieStmtList.MakeSingletonStmtList(new BoogieAssignCmd(gasVar, callStipend)),
+                    null));
+            }
+            
             var amountExpr = TranslateExpr(node.Arguments[0]);
             var memberAccess = node.Expression as MemberAccess;
             var baseExpr = memberAccess.Expression;
@@ -2466,6 +2480,11 @@ namespace SolToBoogie
                 emitRevertLogic(revertLogic);
                 currentStmtList.AddStatement(new BoogieIfCmd(new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, retVar), revertLogic, null));
             }
+            
+            if (context.TranslateFlags.InstrumentGas)
+            {
+                currentStmtList.AddStatement(new BoogieAssignCmd(gasVar, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, tmpGas, gasVar)));
+            }
 
             return;
         }
@@ -2484,12 +2503,27 @@ namespace SolToBoogie
             return callStmt;
         }
 
-        private void TranslateSendCallStmt(FunctionCall node, BoogieIdentifierExpr returnExpr, BoogieExpr amountExpr)
+        private void TranslateSendCallStmt(FunctionCall node, BoogieIdentifierExpr returnExpr, BoogieExpr amountExpr, bool isCall = false)
         {
+            var tmpGas = context.TranslateFlags.InstrumentGas ? MkNewLocalVariableWithType(BoogieType.Int) : null;
+            var gasVar = context.TranslateFlags.InstrumentGas ? new BoogieIdentifierExpr("gas") : null;
+            
+            if (context.TranslateFlags.InstrumentGas && !isCall)
+            {
+                var callStipend = new BoogieLiteralExpr(TranslatorContext.CALL_GAS_STIPEND);
+                
+                currentStmtList.AddStatement(new BoogieAssignCmd(tmpGas, gasVar));
+                currentStmtList.AddStatement(new BoogieIfCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GT, gasVar, callStipend), 
+                                                             BoogieStmtList.MakeSingletonStmtList(new BoogieAssignCmd(gasVar, callStipend)),
+                                                             null));
+            }
+            
             var memberAccess = node.Expression as MemberAccess;
             var baseExpr = memberAccess.Expression;
             
             var ins = new List<BoogieExpr>();
+
+
             ins.Add(new BoogieIdentifierExpr("this"));
             ins.Add(TranslateExpr(baseExpr));
             ins.Add(amountExpr);
@@ -2497,6 +2531,11 @@ namespace SolToBoogie
             var outs = new List<BoogieIdentifierExpr>();
             outs.Add(returnExpr);
             currentStmtList.AddStatement(new BoogieCallCmd("send", ins, outs));
+
+            if (context.TranslateFlags.InstrumentGas && !isCall)
+            {
+                currentStmtList.AddStatement(new BoogieAssignCmd(gasVar, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, tmpGas, gasVar)));
+            }
         }
 
         private void TranslateNewStatement(FunctionCall node, BoogieExpr lhs)
