@@ -133,6 +133,23 @@ namespace SolToBoogie
             }
         }
 
+        public static string GetValueTypeString(string typeString)
+        {
+            if (mappingRegex.IsMatch(typeString))
+            {
+                Match match = mappingRegex.Match(typeString);
+                return match.Groups[2].Value;
+            }
+
+            if (arrayRegex.IsMatch(typeString))
+            {
+                Match match = arrayRegex.Match(typeString);
+                return match.Groups[1].Value;
+            }
+
+            return null;
+        }
+
         public static bool IsMappingTypeString(string typeString)
         {
             return mappingRegex.IsMatch(typeString);

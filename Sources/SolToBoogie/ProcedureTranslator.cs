@@ -579,6 +579,13 @@ namespace SolToBoogie
             currentStmtList.AddStatement(new BoogieAssumeCmd(lengthConstraint));
         }
 
+        private BoogieFuncCallExpr GetCallExprForZeroInit(BoogieType key, BoogieType value)
+        {
+            var keyStr = char.ToUpper(key.ToString()[0]) + key.ToString().Substring(1);
+            var valStr = char.ToUpper(value.ToString()[0]) + value.ToString().Substring(1);
+            return new BoogieFuncCallExpr("zero" + keyStr + valStr + "Arr", new List<BoogieExpr>());
+        }
+
         private void GenerateInitializationForMappingStateVar(VariableDeclaration varDecl, Mapping mapping)
         {
             BoogieMapSelect lhsMap = CreateDistinctArrayMappingAddress(currentStmtList, varDecl);
@@ -606,18 +613,30 @@ namespace SolToBoogie
                 BoogieType mapKeyType;
                 BoogieMapSelect lhs;
                 GetBoogieTypesFromMapping(varDecl, mapping, out mapKeyType, out lhs);
-                var qVar = QVarGenerator.NewQVar(0, 0);
-                BoogieExpr zeroExpr = new BoogieIdentifierExpr("null");
+                if (!context.TranslateFlags.QuantFreeAllocs)
+                {
+                    var qVar = QVarGenerator.NewQVar(0, 0);
+                    BoogieExpr zeroExpr = new BoogieIdentifierExpr("null");
 
-                if (mapping.ValueType.ToString().StartsWith("bytes"))
-                    zeroExpr = new BoogieLiteralExpr(BigInteger.Zero);
+                    if (mapping.ValueType.ToString().StartsWith("bytes"))
+                        zeroExpr = new BoogieLiteralExpr(BigInteger.Zero);
 
-                var bodyExpr = new BoogieBinaryOperation(
-                    BoogieBinaryOperation.Opcode.EQ,
-                    new BoogieMapSelect(lhs, qVar),
-                    zeroExpr);
-                var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar }, new List<BoogieType>() { mapKeyType }, bodyExpr);
-                currentStmtList.AddStatement(new BoogieAssumeCmd(qExpr));
+                    var bodyExpr = new BoogieBinaryOperation(
+                        BoogieBinaryOperation.Opcode.EQ,
+                        new BoogieMapSelect(lhs, qVar),
+                        zeroExpr);
+                    var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() {qVar},
+                        new List<BoogieType>() {mapKeyType}, bodyExpr);
+                    currentStmtList.AddStatement(new BoogieAssumeCmd(qExpr));
+                }
+                else
+                {
+                    if (mapping.ValueType.ToString().StartsWith("bytes"))
+                        currentStmtList.AddStatement(new BoogieAssignCmd(lhs,
+                            GetCallExprForZeroInit(mapKeyType, BoogieType.Int)));
+                    else
+                        currentStmtList.AddStatement(new BoogieAssignCmd(lhs, GetCallExprForZeroInit(mapKeyType, BoogieType.Ref)));
+                }
             }
             else if (mapping.ValueType.ToString().Equals("bool"))
             {
@@ -626,10 +645,19 @@ namespace SolToBoogie
                 BoogieType mapKeyType;
                 BoogieMapSelect lhs;
                 GetBoogieTypesFromMapping(varDecl, mapping, out mapKeyType, out lhs);
-                var qVar = QVarGenerator.NewQVar(0, 0);
-                var bodyExpr = new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, new BoogieMapSelect(lhs, qVar));
-                var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar }, new List<BoogieType>() { mapKeyType }, bodyExpr);
-                currentStmtList.AddStatement(new BoogieAssumeCmd(qExpr));
+                if (!context.TranslateFlags.QuantFreeAllocs)
+                {
+                    var qVar = QVarGenerator.NewQVar(0, 0);
+                    var bodyExpr =
+                        new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, new BoogieMapSelect(lhs, qVar));
+                    var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() {qVar},
+                        new List<BoogieType>() {mapKeyType}, bodyExpr);
+                    currentStmtList.AddStatement(new BoogieAssumeCmd(qExpr));
+                }
+                else
+                {
+                    currentStmtList.AddStatement(new BoogieAssignCmd(lhs, GetCallExprForZeroInit(mapKeyType, BoogieType.Bool)));
+                }
             }
             // TODO: Cleanup, StartsWith("uint") can include uint[12] as well. 
             else if (mapping.ValueType.ToString().StartsWith("uint") ||
@@ -646,13 +674,21 @@ namespace SolToBoogie
                 BoogieType mapKeyType;
                 BoogieMapSelect lhs;
                 GetBoogieTypesFromMapping(varDecl, mapping, out mapKeyType, out lhs);
-                var qVar = QVarGenerator.NewQVar(0, 0);
-                var bodyExpr = new BoogieBinaryOperation(
-                    BoogieBinaryOperation.Opcode.EQ,
-                    new BoogieMapSelect(lhs, qVar),
-                    new BoogieLiteralExpr(0));
-                var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar }, new List<BoogieType>() { mapKeyType }, bodyExpr);
-                currentStmtList.AddStatement(new BoogieAssumeCmd(qExpr));
+                if (!context.TranslateFlags.QuantFreeAllocs)
+                {
+                    var qVar = QVarGenerator.NewQVar(0, 0);
+                    var bodyExpr = new BoogieBinaryOperation(
+                        BoogieBinaryOperation.Opcode.EQ,
+                        new BoogieMapSelect(lhs, qVar),
+                        new BoogieLiteralExpr(0));
+                    var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() {qVar},
+                        new List<BoogieType>() {mapKeyType}, bodyExpr);
+                    currentStmtList.AddStatement(new BoogieAssumeCmd(qExpr));
+                }
+                else
+                {
+                    currentStmtList.AddStatement(new BoogieAssignCmd(lhs, GetCallExprForZeroInit(mapKeyType, BoogieType.Int)));
+                }
             }
             else
             {
@@ -733,40 +769,67 @@ namespace SolToBoogie
             //lhs is Mem_t_ref[x[this]]
             var lhs0 = new BoogieMapSelect(new BoogieIdentifierExpr(mapName),
                 new BoogieMapSelect(varExpr, new BoogieIdentifierExpr("this")));
+
             var qVar1 = QVarGenerator.NewQVar(0, 0);
             //lhs is Mem_t_ref[x[this]][i]
             var lhs1 = new BoogieMapSelect(lhs0, qVar1);
-            //Length[Mem_t_ref[x[this]][i]] == 0
-            var bodyExpr = new BoogieBinaryOperation(
-                BoogieBinaryOperation.Opcode.EQ,
-                new BoogieMapSelect(new BoogieIdentifierExpr("Length"), lhs1),
-                new BoogieLiteralExpr(0));
-            var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1 }, new List<BoogieType>() { mapKeyType }, bodyExpr);
-            currentStmtList.AddStatement(new BoogieAssumeCmd(qExpr));
 
-            //Nested arrays are disjoint and disjoint from other addresses
-            BoogieExpr allocExpr = new BoogieMapSelect(new BoogieIdentifierExpr("Alloc"), lhs1);
-            var negAllocExpr = new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, allocExpr);
-            var negAllocQExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1 }, new List<BoogieType>() { mapKeyType }, negAllocExpr);
-            //assume forall i !Alloc[M_t_ref[x[this]][i]]
-            currentStmtList.AddStatement(new BoogieAssumeCmd(negAllocQExpr));
-            //call HavocAllocMany()
-            currentStmtList.AddStatement(new BoogieCallCmd("HavocAllocMany", new List<BoogieExpr>(), new List<BoogieIdentifierExpr>()));
-            //assume forall i. Alloc[M_t_ref[x[this]][i]]
-            var allocQExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1 }, new List<BoogieType>() { mapKeyType }, allocExpr);
-            currentStmtList.AddStatement(new BoogieAssumeCmd(allocQExpr));
+            if (!context.TranslateFlags.LazyNestedAlloc)
+            {
+                //Length[Mem_t_ref[x[this]][i]] == 0
+                var bodyExpr = new BoogieBinaryOperation(
+                    BoogieBinaryOperation.Opcode.EQ,
+                    new BoogieMapSelect(new BoogieIdentifierExpr("Length"), lhs1),
+                    new BoogieLiteralExpr(0));
+                var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() {qVar1},
+                    new List<BoogieType>() {mapKeyType}, bodyExpr);
+                currentStmtList.AddStatement(new BoogieAssumeCmd(qExpr));
 
-            //Two different keys/indices within the same array are distinct
-            //forall i, j: i != j ==> M_t_ref[x[this]][i] != M_t_ref[x[this]][j]
-            var qVar2 = QVarGenerator.NewQVar(0, 1);
-            var lhs2 = new BoogieMapSelect(lhs0, qVar2);
-            var distinctQVars = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, qVar1, qVar2);
-            var distinctLhs = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, lhs1, lhs2);
-            var triggers = new List<BoogieExpr>() { lhs1, lhs2 };
+                //Nested arrays are disjoint and disjoint from other addresses
+                BoogieExpr allocExpr = new BoogieMapSelect(new BoogieIdentifierExpr("Alloc"), lhs1);
+                var negAllocExpr = new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, allocExpr);
+                var negAllocQExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() {qVar1},
+                    new List<BoogieType>() {mapKeyType}, negAllocExpr);
+                //assume forall i !Alloc[M_t_ref[x[this]][i]]
+                currentStmtList.AddStatement(new BoogieAssumeCmd(negAllocQExpr));
+                //call HavocAllocMany()
+                currentStmtList.AddStatement(new BoogieCallCmd("HavocAllocMany", new List<BoogieExpr>(),
+                    new List<BoogieIdentifierExpr>()));
+                //assume forall i. Alloc[M_t_ref[x[this]][i]]
+                var allocQExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() {qVar1},
+                    new List<BoogieType>() {mapKeyType}, allocExpr);
+                currentStmtList.AddStatement(new BoogieAssumeCmd(allocQExpr));
 
-            var neqExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, distinctQVars, distinctLhs);
-            var distinctQExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() { qVar1, qVar2 }, new List<BoogieType>() { mapKeyType, mapKeyType }, neqExpr, triggers);
-            currentStmtList.AddStatement(new BoogieAssumeCmd(distinctQExpr));
+                //Two different keys/indices within the same array are distinct
+                //forall i, j: i != j ==> M_t_ref[x[this]][i] != M_t_ref[x[this]][j]
+                var qVar2 = QVarGenerator.NewQVar(0, 1);
+                var lhs2 = new BoogieMapSelect(lhs0, qVar2);
+                var distinctQVars = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, qVar1, qVar2);
+                var distinctLhs = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, lhs1, lhs2);
+                var triggers = new List<BoogieExpr>() {lhs1, lhs2};
+
+                var neqExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, distinctQVars, distinctLhs);
+                var distinctQExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() {qVar1, qVar2},
+                    new List<BoogieType>() {mapKeyType, mapKeyType}, neqExpr, triggers);
+                currentStmtList.AddStatement(new BoogieAssumeCmd(distinctQExpr));
+            }
+            else
+            {
+                if (context.TranslateFlags.QuantFreeAllocs)
+                {
+                    currentStmtList.AddStatement(new BoogieAssignCmd(lhs0, GetCallExprForZeroInit(mapKeyType, BoogieType.Ref)));
+                }
+                else
+                {
+                    var bodyExpr = new BoogieBinaryOperation(
+                        BoogieBinaryOperation.Opcode.EQ, 
+                        lhs1,
+                        new BoogieIdentifierExpr("null"));
+                    var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() {qVar1},
+                        new List<BoogieType>() {mapKeyType}, bodyExpr);
+                    currentStmtList.AddStatement(new BoogieAssumeCmd(qExpr));
+                }
+            }
         }
 
         private BoogieMapSelect CreateDistinctArrayMappingAddress(BoogieStmtList stmtList, VariableDeclaration varDecl)
@@ -3371,6 +3434,98 @@ namespace SolToBoogie
 
             BoogieExpr indexAccessExpr = new BoogieMapSelect(baseExpr, indexExpr);
             currentExpr = MapArrayHelper.GetMemoryMapSelectExpr(baseKeyType, baseValType, baseExpr, indexExpr);
+
+            if (context.TranslateFlags.LazyNestedAlloc)
+            {
+                var valTypeString = MapArrayHelper.GetValueTypeString(baseExpression.TypeDescriptions.TypeString);
+                var valIsMapping = MapArrayHelper.IsMappingTypeString(valTypeString);
+                var valIsArray = MapArrayHelper.IsArrayTypeString(valTypeString);
+
+                if (valIsArray || valIsMapping)
+                {
+                    // Check and alloc.
+                    BoogieStmtList allocAndInit = new BoogieStmtList();
+                    var tmpVarIdentExpr = MkNewLocalVariableWithType(baseValType);
+                    allocAndInit.AddStatement(new BoogieCallCmd("FreshRefGenerator",
+                        new List<BoogieExpr>(),
+                        new List<BoogieIdentifierExpr>() {tmpVarIdentExpr}
+                    ));
+                    allocAndInit.AddStatement(new BoogieAssignCmd(currentExpr, tmpVarIdentExpr));
+
+                    if (valIsArray)
+                    {
+                        allocAndInit.AddStatement(new BoogieAssignCmd(new BoogieMapSelect(new BoogieIdentifierExpr("Length"), currentExpr), new BoogieLiteralExpr(0)));
+                    }
+                    
+                    BoogieType nestedValType = MapArrayHelper.InferValueTypeFromTypeString(valTypeString);
+                    BoogieType nestedKeyType = MapArrayHelper.InferKeyTypeFromTypeString(valTypeString);
+
+                    var mapName = new BoogieIdentifierExpr(MapArrayHelper.GetMemoryMapName(indexType, nestedValType));
+                    var derefCurrExpr = new BoogieMapSelect(mapName, currentExpr);
+                    
+                    var qVar1 = QVarGenerator.NewQVar(0, 0);
+                    var idxNestedMap = new BoogieMapSelect(derefCurrExpr, qVar1);
+                    if (nestedValType == BoogieType.Bool)
+                    {
+                        if (context.TranslateFlags.QuantFreeAllocs)
+                        {
+                            allocAndInit.AddStatement(new BoogieAssignCmd(derefCurrExpr, GetCallExprForZeroInit(nestedKeyType, BoogieType.Bool)));
+                        }
+                        else
+                        {
+                            var bodyExpr = new BoogieBinaryOperation(
+                                BoogieBinaryOperation.Opcode.EQ, 
+                                idxNestedMap,
+                                new BoogieLiteralExpr(false));
+                            var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() {qVar1},
+                                new List<BoogieType>() {nestedKeyType}, bodyExpr);
+                            allocAndInit.AddStatement(new BoogieAssumeCmd(qExpr));
+                        }
+                    }
+                    else if (nestedValType == BoogieType.Int)
+                    {
+                        if (context.TranslateFlags.QuantFreeAllocs)
+                        {
+                            allocAndInit.AddStatement(new BoogieAssignCmd(derefCurrExpr, GetCallExprForZeroInit(nestedKeyType, BoogieType.Int)));
+                        }
+                        else
+                        {
+                            var bodyExpr = new BoogieBinaryOperation(
+                                BoogieBinaryOperation.Opcode.EQ, 
+                                idxNestedMap,
+                                new BoogieLiteralExpr(0));
+                            var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() {qVar1},
+                                new List<BoogieType>() {nestedKeyType}, bodyExpr);
+                            allocAndInit.AddStatement(new BoogieAssumeCmd(qExpr));
+                        }
+                    }
+                    else if (nestedValType == BoogieType.Ref)
+                    {
+                        if (context.TranslateFlags.QuantFreeAllocs)
+                        {
+                            allocAndInit.AddStatement(new BoogieAssignCmd(derefCurrExpr, GetCallExprForZeroInit(nestedKeyType, BoogieType.Ref)));
+                        }
+                        else
+                        {
+                            var bodyExpr = new BoogieBinaryOperation(
+                                BoogieBinaryOperation.Opcode.EQ, 
+                                idxNestedMap,
+                                new BoogieIdentifierExpr("null"));
+                            var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() {qVar1},
+                                new List<BoogieType>() {nestedKeyType}, bodyExpr);
+                            allocAndInit.AddStatement(new BoogieAssumeCmd(qExpr));
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("Unexpected type in nested mapping.");
+                    }
+
+                    currentStmtList.AddStatement(new BoogieIfCmd(
+                        new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, currentExpr,
+                            new BoogieIdentifierExpr("null")), allocAndInit, null));
+                }
+            }
             return false;
         }
 

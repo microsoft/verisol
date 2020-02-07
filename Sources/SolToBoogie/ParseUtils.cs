@@ -118,6 +118,20 @@ namespace SolToBoogie
                 translatorFlags.RemoveScopeInVarName = true;
             }
 
+            if (args.Any(x => x.Equals("/LazyNestedAlloc")))
+            {
+                translatorFlags.LazyNestedAlloc = true;
+            }
+            
+            if (args.Any(x => x.Equals("/QuantFreeAllocs")))
+            {
+                translatorFlags.QuantFreeAllocs = true;
+                
+                // Turn LazyNestedAlloc on by default if QuantFreeAllocs is provided.
+                if (!translatorFlags.LazyNestedAlloc)
+                    translatorFlags.LazyNestedAlloc = true;
+            }
+
             translatorFlags.PerformContractInferce = args.Any(x => x.StartsWith("/contractInfer"));
 
             // don't perform verification for some of these omitFlags
