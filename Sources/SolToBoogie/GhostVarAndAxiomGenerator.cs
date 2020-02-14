@@ -40,6 +40,82 @@ namespace SolToBoogie
             context.Program.AddDeclaration(GenerateAbiEncodedFunctionTwoArgs());
             context.Program.AddDeclaration(GenerateAbiEncodedFunctionOneArgRef());
             context.Program.AddDeclaration(GenerateAbiEncodedFunctionTwoArgsOneRef());
+
+            if (context.TranslateFlags.QuantFreeAllocs)
+            {
+                context.Program.AddDeclaration(GenerateZeroRefIntArrayFunction());
+                context.Program.AddDeclaration(GenerateZeroIntIntArrayFunction());
+                context.Program.AddDeclaration(GenerateZeroRefBoolArrayFunction());
+                context.Program.AddDeclaration(GenerateZeroIntBoolArrayFunction());
+                context.Program.AddDeclaration(GenerateZeroRefRefArrayFunction());
+                context.Program.AddDeclaration(GenerateZeroIntRefArrayFunction());
+            }
+        }
+
+        private BoogieFunction GenerateZeroRefIntArrayFunction()
+        {
+            var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", new BoogieMapType(BoogieType.Ref, BoogieType.Int)));
+            return new BoogieFunction(
+                "zeroRefIntArr",
+                new List<BoogieVariable>(), 
+                new List<BoogieVariable>() {outVar},
+                new List<BoogieAttribute>() { new BoogieAttribute("smtdefined", "\"((as const (Array Int Int)) 0)\"")}
+                );
+        }
+        
+        private BoogieFunction GenerateZeroIntIntArrayFunction()
+        {
+            var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", new BoogieMapType(BoogieType.Int, BoogieType.Int)));
+            return new BoogieFunction(
+                "zeroIntIntArr",
+                new List<BoogieVariable>(), 
+                new List<BoogieVariable>() {outVar},
+                new List<BoogieAttribute>() { new BoogieAttribute("smtdefined", "\"((as const (Array Int Int)) 0)\"")}
+            );
+        }
+        
+        private BoogieFunction GenerateZeroRefBoolArrayFunction()
+        {
+            var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", new BoogieMapType(BoogieType.Ref, BoogieType.Bool)));
+            return new BoogieFunction(
+                "zeroRefBoolArr",
+                new List<BoogieVariable>(), 
+                new List<BoogieVariable>() {outVar},
+                new List<BoogieAttribute>() { new BoogieAttribute("smtdefined", "\"((as const (Array Int Bool)) false)\"")}
+            );
+        }
+        
+        private BoogieFunction GenerateZeroIntBoolArrayFunction()
+        {
+            var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", new BoogieMapType(BoogieType.Int, BoogieType.Bool)));
+            return new BoogieFunction(
+                "zeroIntBoolArr",
+                new List<BoogieVariable>(), 
+                new List<BoogieVariable>() {outVar},
+                new List<BoogieAttribute>() { new BoogieAttribute("smtdefined", "\"((as const (Array Int Bool)) false)\"")}
+            );
+        }
+        
+        private BoogieFunction GenerateZeroRefRefArrayFunction()
+        {
+            var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", new BoogieMapType(BoogieType.Ref, BoogieType.Ref)));
+            return new BoogieFunction(
+                "zeroRefRefArr",
+                new List<BoogieVariable>(), 
+                new List<BoogieVariable>() {outVar},
+                new List<BoogieAttribute>() { new BoogieAttribute("smtdefined", "\"((as const (Array Int Int)) 0)\"")}
+            );
+        }
+        
+        private BoogieFunction GenerateZeroIntRefArrayFunction()
+        {
+            var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", new BoogieMapType(BoogieType.Int, BoogieType.Ref)));
+            return new BoogieFunction(
+                "zeroIntRefArr",
+                new List<BoogieVariable>(), 
+                new List<BoogieVariable>() {outVar},
+                new List<BoogieAttribute>() { new BoogieAttribute("smtdefined", "\"((as const (Array Int Int)) 0)\"")}
+            );
         }
 
         private BoogieFunction GenerateKeccakFunction()
@@ -332,6 +408,9 @@ namespace SolToBoogie
 
         private void GenerateGlobalProcedureAllocMany()
         {
+            if (context.TranslateFlags.LazyNestedAlloc)
+                return;
+
             // generate the internal one without base constructors
             string procName = "HavocAllocMany";
             List<BoogieVariable> inParams = new List<BoogieVariable>();

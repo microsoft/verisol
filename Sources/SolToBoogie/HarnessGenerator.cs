@@ -162,7 +162,8 @@ namespace SolToBoogie
 
             if (context.TranslateFlags.InstrumentGas)
             {
-                TransUtils.havocGas(localStmtList);
+                var gasVar = new BoogieIdentifierExpr("gas");
+                localStmtList.Add(new BoogieAssignCmd(gasVar, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, gasVar, new BoogieLiteralExpr(TranslatorContext.CREATE_GAS_COST))));
             }
 
             localStmtList.Add(new BoogieCallCmd(callee, inputs, null));
@@ -208,6 +209,12 @@ namespace SolToBoogie
                     stmtList.AddStatement(new BoogieHavocCmd(new BoogieIdentifierExpr(varName)));
                 }
             }
+            
+            if (context.TranslateFlags.InstrumentGas)
+            {
+                TransUtils.havocGas(stmtList);
+            }
+
             return stmtList;
         }
 

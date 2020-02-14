@@ -25,6 +25,8 @@ namespace SolToBoogie
             PerformContractInferce = false;
             DoModSetAnalysis = false;
             RemoveScopeInVarName = false;
+            QuantFreeAllocs = false;
+            LazyNestedAlloc = false;
         }
         /// <summary>
         /// Omit printing sourceFile/sourceLine information
@@ -63,6 +65,14 @@ namespace SolToBoogie
         /// Instrument contracts with gas consumption.
         /// </summary>
         public bool InstrumentGas { get; set; }
+        /// <summary>
+        /// Do not generate quantified axioms for allocation statements.
+        /// </summary>
+        public bool QuantFreeAllocs { get; set; }
+        /// <summary>
+        /// Allocate nested maps lazily, i.e., eliminate HavocAllocMany
+        /// </summary>
+        public bool LazyNestedAlloc { get; set; }
 
         // models of stubs for unknown procedures and fallbacks
         public string ModelOfStubs { get; set; }
