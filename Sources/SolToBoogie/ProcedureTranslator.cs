@@ -2326,7 +2326,7 @@ namespace SolToBoogie
             if (!functionName.Equals("transfer")) return false;
             if (node.Expression is MemberAccess member)
             {
-                if (member.TypeDescriptions.IsAddress())
+                if (member.Expression.TypeDescriptions.IsAddress())
                     return true;
             }
             return false;
