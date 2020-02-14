@@ -183,3 +183,4 @@ ERC20.sol
 A__AssetTransfer_Workbench.sol
 NestedMappingAlias.sol
 FuncsWithUnnamedParams.sol
+transfer.sol

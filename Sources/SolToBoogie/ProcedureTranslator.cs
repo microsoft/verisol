@@ -2266,7 +2266,7 @@ namespace SolToBoogie
             {
                 VeriSolAssert(false, "low-level delegatecall statements not supported...");
             }
-            else if (functionName.Equals("transfer"))
+            else if (IsBuiltInTransferFunc(functionName, node))
             {
                 TranslateTransferCallStmt(node);
             }
@@ -2317,6 +2317,17 @@ namespace SolToBoogie
                     TranslateInternalFunctionCall(node);
                 }
 
+            }
+            return false;
+        }
+
+        private bool IsBuiltInTransferFunc(string functionName, FunctionCall node)
+        {
+            if (!functionName.Equals("transfer")) return false;
+            if (node.Expression is MemberAccess member)
+            {
+                if (member.TypeDescriptions.IsAddress())
+                    return true;
             }
             return false;
         }
@@ -2834,7 +2845,7 @@ namespace SolToBoogie
                 TranslateSendCallStmt(node, outParams[0], TranslateExpr(node.Arguments[0]));
                 return;
             }
-            else if (memberAccess.MemberName.Equals("transfer"))
+            else if (IsBuiltInTransferFunc(memberAccess.MemberName, node))
             {
                 TranslateTransferCallStmt(node); // this may be unreachable as we already trap transfer directly
                 return;
