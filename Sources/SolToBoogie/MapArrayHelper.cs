@@ -97,6 +97,10 @@ namespace SolToBoogie
             {
                 return BoogieType.Ref;
             }
+            else if (typeString.StartsWith("bytes") && !typeString.Equals("bytes"))
+            {
+                return BoogieType.Int;
+            }
             else
             {
                 throw new SystemException($"Unknown type string during InferKeyTypeFromTypeString: {typeString}");
@@ -119,10 +123,31 @@ namespace SolToBoogie
             {
                 return BoogieType.Ref;
             }
+            else if (typeString.StartsWith("bytes") && !typeString.Equals("bytes"))
+            {
+                return BoogieType.Int;
+            }
             else
             {
                 throw new SystemException($"Unknown type string during InferValueTypeFromTypeString: {typeString}");
             }
+        }
+
+        public static string GetValueTypeString(string typeString)
+        {
+            if (mappingRegex.IsMatch(typeString))
+            {
+                Match match = mappingRegex.Match(typeString);
+                return match.Groups[2].Value;
+            }
+
+            if (arrayRegex.IsMatch(typeString))
+            {
+                Match match = arrayRegex.Match(typeString);
+                return match.Groups[1].Value;
+            }
+
+            return null;
         }
 
         public static bool IsMappingTypeString(string typeString)

@@ -16,6 +16,12 @@ namespace SolToBoogie
 
         public static int MIN_GAS_LIMIT = 4000000;
 
+        public static int TX_GAS_COST = 21000;
+
+        public static int CREATE_GAS_COST = 53000;
+
+        public static int CALL_GAS_STIPEND = 2300;
+
         public BoogieProgram Program { get; private set; }
 
         public Dictionary<int, ASTNode> IdToNodeMap { get; set; }

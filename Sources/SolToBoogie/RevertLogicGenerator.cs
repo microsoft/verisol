@@ -129,6 +129,11 @@ namespace SolToBoogie
             return expr;
         }
 
+        bool catchesExceptions(string methodName)
+        {
+            return methodName.Equals("send");
+        }
+
         private void generateRevertLogicForCmd(BoogieCmd cmd, BoogieStmtList parent, bool isFail, bool inHarness)
         {
             List<BoogieExpr> dupAndReplaceExprList(List<BoogieExpr> exprs)
@@ -159,13 +164,13 @@ namespace SolToBoogie
                 {
                     if (!inHarness || !isPublic(proceduresInProgram[calleeName]))
                     {
+                        emitCheckRevertLogic = !inHarness && !catchesExceptions(calleeName);
                         calleeName = calleeName + (isFail ? "__fail" : "__success");
-                        emitCheckRevertLogic = !inHarness;
                     }
                 }
 
                 var newIns = callCmd.Ins != null ? dupAndReplaceExprList(callCmd.Ins) : null;
-                var newOuts = callCmd.Outs != null ? callCmd.Outs.Select(e => (BoogieIdentifierExpr) dupAndReplaceExpr(e, isFail, inHarness)).ToList() : null;
+                var newOuts = callCmd.Outs?.Select(e => (BoogieIdentifierExpr) dupAndReplaceExpr(e, isFail, inHarness)).ToList();
                 parent.AddStatement(new BoogieCallCmd(calleeName, newIns, newOuts));
 
                 if (emitCheckRevertLogic)
@@ -348,8 +353,16 @@ namespace SolToBoogie
                 BoogieProcedure proc = failProcedurePair.Value;
 
                 var originalImpl = proceduresWithImpl[originalProcName];
-                context.Program.AddDeclaration(createFailImplementation(proc.Name, originalImpl));
-                context.Program.AddDeclaration(createSuccessImplementation(originalProcName + "__success", originalImpl));
+                if (!originalProcName.Equals("send"))
+                {
+                    context.Program.AddDeclaration(createFailImplementation(proc.Name, originalImpl));
+                    context.Program.AddDeclaration(createSuccessImplementation(originalProcName + "__success", originalImpl));
+                }
+                else
+                {
+                    context.Program.AddDeclaration(CreateSendFail());
+                    context.Program.AddDeclaration(CreateSendSucess());
+                }
 
                 // Remove original implementation for non-public methods
                 if (!isPublic(proceduresInProgram[originalProcName]) && !isConstructor(originalProcName))
@@ -423,6 +436,241 @@ namespace SolToBoogie
                     stmtList.AddStatement(new BoogieIfCmd(new BoogieIdentifierExpr(exceptionVarName), failCallStmtList, successCallStmtList));
                 }
             }
+        }
+
+        private BoogieImplementation CreateSendFail()
+        {
+            // send__fail(from: Ref, to: Ref, amt: uint) returns (success: boolean)
+            // {
+            //    var __exception: bool;
+            //    havoc __exception;
+            //
+            //    if(__exception)
+            //    {
+            //       //save current temps
+            //      if ((__tmp__Balance[from]) >= (amt)) {
+            //           call FallbackDispatch__fail(from, to, amt);
+            //      }
+            //
+            //       success := false;
+            //       assume(__revert);
+            //
+            //       // restore old temps
+            //       revert := false;
+            //    }
+            //    else {
+            //       if ((__tmp__Balance[from]) >= (amt)) {
+            //           call FallbackDispatch__fail(from, to, amt);
+            //           success := true;
+            //       } else {
+            //           success := false;
+            //       }
+            //
+            //       assume(!(__revert));
+            //    }
+            // }
+
+            List<BoogieVariable> inParams = new List<BoogieVariable>()
+            {
+                new BoogieFormalParam(new BoogieTypedIdent("from", BoogieType.Ref)),
+                new BoogieFormalParam(new BoogieTypedIdent("to", BoogieType.Ref)),
+                new BoogieFormalParam(new BoogieTypedIdent("amount", BoogieType.Int))
+            };
+
+            List<BoogieVariable> outParms = new List<BoogieVariable>()
+            {
+                new BoogieFormalParam(new BoogieTypedIdent("success", BoogieType.Bool))
+            };
+
+            List<BoogieVariable> locals = new List<BoogieVariable>()
+            {
+                new BoogieLocalVariable(new BoogieTypedIdent("__exception", BoogieType.Bool))
+            };
+
+            var fromId = new BoogieIdentifierExpr("from");
+            var toId = new BoogieIdentifierExpr("to");
+            var amtId = new BoogieIdentifierExpr("amount");
+
+            var successId = new BoogieIdentifierExpr("success");
+
+            var revertId = new BoogieIdentifierExpr("revert");
+
+            var exceptionId = new BoogieIdentifierExpr("__exception");
+
+            var body = new BoogieStmtList();
+
+            body.AddStatement(new BoogieHavocCmd(exceptionId));
+
+            var checkTmpBalGuard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE,
+                new BoogieMapSelect(new BoogieIdentifierExpr(shadowGlobals["Balance"].Name), fromId), 
+                amtId);
+            var callFailDispatch = new BoogieCallCmd("FallbackDispatch__fail", new List<BoogieExpr>() {fromId, toId, amtId}, null);
+
+            var exceptionCase = new BoogieStmtList();
+
+            foreach (var shadowGlobalPair in shadowGlobals)
+            {
+                var shadowName = shadowGlobalPair.Value.Name;
+                var tmpLocalName = "__snap_" + shadowName;
+                locals.Add(new BoogieLocalVariable(new BoogieTypedIdent(tmpLocalName, shadowGlobalPair.Value.TypedIdent.Type)));
+
+                exceptionCase.AddStatement(new BoogieAssignCmd(new BoogieIdentifierExpr(tmpLocalName), new BoogieIdentifierExpr(shadowName)));
+            }
+
+            exceptionCase.AddStatement(new BoogieIfCmd(checkTmpBalGuard, BoogieStmtList.MakeSingletonStmtList(callFailDispatch), null));
+            exceptionCase.AddStatement(new BoogieAssignCmd(successId, new BoogieLiteralExpr(false)));
+            BoogieExpr failAssumePred = revertId;
+            if (context.TranslateFlags.InstrumentGas)
+            {
+                failAssumePred = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, failAssumePred, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.LT, new BoogieIdentifierExpr("gas"), new BoogieLiteralExpr(0)));
+            }
+
+            exceptionCase.AddStatement(new BoogieAssumeCmd(failAssumePred));
+
+            foreach (var shadowGlobalPair in shadowGlobals)
+            {
+                var shadowName = shadowGlobalPair.Value.Name;
+                var tmpLocalName = "__snap_" + shadowName;
+
+                exceptionCase.AddStatement(new BoogieAssignCmd(new BoogieIdentifierExpr(shadowName), new BoogieIdentifierExpr(tmpLocalName)));
+            }
+
+            exceptionCase.AddStatement(new BoogieAssignCmd(revertId, new BoogieLiteralExpr(false)));
+
+            var successCase = new BoogieStmtList();
+            var successDispatchCall = new BoogieStmtList();
+
+            successDispatchCall.AddStatement(callFailDispatch);
+            successDispatchCall.AddStatement(new BoogieAssignCmd(successId, new BoogieLiteralExpr(true)));
+
+            successCase.AddStatement(new BoogieIfCmd(checkTmpBalGuard, successDispatchCall, BoogieStmtList.MakeSingletonStmtList(new BoogieAssignCmd(successId, new BoogieLiteralExpr(false)))));
+            BoogieExpr successAssumePred = new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, revertId);
+
+            if (context.TranslateFlags.InstrumentGas)
+            {
+                successAssumePred = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, successAssumePred, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, new BoogieIdentifierExpr("gas"), new BoogieLiteralExpr(0)));
+            }
+
+            successCase.AddStatement(new BoogieAssumeCmd(successAssumePred));
+
+            body.AddStatement(new BoogieIfCmd(exceptionId, exceptionCase, successCase));
+            return new BoogieImplementation("send__fail", inParams, outParms, locals, body);
+        }
+
+        private BoogieImplementation CreateSendSucess()
+        {
+            // send__success(from: Ref, to: Ref, amt: uint) returns (success: boolean)
+            // {
+            //    var __exception: bool;
+            //    havoc __exception;
+            //
+            //    if(__exception)
+            //    {
+            //        //set tmps
+            //        if ((__tmp__Balance[from]) >= (amt)) {
+            //            call FallbackDispatch__fail(from, to, amt);
+            //        }
+            //
+            //        success := false;
+            //        assume(__revert);
+            //
+            //        revert := false;
+            //    }
+            //    else {
+            //        if ((Balance[from]) >= (amt)) {
+            //            call FallbackDispatch__success(from, to, amt);
+            //            success := true;
+            //        } else {
+            //            success := false;
+            //        }
+            //
+            //        assume(!(__revert));
+            //    }
+            // }
+
+            List<BoogieVariable> inParams = new List<BoogieVariable>()
+            {
+                new BoogieFormalParam(new BoogieTypedIdent("from", BoogieType.Ref)),
+                new BoogieFormalParam(new BoogieTypedIdent("to", BoogieType.Ref)),
+                new BoogieFormalParam(new BoogieTypedIdent("amount", BoogieType.Int))
+            };
+
+            List<BoogieVariable> outParms = new List<BoogieVariable>()
+            {
+                new BoogieFormalParam(new BoogieTypedIdent("success", BoogieType.Bool))
+            };
+
+            List<BoogieVariable> locals = new List<BoogieVariable>()
+            {
+                new BoogieLocalVariable(new BoogieTypedIdent("__exception", BoogieType.Bool))
+            };
+
+
+            var fromId = new BoogieIdentifierExpr("from");
+            var toId = new BoogieIdentifierExpr("to");
+            var amtId = new BoogieIdentifierExpr("amount");
+
+            var successId = new BoogieIdentifierExpr("success");
+
+            var revertId = new BoogieIdentifierExpr("revert");
+
+            var exceptionId = new BoogieIdentifierExpr("__exception");
+
+            BoogieStmtList body = new BoogieStmtList();
+
+            body.AddStatement(new BoogieHavocCmd(exceptionId));
+
+            BoogieStmtList exceptionCase = new BoogieStmtList();
+
+            foreach (var shadowGlobalPair in shadowGlobals)
+            {
+                string origVarName = shadowGlobalPair.Key;
+                string shadowName = shadowGlobalPair.Value.Name;
+                exceptionCase.AddStatement(new BoogieAssignCmd(new BoogieIdentifierExpr(shadowName), new BoogieIdentifierExpr(origVarName)));
+            }
+
+            var checkTmpBalGuard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE,
+                new BoogieMapSelect(new BoogieIdentifierExpr(shadowGlobals["Balance"].Name), fromId),
+                amtId);
+            var callFailDispatch = new BoogieCallCmd("FallbackDispatch__fail", new List<BoogieExpr>() {fromId, toId, amtId}, null);
+
+            exceptionCase.AddStatement(new BoogieIfCmd(checkTmpBalGuard, BoogieStmtList.MakeSingletonStmtList(callFailDispatch), null));
+
+            exceptionCase.AddStatement(new BoogieAssignCmd(successId, new BoogieLiteralExpr(false)));
+
+            BoogieExpr failAssumePred = revertId;
+            if (context.TranslateFlags.InstrumentGas)
+            {
+                failAssumePred = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, failAssumePred, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.LT, new BoogieIdentifierExpr("gas"), new BoogieLiteralExpr(0)));
+            }
+
+            exceptionCase.AddStatement(new BoogieAssumeCmd(failAssumePred));
+            exceptionCase.AddStatement(new BoogieAssignCmd(revertId, new BoogieLiteralExpr(false)));
+
+            var successCase = new BoogieStmtList();
+
+            var checkBalGuard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE,
+                new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), fromId),
+                amtId);
+
+            var successCaseStmts = new BoogieStmtList();
+            var callSuccessDispatch = new BoogieCallCmd("FallbackDispatch__success", new List<BoogieExpr>(){fromId, toId, amtId}, null);
+            successCaseStmts.AddStatement(callSuccessDispatch);
+            successCaseStmts.AddStatement(new BoogieAssignCmd(successId, new BoogieLiteralExpr(true)));
+
+            successCase.AddStatement(new BoogieIfCmd(checkBalGuard, successCaseStmts, BoogieStmtList.MakeSingletonStmtList(new BoogieAssignCmd(successId, new BoogieLiteralExpr(false)))));
+
+            BoogieExpr successAssumePred = new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, revertId);
+
+            if (context.TranslateFlags.InstrumentGas)
+            {
+                successAssumePred = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, successAssumePred, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, new BoogieIdentifierExpr("gas"), new BoogieLiteralExpr(0)));
+            }
+
+            successCase.AddStatement(new BoogieAssumeCmd(successAssumePred));
+
+            body.AddStatement(new BoogieIfCmd(exceptionId, exceptionCase, successCase));
+            return new BoogieImplementation("send__success", inParams, outParms, locals, body);
         }
     }
 }
