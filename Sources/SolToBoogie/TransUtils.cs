@@ -494,7 +494,8 @@ namespace SolToBoogie
                     // when a nested struct/Enum is declared TypeName may not have the contractprefix (Foo.EnumType), 
                     // but TypeDescriptions has the entire prefix. This is useful as a function may be declared as (EnumType a)
                     // and the TypeName does not have the context. 
-                    builder.Append(varDecl.TypeDescriptions.TypeString).Append(", ");
+                    // builder.Append(varDecl.TypeDescriptions.TypeString).Append(", ");
+                    builder.Append(InferTypeFromTypeString(varDecl.TypeDescriptions.TypeString)).Append(", ");
                 }
                 builder.Length -= 2;
             }
@@ -539,7 +540,8 @@ namespace SolToBoogie
                 {
                     foreach (VariableDeclaration varDecl in function.Parameters.Parameters)
                     {
-                        builder.Append(varDecl.TypeDescriptions.TypeString).Append(", ");
+                        //builder.Append(varDecl.TypeDescriptions.TypeString).Append(", ");
+                        builder.Append(InferTypeFromTypeString(varDecl.TypeDescriptions.TypeString)).Append(", ");
                     }
                     builder.Length -= 2;
                 }
@@ -555,35 +557,7 @@ namespace SolToBoogie
                 {
                     foreach (Expression argument in node.Arguments)
                     {
-                        string typeString = argument.TypeDescriptions.TypeString;
-                        if (typeString.StartsWith("int_const"))
-                        {
-                            typeString = "int256";
-                        }
-                        if (typeString.StartsWith("uint_const"))
-                        {
-                            typeString = "int256";
-                        }
-                        if (typeString.StartsWith("string") || typeString.StartsWith("literal_string"))
-                        {
-                            typeString = "string";
-                        }
-                        if (typeString.StartsWith("bytes "))
-                        {
-                            typeString = "bytes"; //"bytes storage ref"
-                        }
-                        if (typeString.Contains(" memory")) //"struct Foo memory"
-                        {
-                            typeString = typeString.Substring(0, typeString.IndexOf(" memory"));
-                        }
-                        if (typeString.Contains(" storage"))
-                        {
-                            typeString = typeString.Substring(0, typeString.IndexOf(" storage"));
-                        }
-                        if (typeString.Contains(" payable"))
-                        {
-                            typeString = typeString.Substring(0, typeString.IndexOf(" payable")); //address payable
-                        }
+                        string typeString = InferTypeFromTypeString(argument.TypeDescriptions.TypeString);
                         builder.Append(typeString).Append(", ");
                     }
                     builder.Length -= 2;
@@ -593,7 +567,42 @@ namespace SolToBoogie
             }
         }
 
-        public static string InferExpressionType(Expression expression)
+        private static string InferTypeFromTypeString(string typestr)
+        {
+            string typeString = typestr;
+            if (typeString.StartsWith("int_const"))
+            {
+                typeString = "int256";
+            }
+            if (typeString.StartsWith("uint_const"))
+            {
+                typeString = "int256";
+            }
+            if (typeString.StartsWith("string") || typeString.StartsWith("literal_string"))
+            {
+                typeString = "string";
+            }
+            if (typeString.StartsWith("bytes "))
+            {
+                typeString = "bytes"; //"bytes storage ref"
+            }
+            if (typeString.Contains(" memory")) //"struct Foo memory"
+            {
+                typeString = typeString.Substring(0, typeString.IndexOf(" memory"));
+            }
+            if (typeString.Contains(" storage"))
+            {
+                typeString = typeString.Substring(0, typeString.IndexOf(" storage"));
+            }
+            if (typeString.Contains(" payable"))
+            {
+                typeString = typeString.Substring(0, typeString.IndexOf(" payable")); //address payable
+            }
+
+            return typeString;
+        }
+
+        public static string InferTypeFromExpression(Expression expression)
         {
             Debug.Assert(expression.TypeDescriptions != null, $"Null type description for {expression}");
             string typeString = expression.TypeDescriptions.TypeString;
