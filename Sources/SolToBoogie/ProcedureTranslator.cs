@@ -2093,9 +2093,17 @@ namespace SolToBoogie
                     }
                     return false;
                 } 
-                else if (identifier.Name.Equals("block") || identifier.Name.Equals("tx"))
+                else if (identifier.Name.Equals("block"))
                 {
-                    //we will havoc the value
+                    if (node.MemberName.Equals("timestamp"))
+                        currentExpr = new BoogieIdentifierExpr("now");
+                    else
+                        //we will havoc the value
+                        currentExpr = GenerateNonDetExpr(node, node.ToString());
+                    return false;
+                }
+                else if(identifier.Name.Equals("tx"))
+                {
                     currentExpr = GenerateNonDetExpr(node, node.ToString());
                     return false;
                 }
