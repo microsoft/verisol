@@ -22,6 +22,9 @@ namespace SolToBoogie
         // current Boogie procedure being translated to
         private string currentBoogieProc = null;
 
+        // does current procedure has inline assembly in it?
+        private bool inlineAssemblyPresent = false;
+
         // update in the visitor for contract definition
         private ContractDefinition currentContract = null;
         // update in the visitor for function definition
@@ -396,7 +399,18 @@ namespace SolToBoogie
                     }
                 }
 
-                procBody.AppendStmtList(TranslateStatement(node.Body));
+                try
+                {
+                    procBody.AppendStmtList(TranslateStatement(node.Body));
+                }
+                catch (NotImplementedException e)
+                {
+                    // In case of an inline assembly in the body of the function, do not emit procedure body (aka implementation):
+                    if (e.Message.Equals("inline assembly"))
+                    {
+                        inlineAssemblyPresent = true;
+                    }
+                }             
 
                 // add modifier postlude call if function body has no return
                 if (currentPostlude != null)
@@ -438,8 +452,15 @@ namespace SolToBoogie
                     procedure.AddPostConditions(postconditions);
                     procedure.AddPostConditions(modifies);
                     List<BoogieVariable> localVars = boogieToLocalVarsMap[currentBoogieProc];
-                    BoogieImplementation impelementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBodyWoModifies);
-                    context.Program.AddDeclaration(impelementation);
+                    if (!inlineAssemblyPresent)
+                    {
+                        BoogieImplementation impelementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBodyWoModifies);
+                        context.Program.AddDeclaration(impelementation);
+                    }
+                    else
+                    {
+                        inlineAssemblyPresent = false;
+                    }
                 }
             }
 
@@ -3543,8 +3564,8 @@ namespace SolToBoogie
         public override bool Visit(InlineAssembly node)
         {
             preTranslationAction(node);
-            VeriSolAssert(false, $"Inline assembly unsupported {node.ToString()}");
-            throw new NotImplementedException();
+            Console.WriteLine($"Warning: Inline assembly in function {currentFunction.Name}; replacing function result with non-det value");  
+            throw new NotImplementedException("inline assembly");
         }
 
         public override bool Equals(object obj)

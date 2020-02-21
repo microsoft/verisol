@@ -1,4 +1,7 @@
+Assembly1.sol
+Assembly2.sol
 BytesTypes.sol
+StringToBytes.sol
 Const.sol
 UInt.sol
 UInt-1.sol
