@@ -285,6 +285,10 @@ namespace SolToBoogie
                 BoogieGlobalVariable gas = new BoogieGlobalVariable(gasId);
                 context.Program.AddDeclaration(gas);
             }
+
+            // Solidity-specific vars
+            BoogieTypedIdent nowVar = new BoogieTypedIdent("now", BoogieType.Int);
+            context.Program.AddDeclaration(new BoogieGlobalVariable(nowVar));
         }
 
         private void GenerateGlobalImplementations()

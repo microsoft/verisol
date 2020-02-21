@@ -2008,7 +2008,7 @@ namespace SolToBoogie
             }
             else if (node.Name.Equals("now"))
             {
-                currentExpr = GenerateNonDetExpr(node, "now special variable");
+                currentExpr = new BoogieIdentifierExpr("now");
             }
             else // explicitly defined identifiers
             {
