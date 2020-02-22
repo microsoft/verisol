@@ -410,6 +410,10 @@ namespace SolToBoogie
                     {
                         inlineAssemblyPresent = true;
                     }
+                    else
+                    {
+                        throw e;
+                    }
                 }             
 
                 // add modifier postlude call if function body has no return
