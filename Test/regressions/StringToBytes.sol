@@ -28,6 +28,7 @@ contract Test {
 	 //foo(0x0);               //solc error
 	 
 	 z = foo(bytes(""));           //compiles
+	 //assert (z[0] == 0x0);
 	 //assert (z == bytes(""));      //solc error
 	 //assert (z == 0x0);             //solc error
 	 

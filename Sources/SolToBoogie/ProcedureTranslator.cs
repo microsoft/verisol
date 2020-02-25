@@ -2820,6 +2820,14 @@ namespace SolToBoogie
                     {
                         return true;
                     }
+                }
+                else if (memberAccess.Expression is MemberAccess structSelect)
+                {
+                    return true;
+                    //if (structSelect.ReferencedDeclaration != null)
+                    //{
+                     //   var varDeclaration = context.GetASTNodeById((int)structSelect.ReferencedDeclaration.Value) as VariableDeclaration;
+                    //}
                 } else if (memberAccess.Expression.ToString().Equals("msg.sender"))
                 {
                     // calls can be of the form "msg.sender.call()" or "msg.sender.send()" or "msg.sender.transfer()"

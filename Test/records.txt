@@ -84,6 +84,8 @@ LoopDoWhile.sol
 UsingFor.sol
 UsingForComplex.sol
 UsingInBase.sol
+UsingInTwoLibraries.sol
+UsingInTwoLibrariesNoStruct.sol
 AssertFalse.sol
 MethodDecl.sol
 #StructOfDynamicArray.sol
