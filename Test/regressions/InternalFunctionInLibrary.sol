@@ -12,6 +12,14 @@ library Lib {
 	function decrement(Counter storage counter) internal {
         counter.value = counter.value.sub(1);
     }
+	
+	function decrementTwice(Counter storage counter) internal {
+		uint256 v;
+		v = counter.value;
+        counter.value = counter.value.sub(1);
+		counter.value = counter.value.sub(1);
+		assert(v == counter.value + 2);
+    }
 
 }
 contract A {
@@ -20,8 +28,10 @@ contract A {
 	mapping (address => Lib.Counter) private count;
 
     function foo(address x, uint256 id) internal {
-		uint256 v = count[x].value;
+		uint256 v;
+		v = count[x].value;
         count[x].decrement();
-		assert(v == count[x].value + 1);
+		count[x].decrementTwice();
+		assert(v == count[x].value + 3);
     }
 }

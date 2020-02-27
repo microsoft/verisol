@@ -2823,18 +2823,19 @@ namespace SolToBoogie
                 }
                 else if (memberAccess.Expression is MemberAccess structSelect)
                 {
+                    //a.b.c.foo(...)
+                    //TODO: do we want to check that the contract the struct variable is declared
+                    // is not in the "context"? Why this isn't done for IndexAccess?
                     return true;
-                    //if (structSelect.ReferencedDeclaration != null)
-                    //{
-                     //   var varDeclaration = context.GetASTNodeById((int)structSelect.ReferencedDeclaration.Value) as VariableDeclaration;
-                    //}
-                } else if (memberAccess.Expression.ToString().Equals("msg.sender"))
+                }
+                else if (memberAccess.Expression.ToString().Equals("msg.sender"))
                 {
                     // calls can be of the form "msg.sender.call()" or "msg.sender.send()" or "msg.sender.transfer()"
                     return true;
                 }
                 else if (memberAccess.Expression is FunctionCall)
                 {
+                    // TODO: example?
                     return true;
                 } else if (memberAccess.Expression is IndexAccess)
                 {
