@@ -126,6 +126,7 @@ MappingLowerDimRef.sol
 InternalFunctionCall.sol
 InternalFunctionCall_fail.sol
 InternalFunctionCallStruct.sol
+InternalFunctionInLibrary.sol
 LoopBreak.sol
 MappingNested.sol
 #LoopWhile.sol
