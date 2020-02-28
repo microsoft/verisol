@@ -15,5 +15,4 @@ contract InternalFunctionCall {
 		uint y = foo(counter.value);
         assert (y == counter.value + 1);
     }
-
 }

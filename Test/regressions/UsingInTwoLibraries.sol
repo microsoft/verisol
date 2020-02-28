@@ -19,7 +19,7 @@ contract A {
 	
 	mapping (address => Lib.Counter) private count;
 
-    function foo(address x, uint256 id) internal {
+    function foo(address x, uint256 id) public {
 		uint256 v = count[x].value;
         count[x].decrement();
 		assert(v == count[x].value + 1);

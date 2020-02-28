@@ -16,8 +16,8 @@ library Lib {
 	function decrementTwice(Counter storage counter) internal {
 		uint256 v;
 		v = counter.value;
-        counter.value = counter.value.sub(1);
-		counter.value = counter.value.sub(1);
+		decrement(counter);
+		decrement(counter);
 		assert(v == counter.value + 2);
     }
 
@@ -27,7 +27,7 @@ contract A {
 	
 	mapping (address => Lib.Counter) private count;
 
-    function foo(address x, uint256 id) internal {
+    function foo(address x, uint256 id) public {
 		uint256 v;
 		v = count[x].value;
         count[x].decrement();

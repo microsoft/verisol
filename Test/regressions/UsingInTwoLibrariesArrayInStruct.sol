@@ -22,7 +22,7 @@ contract A {
 	
 	mapping (address => Lib.Counter) private count;
 
-    function foo(address x, uint256 id) internal {
+    function foo(address x, uint256 id) public {
 		count[x].value1 = 1;
 		count[x].value2[0] = 2;
 		count[x].value2[1] = 3;
