@@ -2535,9 +2535,12 @@ namespace SolToBoogie
                 var callStipend = new BoogieLiteralExpr(TranslatorContext.CALL_GAS_STIPEND);
                 
                 currentStmtList.AddStatement(new BoogieAssignCmd(tmpGas, gasVar));
-                currentStmtList.AddStatement(new BoogieIfCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GT, gasVar, callStipend), 
+                currentStmtList.AddStatement(new BoogieIfCmd(
+                    new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GT, gasVar, callStipend),
                     BoogieStmtList.MakeSingletonStmtList(new BoogieAssignCmd(gasVar, callStipend)),
                     null));
+                
+                currentStmtList.AddStatement(new BoogieAssignCmd(tmpGas, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, tmpGas, gasVar)));
             }
             
             var amountExpr = TranslateExpr(node.Arguments[0]);
@@ -2598,6 +2601,8 @@ namespace SolToBoogie
                 currentStmtList.AddStatement(new BoogieIfCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GT, gasVar, callStipend), 
                                                              BoogieStmtList.MakeSingletonStmtList(new BoogieAssignCmd(gasVar, callStipend)),
                                                              null));
+                
+                currentStmtList.AddStatement(new BoogieAssignCmd(tmpGas, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, tmpGas, gasVar)));
             }
             
             var memberAccess = node.Expression as MemberAccess;
