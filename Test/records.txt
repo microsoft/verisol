@@ -1,4 +1,9 @@
+Assembly1.sol
+Assembly2.sol
+Assembly3.sol
+Assembly4.sol
 BytesTypes.sol
+StringToBytes.sol
 Const.sol
 UInt.sol
 UInt-1.sol
@@ -79,6 +84,9 @@ LoopDoWhile.sol
 UsingFor.sol
 UsingForComplex.sol
 UsingInBase.sol
+UsingInTwoLibraries.sol
+UsingInTwoLibrariesNoStruct.sol
+UsingInTwoLibrariesArrayInStruct.sol
 AssertFalse.sol
 MethodDecl.sol
 #StructOfDynamicArray.sol
@@ -117,6 +125,8 @@ ArrayFixedSize.sol
 MappingLowerDimRef.sol 
 InternalFunctionCall.sol
 InternalFunctionCall_fail.sol
+InternalFunctionCallStruct.sol
+InternalFunctionInLibrary.sol
 LoopBreak.sol
 MappingNested.sol
 #LoopWhile.sol
