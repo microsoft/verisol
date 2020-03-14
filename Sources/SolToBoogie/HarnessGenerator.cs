@@ -129,6 +129,10 @@ namespace SolToBoogie
                 assumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, assumeExpr, rhs);
             }
 
+            if (context.TranslateFlags.OmitAssumeFalseForDynDispatch)
+            {
+                return new BoogieAssumeCmd(new BoogieLiteralExpr(true));
+            }
             return new BoogieAssumeCmd(assumeExpr);
         }
 

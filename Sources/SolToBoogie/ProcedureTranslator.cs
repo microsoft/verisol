@@ -3100,8 +3100,9 @@ namespace SolToBoogie
                 lastCallCmd = callCmd;
                 BoogieStmtList thenBody = BoogieStmtList.MakeSingletonStmtList(callCmd);
                 // BoogieStmtList elseBody = ifCmd == null ? null : BoogieStmtList.MakeSingletonStmtList(ifCmd);
+                var falseExpr =  context.TranslateFlags.OmitAssumeFalseForDynDispatch ? true : false;
                 BoogieStmtList elseBody = ifCmd == null ? 
-                    BoogieStmtList.MakeSingletonStmtList(new BoogieAssumeCmd(new BoogieLiteralExpr(false))) : 
+                    BoogieStmtList.MakeSingletonStmtList(new BoogieAssumeCmd(new BoogieLiteralExpr(falseExpr))) : 
                     BoogieStmtList.MakeSingletonStmtList(ifCmd);
 
                 ifCmd = new BoogieIfCmd(guard, thenBody, elseBody);

@@ -122,7 +122,12 @@ namespace SolToBoogie
             {
                 translatorFlags.LazyNestedAlloc = true;
             }
-            
+
+            if (args.Any(x => x.Equals("/OmitAssumeFalseForDynDispatch")))
+            {
+                translatorFlags.OmitAssumeFalseForDynDispatch = true;
+            }
+
             if (args.Any(x => x.Equals("/QuantFreeAllocs")))
             {
                 translatorFlags.QuantFreeAllocs = true;
