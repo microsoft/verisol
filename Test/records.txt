@@ -55,6 +55,14 @@ Logical.sol
 Inheritance.sol
 ConstructorChaining.sol
 ConstructorChaining2.sol
+ConstructorChaining4.sol
+ConstructorChaining2_fail.sol
+ConstructorChaining3_fail.sol
+ConstructorLinearized_fail.sol
+ConstructorLinearized.sol
+ConstructorLinearizedWithArgs1.sol
+ConstructorLinearizedWithArgs2.sol
+ConstructorLinearizedWithArgs3.sol
 ConstructorChainingImplicit.sol
 InheritWithConstructorArgs.sol
 TypeCast.sol
