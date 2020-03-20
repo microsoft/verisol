@@ -3,6 +3,9 @@ pragma solidity >=0.4.24 <0.6.0;
 // This test passes, but assertion on line 35 is only proved
 // up to 4 transactions
 // This result means that ctor A is only called once, for B, as A(x+1)
+// Compare this test with ConstructorChaining2_fail.sol: no ctor args there,
+// so the workaround in the compiler doesn't work, and the base ctor is called twice 
+
 
 // Example of the trace:
 // D(x) is called, where x is 716
@@ -30,7 +33,8 @@ contract B is A {
 
 contract C is A {
     uint c;
-    //constructor (uint x) A(x+2) public {          // no A with args here, otherwise, solc error
+    //constructor (uint x) A(x+2) public {          // no A with ANY args here, otherwise, solc error:
+													// "Base constr args given twice"
 	constructor (uint x) public {
         c = x + 2;
 		assert(a == x);       // passes, but proved to only 4 transactions	
