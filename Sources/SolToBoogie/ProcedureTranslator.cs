@@ -3484,7 +3484,7 @@ namespace SolToBoogie
                     BoogieType nestedValType = MapArrayHelper.InferValueTypeFromTypeString(valTypeString);
                     BoogieType nestedKeyType = MapArrayHelper.InferKeyTypeFromTypeString(valTypeString);
 
-                    var mapName = new BoogieIdentifierExpr(MapArrayHelper.GetMemoryMapName(indexType, nestedValType));
+                    var mapName = new BoogieIdentifierExpr(MapArrayHelper.GetMemoryMapName(nestedKeyType, nestedValType));
                     var derefCurrExpr = new BoogieMapSelect(mapName, currentExpr);
                     
                     var qVar1 = QVarGenerator.NewQVar(0, 0);
