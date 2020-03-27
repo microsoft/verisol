@@ -132,6 +132,11 @@ namespace SolToBoogie
                     translatorFlags.LazyNestedAlloc = true;
             }
 
+            if (args.Any(x => x.Equals("/InstrumentSums")))
+            {
+                translatorFlags.InstrumentSums = true;
+            }
+
             translatorFlags.PerformContractInferce = args.Any(x => x.StartsWith("/contractInfer"));
 
             // don't perform verification for some of these omitFlags

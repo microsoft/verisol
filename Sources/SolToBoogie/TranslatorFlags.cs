@@ -27,7 +27,10 @@ namespace SolToBoogie
             RemoveScopeInVarName = false;
             QuantFreeAllocs = false;
             LazyNestedAlloc = false;
+            InstrumentSums = false;
         }
+        
+        public bool InstrumentSums { get; set; }
         /// <summary>
         /// Omit printing sourceFile/sourceLine information
         /// </summary>

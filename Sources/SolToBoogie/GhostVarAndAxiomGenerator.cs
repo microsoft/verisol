@@ -286,6 +286,16 @@ namespace SolToBoogie
                 context.Program.AddDeclaration(gas);
             }
 
+            if (context.TranslateFlags.InstrumentSums)
+            {
+                BoogieTypedIdent sumRefId = new BoogieTypedIdent("sum_Ref_int", new BoogieMapType(BoogieType.Ref, BoogieType.Int));
+                BoogieGlobalVariable sumRef = new BoogieGlobalVariable(sumRefId);
+                context.Program.AddDeclaration(sumRef);
+                BoogieTypedIdent sumIntId = new BoogieTypedIdent("sum_int_int", new BoogieMapType(BoogieType.Ref, BoogieType.Int));
+                BoogieGlobalVariable sumInt = new BoogieGlobalVariable(sumIntId);
+                context.Program.AddDeclaration(sumInt);
+            }
+
             // Solidity-specific vars
             BoogieTypedIdent nowVar = new BoogieTypedIdent("now", BoogieType.Int);
             context.Program.AddDeclaration(new BoogieGlobalVariable(nowVar));
