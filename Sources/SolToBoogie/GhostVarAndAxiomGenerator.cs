@@ -288,12 +288,9 @@ namespace SolToBoogie
 
             if (context.TranslateFlags.InstrumentSums)
             {
-                BoogieTypedIdent sumRefId = new BoogieTypedIdent("sum_Ref_int", new BoogieMapType(BoogieType.Ref, BoogieType.Int));
-                BoogieGlobalVariable sumRef = new BoogieGlobalVariable(sumRefId);
-                context.Program.AddDeclaration(sumRef);
-                BoogieTypedIdent sumIntId = new BoogieTypedIdent("sum_int_int", new BoogieMapType(BoogieType.Ref, BoogieType.Int));
-                BoogieGlobalVariable sumInt = new BoogieGlobalVariable(sumIntId);
-                context.Program.AddDeclaration(sumInt);
+                BoogieTypedIdent sumId = new BoogieTypedIdent("sum", new BoogieMapType(BoogieType.Ref, BoogieType.Int));
+                BoogieGlobalVariable sum = new BoogieGlobalVariable(sumId);
+                context.Program.AddDeclaration(sum);
             }
 
             // Solidity-specific vars

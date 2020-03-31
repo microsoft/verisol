@@ -586,34 +586,21 @@ namespace SolToBoogie
             return new BoogieFuncCallExpr("zero" + keyStr + valStr + "Arr", new List<BoogieExpr>());
         }
 
-        private BoogieExpr getSumArray(BoogieType keyType)
+        private BoogieExpr getSumArray()
         {
-            if (keyType.Equals(BoogieType.Ref))
-            {
-                return new BoogieIdentifierExpr("sum_Ref_int");
-            }
-            else if (keyType.Equals(BoogieType.Int))
-            {
-                return new BoogieIdentifierExpr("sum_int_int");
-            }
-            
-            VeriSolAssert(false, "We do not support sum key type of " + keyType);
-            return null;
+            return new BoogieIdentifierExpr("sum");
         }
 
-        private BoogieExpr getSumAccess(BoogieExpr key, BoogieType keyType)
+        private BoogieExpr getSumAccess(BoogieExpr key)
         {
-            return new BoogieMapSelect(getSumArray(keyType), key);
+            return new BoogieMapSelect(getSumArray(), key);
         }
         
-        public BoogieAssignCmd adjustSum(BoogieBinaryOperation.Opcode op, IndexAccess access, BoogieExpr sumInd, BoogieExpr amt)
+        public BoogieAssignCmd adjustSum(BoogieBinaryOperation.Opcode op, BoogieExpr sumInd, BoogieExpr amt)
         {
-            Expression baseExpression = access.BaseExpression;
-            Expression indexExpression = access.IndexExpression;
-            BoogieType indexType = MapArrayHelper.InferExprTypeFromTypeString(indexExpression.TypeDescriptions.TypeString);
             /*BoogieExpr arrExpr = accessExpr.BaseExpr;
             BoogieExpr arrExpr1 = TranslateExpr(baseExpression);*/
-            BoogieExpr sumAccess = getSumAccess(sumInd, indexType);
+            BoogieExpr sumAccess = getSumAccess(sumInd);
             BoogieExpr sumSub = new BoogieBinaryOperation(op, sumAccess, amt);
             return new BoogieAssignCmd(sumAccess, sumSub);
         }
@@ -724,7 +711,7 @@ namespace SolToBoogie
 
                 if (context.TranslateFlags.InstrumentSums)
                 {
-                    currentStmtList.AddStatement(new BoogieAssignCmd(getSumAccess(lhsMap, mapKeyType), new BoogieLiteralExpr(BigInteger.Zero)));
+                    currentStmtList.AddStatement(new BoogieAssignCmd(getSumAccess(lhsMap), new BoogieLiteralExpr(BigInteger.Zero)));
                 }
             }
             else
@@ -1382,7 +1369,7 @@ namespace SolToBoogie
                 var isInt = expr.TypeDescriptions.IsInt() || expr.TypeDescriptions.IsUint();
                 if (isInt && expr is IndexAccess access && boogieExprs[i] is BoogieMapSelect sel && sel.BaseExpr is BoogieMapSelect arrIdent)
                 {
-                    currentStmtList.AddStatement(adjustSum(op, access, arrIdent.Arguments[0], boogieExprs[i]));
+                    currentStmtList.AddStatement(adjustSum(op,  arrIdent.Arguments[0], boogieExprs[i]));
                 }
             }
         }
@@ -1923,7 +1910,7 @@ namespace SolToBoogie
                     if (context.TranslateFlags.InstrumentSums && isInt && unaryOperation.SubExpression is IndexAccess access &&
                         lhs is BoogieMapSelect sel && sel.BaseExpr is BoogieMapSelect arrIdent)
                     {
-                        currentStmtList.AddStatement(adjustSum(oper, access, arrIdent.Arguments[0], new BoogieLiteralExpr(BigInteger.One)));
+                        currentStmtList.AddStatement(adjustSum(oper,  arrIdent.Arguments[0], new BoogieLiteralExpr(BigInteger.One)));
                     }
                     
                     //print the value
@@ -1954,7 +1941,7 @@ namespace SolToBoogie
                         var isInt = typeDescription.IsInt() || typeDescription.IsUint();
                         if (context.TranslateFlags.InstrumentSums && isInt)
                         {
-                            BoogieExpr sumExpr = getSumAccess(element, BoogieType.Int);
+                            BoogieExpr sumExpr = getSumAccess(element);
                             var sumAssign = new BoogieAssignCmd(sumExpr, new BoogieLiteralExpr(BigInteger.Zero));
                             currentStmtList.AddStatement(sumAssign);
                         }
@@ -1971,7 +1958,7 @@ namespace SolToBoogie
                         if (context.TranslateFlags.InstrumentSums && isInt && unaryOperation.SubExpression is IndexAccess access &&
                             lhs is BoogieMapSelect sel && sel.BaseExpr is BoogieMapSelect arrIdent)
                         {
-                            currentStmtList.AddStatement(adjustSum(BoogieBinaryOperation.Opcode.SUB, access, arrIdent.Arguments[0], lhs));
+                            currentStmtList.AddStatement(adjustSum(BoogieBinaryOperation.Opcode.SUB, arrIdent.Arguments[0], lhs));
                         }
                         
                         BoogieExpr rhs = null;
@@ -2882,7 +2869,7 @@ namespace SolToBoogie
             var isInt = mapValType.Equals(BoogieType.Int);
             if (context.TranslateFlags.InstrumentSums && isInt)
             {
-                BoogieExpr sumAccess = getSumAccess(receiver, mapKeyType);
+                BoogieExpr sumAccess = getSumAccess(receiver);
                 BoogieAssignCmd sumAssign = new BoogieAssignCmd(sumAccess,
                     new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, sumAccess, element));
                 currentStmtList.AddStatement(sumAssign);
@@ -3630,7 +3617,7 @@ namespace SolToBoogie
 
                         if (context.TranslateFlags.InstrumentSums)
                         {
-                            allocAndInit.AddStatement(new BoogieAssignCmd(getSumAccess(currentExpr, nestedKeyType), new BoogieLiteralExpr(BigInteger.Zero)));
+                            allocAndInit.AddStatement(new BoogieAssignCmd(getSumAccess(currentExpr), new BoogieLiteralExpr(BigInteger.Zero)));
                         }
                     }
                     else if (nestedValType == BoogieType.Ref)

@@ -132,7 +132,7 @@ namespace SolToBoogie
                     translatorFlags.LazyNestedAlloc = true;
             }
 
-            if (args.Any(x => x.Equals("/InstrumentSums")))
+            if (args.Any(x => x.Equals("/instrumentSums")))
             {
                 translatorFlags.InstrumentSums = true;
             }
