@@ -28,7 +28,12 @@ namespace SolToBoogie
             QuantFreeAllocs = false;
             LazyNestedAlloc = false;
             InstrumentSums = false;
+            NoBoogieHarness = false;
+            CreateMainHarness = false;
         }
+        public bool CreateMainHarness { get; set; }
+        
+        public bool NoBoogieHarness { get; set; }
         
         public bool InstrumentSums { get; set; }
         /// <summary>

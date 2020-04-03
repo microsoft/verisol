@@ -89,6 +89,8 @@ namespace SolToBoogie
         // M -> BoogieImplementation(B) for Modifier M {Stmt A; _; Stmt B}
         public Dictionary<string, BoogieImplementation> ModifierToBoogiePostImpl { get; private set;}
 
+        public String EntryPointContract { get; private set; }
+
         // Options flags
         public TranslatorFlags TranslateFlags { get; private set; }
 
@@ -107,7 +109,7 @@ namespace SolToBoogie
         // maps Contract C --> (source, dest), where source is a library type
         private readonly Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, TypeName>> usingMap; 
 
-        public TranslatorContext(HashSet<Tuple<string, string>> ignoreMethods, bool _genInlineAttrInBpl, TranslatorFlags _translateFlags = null)
+        public TranslatorContext(HashSet<Tuple<string, string>> ignoreMethods, bool _genInlineAttrInBpl, TranslatorFlags _translateFlags = null, String entryPointContract = "")
         {
             Program = new BoogieProgram();
             ContractDefinitions = new HashSet<ContractDefinition>();
@@ -137,6 +139,7 @@ namespace SolToBoogie
             IgnoreMethods = ignoreMethods;
             genInlineAttrInBpl = _genInlineAttrInBpl;
             TranslateFlags = _translateFlags;
+            EntryPointContract = entryPointContract;
         }
 
         public bool HasASTNodeId(int id)

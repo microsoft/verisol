@@ -23,17 +23,21 @@ namespace SolToBoogie
 
         public void Generate()
         {
-            foreach (ContractDefinition contract in context.ContractDefinitions)
+            if (!context.TranslateFlags.NoBoogieHarness)
             {
-                if (contract.ContractKind == EnumContractKind.LIBRARY &&
-                    contract.Name.Equals("VeriSol"))
+                foreach (ContractDefinition contract in context.ContractDefinitions)
                 {
-                    continue;
-                }
+                    if (contract.ContractKind == EnumContractKind.LIBRARY &&
+                        contract.Name.Equals("VeriSol"))
+                    {
+                        continue;
+                    }
 
-                Dictionary<int, BoogieExpr> houdiniVarMap = HoudiniHelper.GenerateHoudiniVarMapping(contract, context);
-                GenerateHoudiniVarsForContract(contract, houdiniVarMap);
-                GenerateBoogieHarnessForContract(contract, houdiniVarMap);
+                    Dictionary<int, BoogieExpr> houdiniVarMap =
+                        HoudiniHelper.GenerateHoudiniVarMapping(contract, context);
+                    GenerateHoudiniVarsForContract(contract, houdiniVarMap);
+                    GenerateBoogieHarnessForContract(contract, houdiniVarMap);
+                }
             }
 
             GenerateModifiers();
@@ -222,6 +226,7 @@ namespace SolToBoogie
             stmtList.AddStatement(new BoogieAssignCmd(tmpNowVar, nowVar));
             stmtList.AddStatement(new BoogieHavocCmd(nowVar));
             stmtList.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GT, nowVar, tmpNowVar)));
+            stmtList.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, new BoogieIdentifierExpr("msgsender_MSG"), new BoogieIdentifierExpr("null"))));
             foreach (var contractDef in context.ContractDefinitions)
             {
                 BoogieIdentifierExpr contractIdent = new BoogieIdentifierExpr(contractDef.Name);
@@ -263,6 +268,11 @@ namespace SolToBoogie
         private void GenerateCorralHarnessForContract(ContractDefinition contract)
         {
             string harnessName = "CorralEntry_" + contract.Name;
+            if (context.TranslateFlags.CreateMainHarness && contract.Name.Equals(context.EntryPointContract))
+            {
+                harnessName = "main";
+            }
+
             List<BoogieVariable> inParams = new List<BoogieVariable>();
             List<BoogieVariable> outParams = new List<BoogieVariable>();
             BoogieProcedure harness = new BoogieProcedure(harnessName, inParams, outParams);

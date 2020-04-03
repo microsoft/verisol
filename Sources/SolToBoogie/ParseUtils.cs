@@ -84,6 +84,16 @@ namespace SolToBoogie
                 translatorFlags.NoHarness = true;
             }
 
+            if (args.Any(x => x.Equals("/omitBoogieHarness")))
+            {
+                translatorFlags.NoBoogieHarness = true;
+            }
+
+            if (args.Any(x => x.Equals("/createMainHarness")))
+            {
+                translatorFlags.CreateMainHarness = true;
+            }
+
             if (args.Any(x => x.Equals("/modelReverts")))
             {
                 translatorFlags.ModelReverts = true;
