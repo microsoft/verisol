@@ -531,6 +531,12 @@ namespace SolToBoogie
             BoogieAssumeCmd assumeCmd = new BoogieAssumeCmd(assumeExpr);
             currentStmtList.AddStatement(assumeCmd);
 
+            BoogieAssignCmd balanceInit =
+                new BoogieAssignCmd(
+                    new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("this")),
+                    new BoogieIdentifierExpr("msgvalue_MSG"));
+            currentStmtList.AddStatement(balanceInit);
+
             // assign null to other address variables
             foreach (VariableDeclaration varDecl in context.GetStateVarsByContract(contract))
             {

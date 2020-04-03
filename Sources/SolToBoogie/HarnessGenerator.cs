@@ -222,7 +222,16 @@ namespace SolToBoogie
             stmtList.AddStatement(new BoogieAssignCmd(tmpNowVar, nowVar));
             stmtList.AddStatement(new BoogieHavocCmd(nowVar));
             stmtList.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GT, nowVar, tmpNowVar)));
-
+            foreach (var contractDef in context.ContractDefinitions)
+            {
+                BoogieIdentifierExpr contractIdent = new BoogieIdentifierExpr(contractDef.Name);
+                stmtList.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, 
+                                new BoogieMapSelect(new BoogieIdentifierExpr("DType"), new BoogieIdentifierExpr("msgsender_MSG")), 
+                                contractIdent)));
+            }
+            
+            stmtList.AddStatement((new BoogieAssignCmd(new BoogieMapSelect(new BoogieIdentifierExpr("Alloc"), new BoogieIdentifierExpr("msgsender_MSG")), new BoogieLiteralExpr(true))));
+            
             return stmtList;
         }
 
@@ -271,6 +280,10 @@ namespace SolToBoogie
                 localVars.AddRange(GetParamsOfFunction(ctor));
             }
             BoogieStmtList harnessBody = new BoogieStmtList();
+            //harnessBody.AddStatement(new BoogieAssignCmd(new BoogieIdentifierExpr("this"), ));
+            //BoogieExpr zeroRef = new BoogieFuncCallExpr("ConstantToRef", new List<BoogieExpr>() { new BoogieLiteralExpr(0) });
+            //harnessBody.AddStatement((new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, new BoogieIdentifierExpr("null"), zeroRef))));
+            harnessBody.AddStatement(new BoogieCallCmd("FreshRefGenerator", new List<BoogieExpr>(), new List<BoogieIdentifierExpr>() {new BoogieIdentifierExpr("this")}));
             harnessBody.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, new BoogieIdentifierExpr("now"), new BoogieLiteralExpr(0))));
             harnessBody.AddStatement(GenerateDynamicTypeAssumes(contract));
             GenerateConstructorCall(contract).ForEach(x => harnessBody.AddStatement(x));
