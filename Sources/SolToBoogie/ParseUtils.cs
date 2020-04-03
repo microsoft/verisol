@@ -94,6 +94,11 @@ namespace SolToBoogie
                 translatorFlags.CreateMainHarness = true;
             }
 
+            if (args.Any(x => x.Equals("/noCustomTypes")))
+            {
+                translatorFlags.NoCustomTypes = true;
+            }
+
             if (args.Any(x => x.Equals("/modelReverts")))
             {
                 translatorFlags.ModelReverts = true;

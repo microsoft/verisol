@@ -65,15 +65,32 @@ namespace BoogieAST
 
     public class BoogieTypeCtorDecl : BoogieNamedDecl
     {
+        private BoogieType EquivType;
+        
         public BoogieTypeCtorDecl(string name)
         {
             this.Name = name;
+            this.EquivType = null;
+        }
+        
+        public BoogieTypeCtorDecl(string name, BoogieType equivType)
+        {
+            this.Name = name;
+            this.EquivType = equivType;
         }
 
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append("type ").Append(Name).AppendLine(";");
+            if (EquivType == null)
+            {
+                builder.Append("type ").Append(Name).AppendLine(";");
+            }
+            else
+            {
+                builder.Append("type ").Append(Name).Append(" = ").Append(EquivType).AppendLine(";");
+            }
+            
             return builder.ToString();
         }
     }

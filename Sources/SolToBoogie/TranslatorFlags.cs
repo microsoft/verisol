@@ -30,7 +30,10 @@ namespace SolToBoogie
             InstrumentSums = false;
             NoBoogieHarness = false;
             CreateMainHarness = false;
+            NoCustomTypes = false;
         }
+        public bool NoCustomTypes { get; set; }
+        
         public bool CreateMainHarness { get; set; }
         
         public bool NoBoogieHarness { get; set; }

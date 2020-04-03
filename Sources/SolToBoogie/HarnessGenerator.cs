@@ -291,8 +291,10 @@ namespace SolToBoogie
             }
             BoogieStmtList harnessBody = new BoogieStmtList();
             //harnessBody.AddStatement(new BoogieAssignCmd(new BoogieIdentifierExpr("this"), ));
-            //BoogieExpr zeroRef = new BoogieFuncCallExpr("ConstantToRef", new List<BoogieExpr>() { new BoogieLiteralExpr(0) });
-            //harnessBody.AddStatement((new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, new BoogieIdentifierExpr("null"), zeroRef))));
+            if (context.TranslateFlags.NoCustomTypes)
+            {
+                harnessBody.AddStatement((new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, new BoogieIdentifierExpr("null"), new BoogieLiteralExpr(0)))));
+            }
             harnessBody.AddStatement(new BoogieCallCmd("FreshRefGenerator", new List<BoogieExpr>(), new List<BoogieIdentifierExpr>() {new BoogieIdentifierExpr("this")}));
             harnessBody.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, new BoogieIdentifierExpr("now"), new BoogieLiteralExpr(0))));
             harnessBody.AddStatement(GenerateDynamicTypeAssumes(contract));

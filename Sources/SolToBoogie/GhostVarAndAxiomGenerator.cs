@@ -219,8 +219,17 @@ namespace SolToBoogie
 
         private void GenerateTypes()
         {
-            context.Program.AddDeclaration(new BoogieTypeCtorDecl("Ref"));
-            context.Program.AddDeclaration(new BoogieTypeCtorDecl("ContractName"));
+            if (context.TranslateFlags.NoCustomTypes)
+            {
+                context.Program.AddDeclaration(new BoogieTypeCtorDecl("Ref", BoogieType.Int));
+                context.Program.AddDeclaration(new BoogieTypeCtorDecl("ContractName", BoogieType.Int));
+            }
+            else
+            {
+                context.Program.AddDeclaration(new BoogieTypeCtorDecl("Ref"));
+                context.Program.AddDeclaration(new BoogieTypeCtorDecl("ContractName"));
+            }
+            
         }
 
         private void GenerateConstants()
