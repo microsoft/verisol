@@ -534,7 +534,7 @@ namespace SolToBoogie
             BoogieAssignCmd balanceInit =
                 new BoogieAssignCmd(
                     new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("this")),
-                    new BoogieIdentifierExpr("msgvalue_MSG"));
+                    new BoogieLiteralExpr(0));
             currentStmtList.AddStatement(balanceInit);
 
             // assign null to other address variables

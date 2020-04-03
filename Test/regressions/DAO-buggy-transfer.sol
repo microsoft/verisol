@@ -26,7 +26,7 @@ contract SimpleDAO {
 contract Mallory {
     SimpleDAO public dao;
     uint count;
-    constructor (address daoAddr) public {
+    constructor (address daoAddr) public payable {
         count = 0;
         dao = SimpleDAO(daoAddr);
         require(dao.queryCredit(address(this)) == 0);
