@@ -120,8 +120,10 @@ namespace SolToBoogie
             List<ContractDefinition> subtypes = new List<ContractDefinition>(context.GetSubTypesOfContract(contract));
             Debug.Assert(subtypes.Count > 0);
 
-            BoogieExpr assumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, assumeLhs,
+            BoogieExpr assumeExpr0 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, assumeLhs,
                 new BoogieIdentifierExpr(subtypes[0].Name));
+            var assumeExpr = assumeExpr0;
+
             for (int i = 1; i < subtypes.Count; ++i)
             {
                 BoogieExpr rhs = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, assumeLhs,
@@ -131,7 +133,7 @@ namespace SolToBoogie
 
             if (context.TranslateFlags.OmitAssumeFalseForDynDispatch)
             {
-                return new BoogieAssumeCmd(new BoogieLiteralExpr(true));
+                return new BoogieAssumeCmd(new BoogieLiteralExpr(true)); //assumeExpr0);
             }
             return new BoogieAssumeCmd(assumeExpr);
         }

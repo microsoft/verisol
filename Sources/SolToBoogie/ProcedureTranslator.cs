@@ -9,6 +9,7 @@ namespace SolToBoogie
     using System.Globalization;
     using System.Linq;
     using System.Numerics;
+    using System.Text.RegularExpressions;
     using BoogieAST;
     using SolidityAST;
 
@@ -3219,7 +3220,7 @@ namespace SolToBoogie
             {
                 isElemenentaryTypeCast = true;
                 BoogieExpr rhsExpr = exprToCast;
-                // most casts are skips, except address cast
+                // most casts are skips, except address and int cast
                 if (elemType.TypeName.Equals("address") || elemType.TypeName.Equals("address payable"))
                 {
 
@@ -3228,13 +3229,21 @@ namespace SolToBoogie
                     {
                         if (blit.ToString().Equals("0"))
                         {
-                            rhsExpr = (BoogieExpr) new BoogieIdentifierExpr("null");
+                            rhsExpr = (BoogieExpr)new BoogieIdentifierExpr("null");
                         }
                         else
                         {
                             rhsExpr = new BoogieFuncCallExpr("ConstantToRef", new List<BoogieExpr>() { exprToCast });
                         }
                     }
+                }
+                var castToInt = Regex.Match(elemType.TypeName, @"[int,uint]\d*").Success;
+
+                if (castToInt && node.Arguments[0].TypeDescriptions.IsAddress())
+                {
+                    // uint addrInt = uint(addr);
+                    // for any other type conversion, make it uninterpreted 
+                    rhsExpr = new BoogieFuncCallExpr("BoogieRefToInt", new List<BoogieExpr>() { exprToCast });
                 }
 
                 // We do not handle downcasts between unsigned integers, when /useModularArithmetic option is enabled:

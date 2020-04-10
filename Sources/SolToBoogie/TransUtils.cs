@@ -598,6 +598,11 @@ namespace SolToBoogie
             {
                 typeString = typeString.Substring(0, typeString.IndexOf(" payable")); //address payable
             }
+            if (typeString.Contains(" calldata")) //"address[] calldata"
+            {
+                typeString = typeString.Substring(0, typeString.IndexOf(" calldata"));
+            }
+
 
             return typeString;
         }

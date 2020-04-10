@@ -33,6 +33,7 @@ namespace SolToBoogie
         private void GenerateFunctions()
         {
             context.Program.AddDeclaration(GenerateConstToRefFunction());
+            context.Program.AddDeclaration(GenerateRefToInt());
             context.Program.AddDeclaration(GenerateModFunction());
             context.Program.AddDeclaration(GenerateKeccakFunction());
             context.Program.AddDeclaration(GenerateAbiEncodedFunctionOneArg());
@@ -185,6 +186,18 @@ namespace SolToBoogie
             var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", BoogieType.Ref));
             return new BoogieFunction(
                 "ConstantToRef",
+                new List<BoogieVariable>() { inVar },
+                new List<BoogieVariable>() { outVar },
+                null);
+        }
+
+        private BoogieFunction GenerateRefToInt()
+        {
+            //function for Ref to Int
+            var inVar = new BoogieFormalParam(new BoogieTypedIdent("x", BoogieType.Ref));
+            var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", BoogieType.Int));
+            return new BoogieFunction(
+                "BoogieRefToInt",
                 new List<BoogieVariable>() { inVar },
                 new List<BoogieVariable>() { outVar },
                 null);

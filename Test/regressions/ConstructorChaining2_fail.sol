@@ -1,11 +1,14 @@
 pragma solidity >=0.4.24 <0.6.0;
 
-// Shows that constructor chaining still has an issue:
-// D constructor is called twice - see corral.txt
+// Shows that constructor chaining still has a bug
+// D constructor is called twice - see trace in corral.txt:
+// ctor D {x = 1}
+// ctor D {x = 1}
+// ctor B
+// ctor C
 
 contract D {
 	uint x;
-	// why x gets 1 every time this constructor executes?
     constructor () public { x++; }
 }
 
@@ -14,5 +17,5 @@ contract B is D {
 }
 
 contract C is B {
-    constructor () public { assert (x == 2); }    //holds, despite D constructor being called twice
+    constructor () public { assert (x != 1); }   
 }

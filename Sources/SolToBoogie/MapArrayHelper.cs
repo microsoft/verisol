@@ -10,7 +10,7 @@ namespace SolToBoogie
     {
         private static Regex mappingRegex = new Regex(@"mapping\((\w+)\s*\w*\s*=>\s*(.+)\)$");
         //mapping(string => uint) appears as mapping(string memory => uint)
-        private static Regex arrayRegex = new Regex(@"(.+)\[\w*\] (storage ref|storage pointer|memory)$");
+        private static Regex arrayRegex = new Regex(@"(.+)\[\w*\] (storage ref|storage pointer|memory|calldata)$");
         // mapping (uint => uint[]) does not have storage/memory in Typestring
         // private static Regex arrayRegex = new Regex(@"(.+)\[\w*\]$");
 
