@@ -3235,6 +3235,10 @@ namespace SolToBoogie
                         {
                             rhsExpr = new BoogieFuncCallExpr("ConstantToRef", new List<BoogieExpr>() { exprToCast });
                         }
+                    } else
+                    {
+                        // even non-constants can be cast
+                        rhsExpr = new BoogieFuncCallExpr("ConstantToRef", new List<BoogieExpr>() { exprToCast });
                     }
                 }
                 var castToInt = Regex.Match(elemType.TypeName, @"[int,uint]\d*").Success;
