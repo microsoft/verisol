@@ -31,6 +31,7 @@ namespace SolToBoogie
             NoBoogieHarness = false;
             CreateMainHarness = false;
             NoCustomTypes = false;
+            OmitAssumeFalseForDynDispatch = false;
         }
         public bool NoCustomTypes { get; set; }
         
@@ -84,6 +85,11 @@ namespace SolToBoogie
         /// Allocate nested maps lazily, i.e., eliminate HavocAllocMany
         /// </summary>
         public bool LazyNestedAlloc { get; set; }
+
+        /// <summary>
+        /// Remove assume false for the default branch of dyn dispatch
+        /// </summary>
+        public bool OmitAssumeFalseForDynDispatch { get; set; }
 
         // models of stubs for unknown procedures and fallbacks
         public string ModelOfStubs { get; set; }

@@ -9,6 +9,7 @@ namespace SolToBoogie
     using System.Globalization;
     using System.Linq;
     using System.Numerics;
+    using System.Text.RegularExpressions;
     using BoogieAST;
     using SolidityAST;
 
@@ -21,6 +22,9 @@ namespace SolToBoogie
 
         // current Boogie procedure being translated to
         private string currentBoogieProc = null;
+
+        // does current procedure has inline assembly in it?
+        private bool inlineAssemblyPresent = false;
 
         // update in the visitor for contract definition
         private ContractDefinition currentContract = null;
@@ -396,7 +400,22 @@ namespace SolToBoogie
                     }
                 }
 
-                procBody.AppendStmtList(TranslateStatement(node.Body));
+                try
+                {
+                    procBody.AppendStmtList(TranslateStatement(node.Body));
+                }
+                catch (NotImplementedException e)
+                {
+                    // In case of an inline assembly in the body of the function, do not emit procedure body (aka implementation):
+                    if (e.Message.Equals("inline assembly"))
+                    {
+                        inlineAssemblyPresent = true;
+                    }
+                    else
+                    {
+                        throw e;
+                    }
+                }             
 
                 // add modifier postlude call if function body has no return
                 if (currentPostlude != null)
@@ -438,8 +457,15 @@ namespace SolToBoogie
                     procedure.AddPostConditions(postconditions);
                     procedure.AddPostConditions(modifies);
                     List<BoogieVariable> localVars = boogieToLocalVarsMap[currentBoogieProc];
-                    BoogieImplementation impelementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBodyWoModifies);
-                    context.Program.AddDeclaration(impelementation);
+                    if (!inlineAssemblyPresent)
+                    {
+                        BoogieImplementation impelementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBodyWoModifies);
+                        context.Program.AddDeclaration(impelementation);
+                    }
+                    else
+                    {
+                        inlineAssemblyPresent = false;
+                    }
                 }
             }
 
@@ -2906,13 +2932,22 @@ namespace SolToBoogie
                     {
                         return true;
                     }
-                } else if (memberAccess.Expression.ToString().Equals("msg.sender"))
+                }
+                else if (memberAccess.Expression is MemberAccess structSelect)
+                {
+                    //a.b.c.foo(...)
+                    //TODO: do we want to check that the contract the struct variable is declared
+                    // is not in the "context"? Why this isn't done for IndexAccess?
+                    return true;
+                }
+                else if (memberAccess.Expression.ToString().Equals("msg.sender"))
                 {
                     // calls can be of the form "msg.sender.call()" or "msg.sender.send()" or "msg.sender.transfer()"
                     return true;
                 }
                 else if (memberAccess.Expression is FunctionCall)
                 {
+                    // TODO: example?
                     return true;
                 } else if (memberAccess.Expression is IndexAccess)
                 {
@@ -3187,8 +3222,9 @@ namespace SolToBoogie
                 lastCallCmd = callCmd;
                 BoogieStmtList thenBody = BoogieStmtList.MakeSingletonStmtList(callCmd);
                 // BoogieStmtList elseBody = ifCmd == null ? null : BoogieStmtList.MakeSingletonStmtList(ifCmd);
+                var falseExpr =  context.TranslateFlags.OmitAssumeFalseForDynDispatch ? true : false;
                 BoogieStmtList elseBody = ifCmd == null ? 
-                    BoogieStmtList.MakeSingletonStmtList(new BoogieAssumeCmd(new BoogieLiteralExpr(false))) : 
+                    BoogieStmtList.MakeSingletonStmtList(new BoogieAssumeCmd(new BoogieLiteralExpr(falseExpr))) : 
                     BoogieStmtList.MakeSingletonStmtList(ifCmd);
 
                 ifCmd = new BoogieIfCmd(guard, thenBody, elseBody);
@@ -3316,7 +3352,7 @@ namespace SolToBoogie
             {
                 isElemenentaryTypeCast = true;
                 BoogieExpr rhsExpr = exprToCast;
-                // most casts are skips, except address cast
+                // most casts are skips, except address and int cast
                 if (elemType.TypeName.Equals("address") || elemType.TypeName.Equals("address payable"))
                 {
 
@@ -3325,13 +3361,24 @@ namespace SolToBoogie
                     {
                         if (blit.ToString().Equals("0"))
                         {
-                            rhsExpr = (BoogieExpr) new BoogieIdentifierExpr("null");
+                            rhsExpr = (BoogieExpr)new BoogieIdentifierExpr("null");
                         }
                         else
                         {
                             rhsExpr = new BoogieFuncCallExpr("ConstantToRef", new List<BoogieExpr>() { exprToCast });
                         }
+                    } else if (node.Arguments[0].TypeDescriptions.IsInt() || node.Arguments[0].TypeDescriptions.IsUint())
+                    {
+                        rhsExpr = new BoogieFuncCallExpr("ConstantToRef", new List<BoogieExpr>() { exprToCast });
                     }
+                }
+                var castToInt = Regex.Match(elemType.TypeName, @"[int,uint]\d*").Success;
+
+                if (castToInt && node.Arguments[0].TypeDescriptions.IsAddress())
+                {
+                    // uint addrInt = uint(addr);
+                    // for any other type conversion, make it uninterpreted 
+                    rhsExpr = new BoogieFuncCallExpr("BoogieRefToInt", new List<BoogieExpr>() { exprToCast });
                 }
 
                 // We do not handle downcasts between unsigned integers, when /useModularArithmetic option is enabled:
@@ -3680,8 +3727,8 @@ namespace SolToBoogie
         public override bool Visit(InlineAssembly node)
         {
             preTranslationAction(node);
-            VeriSolAssert(false, $"Inline assembly unsupported {node.ToString()}");
-            throw new NotImplementedException();
+            Console.WriteLine($"Warning: Inline assembly in function {currentFunction.Name}; replacing function result with non-det value");  
+            throw new NotImplementedException("inline assembly");
         }
 
         public override bool Equals(object obj)

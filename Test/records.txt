@@ -1,4 +1,9 @@
+Assembly1.sol
+Assembly2.sol
+Assembly3.sol
+Assembly4.sol
 BytesTypes.sol
+StringToBytes.sol
 Const.sol
 UInt.sol
 UInt-1.sol
@@ -50,9 +55,18 @@ Logical.sol
 Inheritance.sol
 ConstructorChaining.sol
 ConstructorChaining2.sol
+ConstructorChaining4.sol
+ConstructorChaining2_fail.sol
+ConstructorChaining3_fail.sol
+ConstructorLinearized_fail.sol
+ConstructorLinearized.sol
+ConstructorLinearizedWithArgs1.sol
+ConstructorLinearizedWithArgs2.sol
+ConstructorLinearizedWithArgs3.sol
 ConstructorChainingImplicit.sol
 InheritWithConstructorArgs.sol
 TypeCast.sol
+UintCast.sol
 AddressCast.sol
 #not backwards compat with 0.4.24
 MappingReference.sol 
@@ -79,6 +93,9 @@ LoopDoWhile.sol
 UsingFor.sol
 UsingForComplex.sol
 UsingInBase.sol
+UsingInTwoLibraries.sol
+UsingInTwoLibrariesNoStruct.sol
+UsingInTwoLibrariesArrayInStruct.sol
 AssertFalse.sol
 MethodDecl.sol
 #StructOfDynamicArray.sol
@@ -117,6 +134,8 @@ ArrayFixedSize.sol
 MappingLowerDimRef.sol 
 InternalFunctionCall.sol
 InternalFunctionCall_fail.sol
+InternalFunctionCallStruct.sol
+InternalFunctionInLibrary.sol
 LoopBreak.sol
 MappingNested.sol
 #LoopWhile.sol
@@ -185,3 +204,4 @@ NestedMappingAlias.sol
 FuncsWithUnnamedParams.sol
 transfer.sol
 ownable.sol
+calldata.sol
