@@ -9,7 +9,8 @@ strategy:
     linux:
       imageName: 'ubuntu-latest'
     windows:
-      imageName: 'vs2017-win2016'
+#      imageName: 'vs2017-win2016'
+      imageName: 'windows-2019'
 #    mac:
 #     imageName: 'macos-latest'
 
