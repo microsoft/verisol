@@ -2,5 +2,5 @@
     "recursionBound": 8,
     "k": 1,
     "main": "CorralEntry_D",
-    "expectedResult": "Program has a potential bug: True bug"
+    "expectedResult": "Program has no bugs"
 }

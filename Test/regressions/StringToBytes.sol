@@ -28,10 +28,12 @@ contract Test {
 	 //foo(0x0);               //solc error
 	 
 	 z = foo(bytes(""));           //compiles
+	 //assert (z[0] == 0x0);
 	 //assert (z == bytes(""));      //solc error
 	 //assert (z == 0x0);             //solc error
-	 assert (z[0] == 0x0);
+	 
 	 //assert (z.length == 0);       //solc compiles, but corral crashes:
 									//"Invalid type for argument 0 in map select: int (expected: Ref)"
+	 //bytes1 a = z[0];               //same corral crash as above
   }
 }
