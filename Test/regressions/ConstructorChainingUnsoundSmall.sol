@@ -1,15 +1,21 @@
 pragma solidity ^0.5.2;
 
 contract A {
-    bool x;	
+    // need a struct as a 
+    //   scalar variable is explicitly initialized
+    //   map variables get a new address 
+    struct A {
+        mapping (int => bool) x;	
+    } 
+    A a;
+
     constructor () internal {
-       require(!x);
-       x = true;
+       require(!a.x[0]);
+       a.x[0] = true;
     }
 }
 
 contract B is A {
-    constructor () internal {}
 }
 
 contract C is A, B {
