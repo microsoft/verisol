@@ -3235,6 +3235,9 @@ namespace SolToBoogie
                         {
                             rhsExpr = new BoogieFuncCallExpr("ConstantToRef", new List<BoogieExpr>() { exprToCast });
                         }
+                    } else if (node.Arguments[0].TypeDescriptions.IsInt() || node.Arguments[0].TypeDescriptions.IsUint())
+                    {
+                        rhsExpr = new BoogieFuncCallExpr("ConstantToRef", new List<BoogieExpr>() { exprToCast });
                     }
                 }
                 var castToInt = Regex.Match(elemType.TypeName, @"[int,uint]\d*").Success;
