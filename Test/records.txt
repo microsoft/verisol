@@ -66,6 +66,7 @@ ConstructorLinearizedWithArgs3.sol
 ConstructorChainingImplicit.sol
 InheritWithConstructorArgs.sol
 TypeCast.sol
+UintCast.sol
 AddressCast.sol
 #not backwards compat with 0.4.24
 MappingReference.sol 
