@@ -3235,9 +3235,8 @@ namespace SolToBoogie
                         {
                             rhsExpr = new BoogieFuncCallExpr("ConstantToRef", new List<BoogieExpr>() { exprToCast });
                         }
-                    } else
+                    } else if (node.Arguments[0].TypeDescriptions.IsInt() || node.Arguments[0].TypeDescriptions.IsUint())
                     {
-                        // even non-constants can be cast
                         rhsExpr = new BoogieFuncCallExpr("ConstantToRef", new List<BoogieExpr>() { exprToCast });
                     }
                 }
