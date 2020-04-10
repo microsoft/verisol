@@ -3239,11 +3239,10 @@ namespace SolToBoogie
                 }
                 var castToInt = Regex.Match(elemType.TypeName, @"[int,uint]\d*").Success;
 
-                if (castToInt)
+                if (castToInt && node.Arguments[0].TypeDescriptions.IsAddress())
                 {
                     // uint addrInt = uint(addr);
                     // for any other type conversion, make it uninterpreted 
-                    VeriSolAssert(node.Arguments[0].TypeDescriptions.IsAddress(), $"Currently only support cast from address to int type, found {node.ToString()}");
                     rhsExpr = new BoogieFuncCallExpr("BoogieRefToInt", new List<BoogieExpr>() { exprToCast });
                 }
 
