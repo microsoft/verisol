@@ -14,13 +14,13 @@ namespace SolToBoogie
     public class BoogieTranslator
     {
             // set of method@contract pairs whose translatin is skipped
-        public BoogieAST Translate(AST solidityAST, HashSet<Tuple<string, string>> ignoredMethods, TranslatorFlags _translatorFlags = null)
+        public BoogieAST Translate(AST solidityAST, HashSet<Tuple<string, string>> ignoredMethods, TranslatorFlags _translatorFlags = null, String entryPointContract = "")
         {
             bool generateInlineAttributesInBpl = _translatorFlags.GenerateInlineAttributes;
 
             SourceUnitList sourceUnits = solidityAST.GetSourceUnits();
 
-            TranslatorContext context = new TranslatorContext(ignoredMethods, generateInlineAttributesInBpl, _translatorFlags);
+            TranslatorContext context = new TranslatorContext(ignoredMethods, generateInlineAttributesInBpl, _translatorFlags, entryPointContract);
             context.IdToNodeMap = solidityAST.GetIdToNodeMap();
             context.SourceDirectory = solidityAST.SourceDirectory;
 

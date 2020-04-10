@@ -232,8 +232,17 @@ namespace SolToBoogie
 
         private void GenerateTypes()
         {
-            context.Program.AddDeclaration(new BoogieTypeCtorDecl("Ref"));
-            context.Program.AddDeclaration(new BoogieTypeCtorDecl("ContractName"));
+            if (context.TranslateFlags.NoCustomTypes)
+            {
+                context.Program.AddDeclaration(new BoogieTypeCtorDecl("Ref", BoogieType.Int));
+                context.Program.AddDeclaration(new BoogieTypeCtorDecl("ContractName", BoogieType.Int));
+            }
+            else
+            {
+                context.Program.AddDeclaration(new BoogieTypeCtorDecl("Ref"));
+                context.Program.AddDeclaration(new BoogieTypeCtorDecl("ContractName"));
+            }
+            
         }
 
         private void GenerateConstants()
@@ -298,6 +307,17 @@ namespace SolToBoogie
                 BoogieGlobalVariable gas = new BoogieGlobalVariable(gasId);
                 context.Program.AddDeclaration(gas);
             }
+
+            if (context.TranslateFlags.InstrumentSums)
+            {
+                BoogieTypedIdent sumId = new BoogieTypedIdent("sum", new BoogieMapType(BoogieType.Ref, BoogieType.Int));
+                BoogieGlobalVariable sum = new BoogieGlobalVariable(sumId);
+                context.Program.AddDeclaration(sum);
+            }
+
+            // Solidity-specific vars
+            BoogieTypedIdent nowVar = new BoogieTypedIdent("now", BoogieType.Int);
+            context.Program.AddDeclaration(new BoogieGlobalVariable(nowVar));
         }
 
         private void GenerateGlobalImplementations()

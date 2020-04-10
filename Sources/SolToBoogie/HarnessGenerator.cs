@@ -23,17 +23,21 @@ namespace SolToBoogie
 
         public void Generate()
         {
-            foreach (ContractDefinition contract in context.ContractDefinitions)
+            if (!context.TranslateFlags.NoBoogieHarness)
             {
-                if (contract.ContractKind == EnumContractKind.LIBRARY &&
-                    contract.Name.Equals("VeriSol"))
+                foreach (ContractDefinition contract in context.ContractDefinitions)
                 {
-                    continue;
-                }
+                    if (contract.ContractKind == EnumContractKind.LIBRARY &&
+                        contract.Name.Equals("VeriSol"))
+                    {
+                        continue;
+                    }
 
-                Dictionary<int, BoogieExpr> houdiniVarMap = HoudiniHelper.GenerateHoudiniVarMapping(contract, context);
-                GenerateHoudiniVarsForContract(contract, houdiniVarMap);
-                GenerateBoogieHarnessForContract(contract, houdiniVarMap);
+                    Dictionary<int, BoogieExpr> houdiniVarMap =
+                        HoudiniHelper.GenerateHoudiniVarMapping(contract, context);
+                    GenerateHoudiniVarsForContract(contract, houdiniVarMap);
+                    GenerateBoogieHarnessForContract(contract, houdiniVarMap);
+                }
             }
 
             GenerateModifiers();
@@ -95,7 +99,9 @@ namespace SolToBoogie
             context.Program.AddDeclaration(harness);
 
             List<BoogieVariable> localVars = TransUtils.CollectLocalVars(new List<ContractDefinition>() { contract }, context);
+            localVars.Add(new BoogieLocalVariable(new BoogieTypedIdent("tmpNow", BoogieType.Int)));
             BoogieStmtList harnessBody = new BoogieStmtList();
+            harnessBody.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, new BoogieIdentifierExpr("now"), new BoogieLiteralExpr(0))));
             harnessBody.AddStatement(GenerateDynamicTypeAssumes(contract));
             GenerateConstructorCall(contract).ForEach(x => harnessBody.AddStatement(x));
             if (context.TranslateFlags.ModelReverts)
@@ -221,6 +227,22 @@ namespace SolToBoogie
                 TransUtils.havocGas(stmtList);
             }
 
+            var nowVar = new BoogieIdentifierExpr("now");
+            var tmpNowVar = new BoogieIdentifierExpr("tmpNow");
+            stmtList.AddStatement(new BoogieAssignCmd(tmpNowVar, nowVar));
+            stmtList.AddStatement(new BoogieHavocCmd(nowVar));
+            stmtList.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GT, nowVar, tmpNowVar)));
+            stmtList.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, new BoogieIdentifierExpr("msgsender_MSG"), new BoogieIdentifierExpr("null"))));
+            foreach (var contractDef in context.ContractDefinitions)
+            {
+                BoogieIdentifierExpr contractIdent = new BoogieIdentifierExpr(contractDef.Name);
+                stmtList.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, 
+                                new BoogieMapSelect(new BoogieIdentifierExpr("DType"), new BoogieIdentifierExpr("msgsender_MSG")), 
+                                contractIdent)));
+            }
+            
+            stmtList.AddStatement((new BoogieAssignCmd(new BoogieMapSelect(new BoogieIdentifierExpr("Alloc"), new BoogieIdentifierExpr("msgsender_MSG")), new BoogieLiteralExpr(true))));
+            
             return stmtList;
         }
 
@@ -242,6 +264,7 @@ namespace SolToBoogie
             context.Program.AddDeclaration(harness);
 
             List<BoogieVariable> localVars = RemoveThisFromVariables(TransUtils.CollectLocalVars(new List<ContractDefinition>() { contract }, context));
+            localVars.Add(new BoogieLocalVariable(new BoogieTypedIdent("tmpNow", BoogieType.Int)));
             BoogieStmtList procBody = GenerateHavocBlock(contract, localVars);
             procBody.AddStatement(TransUtils.GenerateChoiceBlock(new List<ContractDefinition>() { contract }, context));
             BoogieImplementation procImpl = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
@@ -251,6 +274,11 @@ namespace SolToBoogie
         private void GenerateCorralHarnessForContract(ContractDefinition contract)
         {
             string harnessName = "CorralEntry_" + contract.Name;
+            if (context.TranslateFlags.CreateMainHarness && contract.Name.Equals(context.EntryPointContract))
+            {
+                harnessName = "main";
+            }
+
             List<BoogieVariable> inParams = new List<BoogieVariable>();
             List<BoogieVariable> outParams = new List<BoogieVariable>();
             BoogieProcedure harness = new BoogieProcedure(harnessName, inParams, outParams);
@@ -268,6 +296,13 @@ namespace SolToBoogie
                 localVars.AddRange(GetParamsOfFunction(ctor));
             }
             BoogieStmtList harnessBody = new BoogieStmtList();
+            //harnessBody.AddStatement(new BoogieAssignCmd(new BoogieIdentifierExpr("this"), ));
+            if (context.TranslateFlags.NoCustomTypes)
+            {
+                harnessBody.AddStatement((new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, new BoogieIdentifierExpr("null"), new BoogieLiteralExpr(0)))));
+            }
+            harnessBody.AddStatement(new BoogieCallCmd("FreshRefGenerator", new List<BoogieExpr>(), new List<BoogieIdentifierExpr>() {new BoogieIdentifierExpr("this")}));
+            harnessBody.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, new BoogieIdentifierExpr("now"), new BoogieLiteralExpr(0))));
             harnessBody.AddStatement(GenerateDynamicTypeAssumes(contract));
             GenerateConstructorCall(contract).ForEach(x => harnessBody.AddStatement(x));
             if (context.TranslateFlags.ModelReverts)

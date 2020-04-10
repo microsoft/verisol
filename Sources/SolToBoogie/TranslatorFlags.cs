@@ -27,8 +27,19 @@ namespace SolToBoogie
             RemoveScopeInVarName = false;
             QuantFreeAllocs = false;
             LazyNestedAlloc = false;
+            InstrumentSums = false;
+            NoBoogieHarness = false;
+            CreateMainHarness = false;
+            NoCustomTypes = false;
             OmitAssumeFalseForDynDispatch = false;
         }
+        public bool NoCustomTypes { get; set; }
+        
+        public bool CreateMainHarness { get; set; }
+        
+        public bool NoBoogieHarness { get; set; }
+        
+        public bool InstrumentSums { get; set; }
         /// <summary>
         /// Omit printing sourceFile/sourceLine information
         /// </summary>

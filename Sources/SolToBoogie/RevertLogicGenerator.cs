@@ -241,7 +241,7 @@ namespace SolToBoogie
 
         private bool isHarnessProcudure(string procName)
         {
-            return procName.StartsWith("Boogie") || procName.StartsWith("Corral");
+            return procName.StartsWith("Boogie") || procName.StartsWith("Corral") || procName.Equals("main");
         }
 
         private BoogieImplementation createSuccessImplementation(string name, BoogieImplementation originalImpl)

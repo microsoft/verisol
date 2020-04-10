@@ -372,7 +372,7 @@ namespace VeriSolRunner
             {
                 BoogieTranslator translator = new BoogieTranslator();
                 Console.WriteLine($"... running SolToBoogie to translate Solidity to Boogie");
-                BoogieAST boogieAST = translator.Translate(solidityAST, ignoreMethods, translatorFlags);
+                BoogieAST boogieAST = translator.Translate(solidityAST, ignoreMethods, translatorFlags, ContractName);
 
                 // dump the Boogie program to a file
                 var outFilePath = Path.Combine(SolidityFileDir, outFileName);

@@ -84,6 +84,21 @@ namespace SolToBoogie
                 translatorFlags.NoHarness = true;
             }
 
+            if (args.Any(x => x.Equals("/omitBoogieHarness")))
+            {
+                translatorFlags.NoBoogieHarness = true;
+            }
+
+            if (args.Any(x => x.Equals("/createMainHarness")))
+            {
+                translatorFlags.CreateMainHarness = true;
+            }
+
+            if (args.Any(x => x.Equals("/noCustomTypes")))
+            {
+                translatorFlags.NoCustomTypes = true;
+            }
+
             if (args.Any(x => x.Equals("/modelReverts")))
             {
                 translatorFlags.ModelReverts = true;
@@ -135,6 +150,11 @@ namespace SolToBoogie
                 // Turn LazyNestedAlloc on by default if QuantFreeAllocs is provided.
                 if (!translatorFlags.LazyNestedAlloc)
                     translatorFlags.LazyNestedAlloc = true;
+            }
+
+            if (args.Any(x => x.Equals("/instrumentSums")))
+            {
+                translatorFlags.InstrumentSums = true;
             }
 
             translatorFlags.PerformContractInferce = args.Any(x => x.StartsWith("/contractInfer"));
