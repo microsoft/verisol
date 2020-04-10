@@ -3139,9 +3139,19 @@ namespace SolToBoogie
             // variable foo in a contract. 
             if (IsGetterForPublicVariable(node, out varDecl, out contractDefn))
             {
+                List<ContractDefinition> subtypes = new List<ContractDefinition>(context.GetSubTypesOfContract(contractDefn));
+                Debug.Assert(subtypes.Count > 0);
+
                 BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), receiver);
-                BoogieExpr rhs = new BoogieIdentifierExpr(contractDefn.Name);
-                BoogieExpr guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lhs, rhs);
+                BoogieExpr guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lhs,
+                    new BoogieIdentifierExpr(subtypes[0].Name));
+
+                for (int i = 1; i < subtypes.Count; ++i)
+                {
+                    BoogieExpr subGuard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lhs, new BoogieIdentifierExpr(subtypes[i].Name));
+                    guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, guard, subGuard);
+                }
+                
                 currentStmtList.AddStatement(new BoogieAssumeCmd(guard));
                 VeriSolAssert(outParams.Count == 1, $"Do not support getters for tuples yet {node.ToString()} ");
                 string varMapName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
@@ -3285,9 +3295,20 @@ namespace SolToBoogie
                 VeriSolAssert(contract != null);
 
                 // assume (DType[var] == T);
-                BoogieMapSelect dtype = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), exprToCast);
-                BoogieExpr assumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, dtype, new BoogieIdentifierExpr(contract.Name));
-                currentStmtList.AddStatement(new BoogieAssumeCmd(assumeExpr));
+                List<ContractDefinition> subtypes = new List<ContractDefinition>(context.GetSubTypesOfContract(contract));
+                Debug.Assert(subtypes.Count > 0);
+
+                BoogieExpr dtype = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), exprToCast);
+                BoogieExpr guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, dtype,
+                    new BoogieIdentifierExpr(subtypes[0].Name));
+
+                for (int i = 1; i < subtypes.Count; ++i)
+                {
+                    BoogieExpr subGuard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, dtype, new BoogieIdentifierExpr(subtypes[i].Name));
+                    guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, guard, subGuard);
+                }
+                
+                currentStmtList.AddStatement(new BoogieAssumeCmd(guard));
                 // lhs := expr;
                 currentStmtList.AddStatement(new BoogieAssignCmd(lhs, exprToCast));
             }
