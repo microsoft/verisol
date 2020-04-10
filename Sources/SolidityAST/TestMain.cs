@@ -15,7 +15,7 @@ namespace SolidityAST
             string solcPath = workingDirectory + "\\Tool\\solc.exe";
             string testDir = workingDirectory + "\\Test\\regression";
 
-            ILoggerFactory loggerFactory = new LoggerFactory().AddConsole(LogLevel.Information);
+            ILoggerFactory loggerFactory = new LoggerFactory(); // .AddConsole(LogLevel.Information);
             ILogger logger = loggerFactory.CreateLogger("SolidityAST.RegressionExecutor");
 
             RegressionExecutor executor = new RegressionExecutor(solcPath, testDir, logger);

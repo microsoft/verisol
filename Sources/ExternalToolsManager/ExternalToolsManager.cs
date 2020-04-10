@@ -16,7 +16,8 @@ namespace VeriSolRunner.ExternalTools
 
         static ExternalToolsManager()
         {
-            logger = new LoggerFactory().AddConsole(LogLevel.Information).CreateLogger("VeriSol.ExternalToolsManager");
+            var loggerFactory = new LoggerFactory(); // AddConsole(LogLevel.Information)
+            logger = loggerFactory.CreateLogger("VeriSol.ExternalToolsManager");
 
             IConfiguration toolSourceConfig = new ConfigurationBuilder()
                 .AddJsonFile("toolsourcesettings.json", true, true)

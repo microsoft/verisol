@@ -32,7 +32,7 @@ namespace SolToBoogie
                 Debug.Assert(recursionBound > 0, $"Argument of /txBound:k should be positive, found {recursionBound}");
             }
 
-            ILoggerFactory loggerFactory = new LoggerFactory().AddConsole(LogLevel.Information);
+            ILoggerFactory loggerFactory = new LoggerFactory(); //.AddConsole(LogLevel.Information);
             logger = loggerFactory.CreateLogger("VeriSol");
             ignoredMethods = new HashSet<Tuple<string, string>>();
             foreach (var arg in args.Where(x => x.StartsWith("/ignoreMethod:")))
