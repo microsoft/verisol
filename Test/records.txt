@@ -146,6 +146,7 @@ NestedArray.sol
 Modifier.sol
 ModifierPost.sol
 ModifierReturn.sol
+ModifierLocal.sol
 NoConstructor.sol
 ReturnNamedParam.sol
 EmptyContract.sol

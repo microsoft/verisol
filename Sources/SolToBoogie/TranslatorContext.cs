@@ -89,6 +89,9 @@ namespace SolToBoogie
         // M -> BoogieImplementation(B) for Modifier M {Stmt A; _; Stmt B}
         public Dictionary<string, BoogieImplementation> ModifierToBoogiePostImpl { get; private set;}
 
+        // M -> the set of local variables declared in the prelude (will become outputs to prelude call)
+        public Dictionary<string, List<BoogieLocalVariable>> ModifierToPreludeLocalVars { get; private set; }
+
         public String EntryPointContract { get; private set; }
 
         // Options flags
@@ -135,6 +138,7 @@ namespace SolToBoogie
             ModifierToBoogiePostProc = new Dictionary<string, BoogieProcedure>();
             ModifierToBoogiePreImpl = new Dictionary<string, BoogieImplementation>();
             ModifierToBoogiePostImpl = new Dictionary<string, BoogieImplementation>();
+            ModifierToPreludeLocalVars = new Dictionary<string, List<BoogieLocalVariable>>();
             usingMap = new Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, TypeName>>();
             IgnoreMethods = ignoreMethods;
             genInlineAttrInBpl = _genInlineAttrInBpl;
@@ -540,6 +544,18 @@ namespace SolToBoogie
             else
             {
                 ModifierToBoogiePostImpl[modifier] = procedure;
+            }
+        }
+
+        public void AddPreludeLocalsToModifier(string modifier, List<BoogieLocalVariable> localVars)
+        {
+            if (ModifierToPreludeLocalVars.ContainsKey(modifier))
+            {
+                throw new SystemException("duplicated modifier");
+            }
+            else
+            {
+                ModifierToPreludeLocalVars[modifier] = localVars;
             }
         }
 

@@ -377,6 +377,15 @@ namespace SolToBoogie
                 // if (node.Modifiers.Count == 1)
                 for (int i = 0; i < node.Modifiers.Count; ++i)
                 {
+                    var outVars = new List<BoogieIdentifierExpr>();
+                    // local variables declared in the prelude of a modifier (before _ ) becomes out variables and then in parameters of postlude
+                    foreach (var localVar in context.ModifierToPreludeLocalVars[node.Modifiers[i].ModifierName.ToString()])
+                    {
+                        var outVar = new BoogieLocalVariable(new BoogieTypedIdent("__mod_out_" + localVar.Name, localVar.TypedIdent.Type));
+                        boogieToLocalVarsMap[currentBoogieProc].Add(outVar);
+                        outVars.Add(new BoogieIdentifierExpr(outVar.Name));
+                    }
+
                     // insert call to modifier prelude
                     if (context.ModifierToBoogiePreImpl.ContainsKey(node.Modifiers[i].ModifierName.Name))
                     {
@@ -384,7 +393,7 @@ namespace SolToBoogie
                         if (node.Modifiers[i].Arguments != null)
                             arguments.AddRange(node.Modifiers[i].Arguments.ConvertAll(TranslateExpr));
                         string callee = node.Modifiers[i].ModifierName.ToString() + "_pre";
-                        var callCmd = new BoogieCallCmd(callee, arguments, null);
+                        var callCmd = new BoogieCallCmd(callee, arguments, outVars);
                         procBody.AddStatement(callCmd);
                     }
 
@@ -394,6 +403,7 @@ namespace SolToBoogie
                         List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
                         if (node.Modifiers[i].Arguments != null)
                             arguments.AddRange(node.Modifiers[i].Arguments.ConvertAll(TranslateExpr));
+                        arguments.AddRange(outVars.Select(x => new BoogieIdentifierExpr(x.Name)));
                         string callee = node.Modifiers[i].ModifierName.ToString() + "_post";
                         var callCmd = new BoogieCallCmd(callee, arguments, null);
                         currentPostlude.AddStatement(callCmd);
@@ -505,15 +515,23 @@ namespace SolToBoogie
             bool translatingPre = true;
             bool hasPre = false;
             bool hasPost = false;
+
             foreach (Statement statement in body.Statements)
             {
                 if (statement is VariableDeclarationStatement)
                 {
-                    VeriSolAssert(false, "locals within modifiers not supported");
+                    // VeriSolAssert(false, "locals within modifiers not supported");
                 }
                 if (statement is PlaceholderStatement)
                 {
                     translatingPre = false;
+                    // add __out_mod_x := x, for any local explicitly declared in the prelude
+                    foreach(var localDeclared in context.ModifierToPreludeLocalVars[node.Name])
+                    {
+                        var lhsExpr = new BoogieIdentifierExpr("__out_mod_" + localDeclared.Name);
+                        var rhsExpr = new BoogieIdentifierExpr(localDeclared.Name);
+                        prelude.AddStatement(new BoogieAssignCmd(lhsExpr, rhsExpr));
+                    }
                     currentBoogieProc = node.Name + "_post";
                     boogieToLocalVarsMap[currentBoogieProc] = new List<BoogieVariable>();
                     continue;
@@ -530,9 +548,14 @@ namespace SolToBoogie
                     hasPost = true;
                 }
             }
+
+            // we are going to make any locals declared in prelude visible to postlude by making htem as output variables
+            // and making them input to the postlude
             if (hasPre)
             {
+                // removig this removes local declaration of temporaries introduced in translation
                 context.ModifierToBoogiePreImpl[node.Name].LocalVars = boogieToLocalVarsMap[node.Name + "_pre"];
+                // context.ModifierToBoogiePreImpl[node.Name].LocalVars = new List<BoogieVariable>();
                 context.ModifierToBoogiePreImpl[node.Name].StructuredStmts = prelude;
             }
             if (hasPost)
@@ -1309,7 +1332,7 @@ namespace SolToBoogie
                     Console.WriteLine($"Warning: signed integer arithmetic is not handled with /useModularArithmetic option");
                 }
                 var boogieVariable = new BoogieLocalVariable(new BoogieTypedIdent(name, type));
-                 boogieToLocalVarsMap[currentBoogieProc].Add(boogieVariable);
+                boogieToLocalVarsMap[currentBoogieProc].Add(boogieVariable);
             }
 
             // handle the initial value of variable declaration
