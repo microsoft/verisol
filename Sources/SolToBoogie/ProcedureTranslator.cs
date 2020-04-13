@@ -2768,61 +2768,77 @@ namespace SolToBoogie
         {
             VeriSolAssert(node.Expression is NewExpression);
             NewExpression newExpr = node.Expression as NewExpression;
-            VeriSolAssert(newExpr.TypeName is UserDefinedTypeName);
-            UserDefinedTypeName udt = newExpr.TypeName as UserDefinedTypeName;
-
-            ContractDefinition contract = context.GetASTNodeById(udt.ReferencedDeclaration) as ContractDefinition;
-            VeriSolAssert(contract != null);
 
             // define a local variable to temporarily hold the object
+            // even though we don't need a temp in some branches, the caller expects a 
             BoogieTypedIdent freshAllocTmpId = context.MakeFreshTypedIdent(BoogieType.Ref);
             BoogieLocalVariable allocTmpVar = new BoogieLocalVariable(freshAllocTmpId);
             boogieToLocalVarsMap[currentBoogieProc].Add(allocTmpVar);
-
-            // define a local variable to store the new msg.value
-            BoogieTypedIdent freshMsgValueId = context.MakeFreshTypedIdent(BoogieType.Int);
-            BoogieLocalVariable msgValueVar = new BoogieLocalVariable(freshMsgValueId);
-            boogieToLocalVarsMap[currentBoogieProc].Add(msgValueVar);
-
             BoogieIdentifierExpr tmpVarIdentExpr = new BoogieIdentifierExpr(freshAllocTmpId.Name);
-            BoogieIdentifierExpr msgValueIdentExpr = new BoogieIdentifierExpr(freshMsgValueId.Name);
-            BoogieIdentifierExpr allocIdentExpr = new BoogieIdentifierExpr("Alloc");
 
-            // suppose the statement is lhs := new A(args);
-
-            // call tmp := FreshRefGenerator();
-            currentStmtList.AddStatement(
-                new BoogieCallCmd(
-                    "FreshRefGenerator",
-                    new List<BoogieExpr>(),
-                    new List<BoogieIdentifierExpr>() { tmpVarIdentExpr }
-                    ));
-
-            // call constructor of A with this = tmp, msg.sender = this, msg.value = tmpMsgValue, args
-            string callee = TransUtils.GetCanonicalConstructorName(contract);
-            List<BoogieExpr> inputs = new List<BoogieExpr>()
+            if (newExpr.TypeDescriptions.IsArray())
             {
-                tmpVarIdentExpr,
-                new BoogieIdentifierExpr("this"),
-                new BoogieLiteralExpr(BigInteger.Zero)//assuming msg.value is 0 for new
-            };
-            foreach (Expression arg in node.Arguments)
-            {
-                BoogieExpr argument = TranslateExpr(arg);
-                inputs.Add(argument);
+                // lhs = new A[](5);
+
+                // call tmp := FreshRefGenerator();
+                currentStmtList.AddStatement(
+                    new BoogieCallCmd(
+                        "FreshRefGenerator",
+                        new List<BoogieExpr>(),
+                        new List<BoogieIdentifierExpr>() {tmpVarIdentExpr}
+                        ));
+                // length[tmp] = 5
+                currentStmtList.AddStatement(
+                    new BoogieAssignCmd(
+                        new BoogieMapSelect(new BoogieIdentifierExpr("Length"), tmpVarIdentExpr), 
+                        TranslateExpr(node.Arguments[0])
+                        )
+                    );
+                // lhs := tmp;
+                currentStmtList.AddStatement(new BoogieAssignCmd(lhs, tmpVarIdentExpr));
             }
-            // assume DType[tmp] == A
-            BoogieMapSelect dtypeMapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), tmpVarIdentExpr);
-            BoogieIdentifierExpr contractIdent = new BoogieIdentifierExpr(contract.Name);
-            BoogieExpr dtypeAssumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, dtypeMapSelect, contractIdent);
-            currentStmtList.AddStatement(new BoogieAssumeCmd(dtypeAssumeExpr));
-            // The assume DType[tmp] == A is before the call as the constructor may do a dynamic 
-            // dispatch and the DType[tmp] is unconstrained before the call
-            List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
-            currentStmtList.AddStatement(new BoogieCallCmd(callee, inputs, outputs));
-            // lhs := tmp;
-            currentStmtList.AddStatement(new BoogieAssignCmd(lhs, tmpVarIdentExpr));
-            return;
+            else if (newExpr.TypeName is UserDefinedTypeName udt)
+            {
+                //VeriSolAssert(newExpr.TypeName is UserDefinedTypeName);
+                //UserDefinedTypeName udt = newExpr.TypeName as UserDefinedTypeName;
+
+                ContractDefinition contract = context.GetASTNodeById(udt.ReferencedDeclaration) as ContractDefinition;
+                VeriSolAssert(contract != null);
+
+                // suppose the statement is lhs := new A(args);
+
+                // call tmp := FreshRefGenerator();
+                currentStmtList.AddStatement(
+                    new BoogieCallCmd(
+                        "FreshRefGenerator",
+                        new List<BoogieExpr>(),
+                        new List<BoogieIdentifierExpr>() { tmpVarIdentExpr }
+                        ));
+
+                // call constructor of A with this = tmp, msg.sender = this, msg.value = tmpMsgValue, args
+                string callee = TransUtils.GetCanonicalConstructorName(contract);
+                List<BoogieExpr> inputs = new List<BoogieExpr>() {
+                   tmpVarIdentExpr,
+                   new BoogieIdentifierExpr("this"),
+                   new BoogieLiteralExpr(BigInteger.Zero)//assuming msg.value is 0 for new
+                };
+                foreach (Expression arg in node.Arguments)
+                {
+                    BoogieExpr argument = TranslateExpr(arg);
+                    inputs.Add(argument);
+                }
+                // assume DType[tmp] == A
+                BoogieMapSelect dtypeMapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), tmpVarIdentExpr);
+                BoogieIdentifierExpr contractIdent = new BoogieIdentifierExpr(contract.Name);
+                BoogieExpr dtypeAssumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, dtypeMapSelect, contractIdent);
+                currentStmtList.AddStatement(new BoogieAssumeCmd(dtypeAssumeExpr));
+                // The assume DType[tmp] == A is before the call as the constructor may do a dynamic 
+                // dispatch and the DType[tmp] is unconstrained before the call
+                List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
+                currentStmtList.AddStatement(new BoogieCallCmd(callee, inputs, outputs));
+                // lhs := tmp;
+                currentStmtList.AddStatement(new BoogieAssignCmd(lhs, tmpVarIdentExpr));
+            }
         }
 
         private void TranslateStructConstructor(FunctionCall node, BoogieExpr lhs)
