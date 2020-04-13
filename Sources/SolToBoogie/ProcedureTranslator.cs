@@ -378,17 +378,18 @@ namespace SolToBoogie
                 for (int i = 0; i < node.Modifiers.Count; ++i)
                 {
                     var outVars = new List<BoogieIdentifierExpr>();
-                    // local variables declared in the prelude of a modifier (before _ ) becomes out variables and then in parameters of postlude
-                    foreach (var localVar in context.ModifierToPreludeLocalVars[node.Modifiers[i].ModifierName.ToString()])
-                    {
-                        var outVar = new BoogieLocalVariable(new BoogieTypedIdent("__mod_out_" + localVar.Name, localVar.TypedIdent.Type));
-                        boogieToLocalVarsMap[currentBoogieProc].Add(outVar);
-                        outVars.Add(new BoogieIdentifierExpr(outVar.Name));
-                    }
-
+                    
                     // insert call to modifier prelude
                     if (context.ModifierToBoogiePreImpl.ContainsKey(node.Modifiers[i].ModifierName.Name))
                     {
+                        // local variables declared in the prelude of a modifier (before _ ) becomes out variables and then in parameters of postlude
+                        foreach (var localVar in context.ModifierToPreludeLocalVars[node.Modifiers[i].ModifierName.ToString()])
+                        {
+                            var outVar = new BoogieLocalVariable(new BoogieTypedIdent("__mod_out_" + localVar.Name, localVar.TypedIdent.Type));
+                            boogieToLocalVarsMap[currentBoogieProc].Add(outVar);
+                            outVars.Add(new BoogieIdentifierExpr(outVar.Name));
+                        }
+
                         List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
                         if (node.Modifiers[i].Arguments != null)
                             arguments.AddRange(node.Modifiers[i].Arguments.ConvertAll(TranslateExpr));
