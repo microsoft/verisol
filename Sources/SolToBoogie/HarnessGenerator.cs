@@ -242,7 +242,7 @@ namespace SolToBoogie
             }
             
             stmtList.AddStatement((new BoogieAssignCmd(new BoogieMapSelect(new BoogieIdentifierExpr("Alloc"), new BoogieIdentifierExpr("msgsender_MSG")), new BoogieLiteralExpr(true))));
-            
+ 
             return stmtList;
         }
 
