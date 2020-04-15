@@ -32,7 +32,11 @@ namespace SolToBoogie
             CreateMainHarness = false;
             NoCustomTypes = false;
             OmitAssumeFalseForDynDispatch = false;
+            NoTxnsFromContract = true;
         }
+        
+        public bool NoTxnsFromContract { get; set; }
+        
         public bool NoCustomTypes { get; set; }
         
         public bool CreateMainHarness { get; set; }

@@ -233,16 +233,22 @@ namespace SolToBoogie
             stmtList.AddStatement(new BoogieHavocCmd(nowVar));
             stmtList.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GT, nowVar, tmpNowVar)));
             stmtList.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, new BoogieIdentifierExpr("msgsender_MSG"), new BoogieIdentifierExpr("null"))));
-            foreach (var contractDef in context.ContractDefinitions)
+
+            if (context.TranslateFlags.NoTxnsFromContract)
             {
-                BoogieIdentifierExpr contractIdent = new BoogieIdentifierExpr(contractDef.Name);
-                stmtList.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.NEQ, 
-                                new BoogieMapSelect(new BoogieIdentifierExpr("DType"), new BoogieIdentifierExpr("msgsender_MSG")), 
-                                contractIdent)));
+                foreach (var contractDef in context.ContractDefinitions)
+                {
+                    BoogieIdentifierExpr contractIdent = new BoogieIdentifierExpr(contractDef.Name);
+                    stmtList.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(
+                        BoogieBinaryOperation.Opcode.NEQ,
+                        new BoogieMapSelect(new BoogieIdentifierExpr("DType"),
+                            new BoogieIdentifierExpr("msgsender_MSG")),
+                        contractIdent)));
+                }
+                
+                stmtList.AddStatement((new BoogieAssignCmd(new BoogieMapSelect(new BoogieIdentifierExpr("Alloc"), new BoogieIdentifierExpr("msgsender_MSG")), new BoogieLiteralExpr(true))));
             }
-            
-            stmtList.AddStatement((new BoogieAssignCmd(new BoogieMapSelect(new BoogieIdentifierExpr("Alloc"), new BoogieIdentifierExpr("msgsender_MSG")), new BoogieLiteralExpr(true))));
- 
+
             return stmtList;
         }
 

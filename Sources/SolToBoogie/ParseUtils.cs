@@ -152,6 +152,11 @@ namespace SolToBoogie
                     translatorFlags.LazyNestedAlloc = true;
             }
 
+            if (args.Any(x => x.Equals("/allowTxnsFromContract")))
+            {
+                translatorFlags.NoTxnsFromContract = false;
+            }
+
             if (args.Any(x => x.Equals("/instrumentSums")))
             {
                 translatorFlags.InstrumentSums = true;
