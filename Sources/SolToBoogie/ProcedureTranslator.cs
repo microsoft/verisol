@@ -606,7 +606,8 @@ namespace SolToBoogie
                 }
                 else if (varDecl.TypeName is UserDefinedTypeName structOrContract)
                 {
-                    GenerateInitializationForStructStateVar(varDecl, structOrContract);
+                    if (varDecl.TypeDescriptions.IsStruct())
+                        GenerateInitializationForStructStateVar(varDecl, structOrContract);
                 }
             }
 
