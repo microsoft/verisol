@@ -587,18 +587,15 @@ namespace SolToBoogie
                     new BoogieLiteralExpr(0));
             currentStmtList.AddStatement(balanceInit);
 
-            // assign null to other address variables
             foreach (VariableDeclaration varDecl in context.GetStateVarsByContract(contract))
             {
+                // assign null to other address variables
                 if (varDecl.TypeName is ElementaryTypeName elementaryType)
                 {
                     GenerateInitializationForElementaryTypes(varDecl, elementaryType);
                 }
-            }
 
-            // false/0 initialize mappings
-            foreach (VariableDeclaration varDecl in context.GetStateVarsByContract(contract))
-            {
+                //// false/0 initialize mappings, arrays and structs (one level)
                 if (varDecl.TypeName is Mapping mapping)
                 {
                     GenerateInitializationForMappingStateVar(varDecl, mapping);
@@ -606,6 +603,11 @@ namespace SolToBoogie
                 else if (varDecl.TypeName is ArrayTypeName array)
                 {
                     GenerateInitializationForArrayStateVar(varDecl, array);
+                }
+                else if (varDecl.TypeName is UserDefinedTypeName structOrContract)
+                {
+                    if (varDecl.TypeDescriptions.IsStruct())
+                        GenerateInitializationForStructStateVar(varDecl, structOrContract);
                 }
             }
 
@@ -633,6 +635,27 @@ namespace SolToBoogie
             // var lengthEqualsZero = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lengthMapSelect, new BoogieLiteralExpr(0));
             var lengthConstraint = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lengthMapSelect, lengthExpr);
             currentStmtList.AddStatement(new BoogieAssumeCmd(lengthConstraint));
+        }
+
+        private void GenerateInitializationForStructStateVar(VariableDeclaration varDecl, UserDefinedTypeName structVar)
+        {
+            // define a local variable to generate a fresh constant
+            BoogieLocalVariable tmpVar = new BoogieLocalVariable(context.MakeFreshTypedIdent(BoogieType.Ref));
+            boogieToLocalVarsMap[currentBoogieProc].Add(tmpVar);
+            BoogieIdentifierExpr tmpVarIdentExpr = new BoogieIdentifierExpr(tmpVar.Name);
+
+            currentStmtList.AddStatement(new BoogieCommentCmd($"Make struct variables distinct for {varDecl.Name}"));
+            var lhs = new BoogieIdentifierExpr(TransUtils.GetCanonicalStateVariableName(varDecl, context));
+            var lhsMap = new BoogieMapSelect(lhs, new BoogieIdentifierExpr("this"));
+            currentStmtList.AddStatement(new BoogieCallCmd(
+                "FreshRefGenerator",
+                new List<BoogieExpr>(),
+                new List<BoogieIdentifierExpr>() {
+                            tmpVarIdentExpr
+                }
+                ));
+
+            currentStmtList.AddStatement(new BoogieAssignCmd(lhsMap, tmpVarIdentExpr));
         }
 
         private BoogieFuncCallExpr GetCallExprForZeroInit(BoogieType key, BoogieType value)
