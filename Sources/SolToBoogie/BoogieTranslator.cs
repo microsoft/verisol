@@ -1,5 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
+
+using SolidityAnalysis;
+
 namespace SolToBoogie
 {
     using System;
@@ -19,11 +22,10 @@ namespace SolToBoogie
             bool generateInlineAttributesInBpl = _translatorFlags.GenerateInlineAttributes;
 
             SourceUnitList sourceUnits = solidityAST.GetSourceUnits();
-
-            TranslatorContext context = new TranslatorContext(ignoredMethods, generateInlineAttributesInBpl, _translatorFlags, entryPointContract);
+            
+            TranslatorContext context = new TranslatorContext(solidityAST, ignoredMethods, generateInlineAttributesInBpl, _translatorFlags, entryPointContract);
             context.IdToNodeMap = solidityAST.GetIdToNodeMap();
             context.SourceDirectory = solidityAST.SourceDirectory;
-
             // collect the absolute source path and line number for each AST node
             SourceInfoCollector sourceInfoCollector = new SourceInfoCollector(context);
             sourceUnits.Accept(sourceInfoCollector);

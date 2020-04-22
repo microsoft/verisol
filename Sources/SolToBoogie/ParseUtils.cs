@@ -162,6 +162,11 @@ namespace SolToBoogie
                 translatorFlags.InstrumentSums = true;
             }
 
+            if (args.Any(x => x.Equals("/alias")))
+            {
+                translatorFlags.RunAliasAnalysis = true;
+            }
+
             translatorFlags.PerformContractInferce = args.Any(x => x.StartsWith("/contractInfer"));
 
             // don't perform verification for some of these omitFlags

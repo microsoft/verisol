@@ -1,5 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
+
+using SolidityAnalysis;
+
 namespace SolToBoogie
 {
     using System;
@@ -93,6 +96,8 @@ namespace SolToBoogie
         public Dictionary<string, List<BoogieLocalVariable>> ModifierToPreludeLocalVars { get; private set; }
 
         public String EntryPointContract { get; private set; }
+        
+        public SolidityAnalyzer Analysis { get; private set; }
 
         // Options flags
         public TranslatorFlags TranslateFlags { get; private set; }
@@ -112,7 +117,7 @@ namespace SolToBoogie
         // maps Contract C --> (source, dest), where source is a library type
         private readonly Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, TypeName>> usingMap; 
 
-        public TranslatorContext(HashSet<Tuple<string, string>> ignoreMethods, bool _genInlineAttrInBpl, TranslatorFlags _translateFlags = null, String entryPointContract = "")
+        public TranslatorContext(AST solidityAST, HashSet<Tuple<string, string>> ignoreMethods, bool _genInlineAttrInBpl, TranslatorFlags _translateFlags = null, String entryPointContract = "")
         {
             Program = new BoogieProgram();
             ContractDefinitions = new HashSet<ContractDefinition>();
@@ -144,6 +149,7 @@ namespace SolToBoogie
             genInlineAttrInBpl = _genInlineAttrInBpl;
             TranslateFlags = _translateFlags;
             EntryPointContract = entryPointContract;
+            Analysis = new SolidityAnalyzer(solidityAST, ignoreMethods, entryPointContract);
         }
 
         public bool HasASTNodeId(int id)
