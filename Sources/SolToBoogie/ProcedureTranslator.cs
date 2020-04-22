@@ -130,6 +130,46 @@ namespace SolToBoogie
             }
         }
 
+        private String GetAccessPattern(VariableDeclaration varDecl, String boogieName)
+        {
+            String solAccess = String.Format("this.{0}", varDecl.Name);
+            String boogieAccess = String.Format("{0}[this]", boogieName);
+            TypeName solType = varDecl.TypeName;
+            int dim = 0;
+
+            while (solType is Mapping || solType is ArrayTypeName)
+            {
+                String dimName = String.Format("i{0}", dim);
+                dim++;
+                BoogieType keyType = null;
+                BoogieType valType = null;
+                
+                if (solType is Mapping map)
+                {
+                    keyType = TransUtils.GetBoogieTypeFromSolidityTypeName(map.KeyType);
+                    valType = TransUtils.GetBoogieTypeFromSolidityTypeName(map.ValueType);
+                    solType = map.ValueType;
+                }
+                else if (solType is ArrayTypeName arr)
+                {
+                    keyType = BoogieType.Int;
+                    valType = TransUtils.GetBoogieTypeFromSolidityTypeName(arr.BaseType);
+                    solType = arr.BaseType;
+                }
+
+                String memMap = MapArrayHelper.GetMemoryMapName(keyType, valType);
+                solAccess = String.Format("{0}[{1}]", solAccess, dimName);
+                boogieAccess = String.Format("{0}[{1}][{2}]", memMap, boogieAccess, dimName);
+            }
+
+            return String.Format("\"{0}={1}\"", solAccess, boogieAccess);
+        }
+
+        private String GetSumAccessPattern(VariableDeclaration varDecl, String boogieName)
+        {
+            return String.Format("\"sum(this.{0})={1}[{2}[this]]\"", varDecl.Name, getSumName(), boogieName);
+        }
+        
         private void TranslateStateVarDeclaration(VariableDeclaration varDecl)
         {
             VeriSolAssert(varDecl.StateVariable, $"{varDecl} is not a state variable");
@@ -143,19 +183,37 @@ namespace SolToBoogie
             {
                 Console.WriteLine($"Warning: signed integer arithmetic is not handled with /useModularArithmetic option");
             }
-
+            
             if (varDecl.TypeName is Mapping)
             {
-                context.Program.AddDeclaration(new BoogieGlobalVariable(new BoogieTypedIdent(name, mapType)));
+                BoogieGlobalVariable global = new BoogieGlobalVariable(new BoogieTypedIdent(name, mapType));
+                global.Attributes = new List<BoogieAttribute>();
+                global.Attributes.Add(new BoogieAttribute("access", GetAccessPattern(varDecl, name)));
+                if (context.TranslateFlags.InstrumentSums)
+                {
+                    global.Attributes.Add(new BoogieAttribute("sum", GetSumAccessPattern(varDecl, name)));
+                }
+                context.Program.AddDeclaration(global);
             }
             else if (varDecl.TypeName is ArrayTypeName)
             {
                 //array variables can be assigned
-                context.Program.AddDeclaration(new BoogieGlobalVariable(new BoogieTypedIdent(name, mapType)));
+                BoogieGlobalVariable global = new BoogieGlobalVariable(new BoogieTypedIdent(name, mapType));
+                global.Attributes = new List<BoogieAttribute>();
+                global.Attributes.Add(new BoogieAttribute("access", GetAccessPattern(varDecl, name)));
+                if (context.TranslateFlags.InstrumentSums)
+                {
+                    global.Attributes.Add(new BoogieAttribute("sum", GetSumAccessPattern(varDecl, name)));
+                }
+                
+                context.Program.AddDeclaration(global);
             }
             else // other type of state variables
             {
-                context.Program.AddDeclaration(new BoogieGlobalVariable(new BoogieTypedIdent(name, mapType)));
+                BoogieGlobalVariable global = new BoogieGlobalVariable(new BoogieTypedIdent(name, mapType));
+                global.Attributes = new List<BoogieAttribute>();
+                global.Attributes.Add(new BoogieAttribute("access", GetAccessPattern(varDecl, name)));
+                context.Program.AddDeclaration(global);
             }
         }
 
@@ -665,9 +723,14 @@ namespace SolToBoogie
             return new BoogieFuncCallExpr("zero" + keyStr + valStr + "Arr", new List<BoogieExpr>());
         }
 
+        private String getSumName()
+        {
+            return "sum";
+        }
+        
         private BoogieExpr getSumArray()
         {
-            return new BoogieIdentifierExpr("sum");
+            return new BoogieIdentifierExpr(getSumName());
         }
 
         private BoogieExpr getSumAccess(BoogieExpr key)
