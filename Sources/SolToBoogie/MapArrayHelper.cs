@@ -48,8 +48,7 @@ namespace SolToBoogie
         {
             if (notAliased(decl))
             {
-                return TransUtils.GetCanonicalVariableName(decl, context) + "_" + keyType.ToString() + "_" +
-                       valType.ToString();
+                return GetCanonicalMemName(keyType, valType) + "_" + context.Analysis.Alias.getGroupName(decl);
             }
 
             return GetCanonicalMemName(keyType, valType);
@@ -62,6 +61,28 @@ namespace SolToBoogie
             BoogieMapSelect mapSelectExpr = new BoogieMapSelect(mapIdent, baseExpr);
             mapSelectExpr = new BoogieMapSelect(mapSelectExpr, indexExpr);
             return mapSelectExpr;
+        }
+        
+        public static String GetCanonicalSumName()
+        {
+            return "sum";
+        }
+
+        public String GetSumName(VariableDeclaration decl)
+        {
+            if (notAliased(decl))
+            {
+                return GetCanonicalSumName() + "_" + context.Analysis.Alias.getGroupName(decl);
+            }
+
+            return GetCanonicalSumName();
+        }
+        
+        public BoogieExpr GetSumExpr(VariableDeclaration decl, BoogieExpr varExpr)
+        {
+            BoogieIdentifierExpr sumIdent = new BoogieIdentifierExpr(GetSumName(decl));
+            BoogieMapSelect sumSelect = new BoogieMapSelect(sumIdent, varExpr);
+            return sumSelect;
         }
 
         public static BoogieType InferExprTypeFromTypeString(string typeString)

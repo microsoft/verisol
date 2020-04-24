@@ -9,7 +9,7 @@ namespace SolidityAnalysis
     
     public class AliasAnalysis : BasicASTVisitor
     {
-        private HashSet<VariableDeclaration> results;
+        private List<VariableDeclaration> results;
         private Dictionary<String, StructDefinition> nameToStruct;
         private AST solidityAST;
         private HashSet<Tuple<string, string>> ignoredMethods;
@@ -24,7 +24,7 @@ namespace SolidityAnalysis
             this.results = null;
         }
         
-        public HashSet<VariableDeclaration> getResults()
+        public List<VariableDeclaration> getResults()
         {
             if (results == null)
             {
@@ -36,8 +36,18 @@ namespace SolidityAnalysis
 
         public void runAnalysis()
         {
-            results = new HashSet<VariableDeclaration>();
+            results = new List<VariableDeclaration>();
             solidityAST.GetSourceUnits().Accept(this);
+        }
+
+        public String getGroupName(VariableDeclaration varDec)
+        {
+            if (getResults().Contains(varDec))
+            {
+                return varDec.Name + results.IndexOf(varDec);
+            }
+
+            return "";
         }
 
         public override bool Visit(StructDefinition def)
@@ -58,7 +68,7 @@ namespace SolidityAnalysis
             {
                 results.Add(decl);
             }
-
+            
             /* Can we add in user-defined types?
              else if (type is UserDefinedTypeName userDefined)
             {
@@ -149,6 +159,7 @@ namespace SolidityAnalysis
         {
             if (node.Operator == "=")
             {
+                node.LeftHandSide.Accept(this);
                 node.RightHandSide.Accept(this);
             }
 

@@ -311,13 +311,6 @@ namespace SolToBoogie
                 context.Program.AddDeclaration(gas);
             }
 
-            if (context.TranslateFlags.InstrumentSums)
-            {
-                BoogieTypedIdent sumId = new BoogieTypedIdent("sum", new BoogieMapType(BoogieType.Ref, BoogieType.Int));
-                BoogieGlobalVariable sum = new BoogieGlobalVariable(sumId);
-                context.Program.AddDeclaration(sum);
-            }
-
             // Solidity-specific vars
             BoogieTypedIdent nowVar = new BoogieTypedIdent("now", BoogieType.Int);
             context.Program.AddDeclaration(new BoogieGlobalVariable(nowVar));
@@ -655,7 +648,7 @@ namespace SolToBoogie
 
         private void GenerateMemoryVariables()
         {
-            HashSet<String> generatedTypes = new HashSet<String>();
+            HashSet<String> generatedMaps = new HashSet<String>();
             // mappings
             foreach (ContractDefinition contract in context.ContractToMappingsMap.Keys)
             {
@@ -663,7 +656,18 @@ namespace SolToBoogie
                 {
                     Debug.Assert(varDecl.TypeName is Mapping);
                     Mapping mapping = varDecl.TypeName as Mapping;
-                    GenerateMemoryVariablesForMapping(varDecl, mapping, generatedTypes);
+                    GenerateMemoryVariablesForMapping(varDecl, mapping, generatedMaps);
+                    
+                    if (context.TranslateFlags.InstrumentSums)
+                    {
+                        String sumName = mapHelper.GetSumName(varDecl);
+                        if (!generatedMaps.Contains(sumName))
+                        {
+                            generatedMaps.Add(sumName);
+                            BoogieType sumType = new BoogieMapType(BoogieType.Ref, BoogieType.Int);
+                            context.Program.AddDeclaration(new BoogieGlobalVariable(new BoogieTypedIdent(sumName, sumType)));
+                        }
+                    }
                 }
             }
             // arrays
@@ -673,7 +677,18 @@ namespace SolToBoogie
                 {
                     Debug.Assert(varDecl.TypeName is ArrayTypeName);
                     ArrayTypeName array = varDecl.TypeName as ArrayTypeName;
-                    GenerateMemoryVariablesForArray(varDecl, array, generatedTypes);
+                    GenerateMemoryVariablesForArray(varDecl, array, generatedMaps);
+                    
+                    if (context.TranslateFlags.InstrumentSums)
+                    {
+                        String sumName = mapHelper.GetSumName(varDecl);
+                        if (!generatedMaps.Contains(sumName))
+                        {
+                            generatedMaps.Add(sumName);
+                            BoogieType sumType = new BoogieMapType(BoogieType.Ref, BoogieType.Int);
+                            context.Program.AddDeclaration(new BoogieGlobalVariable(new BoogieTypedIdent(sumName, sumType)));
+                        }
+                    }
                 }
             }
         }
