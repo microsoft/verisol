@@ -1,5 +1,4 @@
 <Project>
-
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>netcoreapp2.2</TargetFramework>
@@ -7,15 +6,11 @@
     <ApplicationIcon />
     <StartupObject />
   </PropertyGroup>
-
   <Import Project="..\VeriSol.props" />
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
-
   <ItemGroup>
     <ProjectReference Include="..\BoogieAST\BoogieAST.csproj" />
     <ProjectReference Include="..\SolidityAST\SolidityAST.csproj" />
   </ItemGroup>
-
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
-
 </Project>

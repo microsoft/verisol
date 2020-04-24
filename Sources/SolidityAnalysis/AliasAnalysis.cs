@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using solidityAnalysis;
 using SolidityAST;
 
 namespace SolidityAnalysis
@@ -12,50 +14,6 @@ namespace SolidityAnalysis
         private AST solidityAST;
         private HashSet<Tuple<string, string>> ignoredMethods;
         private String entryPoint;
-
-        class DeclarationFinder : BasicASTVisitor
-        {
-            private IndexAccess start;
-            private int numAccesses;
-            private VariableDeclaration result;
-            private AST solidityAST;
-
-            public DeclarationFinder(IndexAccess access, AST solidityAst)
-            {
-                this.solidityAST = solidityAst;
-                this.start = access;
-                this.numAccesses = 1;
-                start.BaseExpression.Accept(this);
-            }
-            public override bool Visit(IndexAccess access)
-            {
-                numAccesses++;
-                access.BaseExpression.Accept(this);
-                return false;
-            }
-
-            public override bool Visit(Identifier ident)
-            {
-                ASTNode node = solidityAST.GetASTNodeByID(ident.ReferencedDeclaration);
-                if (node is VariableDeclaration decl)
-                {
-                    result = decl;
-                    return false;
-                }
-
-                throw new Exception("AliasAnalysis Exception: Expected identifier declaration to be of VariableDeclaration type, not " + node.GetType());
-            }
-
-            public VariableDeclaration getDecl()
-            {
-                return result;
-            }
-
-            public int getNumAccesses()
-            {
-                return numAccesses;
-            }
-        }
 
         public AliasAnalysis(AST solidityAST, HashSet<Tuple<string, string>> ignoredMethods, String entryPointContract = "")
         {
@@ -112,14 +70,16 @@ namespace SolidityAnalysis
 
         public override bool Visit(Identifier ident)
         {
-            if (!ident.IsLValue)
+            if (!solidityAST.GetIdToNodeMap().ContainsKey(ident.ReferencedDeclaration))
             {
                 return true;
             }
             
             ASTNode node = solidityAST.GetASTNodeByID(ident.ReferencedDeclaration);
-            assert(node is VariableDeclaration,
-                "Expected identifier declaration to be of VariableDeclaration type, not " + node.GetType());
+            if (!(node is VariableDeclaration))
+            {
+                return true;
+            }
             
             VariableDeclaration decl = (VariableDeclaration) node;
             results.Remove(decl);

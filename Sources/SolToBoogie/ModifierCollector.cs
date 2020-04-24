@@ -15,12 +15,10 @@ namespace SolToBoogie
     public class ModifierCollector : BasicASTVisitor
     {
         private TranslatorContext context;
-        private ProcedureTranslator localTranslator;
 
         public ModifierCollector(TranslatorContext context)
         {
             this.context = context;
-            this.localTranslator = new ProcedureTranslator(context);
         }
 
         public override bool Visit(ModifierDefinition modifier)

@@ -67,8 +67,11 @@ namespace SolToBoogie
             FunctionEventResolver functionEventResolver = new FunctionEventResolver(context);
             functionEventResolver.Resolve();
 
+            // Generate map helper
+            MapArrayHelper mapHelper = new MapArrayHelper(context, solidityAST);
+            
             // add types, gobal ghost variables, and axioms
-            GhostVarAndAxiomGenerator generator = new GhostVarAndAxiomGenerator(context);
+            GhostVarAndAxiomGenerator generator = new GhostVarAndAxiomGenerator(context, mapHelper);
             generator.Generate();
 
             // collect modifiers information
@@ -80,7 +83,7 @@ namespace SolToBoogie
             sourceUnits.Accept(usingCollector);
 
             // translate procedures
-            ProcedureTranslator procTranslator = new ProcedureTranslator(context, generateInlineAttributesInBpl);
+            ProcedureTranslator procTranslator = new ProcedureTranslator(context, mapHelper, generateInlineAttributesInBpl);
             sourceUnits.Accept(procTranslator);
 
             // generate fallbacks

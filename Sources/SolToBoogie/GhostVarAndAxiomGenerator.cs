@@ -13,11 +13,14 @@ namespace SolToBoogie
         // require the ContractDefintions member is populated
         private TranslatorContext context;
 
+        private MapArrayHelper mapHelper;
+
         private BoogieCtorType contractType = new BoogieCtorType("ContractName");
 
-        public GhostVarAndAxiomGenerator(TranslatorContext context)
+        public GhostVarAndAxiomGenerator(TranslatorContext context, MapArrayHelper mapHelper)
         {
             this.context = context;
+            this.mapHelper = mapHelper;
         }
 
         public void Generate()
@@ -652,7 +655,7 @@ namespace SolToBoogie
 
         private void GenerateMemoryVariables()
         {
-            HashSet<KeyValuePair<BoogieType, BoogieType>> generatedTypes = new HashSet<KeyValuePair<BoogieType, BoogieType>>();
+            HashSet<String> generatedTypes = new HashSet<String>();
             // mappings
             foreach (ContractDefinition contract in context.ContractToMappingsMap.Keys)
             {
@@ -660,7 +663,7 @@ namespace SolToBoogie
                 {
                     Debug.Assert(varDecl.TypeName is Mapping);
                     Mapping mapping = varDecl.TypeName as Mapping;
-                    GenerateMemoryVariablesForMapping(mapping, generatedTypes);
+                    GenerateMemoryVariablesForMapping(varDecl, mapping, generatedTypes);
                 }
             }
             // arrays
@@ -670,24 +673,24 @@ namespace SolToBoogie
                 {
                     Debug.Assert(varDecl.TypeName is ArrayTypeName);
                     ArrayTypeName array = varDecl.TypeName as ArrayTypeName;
-                    GenerateMemoryVariablesForArray(array, generatedTypes);
+                    GenerateMemoryVariablesForArray(varDecl, array, generatedTypes);
                 }
             }
         }
 
-        private void GenerateMemoryVariablesForMapping(Mapping mapping, HashSet<KeyValuePair<BoogieType, BoogieType>> generatedTypes)
+        private void GenerateMemoryVariablesForMapping(VariableDeclaration decl, Mapping mapping, HashSet<String> generatedMaps)
         {
             BoogieType boogieKeyType = TransUtils.GetBoogieTypeFromSolidityTypeName(mapping.KeyType);
             BoogieType boogieValType = null;
             if (mapping.ValueType is Mapping submapping)
             {
                 boogieValType = BoogieType.Ref;
-                GenerateMemoryVariablesForMapping(submapping, generatedTypes);
+                GenerateMemoryVariablesForMapping(decl, submapping, generatedMaps);
             }
             else if (mapping.ValueType is ArrayTypeName array)
             {
                 boogieValType = BoogieType.Ref;
-                GenerateMemoryVariablesForArray(array, generatedTypes);
+                GenerateMemoryVariablesForArray(decl, array, generatedMaps);
             }
             else
             {
@@ -695,26 +698,23 @@ namespace SolToBoogie
             }
 
             KeyValuePair<BoogieType, BoogieType> pair = new KeyValuePair<BoogieType,BoogieType>(boogieKeyType, boogieValType);
-            if (!generatedTypes.Contains(pair))
-            {
-                generatedTypes.Add(pair);
-                GenerateSingleMemoryVariable(boogieKeyType, boogieValType);
-            }
+
+            GenerateSingleMemoryVariable(decl, boogieKeyType, boogieValType, generatedMaps);
         }
 
-        private void GenerateMemoryVariablesForArray(ArrayTypeName array, HashSet<KeyValuePair<BoogieType, BoogieType>> generatedTypes)
+        private void GenerateMemoryVariablesForArray(VariableDeclaration decl, ArrayTypeName array, HashSet<String> generatedMaps)
         {
             BoogieType boogieKeyType = BoogieType.Int;
             BoogieType boogieValType = null;
             if (array.BaseType is ArrayTypeName subarray)
             {
                 boogieValType = BoogieType.Ref;
-                GenerateMemoryVariablesForArray(subarray, generatedTypes);
+                GenerateMemoryVariablesForArray(decl, subarray, generatedMaps);
             }
             else if (array.BaseType is Mapping mapping)
             {
                 boogieValType = BoogieType.Ref;
-                GenerateMemoryVariablesForMapping(mapping, generatedTypes);
+                GenerateMemoryVariablesForMapping(decl, mapping, generatedMaps);
             }
             else
             {
@@ -722,20 +722,20 @@ namespace SolToBoogie
             }
 
             KeyValuePair<BoogieType, BoogieType> pair = new KeyValuePair<BoogieType, BoogieType>(boogieKeyType, boogieValType);
-            if (!generatedTypes.Contains(pair))
-            {
-                generatedTypes.Add(pair);
-                GenerateSingleMemoryVariable(boogieKeyType, boogieValType);
-            }
+            GenerateSingleMemoryVariable(decl, boogieKeyType, boogieValType, generatedMaps);
         }
 
-        private void GenerateSingleMemoryVariable(BoogieType keyType, BoogieType valType)
+        private void GenerateSingleMemoryVariable(VariableDeclaration decl, BoogieType keyType, BoogieType valType, HashSet<String> generatedMaps)
         {
             BoogieMapType map = new BoogieMapType(keyType, valType);
             map = new BoogieMapType(BoogieType.Ref, map);
 
-            string name = MapArrayHelper.GetMemoryMapName(keyType, valType);
-            context.Program.AddDeclaration(new BoogieGlobalVariable(new BoogieTypedIdent(name, map)));
+            string name = mapHelper.GetMemoryMapName(decl, keyType, valType);
+            if (!generatedMaps.Contains(name))
+            {
+                generatedMaps.Add(name);
+                context.Program.AddDeclaration(new BoogieGlobalVariable(new BoogieTypedIdent(name, map)));
+            }
         }
     }
 }

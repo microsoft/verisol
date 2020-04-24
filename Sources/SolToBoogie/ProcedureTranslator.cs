@@ -44,6 +44,8 @@ namespace SolToBoogie
         // to collect contract invariants
         private Dictionary<string, List<BoogieExpr>> contractInvariants = null;
 
+        private MapArrayHelper mapHelper;
+
         private static void emitGasCheck(BoogieStmtList newBody)
         {
             BoogieStmtList thenBody = new BoogieStmtList();
@@ -74,9 +76,10 @@ namespace SolToBoogie
             }
         }
 
-        public ProcedureTranslator(TranslatorContext context, bool _genInlineAttrsInBpl = true)
+        public ProcedureTranslator(TranslatorContext context, MapArrayHelper mapHelper, bool _genInlineAttrsInBpl = true)
         {
             this.context = context;
+            this.mapHelper = mapHelper;
             boogieToLocalVarsMap = new Dictionary<string, List<BoogieVariable>>();
             genInlineAttrsInBpl = _genInlineAttrsInBpl;
             contractInvariants = new Dictionary<string, List<BoogieExpr>>();
@@ -132,14 +135,14 @@ namespace SolToBoogie
 
         private String GetAccessPattern(VariableDeclaration varDecl, String boogieName)
         {
-            String solAccess = String.Format("this.{0}", varDecl.Name);
-            String boogieAccess = String.Format("{0}[this]", boogieName);
+            String solAccess = $"this.{varDecl.Name}";
+            String boogieAccess = $"{boogieName}[this]";
             TypeName solType = varDecl.TypeName;
             int dim = 0;
 
             while (solType is Mapping || solType is ArrayTypeName)
             {
-                String dimName = String.Format("i{0}", dim);
+                String dimName = $"i{dim}";
                 dim++;
                 BoogieType keyType = null;
                 BoogieType valType = null;
@@ -157,17 +160,17 @@ namespace SolToBoogie
                     solType = arr.BaseType;
                 }
 
-                String memMap = MapArrayHelper.GetMemoryMapName(keyType, valType);
-                solAccess = String.Format("{0}[{1}]", solAccess, dimName);
-                boogieAccess = String.Format("{0}[{1}][{2}]", memMap, boogieAccess, dimName);
+                String memMap = mapHelper.GetMemoryMapName(varDecl, keyType, valType);
+                solAccess = $"{solAccess}[{dimName}]";
+                boogieAccess = $"{memMap}[{boogieAccess}][{dimName}]";
             }
 
-            return String.Format("\"{0}={1}\"", solAccess, boogieAccess);
+            return $"\"{solAccess}={boogieAccess}\"";
         }
 
         private String GetSumAccessPattern(VariableDeclaration varDecl, String boogieName)
         {
-            return String.Format("\"sum(this.{0})={1}[{2}[this]]\"", varDecl.Name, getSumName(), boogieName);
+            return $"\"sum(this.{varDecl.Name})={getSumName()}[{boogieName}[this]]\"";
         }
         
         private void TranslateStateVarDeclaration(VariableDeclaration varDecl)
@@ -929,7 +932,7 @@ namespace SolToBoogie
             currentStmtList.AddStatement(new BoogieCommentCmd($"Initialize length of 1-level nested array in {varDecl.Name}"));
             // Issue with inferring Array[] expressions in GetBoogieTypesFromMapping (TODO: use GetBoogieTypesFromMapping after fix)
             var mapKeyType = MapArrayHelper.InferExprTypeFromTypeString(mapping.KeyType.TypeDescriptions.ToString());
-            string mapName = MapArrayHelper.GetMemoryMapName(mapKeyType, BoogieType.Ref);
+            string mapName = mapHelper.GetMemoryMapName(varDecl, mapKeyType, BoogieType.Ref);
             string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
             var varExpr = new BoogieIdentifierExpr(varName);
             //lhs is Mem_t_ref[x[this]]
@@ -1028,7 +1031,7 @@ namespace SolToBoogie
                 mapping.ValueType.ToString();
             // needed as a mapping(int => contract A) only has "A" as the valueType.ToSTring()
             var mapValueType = MapArrayHelper.InferExprTypeFromTypeString(mapValueTypeString);
-            string mapName = MapArrayHelper.GetMemoryMapName(mapKeyType, mapValueType);
+            string mapName = mapHelper.GetMemoryMapName(varDecl, mapKeyType, mapValueType);
 
             string varName = TransUtils.GetCanonicalStateVariableName(varDecl, context);
             var varExpr = new BoogieIdentifierExpr(varName);
@@ -1937,7 +1940,8 @@ namespace SolToBoogie
         private BoogieExpr TranslateModifiesStmt(BoogieExpr boogieExpr1, BoogieExpr boogieExpr2)
         {
             //has to be M_ref_int[mapp[this]] instead of mapp[this]
-            var mapName = MapArrayHelper.GetMemoryMapName(BoogieType.Ref, BoogieType.Int);
+            //TODO: this is not the proper way of finding the correct map. Come back and fix.
+            var mapName = MapArrayHelper.GetCanonicalMemName(BoogieType.Ref, BoogieType.Int);
             var mappingExpr = new BoogieMapSelect(new BoogieIdentifierExpr(mapName), boogieExpr1);
 
             //boogieExpr2 is a tuple, we need to flatten it into an array
@@ -2574,7 +2578,9 @@ namespace SolToBoogie
             if (verisolFunc.Equals("_SumMapping_VeriSol"))
             {
                 //has to be M_ref_int[mapp[this]] instead of mapp[this]
-                var mapName = MapArrayHelper.GetMemoryMapName(BoogieType.Ref, BoogieType.Int);
+                VariableDeclaration decl = mapHelper.getDecl(node.Arguments[0]);
+                VeriSolAssert(decl != null, "Could not find declaration of " + node.Arguments[0]);
+                var mapName = mapHelper.GetMemoryMapName(decl, BoogieType.Ref, BoogieType.Int);
                 boogieExprs[0] = new BoogieMapSelect(new BoogieIdentifierExpr(mapName), boogieExprs[0]);
             }
             return new BoogieFuncCallExpr(verisolFunc, boogieExprs);
@@ -3015,7 +3021,9 @@ namespace SolToBoogie
             // M[this][a][tmp] := e;
             BoogieType mapKeyType = BoogieType.Int;
             BoogieType mapValType = MapArrayHelper.InferExprTypeFromTypeString(node.Arguments[0].TypeDescriptions.TypeString);
-            BoogieExpr mapSelect = MapArrayHelper.GetMemoryMapSelectExpr(mapKeyType, mapValType, receiver, tmp);
+            VariableDeclaration decl = mapHelper.getDecl(memberAccess.Expression);
+            VeriSolAssert(decl != null, "Could not find declaration of " + node.Arguments[0]);
+            BoogieExpr mapSelect = mapHelper.GetMemoryMapSelectExpr(decl, mapKeyType, mapValType, receiver, tmp);
             BoogieAssignCmd writeCmd = new BoogieAssignCmd(mapSelect, element);
             currentStmtList.AddStatement(writeCmd);
 
@@ -3749,7 +3757,8 @@ namespace SolToBoogie
             //}
 
             BoogieExpr indexAccessExpr = new BoogieMapSelect(baseExpr, indexExpr);
-            currentExpr = MapArrayHelper.GetMemoryMapSelectExpr(baseKeyType, baseValType, baseExpr, indexExpr);
+            VariableDeclaration decl = mapHelper.getDecl(node);
+            currentExpr = mapHelper.GetMemoryMapSelectExpr(decl, baseKeyType, baseValType, baseExpr, indexExpr);
 
             if (context.TranslateFlags.LazyNestedAlloc)
             {
@@ -3776,7 +3785,7 @@ namespace SolToBoogie
                     BoogieType nestedValType = MapArrayHelper.InferValueTypeFromTypeString(valTypeString);
                     BoogieType nestedKeyType = MapArrayHelper.InferKeyTypeFromTypeString(valTypeString);
 
-                    var mapName = new BoogieIdentifierExpr(MapArrayHelper.GetMemoryMapName(nestedKeyType, nestedValType));
+                    var mapName = new BoogieIdentifierExpr(mapHelper.GetMemoryMapName(decl, nestedKeyType, nestedValType));
                     var derefCurrExpr = new BoogieMapSelect(mapName, currentExpr);
                     
                     var qVar1 = QVarGenerator.NewQVar(0, 0);

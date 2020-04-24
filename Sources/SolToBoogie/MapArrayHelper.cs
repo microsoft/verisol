@@ -1,5 +1,9 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
+
+using solidityAnalysis;
+using SolidityAST;
+
 namespace SolToBoogie
 {
     using System;
@@ -14,14 +18,46 @@ namespace SolToBoogie
         // mapping (uint => uint[]) does not have storage/memory in Typestring
         // private static Regex arrayRegex = new Regex(@"(.+)\[\w*\]$");
 
-        public static string GetMemoryMapName(BoogieType keyType, BoogieType valType)
+        private TranslatorContext context { get; }
+        
+        private AST solidityAst { get;  }
+        
+        public MapArrayHelper(TranslatorContext ctxt, AST solidityAst)
+        {
+            this.context = ctxt;
+            this.solidityAst = solidityAst;
+        }
+        
+        public Boolean notAliased(VariableDeclaration decl)
+        {   
+            return context.TranslateFlags.RunAliasAnalysis && context.Analysis.Alias.getResults().Contains(decl);
+        }
+
+        public static string GetCanonicalMemName(BoogieType keyType, BoogieType valType)
         {
             return "M_" + keyType.ToString() + "_" + valType.ToString();
         }
 
-        public static BoogieExpr GetMemoryMapSelectExpr(BoogieType mapKeyType, BoogieType mapValType, BoogieExpr baseExpr, BoogieExpr indexExpr)
+        public VariableDeclaration getDecl(Expression access)
         {
-            string mapName = GetMemoryMapName(mapKeyType, mapValType);
+            DeclarationFinder declFinder = new DeclarationFinder(access, solidityAst);
+            return declFinder.getDecl();
+        }
+        
+        public string GetMemoryMapName(VariableDeclaration decl, BoogieType keyType, BoogieType valType)
+        {
+            if (notAliased(decl))
+            {
+                return TransUtils.GetCanonicalVariableName(decl, context) + "_" + keyType.ToString() + "_" +
+                       valType.ToString();
+            }
+
+            return GetCanonicalMemName(keyType, valType);
+        }
+
+        public BoogieExpr GetMemoryMapSelectExpr(VariableDeclaration decl, BoogieType mapKeyType, BoogieType mapValType, BoogieExpr baseExpr, BoogieExpr indexExpr)
+        {
+            string mapName = GetMemoryMapName(decl, mapKeyType, mapValType);
             BoogieIdentifierExpr mapIdent = new BoogieIdentifierExpr(mapName);
             BoogieMapSelect mapSelectExpr = new BoogieMapSelect(mapIdent, baseExpr);
             mapSelectExpr = new BoogieMapSelect(mapSelectExpr, indexExpr);
