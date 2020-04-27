@@ -769,7 +769,7 @@ namespace SolToBoogie
             }
             return localVars;
         }
-
+        
         /// <summary>
         /// generate a non-deterministic choice block to call every public visible functions except constructors
         /// 
@@ -780,8 +780,13 @@ namespace SolToBoogie
         /// <returns></returns>
         public static BoogieIfCmd GenerateChoiceBlock(List<ContractDefinition> contracts, TranslatorContext context, Tuple<string, string> callBackTarget = null)
         {
-            BoogieIfCmd ifCmd = null;
-            int j = 0;
+            return GeneratePartialChoiceBlock(contracts, context, new BoogieIdentifierExpr("this"), 0, null, callBackTarget).Item1;
+        }
+        
+        public static Tuple<BoogieIfCmd, int> GeneratePartialChoiceBlock(List<ContractDefinition> contracts, TranslatorContext context, BoogieExpr thisExpr, int startingPoint, BoogieIfCmd alternatives = null, Tuple<string, string> callBackTarget = null)
+        {
+            BoogieIfCmd ifCmd = alternatives;
+            int j = startingPoint;
             foreach (var contract in contracts)
             {
                 if (contract.ContractKind != EnumContractKind.CONTRACT) continue;
@@ -811,7 +816,7 @@ namespace SolToBoogie
                     List<BoogieExpr> inputs = new List<BoogieExpr>()
                 {
                     // let us just call back into the calling contract
-                    callBackTarget != null ? new BoogieIdentifierExpr(callBackTarget.Item1) : new BoogieIdentifierExpr("this"),
+                    callBackTarget != null ? new BoogieIdentifierExpr(callBackTarget.Item1) : thisExpr,
                     callBackTarget != null ? new BoogieIdentifierExpr(callBackTarget.Item2) : new BoogieIdentifierExpr("msgsender_MSG"), 
                     new BoogieIdentifierExpr("msgvalue_MSG"),
                 };
@@ -868,7 +873,7 @@ namespace SolToBoogie
                     ifCmd = new BoogieIfCmd(guard, thenBody, elseBody);
                 }
             }
-            return ifCmd;
+            return new Tuple<BoogieIfCmd, int>(ifCmd, j);
         }
         public static void havocGas(BoogieStmtList list)
         {

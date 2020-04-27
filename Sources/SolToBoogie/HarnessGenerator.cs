@@ -1,5 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
+
+using System;
+
 namespace SolToBoogie
 {
     using System.Collections.Generic;
@@ -98,7 +101,8 @@ namespace SolToBoogie
             BoogieProcedure harness = new BoogieProcedure(harnessName, inParams, outParams);
             context.Program.AddDeclaration(harness);
 
-            List<BoogieVariable> localVars = TransUtils.CollectLocalVars(new List<ContractDefinition>() { contract }, context);
+            //List<BoogieVariable> localVars = TransUtils.CollectLocalVars(new List<ContractDefinition>() { contract }, context);
+            List<BoogieVariable> localVars = CollectLocalVars(contract);
             localVars.Add(new BoogieLocalVariable(new BoogieTypedIdent("tmpNow", BoogieType.Int)));
             BoogieStmtList harnessBody = new BoogieStmtList();
             harnessBody.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, new BoogieIdentifierExpr("now"), new BoogieLiteralExpr(0))));
@@ -188,7 +192,8 @@ namespace SolToBoogie
             BoogieStmtList body = GenerateHavocBlock(contract, localVars);
 
             // generate the choice block
-            body.AddStatement(TransUtils.GenerateChoiceBlock(new List<ContractDefinition>() { contract }, context));
+            //body.AddStatement(TransUtils.GenerateChoiceBlock(new List<ContractDefinition>() { contract }, context));
+            body.AddStatement(GenerateChoices(contract));
 
             // generate candidate invariants for Houdini
             List<BoogiePredicateCmd> candidateInvs = new List<BoogiePredicateCmd>();
@@ -269,12 +274,58 @@ namespace SolToBoogie
             BoogieProcedure harness = new BoogieProcedure(procName, inParams, outParams);
             context.Program.AddDeclaration(harness);
 
-            List<BoogieVariable> localVars = RemoveThisFromVariables(TransUtils.CollectLocalVars(new List<ContractDefinition>() { contract }, context));
+            List<BoogieVariable> localVars = RemoveThisFromVariables(CollectLocalVars(contract));
             localVars.Add(new BoogieLocalVariable(new BoogieTypedIdent("tmpNow", BoogieType.Int)));
             BoogieStmtList procBody = GenerateHavocBlock(contract, localVars);
-            procBody.AddStatement(TransUtils.GenerateChoiceBlock(new List<ContractDefinition>() { contract }, context));
+            //procBody.AddStatement(TransUtils.GenerateChoiceBlock(new List<ContractDefinition>() { contract }, context));
+            procBody.AddStatement(GenerateChoices(contract));
             BoogieImplementation procImpl = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);
             context.Program.AddDeclaration(procImpl);
+        }
+
+        private List<BoogieVariable> CollectLocalVars(ContractDefinition contract)
+        {
+            List<ContractDefinition> contracts = new List<ContractDefinition>() {contract};
+
+            if (context.TranslateFlags.TxnsOnFields)
+            {
+                HashSet<VariableDeclaration> contractFields = context.GetStateVarsByContract(contract);
+                foreach (VariableDeclaration contractField in contractFields)
+                {
+                    if (contractField.TypeDescriptions.IsContract() && contractField.TypeName is UserDefinedTypeName)
+                    {
+                        String fieldContractName = contractField.TypeName.ToString();
+                        ContractDefinition fieldDef = context.GetContractByName(fieldContractName);
+                        contracts.Add(fieldDef);
+                    }
+                }
+            }
+
+            return TransUtils.CollectLocalVars(contracts, context);
+        }
+
+        private BoogieIfCmd GenerateChoices(ContractDefinition contract)
+        {
+            BoogieExpr thisVal = new BoogieIdentifierExpr("this");
+            Tuple<BoogieIfCmd, int> curChoices = TransUtils.GeneratePartialChoiceBlock(new List<ContractDefinition>() {contract}, context, thisVal, 0);
+            if (context.TranslateFlags.TxnsOnFields)
+            {
+                HashSet<VariableDeclaration> contractFields = context.GetStateVarsByContract(contract);
+
+                foreach (VariableDeclaration contractField in contractFields)
+                {
+                    if (contractField.TypeDescriptions.IsContract() && contractField.TypeName is UserDefinedTypeName)
+                    {
+                        BoogieExpr fieldInstance = new BoogieMapSelect(new BoogieIdentifierExpr(TransUtils.GetCanonicalVariableName(contractField, context)), thisVal);
+                        String fieldContractName = contractField.TypeName.ToString();
+                        ContractDefinition fieldDef = context.GetContractByName(fieldContractName);
+                        curChoices = TransUtils.GeneratePartialChoiceBlock(new List<ContractDefinition>() {fieldDef},
+                            context, fieldInstance, curChoices.Item2, curChoices.Item1);
+                    }
+                }
+            }
+
+            return curChoices.Item1;
         }
 
         private void GenerateCorralHarnessForContract(ContractDefinition contract)

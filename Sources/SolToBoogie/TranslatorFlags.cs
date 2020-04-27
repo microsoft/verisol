@@ -34,7 +34,10 @@ namespace SolToBoogie
             OmitAssumeFalseForDynDispatch = false;
             NoTxnsFromContract = true;
             RunAliasAnalysis = false;
+            TxnsOnFields = false;
         }
+        
+        public bool TxnsOnFields { get; set; }
         
         public bool RunAliasAnalysis { get; set; }
         

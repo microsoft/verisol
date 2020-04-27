@@ -167,6 +167,11 @@ namespace SolToBoogie
                 translatorFlags.RunAliasAnalysis = true;
             }
 
+            if (args.Any(x => x.Equals("/txnsOnFields")))
+            {
+                translatorFlags.TxnsOnFields = true;
+            }
+
             translatorFlags.PerformContractInferce = args.Any(x => x.StartsWith("/contractInfer"));
 
             // don't perform verification for some of these omitFlags
