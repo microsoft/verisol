@@ -853,6 +853,14 @@ namespace SolToBoogie
                         var gasVar = new BoogieIdentifierExpr("gas");
                         thenBody.AddStatement(new BoogieAssignCmd(gasVar, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, gasVar, new BoogieLiteralExpr(TranslatorContext.TX_GAS_COST))));
                     }
+
+                    if (!funcDef.StateMutability.Equals(EnumStateMutability.PAYABLE))
+                    {
+                        BoogieExpr assumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ,
+                            new BoogieIdentifierExpr("msgvalue_MSG"), new BoogieLiteralExpr(BigInteger.Zero));
+                        thenBody.AddStatement(new BoogieAssumeCmd(assumeExpr));
+                    }
+                    
                     BoogieCallCmd callCmd = new BoogieCallCmd(callee, inputs, outputs);
                     thenBody.AddStatement(callCmd);
 
