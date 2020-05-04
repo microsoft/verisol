@@ -969,7 +969,44 @@ namespace SolToBoogie
             {
                 if (context.TranslateFlags.QuantFreeAllocs)
                 {
-                    currentStmtList.AddStatement(new BoogieAssignCmd(lhs0, GetCallExprForZeroInit(mapKeyType, BoogieType.Ref)));
+                    //currentStmtList.AddStatement(new BoogieAssignCmd(lhs0, GetCallExprForZeroInit(mapKeyType, BoogieType.Ref)));
+                    BoogieExpr index = new BoogieMapSelect(varExpr, new BoogieIdentifierExpr("this"));
+
+                    TypeName curType = varDecl.TypeName;
+
+                    while (curType is Mapping || curType is ArrayTypeName)
+                    {
+                        BoogieType keyType = null;
+                        BoogieType valType = null;
+                        if (curType is Mapping map)
+                        {
+                            keyType = TransUtils.GetBoogieTypeFromSolidityTypeName(map.KeyType);
+                            valType = TransUtils.GetBoogieTypeFromSolidityTypeName(map.ValueType);
+                            curType = map.ValueType;
+                        }
+                        else if (curType is ArrayTypeName arr)
+                        {
+                            keyType = BoogieType.Int;
+                            valType = TransUtils.GetBoogieTypeFromSolidityTypeName(arr.BaseType);
+                            curType = arr.BaseType;
+                        }
+                        
+                        string memName = mapHelper.GetMemoryMapName(varDecl, keyType, valType);
+                        BoogieMapSelect lhs = new BoogieMapSelect(new BoogieIdentifierExpr(memName), index);
+                        currentStmtList.AddStatement((new BoogieAssignCmd(lhs, GetCallExprForZeroInit(keyType, valType))));
+                        if (valType.Equals(BoogieType.Int))
+                        {
+                            index = new BoogieLiteralExpr(BigInteger.Zero);
+                        }
+                        else if (valType.Equals(BoogieType.Ref))
+                        {
+                            index = new BoogieIdentifierExpr("null");
+                        }
+                        else
+                        {
+                            index = new BoogieLiteralExpr(false);
+                        }
+                    }
                 }
                 else
                 {
