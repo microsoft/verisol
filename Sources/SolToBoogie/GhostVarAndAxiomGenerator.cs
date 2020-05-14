@@ -193,7 +193,7 @@ namespace SolToBoogie
             //function for Int to Ref
             var inVar = new BoogieFormalParam(new BoogieTypedIdent("x", BoogieType.Int));
             var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", BoogieType.Ref));
-            BoogieAttribute attr = new BoogieAttribute(":smtdefined", "x");
+            BoogieAttribute attr = new BoogieAttribute("smtdefined", "\"x\"");
             return new BoogieFunction(
                 "ConstantToRef",
                 new List<BoogieVariable>() { inVar },
