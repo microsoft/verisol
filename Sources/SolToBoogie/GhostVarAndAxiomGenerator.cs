@@ -198,7 +198,7 @@ namespace SolToBoogie
                 "ConstantToRef",
                 new List<BoogieVariable>() { inVar },
                 new List<BoogieVariable>() { outVar },
-                null);
+                new List<BoogieAttribute>() { attr });
         }
 
         private BoogieFunction GenerateRefToInt()
