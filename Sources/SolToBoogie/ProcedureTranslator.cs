@@ -3183,13 +3183,24 @@ namespace SolToBoogie
                 boogieToLocalVarsMap[currentBoogieProc].Add(msgValueVar);
                 msgValueExpr = new BoogieIdentifierExpr(msgIdTmp.Name);
             }
+            
+            bool isSuper = memberAccess.Expression.ToString().Equals("super");
 
-            List<BoogieExpr> arguments = new List<BoogieExpr>()
+            List<BoogieExpr> arguments = null; 
+            
+            if (isSuper)
             {
-                receiver,
-                new BoogieIdentifierExpr("this"),
-                msgValueExpr, 
-            };
+                arguments = TransUtils.GetDefaultArguments();
+            }
+            else
+            {
+                arguments = new List<BoogieExpr>() {
+                    receiver,
+                    new BoogieIdentifierExpr("this"),
+                    msgValueExpr, 
+                };
+            }
+            
 
             foreach (Expression arg in node.Arguments)
             {
@@ -3197,7 +3208,7 @@ namespace SolToBoogie
                 arguments.Add(argument);
             }
 
-            bool isSuper = memberAccess.Expression.ToString().Equals("super");
+            
 
             // TODO: we need a way to determine type of receiver from "x.Foo()"
             // This additional condition is checked in the loop at this call site
