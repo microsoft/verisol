@@ -172,6 +172,11 @@ namespace SolToBoogie
                 translatorFlags.TxnsOnFields = true;
             }
 
+            if (args.Any(x => x.Equals("/noNonlinearArith")))
+            {
+                translatorFlags.NoNonlinearArith = true;
+            }
+
             translatorFlags.PerformContractInferce = args.Any(x => x.StartsWith("/contractInfer"));
 
             // don't perform verification for some of these omitFlags

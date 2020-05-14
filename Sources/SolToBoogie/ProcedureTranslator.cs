@@ -2259,6 +2259,10 @@ namespace SolToBoogie
             {
                 currentExpr = new BoogieIdentifierExpr("this");
             }
+            else if (node.Name.Equals("super"))
+            {
+                currentExpr = new BoogieIdentifierExpr("this");
+            }
             else if (node.Name.Equals("now"))
             {
                 currentExpr = new BoogieIdentifierExpr("now");
@@ -3085,6 +3089,11 @@ namespace SolToBoogie
                     {
                         return true;
                     }
+
+                    if (identifier.Name == "super")
+                    {
+                        return true;
+                    }
                     var contract = context.GetASTNodeById(identifier.ReferencedDeclaration) as ContractDefinition;
                     if (contract == null)
                     {
@@ -3188,11 +3197,13 @@ namespace SolToBoogie
                 arguments.Add(argument);
             }
 
+            bool isSuper = memberAccess.Expression.ToString().Equals("super");
+
             // TODO: we need a way to determine type of receiver from "x.Foo()"
             // This additional condition is checked in the loop at this call site
             // and was the reason why the code was not abstracted into a single call
-            var guard = memberAccess.Expression.ToString() == "this"; 
-            TranslateDynamicDispatchCall(node, outParams, arguments, guard, receiver);
+            var guard = memberAccess.Expression.ToString() == "this" || memberAccess.Expression.ToString().Equals("super"); 
+            TranslateDynamicDispatchCall(node, outParams, arguments, guard, isSuper, receiver);
 
             return;
         }
@@ -3306,7 +3317,7 @@ namespace SolToBoogie
             }
             else if (IsDynamicDispatching(node))
             {
-                TranslateDynamicDispatchCall(node, outParams, arguments, true, new BoogieIdentifierExpr("this"));
+                TranslateDynamicDispatchCall(node, outParams, arguments, true, false, new BoogieIdentifierExpr("this"));
             }
             else if (IsStaticDispatching(node))
             {
@@ -3324,14 +3335,16 @@ namespace SolToBoogie
             return;
         }
 
-        private void TranslateDynamicDispatchCall(FunctionCall node, List<BoogieIdentifierExpr> outParams, List<BoogieExpr> arguments, bool condition, BoogieExpr receiver)
+        private void TranslateDynamicDispatchCall(FunctionCall node, List<BoogieIdentifierExpr> outParams, List<BoogieExpr> arguments, bool condition, bool isSuper, BoogieExpr receiver)
         {
             ContractDefinition contractDefn;
             VariableDeclaration varDecl;
             // Solidity internally generates foo() getter for any public state 
             // variable foo in a contract. 
+
             if (IsGetterForPublicVariable(node, out varDecl, out contractDefn))
             {
+                VeriSolAssert(!isSuper, "Super is not supported for public getters right now");
                 List<ContractDefinition> subtypes = new List<ContractDefinition>(context.GetSubTypesOfContract(contractDefn));
                 Debug.Assert(subtypes.Count > 0);
 
@@ -3369,7 +3382,37 @@ namespace SolToBoogie
                 if (condition && !dynamicType.LinearizedBaseContracts.Contains(currentContract.Id))
                     continue;
 
-                FunctionDefinition function = dynamicTypeToFuncMap[dynamicType];
+                FunctionDefinition function = null;
+                if (isSuper)
+                {
+                    int dyTypeInd = dynamicType.LinearizedBaseContracts.IndexOf(currentContract.Id);
+
+                    for (int i = dyTypeInd + 1; i < dynamicType.LinearizedBaseContracts.Count; i++)
+                    {
+                        ContractDefinition curDef = context.GetASTNodeById(dynamicType.LinearizedBaseContracts[i]) as ContractDefinition;
+
+                        foreach (FunctionDefinition fnDef in context.GetFuncDefintionsInContract(curDef))
+                        {
+                            if (fnDef.Visibility == EnumVisibility.PRIVATE) continue;
+
+                            if (TransUtils.ComputeFunctionSignature(fnDef).Equals(signature))
+                            {
+                                function = fnDef;
+                                break;
+                            }
+                        }
+
+                        if (function != null)
+                        {
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    function = dynamicTypeToFuncMap[dynamicType];
+                }
+                
                 string callee = TransUtils.GetCanonicalFunctionName(function, context);
 
                 BoogieExpr lhs = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), receiver);
@@ -3702,6 +3745,31 @@ namespace SolToBoogie
                 {
                     Console.WriteLine($"VeriSol translation error: power operation for non-constants or with constant subexpressions is not supported; hint: use temps for subexpressions");
                     return false;
+                }
+            }
+            else if (context.TranslateFlags.NoNonlinearArith && node.Operator == "*")
+            {
+                if ((node.LeftExpression is Literal leftLiteral && leftLiteral.Kind.Equals("number")) || 
+                    (node.RightExpression is Literal rightLiteral && rightLiteral.Kind.Equals("number")))
+                {
+                    binaryExpr = new BoogieBinaryOperation(op, leftExpr, rightExpr);
+                }
+                else
+                {
+                    //BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, outParams);
+                    binaryExpr = new BoogieFuncCallExpr("nonlinearMul", new List<BoogieExpr>() { leftExpr, rightExpr});
+                }
+            }
+            else if (context.TranslateFlags.NoNonlinearArith && node.Operator == "/")
+            {
+                if ((node.LeftExpression is Literal leftLiteral && leftLiteral.Kind.Equals("number")) || 
+                    (node.RightExpression is Literal rightLiteral && rightLiteral.Kind.Equals("number")))
+                {
+                    binaryExpr = new BoogieBinaryOperation(op, leftExpr, rightExpr);
+                }
+                else
+                {
+                    binaryExpr = new BoogieFuncCallExpr("nonlinearDiv", new List<BoogieExpr>() { leftExpr, rightExpr});
                 }
             }
             else

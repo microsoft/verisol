@@ -54,6 +54,12 @@ namespace SolToBoogie
                 context.Program.AddDeclaration(GenerateZeroRefRefArrayFunction());
                 context.Program.AddDeclaration(GenerateZeroIntRefArrayFunction());
             }
+
+            if (context.TranslateFlags.NoNonlinearArith)
+            {
+                context.Program.AddDeclaration(generateNonlinearMulFunction());
+                context.Program.AddDeclaration(generateNonlinearDivFunction());
+            }
         }
 
         private BoogieFunction GenerateZeroRefIntArrayFunction()
@@ -187,6 +193,7 @@ namespace SolToBoogie
             //function for Int to Ref
             var inVar = new BoogieFormalParam(new BoogieTypedIdent("x", BoogieType.Int));
             var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", BoogieType.Ref));
+            BoogieAttribute attr = new BoogieAttribute(":smtdefined", "x");
             return new BoogieFunction(
                 "ConstantToRef",
                 new List<BoogieVariable>() { inVar },
@@ -230,6 +237,28 @@ namespace SolToBoogie
                 new List<BoogieVariable>() { inVar },
                 new List<BoogieVariable>() { outVar },
                 null);
+        }
+
+        private BoogieFunction generateNonlinearMulFunction()
+        {
+            string fnName = "nonlinearMul";
+            var inVar1 = new BoogieFormalParam(new BoogieTypedIdent("x", BoogieType.Int));
+            var inVar2 = new BoogieFormalParam(new BoogieTypedIdent("y", BoogieType.Int));
+            var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", BoogieType.Int));
+            
+            return new BoogieFunction(fnName, new List<BoogieVariable>() {inVar1, inVar2}, 
+                new List<BoogieVariable>() {outVar});
+        }
+        
+        private BoogieFunction generateNonlinearDivFunction()
+        {
+            string fnName = "nonlinearDiv";
+            var inVar1 = new BoogieFormalParam(new BoogieTypedIdent("x", BoogieType.Int));
+            var inVar2 = new BoogieFormalParam(new BoogieTypedIdent("y", BoogieType.Int));
+            var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", BoogieType.Int));
+            
+            return new BoogieFunction(fnName, new List<BoogieVariable>() {inVar1, inVar2}, 
+                new List<BoogieVariable>() {outVar});
         }
 
 

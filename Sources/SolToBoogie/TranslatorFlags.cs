@@ -35,7 +35,10 @@ namespace SolToBoogie
             NoTxnsFromContract = true;
             RunAliasAnalysis = false;
             TxnsOnFields = false;
+            NoNonlinearArith = false;
         }
+        
+        public bool NoNonlinearArith { get; set; }
         
         public bool TxnsOnFields { get; set; }
         
