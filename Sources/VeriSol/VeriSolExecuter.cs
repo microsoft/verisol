@@ -72,12 +72,12 @@ namespace VeriSolRunner
                 if (e.Message == "Compilation Error")
                 {
                     Console.WriteLine($"VeriSol Error: {e.Message}");
-                    return 0;
+                    return 1;
                 }
                 else
                 {
                     Console.WriteLine($"VeriSol translation error: {e.Message}");
-                    return 0;
+                    return 1;
                 }
             }
             // try to prove first
