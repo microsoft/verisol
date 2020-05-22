@@ -36,8 +36,10 @@ namespace SolToBoogie
             RunAliasAnalysis = false;
             TxnsOnFields = false;
             NoNonlinearArith = false;
+            UseNumericOperators = false;
         }
         
+        public bool UseNumericOperators { get; set; }
         public bool NoNonlinearArith { get; set; }
         
         public bool TxnsOnFields { get; set; }

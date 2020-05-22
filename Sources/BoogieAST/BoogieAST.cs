@@ -1212,6 +1212,8 @@ namespace BoogieAST
             UNKNOWN,
         }
 
+        public static bool USE_ARITH_OPS { get; set; }
+        
         public Opcode Op { get; set; }
 
         public BoogieExpr Lhs { get; set; }
@@ -1245,9 +1247,9 @@ namespace BoogieAST
                 case Opcode.MUL:
                     return "*";
                 case Opcode.DIV:
-                    return "div";
+                    return USE_ARITH_OPS ? "/" : "div";
                 case Opcode.MOD:
-                    return "mod";
+                    return USE_ARITH_OPS ? "%" : "mod";
                 case Opcode.EQ:
                     return "==";
                 case Opcode.NEQ:

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using BoogieAST;
 
 namespace SolToBoogie
 {
@@ -175,6 +176,12 @@ namespace SolToBoogie
             if (args.Any(x => x.Equals("/noNonlinearArith")))
             {
                 translatorFlags.NoNonlinearArith = true;
+            }
+
+            if (args.Any(x => x.Equals("/useNumericOperators")))
+            {
+                translatorFlags.UseNumericOperators = true;
+                BoogieBinaryOperation.USE_ARITH_OPS = true;
             }
 
             translatorFlags.PerformContractInferce = args.Any(x => x.StartsWith("/contractInfer"));

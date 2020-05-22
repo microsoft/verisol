@@ -1509,7 +1509,7 @@ namespace SolToBoogie
 
         private BoogieExpr AddModuloOp(Expression srcExpr, BoogieExpr expr, TypeDescription type)
         {
-            if (context.TranslateFlags.UseModularArithmetic)
+            if (context.TranslateFlags.UseModularArithmetic && !context.TranslateFlags.UseNumericOperators)
             {
                 if (type != null)
                 {
@@ -1522,6 +1522,15 @@ namespace SolToBoogie
                     }
                 }
             }
+            else if (context.TranslateFlags.UseModularArithmetic && context.TranslateFlags.UseNumericOperators)
+            {
+                if (type.IsUintWSize(srcExpr, out uint uintSize))
+                {
+                    BigInteger maxUIntValue = (BigInteger)Math.Pow(2, uintSize);
+                    return new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.MOD, expr, new BoogieLiteralExpr(maxUIntValue));
+                }
+            }
+
             return expr;
         }
 
@@ -1806,7 +1815,7 @@ namespace SolToBoogie
             {
                 var ge0 = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, boogieExpr, new BoogieLiteralExpr(BigInteger.Zero));
 
-                if (context.TranslateFlags.UseModularArithmetic)
+                if (context.TranslateFlags.UseModularArithmetic && !context.TranslateFlags.UseNumericOperators)
                 {
                     var isUint = typeDesc.IsUintWSize(expr, out uint sz);
                     if (isUint)
@@ -3594,7 +3603,7 @@ namespace SolToBoogie
                 }
 
                 // We do not handle downcasts between unsigned integers, when /useModularArithmetic option is enabled:
-                if (context.TranslateFlags.UseModularArithmetic)
+                if (context.TranslateFlags.UseModularArithmetic && !context.TranslateFlags.UseNumericOperators)
                 {
                     bool argTypeIsUint = node.Arguments[0].TypeDescriptions.IsUintWSize(node.Arguments[0], out uint argSz);
                     if (argTypeIsUint && elemType.ToString().StartsWith("uint"))
@@ -3604,6 +3613,14 @@ namespace SolToBoogie
                         {
                             Console.WriteLine($"Warning: downcasts are not handled with /useModularArithmetic option");
                         }
+                    }
+                }
+                else if (context.TranslateFlags.UseModularArithmetic && context.TranslateFlags.UseNumericOperators)
+                {
+                    if (node.Arguments[0].TypeDescriptions.IsUintWSize(node.Arguments[0], out uint uintSize))
+                    {
+                        BigInteger maxUIntValue = (BigInteger)Math.Pow(2, uintSize);
+                        rhsExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.MOD, rhsExpr, new BoogieLiteralExpr(maxUIntValue));
                     }
                 }
                 
@@ -3793,7 +3810,7 @@ namespace SolToBoogie
             }
             currentExpr = binaryExpr;
 
-            if (context.TranslateFlags.UseModularArithmetic)
+            if (context.TranslateFlags.UseModularArithmetic && !context.TranslateFlags.UseNumericOperators)
             {
                 //if (node.Operator == "+" || node.Operator == "-" || node.Operator == "*" || node.Operator == "/" || node.Operator == "**")
                 if (node.Operator == "+" || node.Operator == "-" || node.Operator == "*" || node.Operator == "/")
@@ -3818,6 +3835,15 @@ namespace SolToBoogie
                     }
                 }
             }
+            else if (context.TranslateFlags.UseModularArithmetic && context.TranslateFlags.UseNumericOperators)
+            {
+                if (node.TypeDescriptions.IsUintWSize(node, out uint uintSize))
+                {
+                    BigInteger maxUIntValue = (BigInteger)Math.Pow(2, uintSize);
+                    currentExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.MOD, currentExpr, new BoogieLiteralExpr(maxUIntValue));
+                }
+            }
+            
             
             return false;
         }
