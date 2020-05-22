@@ -853,21 +853,29 @@ namespace SolToBoogie
                         outputs.Add(new BoogieIdentifierExpr(name));
                     }
 
-                    if (context.TranslateFlags.InstrumentGas)
-                    {
-                        var gasVar = new BoogieIdentifierExpr("gas");
-                        thenBody.AddStatement(new BoogieAssignCmd(gasVar, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, gasVar, new BoogieLiteralExpr(TranslatorContext.TX_GAS_COST))));
-                    }
-
                     if (!funcDef.StateMutability.Equals(EnumStateMutability.PAYABLE))
                     {
                         BoogieExpr assumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ,
                             new BoogieIdentifierExpr("msgvalue_MSG"), new BoogieLiteralExpr(BigInteger.Zero));
                         thenBody.AddStatement(new BoogieAssumeCmd(assumeExpr));
                     }
-                    
+                                        
                     BoogieCallCmd callCmd = new BoogieCallCmd(callee, inputs, outputs);
                     thenBody.AddStatement(callCmd);
+                    
+                    if (context.TranslateFlags.InstrumentGas)
+                    {
+                        var gasVar = new BoogieIdentifierExpr("gas");
+                        
+                        BoogieBinaryOperation gasGuard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, gasVar, new BoogieLiteralExpr(BigInteger.Zero));
+                        
+                        BoogieIfCmd ifExpr = new BoogieIfCmd(gasGuard, thenBody, null);
+                        
+                        thenBody = new BoogieStmtList();
+                        //thenBody.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, gasVar, new BoogieLiteralExpr(TranslatorContext.TX_GAS_COST))));
+                        thenBody.AddStatement(new BoogieAssignCmd(gasVar, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, gasVar, new BoogieLiteralExpr(TranslatorContext.TX_GAS_COST))));
+                        thenBody.AddStatement(ifExpr);
+                    }
 
                     BoogieStmtList elseBody = ifCmd == null ? null : BoogieStmtList.MakeSingletonStmtList(ifCmd);
                     ifCmd = new BoogieIfCmd(guard, thenBody, elseBody);

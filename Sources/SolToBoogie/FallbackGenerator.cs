@@ -137,7 +137,26 @@ namespace SolToBoogie
                 // if (*) fn1(from, *, ...) 
                 // we only redirect the calling contract, but the msg.sender need not be to, as it can call into anohter contract that calls 
                 // into from 
-                procBody.AddStatement(TransUtils.GenerateChoiceBlock(context.ContractDefinitions.ToList(), context, Tuple.Create(inParams[0].Name, inParams[1].Name)));
+
+                Tuple<BoogieIfCmd, int> choices = TransUtils.GeneratePartialChoiceBlock(context.ContractDefinitions.ToList(), context,
+                    new BoogieIdentifierExpr("this"), 0, null, Tuple.Create(inParams[0].Name, inParams[1].Name));
+                BoogieIfCmd ifCmd = null;
+
+                if (context.TranslateFlags.ModelReverts)
+                {
+                    BoogieExpr guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ,
+                                        new BoogieIdentifierExpr("choice"),
+                                        new BoogieLiteralExpr(choices.Item2 + 1));
+                                    
+                    BoogieAssignCmd assign = new BoogieAssignCmd(new BoogieIdentifierExpr("revert"), new BoogieLiteralExpr(true));
+                    ifCmd = new BoogieIfCmd(guard, BoogieStmtList.MakeSingletonStmtList(assign), BoogieStmtList.MakeSingletonStmtList(choices.Item1));
+                }
+                else
+                {
+                    ifCmd = choices.Item1;
+                }
+
+                procBody.AddStatement(ifCmd);
             }
             return procBody;
         }
