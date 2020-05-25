@@ -3804,6 +3804,18 @@ namespace SolToBoogie
                     binaryExpr = new BoogieFuncCallExpr("nonlinearDiv", new List<BoogieExpr>() { leftExpr, rightExpr});
                 }
             }
+            else if (context.TranslateFlags.NoNonlinearArith && node.Operator == "%")
+            {
+                if ((node.LeftExpression is Literal leftLiteral && leftLiteral.Kind.Equals("number")) || 
+                    (node.RightExpression is Literal rightLiteral && rightLiteral.Kind.Equals("number")))
+                {
+                    binaryExpr = new BoogieBinaryOperation(op, leftExpr, rightExpr);
+                }
+                else
+                {
+                    binaryExpr = new BoogieFuncCallExpr("nonlinearMod", new List<BoogieExpr>() { leftExpr, rightExpr});
+                }
+            }
             else
             {
                 binaryExpr = new BoogieBinaryOperation(op, leftExpr, rightExpr);

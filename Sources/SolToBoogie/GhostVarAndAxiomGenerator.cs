@@ -60,6 +60,7 @@ namespace SolToBoogie
                 context.Program.AddDeclaration(generateNonlinearMulFunction());
                 context.Program.AddDeclaration(generateNonlinearDivFunction());
                 context.Program.AddDeclaration(generateNonlinearPowFunction());
+                context.Program.AddDeclaration(generateNonlinearModFunction());
             }
         }
 
@@ -265,6 +266,17 @@ namespace SolToBoogie
         private BoogieFunction generateNonlinearPowFunction()
         {
             string fnName = "nonlinearPow";
+            var inVar1 = new BoogieFormalParam(new BoogieTypedIdent("x", BoogieType.Int));
+            var inVar2 = new BoogieFormalParam(new BoogieTypedIdent("y", BoogieType.Int));
+            var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", BoogieType.Int));
+            
+            return new BoogieFunction(fnName, new List<BoogieVariable>() {inVar1, inVar2}, 
+                new List<BoogieVariable>() {outVar});
+        }
+        
+        private BoogieFunction generateNonlinearModFunction()
+        {
+            string fnName = "nonlinearMod";
             var inVar1 = new BoogieFormalParam(new BoogieTypedIdent("x", BoogieType.Int));
             var inVar2 = new BoogieFormalParam(new BoogieTypedIdent("y", BoogieType.Int));
             var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", BoogieType.Int));
