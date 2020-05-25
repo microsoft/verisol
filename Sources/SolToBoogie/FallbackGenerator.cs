@@ -58,7 +58,7 @@ namespace SolToBoogie
             BoogieStmtList fbBody = new BoogieStmtList();
             var fbLocalVars = new List<BoogieVariable>();
 
-            if (context.TranslateFlags.ModelStubsAsSkips() || context.TranslateFlags.ModelStubsAsCallbacks())
+            if (context.TranslateFlags.ModelStubsAsSkips() || context.TranslateFlags.ModelStubsAsCallbacks() || context.TranslateFlags.ModelStubsAsMultipleCallbacks())
             {
                 fbBody.AppendStmtList(CreateBodyOfUnknownFallback(fbLocalVars, inParams));
             }
@@ -112,10 +112,24 @@ namespace SolToBoogie
                 BoogieStmtList.MakeSingletonStmtList(elseBody)));
         }
 
+        private BoogieStmtList HavocLocals(List<BoogieVariable> locals)
+        {
+            BoogieStmtList stmtList = new BoogieStmtList();
+            foreach (BoogieVariable localVar in locals)
+            {
+                string varName = localVar.TypedIdent.Name;
+                if (!varName.Equals("this"))
+                {
+                    stmtList.AddStatement(new BoogieHavocCmd(new BoogieIdentifierExpr(varName)));
+                }
+            }
+
+            return stmtList;
+        }
         private BoogieStmtList CreateBodyOfUnknownFallback(List<BoogieVariable> fbLocalVars, List<BoogieVariable> inParams)
         {
 
-            Debug.Assert(context.TranslateFlags.ModelStubsAsSkips() || context.TranslateFlags.ModelStubsAsCallbacks(),
+            Debug.Assert(context.TranslateFlags.ModelStubsAsSkips() || context.TranslateFlags.ModelStubsAsCallbacks() || context.TranslateFlags.ModelStubsAsMultipleCallbacks(),
                 "CreateBodyOfUnknownFallback called in unexpected context");
             var procBody = new BoogieStmtList();
 
@@ -131,12 +145,26 @@ namespace SolToBoogie
             procBody.AddStatement(new BoogieAssignCmd(balnThis, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, balnThis, msgVal)));
             procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function END "));
 
-            if (context.TranslateFlags.ModelStubsAsCallbacks())
+            BoogieStmtList body = procBody;
+            if (context.TranslateFlags.ModelStubsAsMultipleCallbacks())
+            { 
+                BoogieStmtList loopBody = new BoogieStmtList();
+                procBody.AddStatement(new BoogieWhileCmd(new BoogieWildcardExpr(), loopBody, new List<BoogieExpr>()));
+                body = loopBody;
+            }
+
+            if (context.TranslateFlags.ModelStubsAsCallbacks() || context.TranslateFlags.ModelStubsAsMultipleCallbacks())
             {
-                fbLocalVars.AddRange(TransUtils.CollectLocalVars(context.ContractDefinitions.ToList(), context));
+                List<BoogieVariable> localVars = TransUtils.CollectLocalVars(context.ContractDefinitions.ToList(), context);
+                fbLocalVars.AddRange(localVars);
                 // if (*) fn1(from, *, ...) 
                 // we only redirect the calling contract, but the msg.sender need not be to, as it can call into anohter contract that calls 
                 // into from 
+
+                if (context.TranslateFlags.ModelStubsAsMultipleCallbacks())
+                {
+                    body.AppendStmtList(HavocLocals(localVars));
+                }
 
                 Tuple<BoogieIfCmd, int> choices = TransUtils.GeneratePartialChoiceBlock(context.ContractDefinitions.ToList(), context,
                     new BoogieIdentifierExpr("this"), 0, null, Tuple.Create(inParams[0].Name, inParams[1].Name));
@@ -156,8 +184,11 @@ namespace SolToBoogie
                     ifCmd = choices.Item1;
                 }
 
-                procBody.AddStatement(ifCmd);
+                body.AddStatement(ifCmd);
             }
+            
+            
+            
             return procBody;
         }
 

@@ -925,6 +925,14 @@ namespace BoogieAST
     public abstract class BoogieStructuredCmd : BoogieCmd
     {
     }
+    
+    public class BoogieWildcardExpr : BoogieExpr
+    {
+        public override string ToString()
+        {
+            return "*";
+        }
+    }
 
     public class BoogieIfCmd : BoogieStructuredCmd
     {

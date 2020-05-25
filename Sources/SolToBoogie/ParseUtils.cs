@@ -115,7 +115,7 @@ namespace SolToBoogie
             {
                 Debug.Assert(stubModels.Count() == 1, "Multiple instances of /stubModel:");
                 var model = stubModels.First().Substring("/stubModel:".Length);
-                Debug.Assert(model.Equals("skip") || model.Equals("havoc") || model.Equals("callback"),
+                Debug.Assert(model.Equals("skip") || model.Equals("havoc") || model.Equals("callback") || model.Equals("multipleCallbacks"),
                     $"The argument to /stubModel: can be either {{skip, havoc, callback}}, found {model}");
                 translatorFlags.ModelOfStubs = model;
             }

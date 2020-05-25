@@ -112,6 +112,8 @@ namespace SolToBoogie
         public bool ModelStubsAsSkips() { return ModelOfStubs.Equals("skip"); }
         public bool ModelStubsAsCallbacks() { return ModelOfStubs.Equals("callback"); }
 
+        public bool ModelStubsAsMultipleCallbacks() { return ModelOfStubs.Equals("multipleCallbacks"); }
+
         // this translates to /inlineDepth:k when calling Boogie with /contractInfer
         public int InlineDepthForBoogie { get; set; }
         public bool PerformContractInferce { get; set; }

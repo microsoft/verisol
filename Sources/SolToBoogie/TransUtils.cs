@@ -853,7 +853,13 @@ namespace SolToBoogie
                         outputs.Add(new BoogieIdentifierExpr(name));
                     }
 
-                    if (!funcDef.StateMutability.Equals(EnumStateMutability.PAYABLE))
+                    if (funcDef.StateMutability.Equals(EnumStateMutability.PAYABLE))
+                    {
+                        BoogieExpr assumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE,
+                            new BoogieIdentifierExpr("msgvalue_MSG"), new BoogieLiteralExpr(BigInteger.Zero));
+                        thenBody.AddStatement(new BoogieAssumeCmd(assumeExpr));
+                    }
+                    else
                     {
                         BoogieExpr assumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ,
                             new BoogieIdentifierExpr("msgvalue_MSG"), new BoogieLiteralExpr(BigInteger.Zero));
