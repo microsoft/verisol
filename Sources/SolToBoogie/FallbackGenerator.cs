@@ -146,10 +146,34 @@ namespace SolToBoogie
             procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function END "));
 
             BoogieStmtList body = procBody;
+            if (context.TranslateFlags.ModelStubsAsCallbacks() ||
+                context.TranslateFlags.ModelStubsAsMultipleCallbacks())
+            {
+                if (context.TranslateFlags.ModelReverts)
+                {
+                    BoogieBinaryOperation revertGuard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, new BoogieIdentifierExpr("choice"), new BoogieLiteralExpr(BigInteger.Zero));
+                    BoogieStmtList thenBody = new BoogieStmtList();
+                    thenBody.AddStatement(new BoogieAssignCmd(new BoogieIdentifierExpr("revert"), new BoogieLiteralExpr(true)));
+                    thenBody.AddStatement(new BoogieReturnCmd());
+                    BoogieIfCmd earlyExitCmd = new BoogieIfCmd(revertGuard, thenBody, null);
+                    body.AddStatement(earlyExitCmd);
+                }
+                if (context.TranslateFlags.InstrumentGas)
+                {
+                    BoogieBinaryOperation gasGuard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.LT, new BoogieIdentifierExpr("gas"), new BoogieLiteralExpr(TranslatorContext.TX_GAS_COST));
+                    BoogieIfCmd earlyExitCmd = new BoogieIfCmd(gasGuard, BoogieStmtList.MakeSingletonStmtList(new BoogieReturnCmd()), null);
+                    body.AddStatement(earlyExitCmd);
+                }
+                
+            }
+            
             if (context.TranslateFlags.ModelStubsAsMultipleCallbacks())
             { 
+                fbLocalVars.Add(new BoogieLocalVariable(new BoogieTypedIdent("iterate", BoogieType.Bool)));
+                BoogieBinaryOperation gasGuard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, new BoogieIdentifierExpr("gas"), new BoogieLiteralExpr(TranslatorContext.TX_GAS_COST));
+                BoogieBinaryOperation guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, new BoogieIdentifierExpr("iterate"), gasGuard);
                 BoogieStmtList loopBody = new BoogieStmtList();
-                procBody.AddStatement(new BoogieWhileCmd(new BoogieWildcardExpr(), loopBody, new List<BoogieExpr>()));
+                procBody.AddStatement(new BoogieWhileCmd(guard, loopBody, new List<BoogieExpr>()));
                 body = loopBody;
             }
 
@@ -164,11 +188,27 @@ namespace SolToBoogie
                 if (context.TranslateFlags.ModelStubsAsMultipleCallbacks())
                 {
                     body.AppendStmtList(HavocLocals(localVars));
+                    body.AddStatement(new BoogieHavocCmd(new BoogieIdentifierExpr("iterate")));
                 }
 
-                Tuple<BoogieIfCmd, int> choices = TransUtils.GeneratePartialChoiceBlock(context.ContractDefinitions.ToList(), context,
-                    new BoogieIdentifierExpr("this"), 0, null, Tuple.Create(inParams[0].Name, inParams[1].Name));
-                BoogieIfCmd ifCmd = null;
+
+                BoogieIfCmd typeIf = null;
+                foreach (ContractDefinition curDef in context.ContractDefinitions.ToList())
+                {
+                    BoogieIfCmd reentrantCalls = TransUtils.GenerateChoiceBlock(new List<ContractDefinition>() {curDef},
+                        context, Tuple.Create(inParams[0].Name, inParams[1].Name));
+                    
+                    if (reentrantCalls == null)
+                    {
+                        continue;
+                    }
+                    
+                    BoogieExpr dtype = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), new BoogieIdentifierExpr(inParams[0].Name));
+                    BoogieBinaryOperation guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, dtype, new BoogieIdentifierExpr(curDef.Name));
+                    typeIf = new BoogieIfCmd(guard, BoogieStmtList.MakeSingletonStmtList(reentrantCalls), typeIf == null ? null : BoogieStmtList.MakeSingletonStmtList(typeIf));
+                }
+                
+                /*BoogieIfCmd ifCmd = null;
 
                 if (context.TranslateFlags.ModelReverts)
                 {
@@ -182,9 +222,9 @@ namespace SolToBoogie
                 else
                 {
                     ifCmd = choices.Item1;
-                }
+                }*/
 
-                body.AddStatement(ifCmd);
+                body.AddStatement(typeIf);
             }
             
             
