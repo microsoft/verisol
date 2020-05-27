@@ -22,6 +22,7 @@ git clone https://github.com/microsoft/verisol.git
 From %VERISOL_PATH%  (the root folder of the repository), perform
 
 ```
+
 dotnet build Sources\VeriSol.sln
 ```
 
