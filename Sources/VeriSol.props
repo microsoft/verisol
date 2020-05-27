@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <VersionPrefix>0.1.4-alpha</VersionPrefix>
+    <VersionPrefix>0.1.5-alpha</VersionPrefix>
   </PropertyGroup>
 
 </Project>

@@ -9,7 +9,7 @@ The following are dynamically installed at VeriSol runtime (the first time only)
 ### Install from nuget.org
 Install to the **global** dotnet CLI tools cache so that you can run command  `VeriSol` from anywhere:
 ```
-dotnet tool install VeriSol --version 0.1.4-alpha --global
+dotnet tool install VeriSol --version 0.1.5-alpha --global
 ```
 
 ### Install from sources
@@ -22,12 +22,13 @@ git clone https://github.com/microsoft/verisol.git
 From %VERISOL_PATH%  (the root folder of the repository), perform
 
 ```
+
 dotnet build Sources\VeriSol.sln
 ```
 
 Install to the **global** dotnet CLI tools cache so that you can run command  `VeriSol` from anywhere:
 ```
-dotnet tool install VeriSol --version 0.1.4-alpha --global --add-source %VERISOL_PATH%/nupkg/
+dotnet tool install VeriSol --version 0.1.5-alpha --global --add-source %VERISOL_PATH%/nupkg/
 ```
 You may need to uninstall a previous version first. Use `dotnet tool uninstall --global VeriSol` first then. 
 
