@@ -1639,7 +1639,10 @@ namespace SolToBoogie
                 if (!isTupleAssignment)
                 {
                     if (usedTmpVar || !(lhs[0] is BoogieIdentifierExpr)) //bad bug: was && before!!  
-                        currentStmtList.AddStatement(new BoogieAssignCmd(lhs[0], tmpVars[0]));                       
+                    {
+                        VeriSolAssert(node.Operator.Equals("="), "I don't know why this is only doing assignment");
+                        currentStmtList.AddStatement(new BoogieAssignCmd(lhs[0], tmpVars[0]));
+                    }
                 } else
                 {
                     for (int i = 0; i < lhs.Count; ++i)
@@ -3617,7 +3620,7 @@ namespace SolToBoogie
                 }
                 else if (context.TranslateFlags.UseModularArithmetic && context.TranslateFlags.UseNumericOperators)
                 {
-                    if (node.Arguments[0].TypeDescriptions.IsUintWSize(node.Arguments[0], out uint uintSize))
+                    if (node.TypeDescriptions.IsUintWSize(node, out uint uintSize))
                     {
                         BigInteger maxUIntValue = (BigInteger)Math.Pow(2, uintSize);
                         rhsExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.MOD, rhsExpr, new BoogieLiteralExpr(maxUIntValue));

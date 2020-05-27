@@ -828,7 +828,9 @@ namespace SolToBoogie
                         {
                             name = TransUtils.GetCanonicalLocalVariableName(param, context);
                         }
-                        inputs.Add(new BoogieIdentifierExpr(name));
+
+                        BoogieIdentifierExpr boogieVar = new BoogieIdentifierExpr(name);
+                        inputs.Add(boogieVar);
                         if (param.TypeName is ArrayTypeName array)
                         {
                             thenBody.AddStatement(new BoogieCallCmd(
@@ -836,6 +838,7 @@ namespace SolToBoogie
                                 new List<BoogieExpr>(), new List<BoogieIdentifierExpr>() { new BoogieIdentifierExpr(name) }));
                         }
 
+                        thenBody.AppendStmtList(constrainVarValues(context, param, boogieVar));
                     }
 
                     List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
@@ -889,6 +892,32 @@ namespace SolToBoogie
             }
             return new Tuple<BoogieIfCmd, int>(ifCmd, j);
         }
+
+        public static BoogieStmtList constrainVarValues(TranslatorContext context, VariableDeclaration var, BoogieIdentifierExpr boogieVar)
+        {
+            BoogieStmtList stmts = new BoogieStmtList();
+            
+            if (context.TranslateFlags.UseModularArithmetic)
+            {
+                if (var.TypeDescriptions.IsUintWSize(null, out uint uintSize))
+                {
+                    BigInteger maxUIntValue = (BigInteger)Math.Pow(2, uintSize);
+                    BoogieBinaryOperation lower = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, boogieVar, new BoogieLiteralExpr(BigInteger.Zero));
+                    BoogieBinaryOperation upper = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.LT, boogieVar, new BoogieLiteralExpr(maxUIntValue));
+                    stmts.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, lower, upper)));
+                }
+                else if (var.TypeDescriptions.IsIntWSize(out uint intSize))
+                {
+                    BigInteger maxIntValue = (BigInteger)Math.Pow(2, intSize);
+                    BoogieBinaryOperation lower = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, boogieVar, new BoogieLiteralExpr(-maxIntValue));
+                    BoogieBinaryOperation upper = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.LT, boogieVar, new BoogieLiteralExpr(maxIntValue));
+                    stmts.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, lower, upper)));
+                }
+            }
+
+            return stmts;
+        }
+        
         public static void havocGas(BoogieStmtList list)
         {
             List<BoogieCmd> cmdList = new List<BoogieCmd>();
