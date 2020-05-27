@@ -2364,7 +2364,7 @@ namespace SolToBoogie
                 } 
                 else if (identifier.Name.Equals("block"))
                 {
-                    if (node.MemberName.Equals("timestamp"))
+                    if (node.MemberName.Equals("timestamp") || node.MemberName.Equals("number"))
                         currentExpr = new BoogieIdentifierExpr("now");
                     else
                         //we will havoc the value
