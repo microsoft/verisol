@@ -139,6 +139,13 @@ namespace SolToBoogie
                 translatorFlags.LazyNestedAlloc = true;
             }
 
+            if (args.Any(x => x.Equals("/LazyAllocNoMod")))
+            {
+                translatorFlags.LazyNestedAlloc = true;
+                translatorFlags.LazyAllocNoMod = true;
+                translatorFlags.QuantFreeAllocs = true;
+            }
+
             if (args.Any(x => x.Equals("/OmitAssumeFalseForDynDispatch")))
             {
                 translatorFlags.OmitAssumeFalseForDynDispatch = true;

@@ -709,7 +709,7 @@ namespace SolToBoogie
                 {
                     Debug.Assert(varDecl.TypeName is Mapping);
                     Mapping mapping = varDecl.TypeName as Mapping;
-                    GenerateMemoryVariablesForMapping(varDecl, mapping, generatedMaps);
+                    GenerateMemoryVariablesForMapping(varDecl, mapping, generatedMaps, 0);
                     
                     if (context.TranslateFlags.InstrumentSums)
                     {
@@ -730,7 +730,7 @@ namespace SolToBoogie
                 {
                     Debug.Assert(varDecl.TypeName is ArrayTypeName);
                     ArrayTypeName array = varDecl.TypeName as ArrayTypeName;
-                    GenerateMemoryVariablesForArray(varDecl, array, generatedMaps);
+                    GenerateMemoryVariablesForArray(varDecl, array, generatedMaps, 0);
                     
                     if (context.TranslateFlags.InstrumentSums)
                     {
@@ -746,19 +746,32 @@ namespace SolToBoogie
             }
         }
 
-        private void GenerateMemoryVariablesForMapping(VariableDeclaration decl, Mapping mapping, HashSet<String> generatedMaps)
+        private void GenerateMemoryVariablesForMapping(VariableDeclaration decl, Mapping mapping, HashSet<String> generatedMaps, int lvl)
         {
             BoogieType boogieKeyType = TransUtils.GetBoogieTypeFromSolidityTypeName(mapping.KeyType);
             BoogieType boogieValType = null;
             if (mapping.ValueType is Mapping submapping)
             {
                 boogieValType = BoogieType.Ref;
-                GenerateMemoryVariablesForMapping(decl, submapping, generatedMaps);
+                GenerateMemoryVariablesForMapping(decl, submapping, generatedMaps, lvl + 1);
+                
+                // The last level gets initialized all at once
+                if (context.TranslateFlags.LazyAllocNoMod)
+                {
+                    BoogieMapType mapType = new BoogieMapType(BoogieType.Ref, new BoogieMapType(boogieKeyType, BoogieType.Bool));
+                    context.Program.AddDeclaration(new BoogieGlobalVariable(new BoogieTypedIdent(mapHelper.GetNestedAllocName(decl, lvl), mapType)));
+                }
             }
             else if (mapping.ValueType is ArrayTypeName array)
             {
                 boogieValType = BoogieType.Ref;
-                GenerateMemoryVariablesForArray(decl, array, generatedMaps);
+                GenerateMemoryVariablesForArray(decl, array, generatedMaps, lvl + 1);
+                
+                if (context.TranslateFlags.LazyAllocNoMod)
+                {
+                    BoogieMapType mapType = new BoogieMapType(BoogieType.Ref, new BoogieMapType(boogieKeyType, BoogieType.Bool));
+                    context.Program.AddDeclaration(new BoogieGlobalVariable(new BoogieTypedIdent(mapHelper.GetNestedAllocName(decl, lvl), mapType)));
+                }
             }
             else
             {
@@ -770,24 +783,39 @@ namespace SolToBoogie
             GenerateSingleMemoryVariable(decl, boogieKeyType, boogieValType, generatedMaps);
         }
 
-        private void GenerateMemoryVariablesForArray(VariableDeclaration decl, ArrayTypeName array, HashSet<String> generatedMaps)
+        private void GenerateMemoryVariablesForArray(VariableDeclaration decl, ArrayTypeName array, HashSet<String> generatedMaps, int lvl)
         {
             BoogieType boogieKeyType = BoogieType.Int;
             BoogieType boogieValType = null;
             if (array.BaseType is ArrayTypeName subarray)
             {
                 boogieValType = BoogieType.Ref;
-                GenerateMemoryVariablesForArray(decl, subarray, generatedMaps);
+                GenerateMemoryVariablesForArray(decl, subarray, generatedMaps, lvl + 1);
+                
+                // The last level gets initialized all at once
+                if (context.TranslateFlags.LazyAllocNoMod)
+                {
+                    BoogieMapType mapType = new BoogieMapType(BoogieType.Ref, new BoogieMapType(boogieKeyType, BoogieType.Bool));
+                    context.Program.AddDeclaration(new BoogieGlobalVariable(new BoogieTypedIdent(mapHelper.GetNestedAllocName(decl, lvl), mapType)));
+                }
             }
             else if (array.BaseType is Mapping mapping)
             {
                 boogieValType = BoogieType.Ref;
-                GenerateMemoryVariablesForMapping(decl, mapping, generatedMaps);
+                GenerateMemoryVariablesForMapping(decl, mapping, generatedMaps, lvl + 1);
+                
+                if (context.TranslateFlags.LazyAllocNoMod)
+                {
+                    BoogieMapType mapType = new BoogieMapType(BoogieType.Ref, new BoogieMapType(boogieKeyType, BoogieType.Bool));
+                    context.Program.AddDeclaration(new BoogieGlobalVariable(new BoogieTypedIdent(mapHelper.GetNestedAllocName(decl, lvl), mapType)));
+                }
             }
             else
             {
                 boogieValType = TransUtils.GetBoogieTypeFromSolidityTypeName(array.BaseType);
             }
+            
+            
 
             KeyValuePair<BoogieType, BoogieType> pair = new KeyValuePair<BoogieType, BoogieType>(boogieKeyType, boogieValType);
             GenerateSingleMemoryVariable(decl, boogieKeyType, boogieValType, generatedMaps);

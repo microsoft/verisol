@@ -206,6 +206,22 @@ namespace SolToBoogie
 
             return null;
         }
+        
+        public static string GetIndexTypeString(string typeString)
+        {
+            if (mappingRegex.IsMatch(typeString))
+            {
+                Match match = mappingRegex.Match(typeString);
+                return match.Groups[1].Value;
+            }
+
+            if (arrayRegex.IsMatch(typeString))
+            {
+                return "uint256";
+            }
+
+            return null;
+        }
 
         public static bool IsMappingTypeString(string typeString)
         {
@@ -215,6 +231,11 @@ namespace SolToBoogie
         public static bool IsArrayTypeString(string typeString)
         {
             return arrayRegex.IsMatch(typeString);
+        }
+        
+        public string GetNestedAllocName(VariableDeclaration decl, int lvl)
+        {
+            return "alloc_" + decl.Name + "_lvl" + lvl;
         }
     }
 }

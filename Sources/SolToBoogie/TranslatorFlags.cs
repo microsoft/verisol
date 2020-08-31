@@ -25,8 +25,6 @@ namespace SolToBoogie
             PerformContractInferce = false;
             DoModSetAnalysis = false;
             RemoveScopeInVarName = false;
-            QuantFreeAllocs = false;
-            LazyNestedAlloc = false;
             InstrumentSums = false;
             NoBoogieHarness = false;
             CreateMainHarness = false;
@@ -37,6 +35,9 @@ namespace SolToBoogie
             TxnsOnFields = false;
             NoNonlinearArith = false;
             UseNumericOperators = false;
+            LazyAllocNoMod = false;
+            QuantFreeAllocs = false;
+            LazyNestedAlloc = false;
         }
         
         public bool UseNumericOperators { get; set; }
@@ -100,6 +101,8 @@ namespace SolToBoogie
         /// Allocate nested maps lazily, i.e., eliminate HavocAllocMany
         /// </summary>
         public bool LazyNestedAlloc { get; set; }
+        
+        public bool LazyAllocNoMod { get; set; }
 
         /// <summary>
         /// Remove assume false for the default branch of dyn dispatch

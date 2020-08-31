@@ -881,7 +881,7 @@ namespace SolidityAST
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append("mapping (").Append(KeyType).Append(" => ").Append(ValueType).Append(")");
+            builder.Append("mapping(").Append(KeyType).Append(" => ").Append(ValueType).Append(")");
             return builder.ToString();
         }
     }
