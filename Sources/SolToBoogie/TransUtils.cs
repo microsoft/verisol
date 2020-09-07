@@ -1,5 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
+
+using System.Security.Cryptography;
+
 namespace SolToBoogie
 {
     using System;
@@ -934,5 +937,62 @@ namespace SolToBoogie
                 new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.LE, gasVar, new BoogieLiteralExpr(TranslatorContext.MAX_GAS_LIMIT)))));
         }
 
+        public static BoogieExpr GetDefaultVal(TypeName type)
+        {
+            return GetDefaultVal(TransUtils.GetBoogieTypeFromSolidityTypeName(type));
+        }
+        public static BoogieExpr GetDefaultVal(BoogieType boogieType)
+        {
+            if (boogieType.Equals(BoogieType.Int))
+            {
+                return new BoogieLiteralExpr(BigInteger.Zero);
+            }
+            else if (boogieType.Equals(BoogieType.Bool))
+            {
+                return new BoogieLiteralExpr(false);
+            }
+            else if (boogieType.Equals(BoogieType.Ref))
+            {
+                return new BoogieIdentifierExpr("null");
+            }
+            
+            throw new Exception($"Unknown BoogieType {boogieType}");
+        }
+
+        public static TypeDescription TypeNameToTypeDescription(TypeName typeName)
+        {
+            if (typeName is ArrayTypeName arr)
+            {
+                TypeDescription desc = TypeNameToTypeDescription(arr.BaseType);
+                desc.TypeIndentifier = $"{desc.TypeIndentifier}[]";
+                desc.TypeString = $"{desc.TypeString}[]";
+                return desc;
+            }
+            else if (typeName is Mapping map)
+            {
+                TypeDescription keyDesc = TypeNameToTypeDescription(map.KeyType);
+                TypeDescription valDesc = TypeNameToTypeDescription(map.ValueType);
+                TypeDescription desc = new TypeDescription();
+                desc.TypeIndentifier = $"mapping({keyDesc.TypeIndentifier} => {valDesc.TypeIndentifier})";
+                desc.TypeString = $"mapping({keyDesc.TypeString} => {valDesc.TypeString})";
+                return desc;
+            }
+            else if (typeName is ElementaryTypeName elem)
+            {
+                TypeDescription desc = new TypeDescription();
+                desc.TypeIndentifier = elem.TypeDescriptions.TypeIndentifier;
+                desc.TypeString = elem.TypeDescriptions.TypeString;
+                return desc;
+            }
+            else if (typeName is UserDefinedTypeName user)
+            {
+                TypeDescription desc = new TypeDescription();
+                desc.TypeIndentifier = user.TypeDescriptions.TypeIndentifier;
+                desc.TypeString = user.TypeDescriptions.TypeString;
+                return desc;
+            }
+            
+            throw new Exception("Unknown type name");
+        }
     }
 }

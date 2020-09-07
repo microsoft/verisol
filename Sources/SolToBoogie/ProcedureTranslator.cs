@@ -135,7 +135,103 @@ namespace SolToBoogie
 
         private String GetAccessPattern(VariableDeclaration varDecl, String boogieName)
         {
-            String solAccess = $"this.{varDecl.Name}";
+            Identifier varIdent = new Identifier();
+            varIdent.Name = varDecl.Name;
+            varIdent.OverloadedDeclarations = new List<int>();
+            varIdent.ReferencedDeclaration = varDecl.Id;
+            varIdent.TypeDescriptions = varDecl.TypeDescriptions;
+
+            Expression varExpr = varIdent;
+
+            TypeName curType = varDecl.TypeName;
+            List<int> localIds = new List<int>();
+
+            int i = 1;
+            while (curType is Mapping || curType is ArrayTypeName)
+            {
+                ElementaryTypeName indType = null;
+                if (curType is Mapping map)
+                {
+                    indType = map.KeyType;
+                    curType = map.ValueType;
+                }
+                else if (curType is ArrayTypeName arr)
+                {
+                    TypeDescription intDescription = new TypeDescription();
+                    intDescription.TypeString = "uint";
+                    ElementaryTypeName intTypeName = new ElementaryTypeName();
+                    intTypeName.TypeDescriptions = intDescription;
+                    indType = intTypeName;
+                    curType = arr.BaseType;
+                }
+
+                VariableDeclaration local = new VariableDeclaration();
+                local.Constant = false;
+                local.Indexed = false;
+                local.Name = $"i{i}";
+                local.Value = null;
+                local.Visibility = EnumVisibility.DEFAULT;
+                local.StateVariable = false;
+                local.StorageLocation = EnumLocation.DEFAULT;
+                local.TypeName = indType;
+                local.TypeDescriptions = indType.TypeDescriptions;
+                int id = -1 - i;
+                localIds.Add(id);
+                
+                //remove later
+                context.IdToNodeMap.Add(id, local);
+                
+                IndexAccess access = new IndexAccess();
+                access.BaseExpression = varExpr;
+                Identifier localIdent = new Identifier();
+                localIdent.Name = $"i{i}";
+                localIdent.OverloadedDeclarations = new List<int>();
+                localIdent.ReferencedDeclaration = id;
+                localIdent.TypeDescriptions = local.TypeDescriptions;
+                access.IndexExpression = localIdent;
+                access.TypeDescriptions = TransUtils.TypeNameToTypeDescription(curType);
+                //access.TypeDescriptions.TypeString = curType.ToString();
+
+                varExpr = access;
+                i++;
+            }
+
+            BoogieStmtList oldList = currentStmtList;
+            BoogieExpr oldExpr = currentExpr;
+            currentBoogieProc = "";
+            currentExpr = null;
+            currentStmtList = new BoogieStmtList();
+            this.boogieToLocalVarsMap.Add(currentBoogieProc, new List<BoogieVariable>());
+
+                if (varExpr is Identifier ident)
+            {
+                Visit(ident);
+            }
+            else if (varExpr is IndexAccess access)
+            {
+                Visit(access);
+            }
+
+            BoogieExpr translatedExpr = currentExpr;
+            currentExpr = oldExpr;
+            currentStmtList = oldList;
+            this.boogieToLocalVarsMap.Remove(currentBoogieProc);
+            currentBoogieProc = null;
+            string accessPattern = $"this.{varExpr}={translatedExpr}";
+
+            for (int j = 1; j < i; j++)
+            {
+                accessPattern = Regex.Replace(accessPattern, $"i{j}" + @"_[^\]]+", $"i{j}");
+            }
+
+            foreach(int id in localIds)
+            {
+                context.IdToNodeMap.Remove(id);
+            }
+            
+            return $"\"{accessPattern}\"";
+
+            /*String solAccess = $"this.{varDecl.Name}";
             String boogieAccess = $"{boogieName}[this]";
             TypeName solType = varDecl.TypeName;
             int dim = 0;
@@ -165,11 +261,16 @@ namespace SolToBoogie
                 boogieAccess = $"{memMap}[{boogieAccess}][{dimName}]";
             }
 
-            return $"\"{solAccess}={boogieAccess}\"";
+            return $"\"{solAccess}={boogieAccess}\"";*/
         }
 
         private String GetSumAccessPattern(VariableDeclaration varDecl, String boogieName)
         {
+            if (context.TranslateFlags.UseMultiDim && context.Analysis.Alias.getResults().Contains(varDecl))
+            {
+                return $"\"sum(this.{varDecl.Name})={mapHelper.GetSumName(varDecl)}[this]\"";
+            }
+            
             return $"\"sum(this.{varDecl.Name})={mapHelper.GetSumName(varDecl)}[{boogieName}[this]]\"";
         }
         
@@ -178,7 +279,20 @@ namespace SolToBoogie
             VeriSolAssert(varDecl.StateVariable, $"{varDecl} is not a state variable");
 
             string name = TransUtils.GetCanonicalStateVariableName(varDecl, context);
-            BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(varDecl.TypeName);
+
+            BoogieType type = null;
+            if (context.TranslateFlags.UseMultiDim && context.Analysis.Alias.getResults().Contains(varDecl))
+            {
+                List<BoogieGlobalVariable> lenVars = mapHelper.GetMultiDimArrayLens(varDecl);
+                lenVars.ForEach(context.Program.AddDeclaration);
+                
+                type = MapArrayHelper.GetMultiDimBoogieType(varDecl.TypeName);
+            }
+            else
+            {
+                type = TransUtils.GetBoogieTypeFromSolidityTypeName(varDecl.TypeName);
+            }
+            
             BoogieMapType mapType = new BoogieMapType(BoogieType.Ref, type);
 
             // Issue a warning for intXX variables in case /useModularArithemtic option is used:
@@ -679,9 +793,122 @@ namespace SolToBoogie
 
             return currentStmtList;
         }
+        
+        public BoogieStmtList GetMultiDimInitialization(VariableDeclaration decl, BoogieMapSelect contractVar, bool quantFree)
+        {
+            BoogieStmtList init = new BoogieStmtList();
+            if (quantFree)
+            {
+                TypeName type = decl.TypeName;
+
+                int curLvl = 0;
+                while (type is Mapping || type is ArrayTypeName)
+                {
+                    if (type is Mapping map)
+                    {
+                        type = map.ValueType;
+                    }
+                    else if (type is ArrayTypeName arr)
+                    {
+                        ArrayTypeName lenType = new ArrayTypeName();
+                        ElementaryTypeName intType = new ElementaryTypeName();
+                        intType.TypeDescriptions = new TypeDescription();
+                        intType.TypeDescriptions.TypeString = "uint";
+                        lenType.BaseType = intType;
+
+                        if (arr.Length != null)
+                        {
+                            throw new Exception("Must add support for static arrays");
+                        }
+                        
+                        BoogieFuncCallExpr lenZero = MapArrayHelper.GetCallExprForZeroInit(lenType);
+
+                        string lenName = MapArrayHelper.GetMultiDimLengthName(decl, curLvl);
+                        BoogieMapSelect lenAccess = new BoogieMapSelect(new BoogieIdentifierExpr(lenName), contractVar.Arguments);
+                        init.AddStatement(new BoogieAssignCmd(lenAccess, lenZero));
+                            
+                        type = arr.BaseType;
+                    }
+
+                    curLvl++;
+                }
+                
+                init.AddStatement(new BoogieAssignCmd(contractVar, MapArrayHelper.GetCallExprForZeroInit(decl)));
+                return init;
+            }
+            
+            List<BoogieIdentifierExpr> qvars = new List<BoogieIdentifierExpr>();
+            List<BoogieType> qVarTypes = new List<BoogieType>();
+            BoogieExpr accessExpr = contractVar;
+                
+            int lvl = 0;
+            TypeName curType = decl.TypeName;
+            while (curType is Mapping || curType is ArrayTypeName)
+            {
+                var qVar = QVarGenerator.NewQVar(0, lvl);
+                qvars.Add(qVar);
+                
+                if (curType is Mapping map)
+                {
+                    qVarTypes.Add(TransUtils.GetBoogieTypeFromSolidityTypeName(map.KeyType));
+                    curType = map.ValueType;
+                }
+                else if (curType is ArrayTypeName arr)
+                {
+                    qVarTypes.Add(BoogieType.Int);
+                    string lenName = MapArrayHelper.GetMultiDimLengthName(decl, lvl);
+                    BoogieMapSelect lenAccess = new BoogieMapSelect(new BoogieIdentifierExpr(lenName), contractVar.Arguments[0]);
+                    
+                    List<BoogieIdentifierExpr> lenQVars = new List<BoogieIdentifierExpr>();
+                    List<BoogieType> lenQVarTypes = new List<BoogieType>();
+                    for (int i = 0; i < qvars.Count - 1; i++)
+                    {
+                        lenAccess = new BoogieMapSelect(lenAccess, qvars[i]);
+                        lenQVars.Add(qvars[i]);
+                        lenQVarTypes.Add(qVarTypes[i]);
+                    }
+                    /*foreach (BoogieIdentifierExpr qv in qvars)
+                    {
+                        lenAccess = new BoogieMapSelect(lenAccess, qv);
+                    }*/
+                    
+                    var lengthExpr = arr.Length == null ? TransUtils.GetDefaultVal(BoogieType.Int) : TranslateExpr(arr.Length);
+                    BoogieExpr lenExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lenAccess, lengthExpr);
+                    if (lenQVars.Count != 0)
+                    {
+                        lenExpr = new BoogieQuantifiedExpr(true, lenQVars, lenQVarTypes, lenExpr);
+                    }
+                    
+                    init.AddStatement(new BoogieAssumeCmd(lenExpr));
+                    
+                    curType = arr.BaseType;
+                }
+
+                accessExpr = new BoogieMapSelect(accessExpr, qVar);
+                lvl++;
+            }
+
+            BoogieQuantifiedExpr qExpr = new BoogieQuantifiedExpr(true, qvars, qVarTypes, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, accessExpr, TransUtils.GetDefaultVal(curType)));
+            init.AddStatement(new BoogieAssumeCmd(qExpr));
+            return init;
+        }
 
         private void GenerateInitializationForArrayStateVar(VariableDeclaration varDecl, ArrayTypeName array)
         {
+            if (context.TranslateFlags.UseMultiDim && context.Analysis.Alias.getResults().Contains(varDecl))
+            {
+                string name = TransUtils.GetCanonicalStateVariableName(varDecl, context);
+                BoogieMapSelect contractInstance = new BoogieMapSelect(new BoogieIdentifierExpr(name), new BoogieIdentifierExpr("this"));
+                currentStmtList.AppendStmtList(GetMultiDimInitialization(varDecl, contractInstance, context.TranslateFlags.QuantFreeAllocs));
+                
+                TypeName mappedType = MapArrayHelper.GetMappedType(varDecl);
+                if (context.TranslateFlags.InstrumentSums && mappedType is ElementaryTypeName elem && (elem.TypeDescriptions.IsInt() || elem.TypeDescriptions.IsUint()))
+                {
+                    currentStmtList.AddStatement(new BoogieAssignCmd(mapHelper.GetSumExpr(varDecl, new BoogieIdentifierExpr("this")), new BoogieLiteralExpr(BigInteger.Zero)));
+                }
+
+                return;
+            }
             // Issue a warning for intXX type in case /useModularArithemtic option is used:
             if (context.TranslateFlags.UseModularArithmetic && array.BaseType.ToString().StartsWith("int"))
             {
@@ -691,7 +918,8 @@ namespace SolToBoogie
             BoogieMapSelect lhsMap = CreateDistinctArrayMappingAddress(currentStmtList, varDecl);
 
             // lets also initialize the array Lengths (only for Arrays declared in this class)
-            var lengthMapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("Length"), lhsMap);
+            //var lengthMapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("Length"), lhsMap);
+            var lengthMapSelect = mapHelper.GetLength(varDecl, lhsMap);
             var lengthExpr = array.Length == null ? new BoogieLiteralExpr(BigInteger.Zero) : TranslateExpr(array.Length);
             // var lengthEqualsZero = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lengthMapSelect, new BoogieLiteralExpr(0));
             var lengthConstraint = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, lengthMapSelect, lengthExpr);
@@ -719,13 +947,6 @@ namespace SolToBoogie
             currentStmtList.AddStatement(new BoogieAssignCmd(lhsMap, tmpVarIdentExpr));
         }
 
-        private BoogieFuncCallExpr GetCallExprForZeroInit(BoogieType key, BoogieType value)
-        {
-            var keyStr = char.ToUpper(key.ToString()[0]) + key.ToString().Substring(1);
-            var valStr = char.ToUpper(value.ToString()[0]) + value.ToString().Substring(1);
-            return new BoogieFuncCallExpr("zero" + keyStr + valStr + "Arr", new List<BoogieExpr>());
-        }
-
         public BoogieAssignCmd adjustSum(VariableDeclaration decl, BoogieBinaryOperation.Opcode op, BoogieExpr sumInd, BoogieExpr amt)
         {
             BoogieExpr sumAccess = mapHelper.GetSumExpr(decl, sumInd);
@@ -735,6 +956,20 @@ namespace SolToBoogie
         
         private void GenerateInitializationForMappingStateVar(VariableDeclaration varDecl, Mapping mapping)
         {
+            if (context.TranslateFlags.UseMultiDim && context.Analysis.Alias.getResults().Contains(varDecl))
+            {
+                string name = TransUtils.GetCanonicalStateVariableName(varDecl, context);
+                BoogieMapSelect contractInstance = new BoogieMapSelect(new BoogieIdentifierExpr(name), new BoogieIdentifierExpr("this"));
+                currentStmtList.AppendStmtList(GetMultiDimInitialization(varDecl, contractInstance, context.TranslateFlags.QuantFreeAllocs));
+
+                TypeName mappedType = MapArrayHelper.GetMappedType(varDecl);
+                if (context.TranslateFlags.InstrumentSums && mappedType is ElementaryTypeName elem && (elem.TypeDescriptions.IsInt() || elem.TypeDescriptions.IsUint()))
+                {
+                    currentStmtList.AddStatement(new BoogieAssignCmd(mapHelper.GetSumExpr(varDecl, new BoogieIdentifierExpr("this")), new BoogieLiteralExpr(BigInteger.Zero)));
+                }
+                return;
+            }
+            
             BoogieMapSelect lhsMap = CreateDistinctArrayMappingAddress(currentStmtList, varDecl);
 
             //nested arrays (only 1 level for now)
@@ -780,9 +1015,9 @@ namespace SolToBoogie
                 {
                     if (mapping.ValueType.ToString().StartsWith("bytes"))
                         currentStmtList.AddStatement(new BoogieAssignCmd(lhs,
-                            GetCallExprForZeroInit(mapKeyType, BoogieType.Int)));
+                            MapArrayHelper.GetCallExprForZeroInit(mapKeyType, BoogieType.Int)));
                     else
-                        currentStmtList.AddStatement(new BoogieAssignCmd(lhs, GetCallExprForZeroInit(mapKeyType, BoogieType.Ref)));
+                        currentStmtList.AddStatement(new BoogieAssignCmd(lhs, MapArrayHelper.GetCallExprForZeroInit(mapKeyType, BoogieType.Ref)));
                 }
             }
             else if (mapping.ValueType.ToString().Equals("bool"))
@@ -803,7 +1038,7 @@ namespace SolToBoogie
                 }
                 else
                 {
-                    currentStmtList.AddStatement(new BoogieAssignCmd(lhs, GetCallExprForZeroInit(mapKeyType, BoogieType.Bool)));
+                    currentStmtList.AddStatement(new BoogieAssignCmd(lhs, MapArrayHelper.GetCallExprForZeroInit(mapKeyType, BoogieType.Bool)));
                 }
             }
             // TODO: Cleanup, StartsWith("uint") can include uint[12] as well. 
@@ -834,7 +1069,7 @@ namespace SolToBoogie
                 }
                 else
                 {
-                    currentStmtList.AddStatement(new BoogieAssignCmd(lhs, GetCallExprForZeroInit(mapKeyType, BoogieType.Int)));
+                    currentStmtList.AddStatement(new BoogieAssignCmd(lhs, MapArrayHelper.GetCallExprForZeroInit(mapKeyType, BoogieType.Int)));
                 }
 
                 if (context.TranslateFlags.InstrumentSums)
@@ -929,10 +1164,14 @@ namespace SolToBoogie
             if (!context.TranslateFlags.LazyNestedAlloc)
             {
                 //Length[Mem_t_ref[x[this]][i]] == 0
-                var bodyExpr = new BoogieBinaryOperation(
+                /*var bodyExpr = new BoogieBinaryOperation(
                     BoogieBinaryOperation.Opcode.EQ,
                     new BoogieMapSelect(new BoogieIdentifierExpr("Length"), lhs1),
-                    new BoogieLiteralExpr(0));
+                    new BoogieLiteralExpr(0));*/
+                var bodyExpr = new BoogieBinaryOperation(
+                    BoogieBinaryOperation.Opcode.EQ,
+                    mapHelper.GetLength(varDecl, lhs1),
+                new BoogieLiteralExpr(0));
                 var qExpr = new BoogieQuantifiedExpr(true, new List<BoogieIdentifierExpr>() {qVar1},
                     new List<BoogieType>() {mapKeyType}, bodyExpr);
                 currentStmtList.AddStatement(new BoogieAssumeCmd(qExpr));
@@ -1012,7 +1251,7 @@ namespace SolToBoogie
                         if (context.TranslateFlags.QuantFreeAllocs)
                         {
                             currentStmtList.AddStatement((new BoogieAssignCmd(lhs,
-                                GetCallExprForZeroInit(keyType, BoogieType.Bool))));
+                                MapArrayHelper.GetCallExprForZeroInit(keyType, BoogieType.Bool))));
                         }
                         else
                         {
@@ -1063,7 +1302,7 @@ namespace SolToBoogie
                         string memName = mapHelper.GetMemoryMapName(varDecl, keyType, valType);
                         BoogieMapSelect lhs = new BoogieMapSelect(new BoogieIdentifierExpr(memName), index);
                         currentStmtList.AddStatement((new BoogieAssignCmd(lhs,
-                            GetCallExprForZeroInit(keyType, valType))));
+                            MapArrayHelper.GetCallExprForZeroInit(keyType, valType))));
                         if (valType.Equals(BoogieType.Int))
                         {
                             index = new BoogieLiteralExpr(BigInteger.Zero);
@@ -2183,7 +2422,8 @@ namespace SolToBoogie
                     if (typeDescription.IsDynamicArray())
                     {
                         BoogieExpr element = TranslateExpr(unaryOperation.SubExpression);
-                        BoogieExpr lengthMapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("Length"), element);
+                        //BoogieExpr lengthMapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("Length"), element);
+                        BoogieExpr lengthMapSelect = mapHelper.GetLength(unaryOperation.SubExpression, element);
                         BoogieExpr rhs = new BoogieLiteralExpr(BigInteger.Zero);
                         var assignCmd = new BoogieAssignCmd(lengthMapSelect, rhs);
                         currentStmtList.AddStatement(assignCmd);
@@ -2501,7 +2741,8 @@ namespace SolToBoogie
             VeriSolAssert(node.MemberName.Equals("length"));
 
             BoogieExpr indexExpr = TranslateExpr(node.Expression);
-            var mapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("Length"), indexExpr);
+            //var mapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("Length"), indexExpr);
+            var mapSelect = mapHelper.GetLength(node.Expression, indexExpr);
             return mapSelect;
         }
 
@@ -2687,11 +2928,16 @@ namespace SolToBoogie
             // HACK for Sum
             if (verisolFunc.Equals("_SumMapping_VeriSol"))
             {
-                //has to be M_ref_int[mapp[this]] instead of mapp[this]
+                
                 VariableDeclaration decl = mapHelper.getDecl(node.Arguments[0]);
                 VeriSolAssert(decl != null, "Could not find declaration of " + node.Arguments[0]);
-                var mapName = mapHelper.GetMemoryMapName(decl, BoogieType.Ref, BoogieType.Int);
-                boogieExprs[0] = new BoogieMapSelect(new BoogieIdentifierExpr(mapName), boogieExprs[0]);
+                if (!(context.TranslateFlags.UseMultiDim && context.Analysis.Alias.getResults().Contains(decl)))
+                {
+                    //has to be M_ref_int[mapp[this]] instead of mapp[this]
+                    var mapName = mapHelper.GetMemoryMapName(decl, BoogieType.Ref, BoogieType.Int);
+                    boogieExprs[0] = new BoogieMapSelect(new BoogieIdentifierExpr(mapName), boogieExprs[0]);
+                }
+                
             }
             return new BoogieFuncCallExpr(verisolFunc, boogieExprs);
             }
@@ -2992,7 +3238,8 @@ namespace SolToBoogie
                 // length[tmp] = 5
                 currentStmtList.AddStatement(
                     new BoogieAssignCmd(
-                        new BoogieMapSelect(new BoogieIdentifierExpr("Length"), tmpVarIdentExpr), 
+                        //new BoogieMapSelect(new BoogieIdentifierExpr("Length"), tmpVarIdentExpr), 
+                        mapHelper.GetLength(newExpr, tmpVarIdentExpr),
                         TranslateExpr(node.Arguments[0])
                         )
                     );
@@ -3119,7 +3366,8 @@ namespace SolToBoogie
             BoogieExpr receiver = TranslateExpr(memberAccess.Expression);
             BoogieExpr element = TranslateExpr(node.Arguments[0]);
 
-            BoogieExpr lengthMapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("Length"), receiver);
+            //BoogieExpr lengthMapSelect = new BoogieMapSelect(new BoogieIdentifierExpr("Length"), receiver);
+            BoogieExpr lengthMapSelect = mapHelper.GetLength(memberAccess.Expression, receiver);
             // suppose the form is a.push(e)
             // tmp := Length[this][a];
             BoogieTypedIdent tmpIdent = context.MakeFreshTypedIdent(BoogieType.Int);
@@ -4069,8 +4317,15 @@ namespace SolToBoogie
             //    VeriSolAssert(false, $"Unknown base in index access: {node.BaseExpression}");
             //}
 
-            BoogieExpr indexAccessExpr = new BoogieMapSelect(baseExpr, indexExpr);
+            
             VariableDeclaration decl = mapHelper.getDecl(node);
+
+            if (context.TranslateFlags.UseMultiDim && context.Analysis.Alias.getResults().Contains(decl))
+            {
+                currentExpr = new BoogieMapSelect(baseExpr, indexExpr);
+                return false;
+            }
+
             currentExpr = mapHelper.GetMemoryMapSelectExpr(decl, baseKeyType, baseValType, baseExpr, indexExpr);
 
             if (context.TranslateFlags.LazyAllocNoMod)
@@ -4090,7 +4345,8 @@ namespace SolToBoogie
                     
                     if (valIsArray)
                     {
-                        allocAndInit.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, new BoogieMapSelect(new BoogieIdentifierExpr("Length"), currentExpr), new BoogieLiteralExpr(0))));
+                        //allocAndInit.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, new BoogieMapSelect(new BoogieIdentifierExpr("Length"), currentExpr), new BoogieLiteralExpr(0))));
+                        allocAndInit.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, mapHelper.GetLength(decl, currentExpr), new BoogieLiteralExpr(0))));
                     }
                     
                     //allocAndInit.AddStatement(new BoogieAssignCmd(currentExpr, tmpVarIdentExpr));
@@ -4119,7 +4375,7 @@ namespace SolToBoogie
                         //allocate struct
                         if (context.TranslateFlags.QuantFreeAllocs)
                         {
-                            BoogieFuncCallExpr zeroInit = GetCallExprForZeroInit(nestedKeyType, nestedValType);
+                            BoogieFuncCallExpr zeroInit = MapArrayHelper.GetCallExprForZeroInit(nestedKeyType, nestedValType);
                             allocAndInit.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, derefCurrExpr, zeroInit)));
                         }
                         else
@@ -4165,7 +4421,8 @@ namespace SolToBoogie
 
                     if (valIsArray)
                     {
-                        allocAndInit.AddStatement(new BoogieAssignCmd(new BoogieMapSelect(new BoogieIdentifierExpr("Length"), currentExpr), new BoogieLiteralExpr(0)));
+                        //allocAndInit.AddStatement(new BoogieAssignCmd(new BoogieMapSelect(new BoogieIdentifierExpr("Length"), currentExpr), new BoogieLiteralExpr(0)));
+                        allocAndInit.AddStatement(new BoogieAssignCmd(mapHelper.GetLength(decl, currentExpr), new BoogieLiteralExpr(0)));
                     }
                     
                     BoogieType nestedValType = MapArrayHelper.InferValueTypeFromTypeString(valTypeString);
@@ -4180,7 +4437,7 @@ namespace SolToBoogie
                     {
                         if (context.TranslateFlags.QuantFreeAllocs)
                         {
-                            allocAndInit.AddStatement(new BoogieAssignCmd(derefCurrExpr, GetCallExprForZeroInit(nestedKeyType, BoogieType.Bool)));
+                            allocAndInit.AddStatement(new BoogieAssignCmd(derefCurrExpr, MapArrayHelper.GetCallExprForZeroInit(nestedKeyType, BoogieType.Bool)));
                         }
                         else
                         {
@@ -4197,7 +4454,7 @@ namespace SolToBoogie
                     {
                         if (context.TranslateFlags.QuantFreeAllocs)
                         {
-                            allocAndInit.AddStatement(new BoogieAssignCmd(derefCurrExpr, GetCallExprForZeroInit(nestedKeyType, BoogieType.Int)));
+                            allocAndInit.AddStatement(new BoogieAssignCmd(derefCurrExpr, MapArrayHelper.GetCallExprForZeroInit(nestedKeyType, BoogieType.Int)));
                         }
                         else
                         {
@@ -4219,7 +4476,7 @@ namespace SolToBoogie
                     {
                         if (context.TranslateFlags.QuantFreeAllocs)
                         {
-                            allocAndInit.AddStatement(new BoogieAssignCmd(derefCurrExpr, GetCallExprForZeroInit(nestedKeyType, BoogieType.Ref)));
+                            allocAndInit.AddStatement(new BoogieAssignCmd(derefCurrExpr, MapArrayHelper.GetCallExprForZeroInit(nestedKeyType, BoogieType.Ref)));
                         }
                         else
                         {

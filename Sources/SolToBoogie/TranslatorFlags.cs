@@ -32,6 +32,7 @@ namespace SolToBoogie
             OmitAssumeFalseForDynDispatch = false;
             NoTxnsFromContract = true;
             RunAliasAnalysis = false;
+            UseMultiDim = false;
             TxnsOnFields = false;
             NoNonlinearArith = false;
             UseNumericOperators = false;
@@ -126,5 +127,7 @@ namespace SolToBoogie
 
         // remove the scoping from variable name (risky and not exposed)
         public bool RemoveScopeInVarName { get; set; }
+        
+        public bool UseMultiDim { get; set; }
     }
 }

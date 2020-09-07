@@ -174,6 +174,12 @@ namespace SolToBoogie
             {
                 translatorFlags.RunAliasAnalysis = true;
             }
+            
+            if (args.Any(x => x.Equals("/useMultiDim")))
+            {
+                translatorFlags.RunAliasAnalysis = true;
+                translatorFlags.UseMultiDim = true;
+            }
 
             if (args.Any(x => x.Equals("/txnsOnFields")))
             {

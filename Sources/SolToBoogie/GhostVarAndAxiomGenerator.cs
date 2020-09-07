@@ -47,12 +47,29 @@ namespace SolToBoogie
 
             if (context.TranslateFlags.QuantFreeAllocs)
             {
-                context.Program.AddDeclaration(GenerateZeroRefIntArrayFunction());
-                context.Program.AddDeclaration(GenerateZeroIntIntArrayFunction());
-                context.Program.AddDeclaration(GenerateZeroRefBoolArrayFunction());
-                context.Program.AddDeclaration(GenerateZeroIntBoolArrayFunction());
-                context.Program.AddDeclaration(GenerateZeroRefRefArrayFunction());
-                context.Program.AddDeclaration(GenerateZeroIntRefArrayFunction());
+                if (context.TranslateFlags.UseMultiDim)
+                {
+                    foreach(VariableDeclaration decl in context.Analysis.Alias.getResults())
+                    {
+                        TypeName type = decl.TypeName;
+                        if (type is Mapping || type is ArrayTypeName)
+                        {
+                            context.Program.AddDeclaration(MapArrayHelper.GenerateMultiDimZeroFunction(decl));
+                        }
+                    }
+                }
+                else
+                {
+                    context.Program.AddDeclaration(GenerateZeroRefIntArrayFunction());
+                    context.Program.AddDeclaration(GenerateZeroIntIntArrayFunction());
+                    context.Program.AddDeclaration(GenerateZeroRefBoolArrayFunction());
+                    context.Program.AddDeclaration(GenerateZeroIntBoolArrayFunction());
+                    context.Program.AddDeclaration(GenerateZeroRefRefArrayFunction());
+                    context.Program.AddDeclaration(GenerateZeroIntRefArrayFunction());
+                }
+                
+
+                
             }
 
             if (context.TranslateFlags.NoNonlinearArith)
