@@ -39,6 +39,7 @@ namespace SolToBoogie
             LazyAllocNoMod = false;
             QuantFreeAllocs = false;
             LazyNestedAlloc = false;
+            PrePostHarness = false;
         }
         
         public bool UseNumericOperators { get; set; }
@@ -127,6 +128,8 @@ namespace SolToBoogie
 
         // remove the scoping from variable name (risky and not exposed)
         public bool RemoveScopeInVarName { get; set; }
+        
+        public bool PrePostHarness { get; set; }
         
         public bool UseMultiDim { get; set; }
     }

@@ -361,7 +361,11 @@ namespace SolToBoogie
             harnessBody.AddStatement(new BoogieCallCmd("FreshRefGenerator", new List<BoogieExpr>(), new List<BoogieIdentifierExpr>() {new BoogieIdentifierExpr("this")}));
             harnessBody.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, new BoogieIdentifierExpr("now"), new BoogieLiteralExpr(0))));
             harnessBody.AddStatement(GenerateDynamicTypeAssumes(contract));
-            GenerateConstructorCall(contract).ForEach(x => harnessBody.AddStatement(x));
+            if (!context.TranslateFlags.PrePostHarness)
+            {
+                GenerateConstructorCall(contract).ForEach(x => harnessBody.AddStatement(x));
+            }
+            
             if (context.TranslateFlags.ModelReverts)
             {
                 BoogieExpr assumePred = new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, new BoogieIdentifierExpr("revert"));
@@ -372,20 +376,36 @@ namespace SolToBoogie
                 
                 harnessBody.AddStatement(new BoogieAssumeCmd(assumePred));
             }
-            harnessBody.AddStatement(GenerateCorralWhileLoop(contract));
+
+            if (context.TranslateFlags.PrePostHarness)
+            {
+                harnessBody.AddStatement(GenerateCorralCall(contract));
+                BoogieStmtList body = new BoogieStmtList();
+                harnessBody.AddStatement(new BoogieWhileCmd(new BoogieLiteralExpr(true), body));
+            }
+            else
+            {
+                harnessBody.AddStatement(GenerateCorralWhileLoop(contract));
+            }
+            
             BoogieImplementation harnessImpl = new BoogieImplementation(harnessName, inParams, outParams, localVars, harnessBody);
             context.Program.AddDeclaration(harnessImpl);
         }
 
-        private BoogieWhileCmd GenerateCorralWhileLoop(ContractDefinition contract)
+        private BoogieCallCmd GenerateCorralCall(ContractDefinition contract)
         {
-            BoogieStmtList body = new BoogieStmtList();
             string callee = "CorralChoice_" + contract.Name;
             List<BoogieExpr> inputs = new List<BoogieExpr>()
             {
                 new BoogieIdentifierExpr("this"),
             };
-            body.AddStatement(new BoogieCallCmd(callee, inputs, null));
+            
+            return new BoogieCallCmd(callee, inputs, null);
+        }
+        private BoogieWhileCmd GenerateCorralWhileLoop(ContractDefinition contract)
+        {
+            BoogieStmtList body = new BoogieStmtList();
+            body.AddStatement(GenerateCorralCall(contract));
 
             List<BoogiePredicateCmd> candidateInvs = new List<BoogiePredicateCmd>();
             // add the contract invariant if present

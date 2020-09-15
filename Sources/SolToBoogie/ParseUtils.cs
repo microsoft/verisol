@@ -197,6 +197,11 @@ namespace SolToBoogie
                 BoogieBinaryOperation.USE_ARITH_OPS = true;
             }
 
+            if (args.Any(x => x.Equals("/prePostHarness")))
+            {
+                translatorFlags.PrePostHarness = true;
+            }
+
             translatorFlags.PerformContractInferce = args.Any(x => x.StartsWith("/contractInfer"));
 
             // don't perform verification for some of these omitFlags
