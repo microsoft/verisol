@@ -202,6 +202,11 @@ namespace SolToBoogie
                 translatorFlags.PrePostHarness = true;
             }
 
+            if (args.Any(x => x.Equals("/generateGetters")))
+            {
+                translatorFlags.GenerateGetters = true;
+            }
+
             translatorFlags.PerformContractInferce = args.Any(x => x.StartsWith("/contractInfer"));
 
             // don't perform verification for some of these omitFlags

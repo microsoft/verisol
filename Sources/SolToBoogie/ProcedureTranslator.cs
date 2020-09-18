@@ -273,7 +273,7 @@ namespace SolToBoogie
             
             return $"\"sum(this.{varDecl.Name})={mapHelper.GetSumName(varDecl)}[{boogieName}[this]]\"";
         }
-        
+
         private void TranslateStateVarDeclaration(VariableDeclaration varDecl)
         {
             VeriSolAssert(varDecl.StateVariable, $"{varDecl} is not a state variable");

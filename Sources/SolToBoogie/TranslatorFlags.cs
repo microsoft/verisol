@@ -40,6 +40,7 @@ namespace SolToBoogie
             QuantFreeAllocs = false;
             LazyNestedAlloc = false;
             PrePostHarness = false;
+            GenerateGetters = false;
         }
         
         public bool UseNumericOperators { get; set; }
@@ -132,5 +133,7 @@ namespace SolToBoogie
         public bool PrePostHarness { get; set; }
         
         public bool UseMultiDim { get; set; }
+        
+        public bool GenerateGetters { get; set; }
     }
 }

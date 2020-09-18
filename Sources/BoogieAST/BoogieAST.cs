@@ -317,19 +317,29 @@ namespace BoogieAST
 
         public BoogieStmtList StructuredStmts { get; set; }
 
-        public BoogieImplementation(string name, List<BoogieVariable> inParams, List<BoogieVariable> outParams, List<BoogieVariable> localVars, BoogieStmtList stmts)
+        public BoogieImplementation(string name, List<BoogieVariable> inParams, List<BoogieVariable> outParams, List<BoogieVariable> localVars, BoogieStmtList stmts, List<BoogieAttribute> attributes = null)
         {
             this.Name = name;
             this.InParams = inParams;
             this.OutParams = outParams;
             this.LocalVars = localVars;
             this.StructuredStmts = stmts;
+            this.Attributes = attributes;
         }
 
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append("implementation ").Append(Name).Append("(");
+            builder.Append("implementation ");
+            if (Attributes != null)
+            {
+                foreach (BoogieAttribute attribute in Attributes)
+                {
+                    builder.Append(attribute).Append(" ");
+                }
+            }
+                
+            builder.Append(Name).Append("(");
             if (InParams.Count > 0)
             {
                 foreach (BoogieVariable inParam in InParams)
