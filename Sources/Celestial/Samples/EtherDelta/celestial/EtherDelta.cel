@@ -1,0 +1,180 @@
+contract EtherDelta_Cel
+{
+    address admin;      //the admin address
+    address feeAccount; //the account that will receive fees
+    uint feeMake;       //percentage times (1 ether)
+    uint feeTake;       //percentage times (1 ether)
+    uint feeRebate;     //percentage times (1 ether)
+    mapping (uint => mapping (address => uint)) tokens; //mapping of token addresses to mapping of account balances (token=0 means Ether)
+    event Deposit(address, uint, uint);
+    event Withdraw(address, uint, uint);
+
+    bool tokenTxStatus;
+    uint totalBalance;
+
+    invariant eth_balances2 {
+        balance == totalBalance
+    }
+
+    invariant eth_balances {
+        totalBalance >= sum_mapping(tokens[0])
+    }
+
+    constructor (address admin_, address feeAccount_, uint feeMake_, uint feeTake_, uint feeRebate_) 
+        pre (balance == 0)
+    {
+        admin = admin_;
+        feeAccount = feeAccount_;
+        feeMake = feeMake_;
+        feeTake = feeTake_;
+        feeRebate = feeRebate_;
+        return;
+    }
+
+    function changeAdmin (address admin_) public
+        post (new(admin) == admin_)
+        tx_reverts (sender != admin)
+        modifies [admin]
+    {
+        if (sender != admin) 
+        {
+            revert("invalid");
+        }
+        admin = admin_;
+        return;
+    }
+
+    function changeFeeAccount (address feeAccount_) public
+        tx_reverts (sender != admin)
+        modifies [feeAccount]
+    {
+        if (sender != admin) 
+        {
+            revert("invalid");
+        }
+        feeAccount = feeAccount_;
+        return;
+    }
+
+    function changeFeeMake (uint feeMake_) public
+        post new(feeMake) == feeMake_
+        tx_reverts (sender != admin || feeMake_ > feeMake) 
+        modifies [feeMake]
+    {
+        if (sender != admin || feeMake_ > feeMake) 
+        {
+            revert("invalid");
+        }
+
+        feeMake = feeMake_;
+        return;
+    }
+
+    function changeFeeTake (uint feeTake_) public
+        post new(feeTake) == feeTake_
+        tx_reverts (sender != admin || feeTake_ > feeTake || feeTake_ < feeRebate) 
+        modifies [feeTake]
+    {
+        if (sender != admin || feeTake_ > feeTake || feeTake_ < feeRebate) {
+            revert("invalid");
+        }
+
+        feeTake = feeTake_;
+        return;
+    }
+
+    function changeFeeRebate (uint feeRebate_) public
+        post new(feeRebate) == feeRebate_
+        tx_reverts (sender != admin || feeRebate_ < feeRebate || feeRebate_ > feeTake)
+        modifies [feeRebate]
+    {
+        if (sender != admin || feeRebate_ < feeRebate || feeRebate_ > feeTake) 
+        {
+            revert("invalid");
+        }
+        feeRebate = feeRebate_;
+        return;
+    }
+
+    function deposit () public
+        post (new(tokens) == tokens[0 => tokens[0][sender => (tokens[0][sender] + value)]])
+             && (new(totalBalance) == totalBalance + value)
+        credit
+        tx_reverts (totalBalance + value > uint_max)
+        modifies [tokens, totalBalance, log]
+    {
+        totalBalance = safe_add(totalBalance, value);
+        tokens[0][sender] = tokens[0][sender] + value;
+        send (sender, Deposit, null, value, tokens[0][sender]);
+        return;
+    }
+
+    function withdraw (uint amount) public
+        post (balance != new(balance) ==> (new(tokens) == tokens[0 => tokens[0][sender => tokens[0][sender] - amount]])
+             && new(log) == (sender, Withdraw, null, amount, new(tokens)[0][sender])::(sender, eTransfer, amount)::log)
+        debit
+        tx_reverts (tokens[0][sender] < amount) 
+    {
+        if (tokens[0][sender] < amount) 
+        {
+            revert ("Insufficient balance");
+        }
+
+        uint b = balance;
+        send (sender, eTransfer, amount);
+        if (b != balance)
+        {
+            tokens[0][sender] = tokens[0][sender] - amount;
+            totalBalance = totalBalance - amount;
+            send (sender, Withdraw, null, amount, tokens[0][sender]);
+        }
+        return;
+    }
+
+    function depositToken (uint tokenId, address token, uint amount) public
+        post new(tokenTxStatus) ==>
+                 new(tokens) == tokens[tokenId => tokens[tokenId][sender => tokens[tokenId][sender] + amount]]
+        tx_reverts tokenId == 0 || tokens[tokenId][sender] + amount > uint_max
+        modifies [tokenTxStatus, tokens, totalBalance, balance, log]
+    {
+        if (tokenId == 0 || amount > uint_max - tokens[tokenId][sender])
+        {
+            revert ("Invalid token type or overflow");
+        }
+
+        tokenTxStatus = token.call("transferFrom(address,address,uint)", sender, address(this), amount);
+        if (totalBalance > balance) {
+            revert ("Unexpected Ether transferred to self");
+        }
+        totalBalance = balance;
+        
+        if (tokenTxStatus == true) {
+            tokens[tokenId][sender] = tokens[tokenId][sender] + amount;
+            send (sender, Deposit, token, amount, tokens[tokenId][sender]);
+        }
+        return;
+    }
+
+    function withdrawToken (uint tokenId, address token, uint amount) 
+        post new(tokenTxStatus) ==> (new(tokens) == tokens[tokenId => tokens[tokenId][sender => tokens[tokenId][sender] - amount]])
+        tx_reverts tokenId == 0 || tokens[tokenId][sender] < amount
+        modifies[tokenTxStatus, tokens, totalBalance, balance, log]
+    {
+        if (tokenId == 0 || tokens[tokenId][sender] < amount)
+        {
+            revert ("Invalid token type or overflow");
+        }
+
+        tokenTxStatus = token.call("transfer(address,uint)", sender, amount);
+        if (totalBalance > balance) {
+            revert ("Unexpected Ether transferred to self");
+        }
+        totalBalance = balance;
+
+        if (tokenTxStatus == true) {
+            tokens[tokenId][sender] = tokens[tokenId][sender] - amount;
+            send (sender, Withdraw, token, amount, tokens[tokenId][sender]);
+        }
+        return;
+    }
+}
