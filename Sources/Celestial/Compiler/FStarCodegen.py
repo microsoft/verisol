@@ -245,9 +245,6 @@ class FStarCodegen:
                 return lvalueType[9:-1]
         
         elif (ctx.method):
-            if (ctx.method.Iden().getText() == "sum_mapping"):
-                return "uint"
-
             methodName = ctx.method.Iden().getText()
             if methodName in self.contracts: # ContractName(values_of_fields)
                 return methodName
@@ -316,6 +313,14 @@ class FStarCodegen:
             return "address"
         elif (datatype.BOOL()):
             return "bool"
+        elif (datatype.UINT8()):
+            return "uint8"
+        elif (datatype.BYTES()):
+            return "bytes"
+        elif (datatype.BYTES20()):
+            return "bytes20"
+        elif (datatype.BYTES32()):
+            return "bytes32"
         elif (datatype.STRING()):
             return "string"
         elif (datatype.EVENTLOG()):
@@ -510,40 +515,43 @@ class FStarCodegen:
                         if sym.fieldOfStruct == methodName:
                             structFieldNames.append(sym.name)
 
+                # If the method/function call has arguments:
                 if expr.rvalueList():
                     for arg in expr.rvalueList().rvalue():
-                        paramExpr = self.getFStarExpression(arg.expr(), symbols, scope, isInvariant, isMethod, True, isIf, isPre, isPost)
-                        if " " in paramExpr:
-                            paramExpr = "(" + paramExpr + ")"
-                        # if arg.expr().primitive() and arg.expr().getText() not in self.fields:
-                        #     paramExpr = arg.expr().getText()
-                        # else:
-                        if isMethod and (arg.expr().primitive() and arg.expr().getText() in self.fields) or "=" in paramExpr: # same as if "=" in paramExpr
-                            FStarExprString += "\nlet x" + str(x) + " = " + paramExpr + " in"
-                            paramExpr = "x" + str(x)
-                        xarr[x] = paramExpr
+                        argString = self.getFStarExpression(arg.expr(), symbols, scope, isInvariant, isMethod, True, isIf, isPre, isPost)
+                        if " " in argString:
+                            argString = "(" + argString + ")"
+                        
+                        # let-bind the argument in case it has further let-bindings
+                        if isMethod and "=" in argString:
+                            FStarExprString += "\nlet x" + str(x) + " = " + argString + " in"
+                            argString = "x" + str(x)
+                        xarr[x] = argString
                         x = x + 1
                         i = i + 1
-                if isMethodCalled or isFunction or methodName == "sum_mapping":
-                    if methodName == "sum_mapping":
+                
+                # Wrap the callee/struct in paranthesis/braces
+                if isMethodCalled or isFunction:
+                    if methodName in ["sum_mapping", "keccak256", "sha256", "ripemd160", "ecrecover"]:
                         FStarExprString += "(" + methodName
                     else:
-                        FStarExprString += "(" + methodName #TODO: Have prefixes for method names also
+                        FStarExprString += "(" + methodName #TODO: Have prefixes for method names in addition to fields
                 elif isStruct:
                     FStarExprString += "{"
+
                 # If it is a function, sender and value are not passed
-                if isMethodCalled:
+                if isMethodCalled and methodName not in ["keccak256", "sha256", "ripemd160", "ecrecover"]:
                     FStarExprString += " self self 0 now"
+                
+                # Generate the final call/record string
                 for i in range (1, x):
-                    if isMethodCalled or isFunction or methodName == "sum_mapping":
+                    if isMethodCalled or isFunction:
                         FStarExprString += " " + xarr[i]
                     elif isStruct:
                         FStarExprString += " " + self.addPrefix(structFieldNames[i-1]) + " = " + xarr[i] + ";"
-                # return "( let x1 = (" + FStarExprString + ") in \n\tx1\n)"
-                # if isFunction:
-                #     FStarExprString += " error"
+
                 self.indentationLevel -= 1
-                if isMethodCalled or isFunction or methodName == "sum_mapping":
+                if isMethodCalled or isFunction:
                     return FStarExprString + ")"
                 else:
                     return FStarExprString + " }"

@@ -117,7 +117,7 @@ class SolidityCodegen:
             return self.getSolidityDatatype(ctx.arrayType) + "[]"
         elif ctx.INSTMAP():
             if self.verificationMode == "VeriSol": 
-                return "mapping ( address => bool)"     #Added for Verisol
+                return "mapping (address => bool)"     #Added for Verisol
             else:
                 return "mapping (" + ctx.iden().Iden().getText() + " => bool)"
         else:
@@ -127,9 +127,9 @@ class SolidityCodegen:
         varType = self.getSolidityDatatype(ctx.datatype())
         varName = ctx.iden().Iden().getText()
         varString = ""
-        if varType == "string" and currentScope != "global":
+        if varType in ["string", "bytes"] and currentScope != "global":
             varString = varType + " memory " + varName # string is memory
-        elif not self.isBasicType(varType) and varType not in self.contracts and currentScope != "global":
+        elif not self.isBasicType(varType) and varType not in self.contracts and currentScope != "global" and varType not in ["bytes20", "bytes32"]:
             varString = varType + " storage " + varName
         else:
             varString = varType + " " + varName
@@ -201,7 +201,7 @@ class SolidityCodegen:
         if params:
             for param in params.methodParam():
                 paramType = self.getSolidityDatatype(param.datatype())
-                if paramType == "string":
+                if paramType in ["string", "bytes"]:
                     paramString += paramType + " memory " + param.name.Iden().getText()
                 else:
                     paramString += paramType + " " + param.name.Iden().getText()

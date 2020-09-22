@@ -5,6 +5,9 @@ open FStar.Mul
 
 let address = nat
 let null:address = 0
+assume type bytes
+assume type bytes20
+assume type bytes32
 
 let contract (a:Type0) : Type0 = address
 
@@ -12,9 +15,11 @@ let int_max : int = (pow2 255) - 1
 let int_min : int = - (pow2 255)
 // let uint_max : int = (pow2 256) -1
 let uint_max : int = 115792089237316195423570985008687907853269984665640564039457584007913129639935
+let uint8_max : int = (pow2 8) - 1
 
 type uint = n:nat{n <= uint_max}
 type int = n:int{n >= int_min /\ n <= int_max}
+type uint8 = n:nat{n <= uint8_max}
 
 noeq
 type event = {
@@ -223,3 +228,11 @@ let lt = fun x y -> x <= y
 which behaves like a total order ***)
 assume val strcmp : f:(string -> string -> bool){M.total_order string f}
 
+(* ABI Enconding and Decoding functions *)
+assume val decode : list Type
+
+(* Precompiles and other pure functions *)
+assume val keccak256 : bytes -> bytes32
+assume val sha256    : bytes -> bytes32 // precompile
+assume val ripemd160 : bytes -> bytes20 // precompile
+assume val ecrecover : bytes32 -> uint8 -> bytes32 -> bytes32 -> address // precompile

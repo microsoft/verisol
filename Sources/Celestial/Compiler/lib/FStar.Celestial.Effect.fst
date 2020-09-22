@@ -292,3 +292,13 @@ assume val unknown_call : (#a:Type0) -> (self:contract a) -> Eth bool
   (self `CM.live_in` bst1.cmap)
   /\ (CM.sel self bst1.cmap) == (CM.sel self bst0.cmap)
 )
+
+assume val addmod : (x:uint) -> (y:uint) -> (k:uint) -> Eth uint
+(fun _ -> True)
+(fun _ -> k == 0)
+(fun _ r _ -> r == (x + y) % k)
+
+assume val mulmod : (x:uint) -> (y:uint) -> (k:uint) -> Eth uint
+(fun _ -> True)
+(fun _ -> k == 0)
+(fun _ r _ -> r == (op_Multiply x y) % k)

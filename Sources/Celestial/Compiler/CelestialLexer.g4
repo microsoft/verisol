@@ -10,11 +10,15 @@ ENUM      : 'enum' ;
 EVENT     : 'event' ;
 EVENTLOG  : 'eventlog' ;
 UINT	  : 'uint' ;
+UINT8     : 'uint8' ;
 INSTMAP   : 'inst_map' ;
 INT       : 'int' ;
 STRING    : 'string' ;
 CONTRACT  : 'contract' ;
 MAP       : 'mapping' ;
+BYTES     : 'bytes' ;
+BYTES20   : 'bytes20' ;
+BYTES32   : 'bytes32' ;
 
 // Keywords
 

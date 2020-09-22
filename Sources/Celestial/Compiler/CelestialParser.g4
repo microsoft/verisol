@@ -33,12 +33,16 @@ datatype : arrayType=datatype LBRACK RBRACK
          | BOOL
          | INT
          | UINT
+         | UINT8
          | STRING
          | ADDR (PAYABLE)?
          | EVENTLOG
          | EVENT
          | name=iden
          | INSTMAP LT iden GT
+         | BYTES
+         | BYTES20
+         | BYTES32
          ;
 
 idenTypeList : idenType (COMMA idenType)* ;

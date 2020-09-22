@@ -48,6 +48,14 @@ class MyListener(CelestialParserListener):
 
         self.currentContract = ""
         self.symbols = []               # TODO: Don't clear symbols, but have a 'contract' field in Symbol, and include in every symbol lookup the contract name also 
+        self.symbols.append(Symbol(_name="keccak256", _type="bytes32", _params=["bytes"], _scope="global", _isMethod=True, _isFunction=True))
+        self.symbols.append(Symbol(_name="sha256", _type="bytes32", _params=["bytes"], _scope="global", _isMethod=True, _isFunction=True))
+        self.symbols.append(Symbol(_name="ripemd160", _type="bytes20", _params=["bytes"], _scope="global", _isMethod=True, _isFunction=True))
+        self.symbols.append(Symbol(_name="ecrecover", _type="address", _params=["bytes32", "uint8", "bytes32", "bytes32"], _scope="global", _isMethod=True, _isFunction=True))
+        self.symbols.append(Symbol(_name="sum_mapping", _type="uint", _params=["mapping(address=>uint)"], _scope="global", _isFunction=True))
+        self.symbols.append(Symbol(_name="addmod", _type="uint", _params=["uint", "uint", "uint"], _scope="global", _isMethod=True))
+        self.symbols.append(Symbol(_name="mulmod", _type="uint", _params=["uint", "uint", "uint"], _scope="global", _isMethod=True))
+
         self.enums = []
         self.structs = []
         self.constructorDefined = False
@@ -751,28 +759,25 @@ class MyListener(CelestialParserListener):
         #                 revert ("<ERROR>: Variable " + varName + " not declared", ctx)
         
         """
-        Performing the following checks:
-            Methods cannot be called from inside functions and invariants
-            Functions and invariants cannot be called from inside methods
-        UPDATE: This case never happens (self.isSpec is updated to True in all spec)
-        <REDUNDANT>
+        Ensures functions and invariants cannot be called from inside methods
         """
         if (not self.isSpec and ctx.method): #and ctx.getChildCount() == 4):
-            isMFI = self.getIsMethodFuncInv(self.currentScope)
-            called = ctx.method.Iden().getText()
-            MFIcalled = self.getIsMethodFuncInv(called)
-            if (isMFI == "function" or isMFI == "invariant") and (MFIcalled in ["method", "invariant"]):
-                revert ("<ERROR>: Methods and invariants cannot be called from inside a function or invariant", ctx)
-            elif (isMFI == "method") and (MFIcalled in ["function", "invariant"]):
+            currentScopeType = self.getIsMethodFuncInv(self.currentScope)
+            callee = ctx.method.Iden().getText()
+            calleeType = self.getIsMethodFuncInv(callee)
+            if ((callee not in ["keccak256", "sha256", "ripemd160", "ecrecover"])
+                    and (calleeType in ["function", "invariant"])):
                 revert ("<ERROR>: Methods cannot be called inside functions or invariants", ctx)
 
         """
         Ensures that only functions can be called in the 'pre' and 'post'
         """
-        if (self.isSpec and ctx.method and ctx.method.Iden().getText() != "sum_mapping"):
-            isMFI = self.getIsMethodFuncInv(ctx.method.Iden().getText())
-            if (isMFI == "method" or isMFI == "invariant"):
-                revert ("<ERROR>: Methods and invariants cannot be called from specifications", ctx)
+        if (self.isSpec and ctx.method):
+            callee = ctx.method.Iden().getText()
+            calleeType = self.getIsMethodFuncInv(callee)
+            if ((calleeType == "method" or calleeType == "invariant")
+                and (callee not in ["keccak256", "sha256", "ripemd160", "ecrecover"])):
+                revert ("<ERROR>: Methods and invariants cannot be called from specifications", ctx.method)
 
         """
         Ensures that ite() can only be used in spec
@@ -1036,10 +1041,8 @@ class MyListener(CelestialParserListener):
         
         # method=iden LPAREN rvalueList? RPAREN
         elif (ctx.method):
-            if (ctx.method.Iden().getText() == "sum_mapping"):
-                return "uint"
-
             methodName = ctx.method.Iden().getText()
+
             if methodName in self.contracts: # ContractName(values_of_fields)
                 if self.getIsMethodFuncInv(self.currentScope) == "method":
                     revert ("<ERROR>: <contract_name>(...) can be used only in functions and invariants", ctx)
