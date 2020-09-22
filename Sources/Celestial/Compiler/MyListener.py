@@ -879,6 +879,11 @@ class MyListener(CelestialParserListener):
                 if flag != "method":
                     revert ("<ERROR>: Cannot use 'sender' outside methods", ctx)
                 return "address"
+            elif c.ORIGIN():
+                flag = self.getIsMethodFuncInv(self.currentScope)
+                if flag != "method":
+                    revert ("<ERROR>: Cannot use 'origin' outside methods", ctx)
+                return "address"
             elif c.LOG():
                 flag = self.getIsMethodFuncInv(self.currentScope)
                 if flag != "method" and flag != "invariant" and not self.isSpec:

@@ -52,6 +52,7 @@ MODIFIES  : 'modifies' ;
 MODIFIESA : 'modifies_addresses' ;
 NEW       : 'new' ;
 NOW       : 'now' ;
+ORIGIN    : 'origin' ;
 PAYABLE   : 'payable' ;
 POP       : 'pop' ;
 POST      : 'post' ;

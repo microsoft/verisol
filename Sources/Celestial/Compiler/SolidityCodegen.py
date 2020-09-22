@@ -294,7 +294,7 @@ class SolidityCodegen:
                 return "bool"
             elif primitiveCtx.IntLiteral() or primitiveCtx.INT_MIN() or primitiveCtx.INT_MAX():
                 return "int"
-            elif primitiveCtx.NullLiteral() or primitiveCtx.SENDER() or primitiveCtx.ADDR():
+            elif primitiveCtx.NullLiteral() or primitiveCtx.SENDER() or primitiveCtx.ADDR() or primitiveCtx.ORIGIN():
                 return "address"
             elif primitiveCtx.StringLiteral():
                 return "string"
@@ -423,6 +423,8 @@ class SolidityCodegen:
                 # return "_balance"
             elif ctx.primitive().SENDER():
                 return "msg.sender"
+            elif ctx.primitive().ORIGIN():
+                return "tx.origin"
             elif ctx.primitive().BoolLiteral() or ctx.primitive().IntLiteral() or ctx.primitive().StringLiteral() or ctx.primitive().iden():
                 return ctx.getText()
             elif ctx.primitive().INT_MIN():

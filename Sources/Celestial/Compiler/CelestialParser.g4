@@ -195,6 +195,7 @@ primitive : iden                                       //# IdenPrimitive
           | VALUE
           | BALANCE
           | SENDER
+          | ORIGIN
           | LOG
           | INT_MIN | INT_MAX | UINT_MAX
           | NEW LPAREN iden RPAREN

@@ -183,7 +183,7 @@ class FStarCodegen:
                 return "bool"
             elif primitiveCtx.IntLiteral() or primitiveCtx.INT_MIN() or primitiveCtx.INT_MAX():
                 return "int"
-            elif primitiveCtx.NullLiteral() or primitiveCtx.SENDER() or primitiveCtx.ADDR():
+            elif primitiveCtx.NullLiteral() or primitiveCtx.SENDER() or primitiveCtx.ADDR() or primitiveCtx.ORIGIN():
                 return "address"
             elif primitiveCtx.StringLiteral():
                 return "string"
@@ -419,7 +419,7 @@ class FStarCodegen:
                 #     return "cs." + self.fieldPrefix + "_log"
                 # elif isMethod:
                 #     return "let x1 = get_" + self.fieldPrefix + "_log () in x1" 
-            elif c.SENDER() or c.VALUE() or c.INT_MIN() or c.INT_MAX() or c.UINT_MAX():
+            elif c.SENDER() or c.ORIGIN() or c.VALUE() or c.INT_MIN() or c.INT_MAX() or c.UINT_MAX():
                 return c.getText()
             elif c.ADDR():
                 idenName = c.iden().Iden().getText()
@@ -541,7 +541,7 @@ class FStarCodegen:
 
                 # If it is a function, sender and value are not passed
                 if isMethodCalled and methodName not in ["keccak256", "sha256", "ripemd160", "ecrecover"]:
-                    FStarExprString += " self self 0 now"
+                    FStarExprString += " self self 0 now origin"
                 
                 # Generate the final call/record string
                 for i in range (1, x):
@@ -899,7 +899,7 @@ class FStarCodegen:
             s = ""
             s += "let contract_addr = create_contract " + newContractRecordString + " in "
             if "constructor" in self.methodsOfContract[contractTypeName].keys():
-                s += "(" + str.lower(contractTypeName) + "_constructor self 0 now"
+                s += "(" + str.lower(contractTypeName) + "_constructor self 0 now origin"
                 for i in range (1, x):
                     FStarExprString += " " + xarr[i]
                 s += "; "
@@ -944,7 +944,7 @@ class FStarCodegen:
             FStarExprString += "\nlet contract_addr = create_contract " + newContractRecordString + " in "
             if "constructor" in self.methodsOfContract[newContractOf].keys():
                 # FStarExprString += "\nassume (sender <> contract_addr); // NEWLY CREATED CONTRACT CANNOT HAVE THE SAME ADDRESS AS THE SENDER"
-                FStarExprString += "\nlet _ = " + str.lower(newContractOf) + "_constructor contract_addr self 0 now"
+                FStarExprString += "\nlet _ = " + str.lower(newContractOf) + "_constructor contract_addr self 0 now origin"
                 for i in range (1, x):
                     FStarExprString += " " + xarr[i]
                 self.indentationLevel -= 1
@@ -1184,7 +1184,7 @@ class FStarCodegen:
 
     def writeConstructor(self, symbols, scope, ctx:CelestialParser.ConstructorDeclContext=None):
         self.writeToFStar("\n")
-        self.writeToFStar("\nlet " + self.addPrefix("constructor") + " (self:" + self.addPrefix("address") + ") (sender:address) (value:uint) (now:uint)")
+        self.writeToFStar("\nlet " + self.addPrefix("constructor") + " (self:" + self.addPrefix("address") + ") (sender:address) (value:uint) (now:uint) (origin:address{origin <> null})")
         if (ctx and ctx.methodParamList()):
             for parameter in ctx.methodParamList().methodParam():
                 paramName = parameter.iden().Iden().getText()
@@ -1387,7 +1387,7 @@ class FStarCodegen:
         # Writing method definition
         methodName = ctx.name.Iden().getText()
         self.writeToFStar("\n")
-        self.writeToFStar("\nlet " + methodName + " (self:" + self.addPrefix("address") + ") (sender:address) (value:uint) (now:uint)")
+        self.writeToFStar("\nlet " + methodName + " (self:" + self.addPrefix("address") + ") (sender:address{sender <> null}) (value:uint) (now:uint) (origin:address{origin <> null})")
         if ctx.methodParamList():
             for parameter in ctx.methodParamList().methodParam():
                 paramName = parameter.iden().Iden().getText()
@@ -1405,26 +1405,32 @@ class FStarCodegen:
 
         # If there are no pre-conditions at all, just write the mandatory ones and don't retrieve cs, etc.
         if not self.invariants and not ctx.spec().PRE() and not ctx.spec().CREDIT():
-            self.writeToFStar("\n    " + self.addPrefix("live") + " self bst /\\")
-            self.writeToFStar("\n    (sender <> null)")
+            self.writeToFStar("\n    " + self.addPrefix("live") + " self bst")
             self.writeToFStar("\n  )")
         else:
             self.writeToFStar("\n    " + self.addPrefix("live") + " self bst /\\ (")  # liveness post condition
             self.writeToFStar("\n    let cs = CM.sel self bst.cmap in")               # contract state
             self.writeToFStar("\n    let b = pure_get_balance_bst self bst in")       # balance
             self.writeToFStar("\n    let l = bst.log in")                             # log
-            self.writeToFStar("\n      (sender <> null)")
+
+            conjunctFlag = False
 
             # Check if there are any invariants defined
             if (self.invariants and not ctx.PRIVATE()):
                 for invariant in self.invariants:
-                    self.writeToFStar("\n      /\\ (" + invariant + " self bst)")
+                    if conjunctFlag:
+                        self.writeToFStar("\n      /\\ (" + invariant + " self bst)")
+                    else:
+                        self.writeToFStar("\n      (" + invariant + " self bst)")
+                        conjunctFlag = True
 
             # Check if any pre-condition is specified
             if (ctx.spec().pre):
                 pre = self.getFStarExpression(ctx.spec().pre, symbols, scope, isInvariant=False, isMethod=False, isFunctionCall=False, isIf=False, isPre=True, isPost=False)
-                # pre = self.getFStarPrePost(ctx.spec().pre, symbols, scope, isPre=True)
-                self.writeToFStar("\n      /\\ (" + pre + ")")
+                if conjunctFlag:
+                    self.writeToFStar("\n      /\\ (" + pre + ")")
+                else:
+                    self.writeToFStar("\n      (" + pre + ")")
             
             self.writeToFStar("\n  ))")
 
@@ -1889,7 +1895,7 @@ class FStarCodegen:
         self.writeToFStar("\nlet contract_addr = create_contract " + newContractRecordString + " in ")
         if "constructor" in self.methodsOfContract[newContractOf].keys():
             # rhs = "\nassume (sender <> contract_addr); // NEWLY CREATED CONTRACT CANNOT HAVE THE SAME ADDRESS AS THE SENDER"
-            rhs = "\nlet x = (" + str.lower(newContractOf) + "_constructor contract_addr self 0 now"
+            rhs = "\nlet x = (" + str.lower(newContractOf) + "_constructor contract_addr self 0 now origin"
             if ctx.rvalueList():
                 params = ctx.rvalueList().rvalue()
                 for param in params:
@@ -1992,7 +1998,7 @@ class FStarCodegen:
             i = i + 1
             x = x + 1
         
-        self.writeToFStar("\nlet _ = (" + methodName + " self self 0 now")
+        self.writeToFStar("\nlet _ = (" + methodName + " self self 0 now origin")
         for i in range(1, x):
             self.writeToFStar(" " + xarr[i])
         self.writeToFStar(") in")
@@ -2022,7 +2028,7 @@ class FStarCodegen:
         # self.writeToFStar("\nassume (sender <> " + otherContractInstanceName + "); // " + otherContractInstanceName + " CANNOT BE EQUAL TO sender AND HENCE IS ALWAYS TRUE")
 
         if ctx.assignTo.name:
-            self.writeToFStar("\nlet x1 = " + methodName + " " + otherContractInstanceName + " self 0 now" + methodArgs + " in")
+            self.writeToFStar("\nlet x1 = " + methodName + " " + otherContractInstanceName + " self 0 now origin" + methodArgs + " in")
             assignTo = ctx.assignTo.name.Iden().getText()
             if assignTo in self.fields:
                 self.writeToFStar("\nlet _ = " + self.addPrefix("set_" + assignTo) + " self x1 in")
@@ -2055,7 +2061,7 @@ class FStarCodegen:
         for invariant in self.invariantsOfContract[contractType]:
             self.writeToFStar("\nassume (" + invariant + " " + otherContractInstanceName + " bst); // META-ARGUMENT: CONTRACT INVARIANTS ALWAYS HOLD AT CONTRACT BOUNDARIES AND HENCE IS ALWAYS TRUE")
         # self.writeToFStar("\nassume (sender <> " + otherContractInstanceName + "); // " + otherContractInstanceName + " CANNOT BE EQUAL TO sender AND HENCE IS ALWAYS TRUE")
-        self.writeToFStar("\nlet _ = " + methodName + " " + otherContractInstanceName + " self 0 now" + methodArgs + " in")
+        self.writeToFStar("\nlet _ = " + methodName + " " + otherContractInstanceName + " self 0 now origin" + methodArgs + " in")
         self.writeToFStar("\nlet balance = get_balance self in") # in case the external contract method sends ether to callee
 
     def writeRevertStatement(self, ctx:CelestialParser.StatementContext):
