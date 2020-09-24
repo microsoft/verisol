@@ -40,6 +40,21 @@ type log = list event
 
 let eTransfer : string = "eTransfer"
 
+noeq
+type block = {
+  coinbase   : (a:address{a <> null});
+  difficulty : uint;
+  gaslimit   : uint;
+  number     : (n:uint{n <> 0});
+  timestamp  : (n:uint{n <> 0})
+}
+
+noeq
+type tx = {
+  origin   : (a:address{a <> null});
+  gasprice : uint
+}
+
 let _add (a b : uint) : Pure uint
 (requires a + b <= uint_max)
 (ensures fun r -> r == a + b)

@@ -294,11 +294,11 @@ class SolidityCodegen:
                 return "bool"
             elif primitiveCtx.IntLiteral() or primitiveCtx.INT_MIN() or primitiveCtx.INT_MAX():
                 return "int"
-            elif primitiveCtx.NullLiteral() or primitiveCtx.SENDER() or primitiveCtx.ADDR() or primitiveCtx.ORIGIN():
+            elif primitiveCtx.NullLiteral() or primitiveCtx.SENDER() or primitiveCtx.ADDR() or primitiveCtx.TXORIGIN() or primitiveCtx.BCOINBASE():
                 return "address"
             elif primitiveCtx.StringLiteral():
                 return "string"
-            elif primitiveCtx.VALUE() or primitiveCtx.BALANCE() or primitiveCtx.UINT_MAX() or primitiveCtx.NOW():
+            elif primitiveCtx.VALUE() or primitiveCtx.BALANCE() or primitiveCtx.UINT_MAX() or primitiveCtx.BDIFF() or primitiveCtx.BGASLIMIT() or primitiveCtx.BNUMBER() or primitiveCtx.BTIMESTAMP() or primitiveCtx.TXGASPRICE():
                 return "uint"
             elif primitiveCtx.LOG():
                 return "eventlog"
@@ -420,11 +420,12 @@ class SolidityCodegen:
                 return "msg.value"
             elif ctx.primitive().BALANCE():
                 return "address(this).balance"
-                # return "_balance"
             elif ctx.primitive().SENDER():
                 return "msg.sender"
-            elif ctx.primitive().ORIGIN():
-                return "tx.origin"
+            elif ctx.primitive().TXORIGIN() or ctx.primitive().TXGASPRICE():
+                return ctx.getText()
+            elif ctx.primitive().BCOINBASE() or ctx.primitive().BDIFF() or ctx.primitive().BGASLIMIT() or ctx.primitive().BNUMBER() or ctx.primitive().BTIMESTAMP():
+                return ctx.getText()
             elif ctx.primitive().BoolLiteral() or ctx.primitive().IntLiteral() or ctx.primitive().StringLiteral() or ctx.primitive().iden():
                 return ctx.getText()
             elif ctx.primitive().INT_MIN():
@@ -432,7 +433,7 @@ class SolidityCodegen:
             elif ctx.primitive().INT_MAX():
                 return "(int256(~(uint256(1) << 255)))"
             elif ctx.primitive().UINT_MAX():
-                if self.verificationMode == "VeriSol":              #Added for VeriSol
+                if self.verificationMode == "VeriSol":
                     return "(uint256(0) - uint256(1))"
                 else:
                     return "(~uint256(0))"
@@ -442,8 +443,6 @@ class SolidityCodegen:
                 return "address(" + ctx.primitive().getChild(2).getText() + ")"
             elif ctx.primitive().THIS():
                 return "this"
-            elif ctx.primitive().NOW():
-                return "now"
         
         elif (ctx.getChild(0) == ctx.LPAREN(0)):
             return "(" + self.getSolidityExpr(ctx.expr(0), symbols, scope) + ")"

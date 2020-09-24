@@ -864,25 +864,20 @@ class MyListener(CelestialParserListener):
                 return "address"
             elif c.StringLiteral():
                 return "string"
-            elif c.VALUE():
+            elif c.VALUE() or c.BDIFF() or c.BGASLIMIT() or c.BNUMBER() or c.BTIMESTAMP() or c.TXGASPRICE():
                 flag = self.getIsMethodFuncInv(self.currentScope)
                 if flag != "method":
-                    revert ("<ERROR>: Cannot use 'value' outside methods ", ctx)
+                    revert ("<ERROR>: Cannot use '" + c.getText() + "' outside methods ", ctx)
                 return "uint"
             elif c.BALANCE():
                 flag = self.getIsMethodFuncInv(self.currentScope)
                 if flag != "method" and flag != "invariant":
                     revert ("<ERROR>: Cannot use 'balance' outside methods, pre-post and invariants", ctx)
                 return "uint"
-            elif c.SENDER():
+            elif c.SENDER() or c.TXORIGIN() or c.BCOINBASE():
                 flag = self.getIsMethodFuncInv(self.currentScope)
                 if flag != "method":
-                    revert ("<ERROR>: Cannot use 'sender' outside methods", ctx)
-                return "address"
-            elif c.ORIGIN():
-                flag = self.getIsMethodFuncInv(self.currentScope)
-                if flag != "method":
-                    revert ("<ERROR>: Cannot use 'origin' outside methods", ctx)
+                    revert ("<ERROR>: Cannot use '" + c.getText() + "' outside methods", ctx)
                 return "address"
             elif c.LOG():
                 flag = self.getIsMethodFuncInv(self.currentScope)
@@ -899,7 +894,7 @@ class MyListener(CelestialParserListener):
                 return self.getIdenType(c.iden().Iden().getText(), scope)
             elif c.INT_MIN() or c.INT_MAX():
                 return "int"
-            elif c.UINT_MAX() or c.NOW():
+            elif c.UINT_MAX():
                 return "uint"
             else: # getIdenType also checks if the variable has been declared or not
                 flag = False

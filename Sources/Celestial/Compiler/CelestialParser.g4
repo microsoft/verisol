@@ -195,7 +195,8 @@ primitive : iden                                       //# IdenPrimitive
           | VALUE
           | BALANCE
           | SENDER
-          | ORIGIN
+          | TXGASPRICE | TXORIGIN
+          | BCOINBASE | BDIFF | BGASLIMIT | BNUMBER | BTIMESTAMP
           | LOG
           | INT_MIN | INT_MAX | UINT_MAX
           | NEW LPAREN iden RPAREN
@@ -206,7 +207,6 @@ primitive : iden                                       //# IdenPrimitive
           | NullLiteral                                //# NullPrimitive
           | StringLiteral
           | THIS                                       //# ThisPrimitive
-          | NOW
           | ADDR LPAREN THIS RPAREN
           | ADDR LPAREN iden RPAREN
           ;
