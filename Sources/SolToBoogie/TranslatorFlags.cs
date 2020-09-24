@@ -41,6 +41,7 @@ namespace SolToBoogie
             LazyNestedAlloc = false;
             PrePostHarness = false;
             GenerateGetters = false;
+            GenerateERC20Spec = false;
         }
         
         public bool UseNumericOperators { get; set; }
@@ -135,5 +136,7 @@ namespace SolToBoogie
         public bool UseMultiDim { get; set; }
         
         public bool GenerateGetters { get; set; }
+        
+        public bool GenerateERC20Spec { get; set; }
     }
 }

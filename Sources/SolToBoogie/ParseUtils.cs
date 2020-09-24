@@ -207,6 +207,11 @@ namespace SolToBoogie
                 translatorFlags.GenerateGetters = true;
             }
 
+            if (args.Any(x => x.Equals("/generateERC20Spec")))
+            {
+                translatorFlags.GenerateERC20Spec = true;
+            }
+
             translatorFlags.PerformContractInferce = args.Any(x => x.StartsWith("/contractInfer"));
 
             // don't perform verification for some of these omitFlags

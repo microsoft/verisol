@@ -109,6 +109,12 @@ namespace SolToBoogie
                 modSetAnalysis.PerformModSetAnalysis();
             }
 
+            if (context.TranslateFlags.GenerateERC20Spec)
+            {
+                ERC20SpecGenerator specGen = new ERC20SpecGenerator(context, solidityAST, entryPointContract);
+                specGen.GenerateSpec();
+            }
+
             return new BoogieAST(context.Program);
         }
     }
