@@ -32,21 +32,21 @@ all: overview asset_transfer erc20 etherdelta wrapped_ether multisig westlake si
 
 compile:
 	@if [ '$(experiment)' = 'overview' ]; then \
-		${COMPILER} Overview/celestial/Overview.cel --fstDir="../Experiments/Overview/fstar" --solDir="../Experiments/Overview/contracts/"; \
+		${COMPILER} Overview/celestial/Overview.cel --fstDir="../Samples/Overview/fstar" --solDir="../Samples/Overview/contracts/"; \
 	elif [ '$(experiment)' = 'asset_transfer' ]; then \
-		${COMPILER} AssetTransfer/celestial/AssetTransfer.cel --fstDir="../Experiments/AssetTransfer/fstar" --solDir="../Experiments/AssetTransfer/contracts/"; \
+		${COMPILER} AssetTransfer/celestial/AssetTransfer.cel --fstDir="../Samples/AssetTransfer/fstar" --solDir="../Samples/AssetTransfer/contracts/"; \
 	elif [ '$(experiment)' = 'etherdelta' ]; then \
-		${COMPILER} EtherDelta/celestial/EtherDelta.cel --fstDir="../Experiments/EtherDelta/fstar" --solDir="../Experiments/EtherDelta/contracts/"; \
+		${COMPILER} EtherDelta/celestial/EtherDelta.cel --fstDir="../Samples/EtherDelta/fstar" --solDir="../Samples/EtherDelta/contracts/"; \
 	elif [ '$(experiment)' = 'westlake' ]; then \
-		${COMPILER} Westlake/celestial/Members.cel --fstDir="../Experiments/Westlake/fstar" --solDir="../Experiments/Westlake/contracts"; \
+		${COMPILER} Westlake/celestial/Members.cel --fstDir="../Samples/Westlake/fstar" --solDir="../Samples/Westlake/contracts"; \
 	elif [ '$(experiment)' = 'erc20' ]; then \
-		${COMPILER} OpenZeppelin/ERC20/celestial/OpenZeppelinERC20.cel --fstDir="../Experiments/OpenZeppelin/ERC20/fstar" --solDir="../Experiments/OpenZeppelin/ERC20/contracts"; \
+		${COMPILER} OpenZeppelin/ERC20/celestial/OpenZeppelinERC20.cel --fstDir="../Samples/OpenZeppelin/ERC20/fstar" --solDir="../Samples/OpenZeppelin/ERC20/contracts"; \
 	elif [ '$(experiment)' = 'wrapped_ether' ]; then \
-		${COMPILER} WrappedEther/celestial/WrappedEther.cel --fstDir="../Experiments/WrappedEther/fstar" --solDir="../Experiments/WrappedEther/contracts"; \
+		${COMPILER} WrappedEther/celestial/WrappedEther.cel --fstDir="../Samples/WrappedEther/fstar" --solDir="../Samples/WrappedEther/contracts"; \
 	elif [ '$(experiment)' = 'multisig' ]; then \
-		${COMPILER} ConsenSys/MultiSig/celestial/MultiSig.cel --fstDir="../Experiments/ConsenSys/MultiSig/fstar" --solDir="../Experiments/ConsenSys/MultiSig/contracts"; \
+		${COMPILER} ConsenSys/MultiSig/celestial/MultiSig.cel --fstDir="../Samples/ConsenSys/MultiSig/fstar" --solDir="../Samples/ConsenSys/MultiSig/contracts"; \
 	elif [ '$(experiment)' = 'simple_auction' ]; then \
-		${COMPILER} SimpleAuction/celestial/SimpleAuction.cel --fstDir="../Experiments/SimpleAuction/fstar" --solDir="../Experiments/SimpleAuction/contracts"; \
+		${COMPILER} SimpleAuction/celestial/SimpleAuction.cel --fstDir="../Samples/SimpleAuction/fstar" --solDir="../Samples/SimpleAuction/contracts"; \
 	else \
 		echo "Invalid experiment argument to target 'compile'"; \
 	fi;
