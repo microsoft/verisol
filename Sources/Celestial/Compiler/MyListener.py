@@ -1615,23 +1615,25 @@ class MyListener(CelestialParserListener):
             if toType != "address":
                 revert ("<ERROR>: First arg of send is address", ctx)
 
-            if ctx.ETRANSFER():
-                if payloadType != "uint" and not (ctx.payload.primitive() and ctx.payload.primitive().IntLiteral()):
-                    revert ("<ERROR>: eTransfer send expects a uint", ctx)
-            elif ctx.event:
-                eventName = ctx.event.Iden().getText()
-                requiredPayloadTypes = []
-                for sym in self.symbols:
-                    if sym.name == eventName:
-                        requiredPayloadTypes = sym.params
-                        break
-                for (payloadExpr, requiredPayloadType) in zip(ctx.expr()[1:], requiredPayloadTypes):
-                    if payloadType != requiredPayloadType:
-                        if (payloadExpr.primitive() and payloadExpr.primitive().IntLiteral()):
-                            if requiredPayloadType != "uint":
-                                revert ("<ERROR>: Invalid payload type", payloadExpr)
-       
+            if payloadType != "uint" and not (ctx.payload.primitive() and ctx.payload.primitive().IntLiteral()):
+                revert ("<ERROR>: eTransfer send expects a uint", ctx)
+
             self.FSTCodegen.writeSendStatement(ctx, self.symbols, self.currentScope)
+
+        elif ctx.EMIT():
+            eventName = ctx.event.Iden().getText()
+            requiredPayloadTypes = []
+            for sym in self.symbols:
+                if sym.name == eventName:
+                    requiredPayloadTypes = sym.params
+                    break
+            for (payloadExpr, requiredPayloadType) in zip(ctx.expr(), requiredPayloadTypes):
+                payloadType = self.exprType(payloadExpr, self.currentScope, inFunctionCall=False)
+                if payloadType != requiredPayloadType:
+                    if (payloadExpr.primitive() and payloadExpr.primitive().IntLiteral()):
+                        if requiredPayloadType != "uint":
+                            revert ("<ERROR>: Invalid payload type", payloadExpr)
+            self.FSTCodegen.writeEmitStatement(ctx, self.symbols, self.currentScope)
 
         self.SolidityCodegen.writeStatement(ctx, self.symbols, self.currentScope)
 

@@ -615,26 +615,27 @@ class SolidityCodegen:
 
         elif ctx.SEND():
             to = self.getSolidityExpr(ctx.contract, symbols, scope)
-            payload = self.getSolidityExpr(ctx.payload, symbols, scope)
-            if ctx.ETRANSFER():
-                self.writeToSolidity("if (address(this).balance < " + payload + ") revert (\"Insufficient balance\");")
-                if self.verificationMode == "VeriSol":
-                    self.writeToSolidity("bool success;");
-                    self.writeToSolidity("bytes memory status;");
-                    self.writeToSolidity("(success, status) = " + to + ".call.value(" + payload + ").gas(2300)(\"\");")
-                else:
-                    self.writeToSolidity(to + ".call{value: (" + payload + "), gas: 2300}(\"\");")
-                # self.indentationLevel += 1
-                # self.writeToSolidity("if (!success)")
-                # self.indentationLevel += 1
-                # self.writeToSolidity("revert (\"<ErrorLog> Sending of ether failed\");")
-                # self.indentationLevel -= 2
-            elif ctx.event:
-                payloadString = ""
-                for payloadExpr in ctx.expr()[1:]:
-                    payloadString += ", " + self.getSolidityExpr(payloadExpr, symbols, scope)
-                eventName = ctx.event.Iden().getText()
-                self.writeToSolidity("emit " + eventName + "(" + to + payloadString + ");")
+            amount = self.getSolidityExpr(ctx.payload, symbols, scope)
+
+            self.writeToSolidity("if (address(this).balance < " + amount + ") revert (\"Insufficient balance\");")
+            if self.verificationMode == "VeriSol":
+                self.writeToSolidity(to + ".call.value(" + amount + ").gas(2300)(\"\");")
+            else:
+                self.writeToSolidity(to + ".call{value: (" + amount + "), gas: 2300}(\"\");")
+            # self.indentationLevel += 1
+            # self.writeToSolidity("if (!success)")
+            # self.indentationLevel += 1
+            # self.writeToSolidity("revert (\"<ErrorLog> Sending of ether failed\");")
+            # self.indentationLevel -= 2
+
+        elif ctx.EMIT():
+            payloadString = ""
+            for payloadExpr in ctx.expr():
+                payloadString += self.getSolidityExpr(payloadExpr, symbols, scope)
+                if payloadExpr != ctx.expr()[-1]:
+                    payloadString += ", "
+            eventName = ctx.event.Iden().getText()
+            self.writeToSolidity("emit " + eventName + "(" + payloadString + ");")
         
         elif ctx.REVERT():
             self.writeToSolidity("revert (" + ctx.StringLiteral().getText() + ");")

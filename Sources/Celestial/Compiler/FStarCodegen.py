@@ -956,27 +956,28 @@ class FStarCodegen:
 
         elif (expr.logcheck()):
             s = ""
-            for event in expr.logcheck():
-                toAddressExpr = event.to
-                toAddressStr = self.getFStarExpression(toAddressExpr, symbols, scope, isInvariant, isMethod, isFunctionCall, isIf, isPre, isPost)
-                eventName = event.getChild(3).getText() #TODO: Add prefix to all event names
-                payloadExpr = event.payload
-                payloadStr = ""
+            for logTuple in expr.logcheck():
+                # If the log tuple is from an emit
+                if logTuple.event:
+                    eventName = self.addPrefix(logTuple.event.Iden().getText())
+                    payloadStr = ""
+                    for payloadExpr in logTuple.expr():
+                        payloadStr += self.getFStarExpression(payloadExpr, symbols, scope, isInvariant, isMethod, isFunctionCall, isIf, isPre, isPost)
+                        if payloadExpr != logTuple.expr()[-1]:
+                            payloadStr += ", "
 
-                for payloadExpr in event.expr()[1:]:
-                    payloadStr += self.getFStarExpression(payloadExpr, symbols, scope, isInvariant, isMethod, isFunctionCall, isIf, isPre, isPost)
-                    if payloadExpr != event.expr()[-1]:
-                        payloadStr += ", "
+                    if " " in payloadStr:
+                        payloadStr = "(" + payloadStr + ")"
+                    s += "(mk_event null " + eventName + " " + payloadStr + ")::"
 
-                if " " in toAddressStr:
-                    toAddressStr = "(" + toAddressStr + ")"
-                if " " in payloadStr:
-                    payloadStr = "(" + payloadStr + ")"
-
-                if eventName != "eTransfer":
-                    eventName = self.addPrefix(eventName)
-                
-                s += "(mk_event " + toAddressStr + " " + eventName + " " + payloadStr + ")::"
+                elif logTuple.ETRANSFER():
+                    receiverExprStr = self.getFStarExpression(logTuple.to, symbols, scope, isInvariant, isMethod, isFunctionCall, isIf, isPre, isPost)
+                    amountExprStr = self.getFStarExpression(logTuple.payload, symbols, scope, isInvariant, isMethod, isFunctionCall, isIf, isPre, isPost)
+                    if " " in receiverExprStr:
+                        receiverExprStr = "(" + receiverExprStr + ")"
+                    if " " in amountExprStr:
+                        amountExprStr = "(" + amountExprStr + ")"
+                    s += "(mk_event " + receiverExprStr + " eTransfer " + amountExprStr + ")::"
             
             # logName = self.getFStarExpression(expr.logName, symbols, scope, isInvariant, isMethod, isFunctionCall, isIf, isPre, isPost)
             logName = ""
@@ -1404,7 +1405,7 @@ class FStarCodegen:
         self.writeToFStar("\n  (fun bst ->")
 
         # If there are no pre-conditions at all, just write the mandatory ones and don't retrieve cs, etc.
-        if not self.invariants and not ctx.spec().PRE() and not ctx.spec().CREDIT():
+        if (not self.invariants or ctx.PRIVATE()) and not ctx.spec().PRE() and not ctx.spec().CREDIT():
             self.writeToFStar("\n    " + self.addPrefix("live") + " self bst")
             self.writeToFStar("\n  )")
         else:
@@ -2097,18 +2098,30 @@ class FStarCodegen:
         if ctx.ETRANSFER():
             self.writeToFStar("\n" + "let _ = send self " + to + " " + payloadString + " in")
 
-        elif ctx.event:
-            eventName = ctx.event.Iden().getText()
-            # requiredPayloadType = ""
-            # for sym in symbols:
-            #     if sym.name == eventName:
-            #         requiredPayloadType = sym.params[0]
-            #         break
-            # if requiredPayloadType == "uint":
-            #     self.writeToFStar("\n" + indentation + "assert (" + val + " >= 0 && " + val + " <= uint_max);")
-            # elif requiredPayloadType == "int":
-            #     self.writeToFStar("\n" + indentation + "assert (" + val + " >= int_min && " + val + " <= int_max);")
-            self.writeToFStar("\n" + "let _ = emit " + to + " " + self.fieldPrefix + "_" + eventName + " " + payloadString + " in")
+        self.writeToFStar("\nlet cs = get_contract self in")
+        self.writeToFStar("\nlet balance = get_balance self in")
+
+    def writeEmitStatement(self, ctx:CelestialParser.StatementContext, symbols, scope):
+
+        # Generate the event payload expressions translated to F* as a tuple
+        payloadString = ""
+        for payloadExpr in ctx.expr():
+            payloadString += self.getFStarExpression(payloadExpr, symbols, scope, isMethod=True)
+            if payloadExpr != ctx.expr()[-1]:
+                payloadString += ", "
+
+        # If any of the payload expressions are stateful, let bind the payload tuple
+        if "=" in payloadString:
+            self.writeToFStar("\n" + "let x2 = (" + payloadString + ") in")
+            payloadString = "x2"
+
+        elif "," in payloadString:
+            payloadString = "(" + payloadString + ")"
+
+        eventName = ctx.event.Iden().getText()
+        self.writeToFStar("\n" + "let _ = emit " + self.fieldPrefix + "_" + eventName + " " + payloadString + " in")
+
+        # Retrieve the contract state and balance again since the payloads can be expressions that update the state
         self.writeToFStar("\nlet cs = get_contract self in")
         self.writeToFStar("\nlet balance = get_balance self in")
 

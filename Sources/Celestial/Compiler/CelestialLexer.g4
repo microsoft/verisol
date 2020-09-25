@@ -38,6 +38,7 @@ DEBIT     : 'debit' ;
 DEFAULT   : 'default' ;
 DELETE	  : 'delete' ;
 ELSE      : 'else' ;
+EMIT      : 'emit' ;
 ETRANSFER : 'eTransfer' ;
 EXISTS    : 'exists' ;
 FOR       : 'for' ;
