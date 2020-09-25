@@ -180,9 +180,11 @@ class SolidityCodegen:
     def writeEventDecl(self, ctx:CelestialParser.EventDeclContext):
         argList = ""
         for datatype in ctx.datatype():
-            argList += ", " + self.getSolidityDatatype(datatype)
+            argList += self.getSolidityDatatype(datatype)
+            if datatype != ctx.datatype()[-1]:
+                argList += ", "
 
-        self.writeToSolidity("event " + ctx.name.Iden().getText() + "(address indexed" + argList + ");")
+        self.writeToSolidity("event " + ctx.name.Iden().getText() + "("+ argList + ");")
 
     def writeStruct(self, ctx:CelestialParser.StructDeclContext):
         self.writeToSolidity("struct " + ctx.name.Iden().getText())
