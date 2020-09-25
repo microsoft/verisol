@@ -10,8 +10,8 @@ module M = FStar.Celestial.Map
 module L = FStar.List.Tot
 module A = FStar.Celestial.Array
 
-assume val simpleauction_cel_eHighestBidIncreased : string
-assume val simpleauction_cel_eAuctionEnded : string
+assume val simpleauction_cel_HighestBidIncreased : string
+assume val simpleauction_cel_AuctionEnded : string
 
 noeq type t_simpleauction_cel = {
   simpleauction_cel_beneficiary : address;
@@ -193,7 +193,7 @@ let inv (self:simpleauction_cel_address) (bst:bstate{self `simpleauction_cel_liv
   let cs = CM.sel self bst.cmap in
     (~ (cs.simpleauction_cel_ended) ==> (simpleauction_cel_balance == (((sum_mapping cs.simpleauction_cel_pendingReturns)) + cs.simpleauction_cel_highestBid)))
 
-let simpleauction_cel_constructor (self:simpleauction_cel_address) (sender:address) (value:uint) (now:uint) (_biddingTime:uint) (_beneficiary:address)
+let simpleauction_cel_constructor (self:simpleauction_cel_address) (sender:address) (value:uint) (tx:tx) (block:block) (_biddingTime:uint) (_beneficiary:address)
 : Eth1 unit
   (fun bst -> 
     simpleauction_cel_live self bst /\
@@ -211,7 +211,7 @@ let simpleauction_cel_constructor (self:simpleauction_cel_address) (sender:addre
     )
   )
   (fun bst ->
-    ((now + _biddingTime) > uint_max)
+    ((block.timestamp + _biddingTime) > uint_max)
   )
   (fun bst0 x bst1 ->
     simpleauction_cel_live self bst1
@@ -223,7 +223,7 @@ let cs = get_contract self in
 let balance = get_balance self in
 let _ = simpleauction_cel_set_beneficiary self _beneficiary in
 let cs = get_contract self in
-let x1 = ((if now <= uint_max - _biddingTime then (now + _biddingTime) else revert "Overflow error")) in
+let x1 = ((if block.timestamp <= uint_max - _biddingTime then (block.timestamp + _biddingTime) else revert "Overflow error")) in
 let _ = simpleauction_cel_set_auctionEndTime self x1 in
 let cs = get_contract self in
 ()
@@ -240,22 +240,21 @@ else
  (M.equal new_pendingReturns old_pendingReturns)
 )) /\ (new_highestBidder == _sender)) /\ (new_highestBid == _value)
 
-let bid (self:simpleauction_cel_address) (sender:address) (value:uint) (now:uint)
+let bid (self:simpleauction_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block)
 : Eth1 unit
   (fun bst ->
     simpleauction_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (inv1 self bst)
+      (inv1 self bst)
       /\ (inv self bst)
   ))
   (fun bst ->
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-    ((((now > cs.simpleauction_cel_auctionEndTime) \/ (value <= cs.simpleauction_cel_highestBid)) \/ (((M.sel cs.simpleauction_cel_pendingReturns cs.simpleauction_cel_highestBidder) + cs.simpleauction_cel_highestBid) > uint_max)) \/ ((cs.simpleauction_cel_totalReturns + value) > uint_max))
+    ((((block.timestamp > cs.simpleauction_cel_auctionEndTime) \/ (value <= cs.simpleauction_cel_highestBid)) \/ (((M.sel cs.simpleauction_cel_pendingReturns cs.simpleauction_cel_highestBidder) + cs.simpleauction_cel_highestBid) > uint_max)) \/ ((cs.simpleauction_cel_totalReturns + value) > uint_max))
   )
   (fun bst0 x bst1 ->
     simpleauction_cel_live self bst1 /\ (
@@ -268,8 +267,8 @@ let bid (self:simpleauction_cel_address) (sender:address) (value:uint) (now:uint
     (inv1 self bst1)
       /\ (inv self bst1)
       /\ ((bidPost cs0.simpleauction_cel_highestBid cs1.simpleauction_cel_highestBid cs0.simpleauction_cel_highestBidder cs1.simpleauction_cel_highestBidder sender value cs0.simpleauction_cel_pendingReturns cs1.simpleauction_cel_pendingReturns))
-      /\ (cs0.simpleauction_cel_auctionEndTime == cs1.simpleauction_cel_auctionEndTime)
       /\ (cs0.simpleauction_cel_ended == cs1.simpleauction_cel_ended)
+      /\ (cs0.simpleauction_cel_auctionEndTime == cs1.simpleauction_cel_auctionEndTime)
       /\ (cs0.simpleauction_cel_beneficiary == cs1.simpleauction_cel_beneficiary)
   ))
 =
@@ -279,7 +278,7 @@ let _ = set_balance self (
           else (b + value)) in
 let cs = get_contract self in
 let balance = get_balance self in
-let _ = (if (now > cs.simpleauction_cel_auctionEndTime) then begin
+let _ = (if (block.timestamp > cs.simpleauction_cel_auctionEndTime) then begin
 revert "Auction already ended.";
 () end
 else ()) in
@@ -309,7 +308,7 @@ let _ = simpleauction_cel_set_highestBidder self sender in
 let cs = get_contract self in
 let _ = simpleauction_cel_set_highestBid self value in
 let cs = get_contract self in
-let _ = emit sender simpleauction_cel_eHighestBidIncreased value in
+let _ = emit simpleauction_cel_HighestBidIncreased (sender, value) in
 let cs = get_contract self in
 let balance = get_balance self in
 ()
@@ -330,15 +329,14 @@ else
  (M.equal new_pendingReturns old_pendingReturns)
 
 
-let withdraw (self:simpleauction_cel_address) (sender:address) (value:uint) (now:uint)
+let withdraw (self:simpleauction_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block)
 : Eth1 bool
   (fun bst ->
     simpleauction_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (inv1 self bst)
+      (inv1 self bst)
       /\ (inv self bst)
   ))
   (fun bst ->
@@ -359,11 +357,11 @@ let withdraw (self:simpleauction_cel_address) (sender:address) (value:uint) (now
       /\ (inv self bst1)
       /\ ((withdrawPost sender l0 l1 cs0.simpleauction_cel_pendingReturns cs1.simpleauction_cel_pendingReturns b0 b1))
       /\ (b1 <= b0)
-      /\ (cs0.simpleauction_cel_highestBidder == cs1.simpleauction_cel_highestBidder)
       /\ (cs0.simpleauction_cel_auctionEndTime == cs1.simpleauction_cel_auctionEndTime)
-      /\ (cs0.simpleauction_cel_beneficiary == cs1.simpleauction_cel_beneficiary)
-      /\ (cs0.simpleauction_cel_highestBid == cs1.simpleauction_cel_highestBid)
       /\ (cs0.simpleauction_cel_ended == cs1.simpleauction_cel_ended)
+      /\ (cs0.simpleauction_cel_highestBidder == cs1.simpleauction_cel_highestBidder)
+      /\ (cs0.simpleauction_cel_highestBid == cs1.simpleauction_cel_highestBid)
+      /\ (cs0.simpleauction_cel_beneficiary == cs1.simpleauction_cel_beneficiary)
   ))
 =
 let cs = get_contract self in
@@ -391,24 +389,23 @@ let balance = get_balance self in
 true
 
 let auctionEndPost (new_ended:bool) (old_log:log) (new_log:log) (old_beneficiary:address) (old_highestBid:uint) (old_highestBidder:address)
-= new_ended /\ ((new_log == ((mk_event old_beneficiary eTransfer old_highestBid)::(mk_event old_highestBidder simpleauction_cel_eAuctionEnded old_highestBid)::old_log)))
+= new_ended /\ ((new_log == ((mk_event old_beneficiary eTransfer old_highestBid)::(mk_event null simpleauction_cel_AuctionEnded (old_highestBidder, old_highestBid))::old_log)))
 
-let auctionEnd (self:simpleauction_cel_address) (sender:address) (value:uint) (now:uint)
+let auctionEnd (self:simpleauction_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block)
 : Eth1 unit
   (fun bst ->
     simpleauction_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (inv1 self bst)
+      (inv1 self bst)
       /\ (inv self bst)
   ))
   (fun bst ->
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-    (((now < cs.simpleauction_cel_auctionEndTime) \/ cs.simpleauction_cel_ended) \/ (b < cs.simpleauction_cel_highestBid))
+    (((block.timestamp < cs.simpleauction_cel_auctionEndTime) \/ cs.simpleauction_cel_ended) \/ (b < cs.simpleauction_cel_highestBid))
   )
   (fun bst0 x bst1 ->
     simpleauction_cel_live self bst1 /\ (
@@ -422,16 +419,16 @@ let auctionEnd (self:simpleauction_cel_address) (sender:address) (value:uint) (n
       /\ (inv self bst1)
       /\ ((auctionEndPost cs1.simpleauction_cel_ended l0 l1 cs0.simpleauction_cel_beneficiary cs0.simpleauction_cel_highestBid cs0.simpleauction_cel_highestBidder))
       /\ (b1 <= b0)
-      /\ (cs0.simpleauction_cel_highestBidder == cs1.simpleauction_cel_highestBidder)
       /\ (cs0.simpleauction_cel_auctionEndTime == cs1.simpleauction_cel_auctionEndTime)
+      /\ (cs0.simpleauction_cel_highestBidder == cs1.simpleauction_cel_highestBidder)
+      /\ (cs0.simpleauction_cel_highestBid == cs1.simpleauction_cel_highestBid)
       /\ (cs0.simpleauction_cel_pendingReturns == cs1.simpleauction_cel_pendingReturns)
       /\ (cs0.simpleauction_cel_beneficiary == cs1.simpleauction_cel_beneficiary)
-      /\ (cs0.simpleauction_cel_highestBid == cs1.simpleauction_cel_highestBid)
   ))
 =
 let cs = get_contract self in
 let balance = get_balance self in
-let _ = (if (now < cs.simpleauction_cel_auctionEndTime) then begin
+let _ = (if (block.timestamp < cs.simpleauction_cel_auctionEndTime) then begin
 revert "Auction not yet ended.";
 () end
 else ()) in
@@ -445,9 +442,7 @@ let cs = get_contract self in
 let balance = get_balance self in
 let _ = simpleauction_cel_set_ended self true in
 let cs = get_contract self in
-let x1 = (cs.simpleauction_cel_highestBidder) in
-let x2 = (cs.simpleauction_cel_highestBid) in
-let _ = emit x1 simpleauction_cel_eAuctionEnded x2 in
+let _ = emit simpleauction_cel_AuctionEnded (cs.simpleauction_cel_highestBidder, cs.simpleauction_cel_highestBid) in
 let cs = get_contract self in
 let balance = get_balance self in
 let bal:uint = (balance) in

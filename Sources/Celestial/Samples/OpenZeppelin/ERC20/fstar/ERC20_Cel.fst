@@ -130,15 +130,14 @@ let _approvePost (old_allowances:(m:(M.t address (m:(M.t address uint lt){M.def_
 let transferFromPost (old_allowances:(m:(M.t address (m:(M.t address uint lt){M.def_of m == 0}) lt){M.def_of m == M.const (0)})) (new_allowances:(m:(M.t address (m:(M.t address uint lt){M.def_of m == 0}) lt){M.def_of m == M.const (0)})) (old_balances:(m:(M.t address uint lt){M.def_of m == 0})) (new_balances:(m:(M.t address uint lt){M.def_of m == 0})) (_from:address) (_to:address) (_sender:address) (_amount:uint)
 = (((transferPost old_balances new_balances _from _to _amount)) /\ ((M.sel (M.sel old_allowances _from) _sender) >= _amount)) /\ ((_approvePost old_allowances new_allowances _from _sender ((M.sel (M.sel old_allowances _from) _sender) - _amount)))
 
-let getTotalSupply (self:erc20_cel_address) (sender:address) (value:uint) (now:uint)
+let getTotalSupply (self:erc20_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block)
 : Eth1 uint
   (fun bst ->
     erc20_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (totalSupplyInv self bst)
+      (totalSupplyInv self bst)
   ))
   (fun bst -> False)
   (fun bst0 x bst1 ->
@@ -159,15 +158,14 @@ let cs = get_contract self in
 let balance = get_balance self in
 cs.erc20_cel_totalSupply
 
-let balanceOf (self:erc20_cel_address) (sender:address) (value:uint) (now:uint) (account:address)
+let balanceOf (self:erc20_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (account:address)
 : Eth1 uint
   (fun bst ->
     erc20_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (totalSupplyInv self bst)
+      (totalSupplyInv self bst)
   ))
   (fun bst -> False)
   (fun bst0 x bst1 ->
@@ -188,15 +186,14 @@ let cs = get_contract self in
 let balance = get_balance self in
 M.sel cs.erc20_cel_balances account
 
-let _transfer (self:erc20_cel_address) (sender:address) (value:uint) (now:uint) (_from:address) (_to:address) (_amount:uint)
+let _transfer (self:erc20_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_from:address) (_to:address) (_amount:uint)
 : Eth1 unit
   (fun bst ->
     erc20_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ ((((nullCheckPre _from _to)) /\ ((M.sel cs.erc20_cel_balances _from) >= _amount)) /\ (((M.sel cs.erc20_cel_balances _to) + _amount) <= uint_max))
+      ((((nullCheckPre _from _to)) /\ ((M.sel cs.erc20_cel_balances _from) >= _amount)) /\ (((M.sel cs.erc20_cel_balances _to) + _amount) <= uint_max))
   ))
   (fun bst -> False)
   (fun bst0 x bst1 ->
@@ -210,8 +207,8 @@ let _transfer (self:erc20_cel_address) (sender:address) (value:uint) (now:uint) 
       ((transferPost cs0.erc20_cel_balances cs1.erc20_cel_balances _from _to _amount))
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.erc20_cel_allowances == cs1.erc20_cel_allowances)
       /\ (cs0.erc20_cel_totalSupply == cs1.erc20_cel_totalSupply)
+      /\ (cs0.erc20_cel_allowances == cs1.erc20_cel_allowances)
   ))
 =
 let cs = get_contract self in
@@ -237,15 +234,14 @@ let mintReverts (_account:address) (old_totalSupply:uint) (old_balances:(m:(M.t 
 let burnReverts (_account:address) (old_totalSupply:uint) (old_balances:(m:(M.t address uint lt){M.def_of m == 0})) (_amount:uint)
 = (_account == null) \/ ((((M.sel old_balances _account) < _amount) \/ (old_totalSupply < _amount)))
 
-let mint (self:erc20_cel_address) (sender:address) (value:uint) (now:uint) (_account:address) (_amount:uint)
+let mint (self:erc20_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_account:address) (_amount:uint)
 : Eth1 unit
   (fun bst ->
     erc20_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (totalSupplyInv self bst)
+      (totalSupplyInv self bst)
   ))
   (fun bst ->
     let cs = CM.sel self bst.cmap in
@@ -298,15 +294,14 @@ let cs = get_contract self in
 let balance = get_contract self in
 ()
 
-let burn (self:erc20_cel_address) (sender:address) (value:uint) (now:uint) (_account:address) (_amount:uint)
+let burn (self:erc20_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_account:address) (_amount:uint)
 : Eth1 unit
   (fun bst ->
     erc20_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (totalSupplyInv self bst)
+      (totalSupplyInv self bst)
   ))
   (fun bst ->
     let cs = CM.sel self bst.cmap in
@@ -359,15 +354,14 @@ let cs = get_contract self in
 let balance = get_contract self in
 ()
 
-let _approve (self:erc20_cel_address) (sender:address) (value:uint) (now:uint) (_owner:address) (_spender:address) (_amount:uint)
+let _approve (self:erc20_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_owner:address) (_spender:address) (_amount:uint)
 : Eth1 unit
   (fun bst ->
     erc20_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ ((((nullCheckPre _owner _spender)) /\ (_amount >= 0)) /\ (_amount <= uint_max))
+      ((((nullCheckPre _owner _spender)) /\ (_amount >= 0)) /\ (_amount <= uint_max))
   ))
   (fun bst -> False)
   (fun bst0 x bst1 ->
@@ -399,15 +393,14 @@ let _ = erc20_cel_set_allowances self (M.upd x4 x3 (M.upd x2 x1 x5)) in
 let cs = get_contract self in
 ()
 
-let burnFrom (self:erc20_cel_address) (sender:address) (value:uint) (now:uint) (_account:address) (_amount:uint)
+let burnFrom (self:erc20_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_account:address) (_amount:uint)
 : Eth1 unit
   (fun bst ->
     erc20_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (totalSupplyInv self bst)
+      (totalSupplyInv self bst)
   ))
   (fun bst ->
     let cs = CM.sel self bst.cmap in
@@ -430,11 +423,11 @@ let burnFrom (self:erc20_cel_address) (sender:address) (value:uint) (now:uint) (
 =
 let cs = get_contract self in
 let balance = get_balance self in
-let _ = (burn self self 0 now _account _amount) in
+let _ = (burn self self 0 tx block _account _amount) in
 let cs = get_contract self in
 let x1 = (((_account <> null) && (sender <> null)) && ((M.sel (M.sel cs.erc20_cel_allowances _account) sender) >= _amount)) in
 let _ = (if x1 then begin
-let _ = (_approve self self 0 now _account sender (_sub (M.sel (M.sel cs.erc20_cel_allowances _account) sender) _amount)) in
+let _ = (_approve self self 0 tx block _account sender (_sub (M.sel (M.sel cs.erc20_cel_allowances _account) sender) _amount)) in
 let cs = get_contract self in
 () end
 else ()) in
@@ -442,15 +435,14 @@ let cs = get_contract self in
 let balance = get_balance self in
 ()
 
-let transfer (self:erc20_cel_address) (sender:address) (value:uint) (now:uint) (_to:address) (_amount:uint)
+let transfer (self:erc20_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_to:address) (_amount:uint)
 : Eth1 bool
   (fun bst ->
     erc20_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (totalSupplyInv self bst)
+      (totalSupplyInv self bst)
   ))
   (fun bst ->
     let cs = CM.sel self bst.cmap in
@@ -470,8 +462,8 @@ let transfer (self:erc20_cel_address) (sender:address) (value:uint) (now:uint) (
       /\ (((M.sel cs1.erc20_cel_balances sender) <= (M.sel cs0.erc20_cel_balances sender)) /\ ((M.sel cs0.erc20_cel_balances _to) >= (M.sel cs0.erc20_cel_balances _to)))
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.erc20_cel_allowances == cs1.erc20_cel_allowances)
       /\ (cs0.erc20_cel_totalSupply == cs1.erc20_cel_totalSupply)
+      /\ (cs0.erc20_cel_allowances == cs1.erc20_cel_allowances)
   ))
 =
 let cs = get_contract self in
@@ -485,7 +477,7 @@ let cs = get_contract self in
 let balance = get_balance self in
 let x1 = (((M.sel cs.erc20_cel_balances sender) >= _amount) && ((M.sel cs.erc20_cel_balances _to) <= ((_sub uint_max _amount)))) in
 let _ = (if x1 then begin
-let _ = (_transfer self self 0 now sender _to _amount) in
+let _ = (_transfer self self 0 tx block sender _to _amount) in
 let cs = get_contract self in
 () end
 else ()) in
@@ -493,15 +485,14 @@ let cs = get_contract self in
 let balance = get_balance self in
 true
 
-let allowance (self:erc20_cel_address) (sender:address) (value:uint) (now:uint) (_owner:address) (_spender:address)
+let allowance (self:erc20_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_owner:address) (_spender:address)
 : Eth1 uint
   (fun bst ->
     erc20_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (totalSupplyInv self bst)
+      (totalSupplyInv self bst)
   ))
   (fun bst -> False)
   (fun bst0 x bst1 ->
@@ -522,15 +513,14 @@ let cs = get_contract self in
 let balance = get_balance self in
 M.sel (M.sel cs.erc20_cel_allowances _owner) _spender
 
-let approve (self:erc20_cel_address) (sender:address) (value:uint) (now:uint) (_spender:address) (_amount:uint)
+let approve (self:erc20_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_spender:address) (_amount:uint)
 : Eth1 bool
   (fun bst ->
     erc20_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (totalSupplyInv self bst)
+      (totalSupplyInv self bst)
   ))
   (fun bst -> False)
   (fun bst0 x bst1 ->
@@ -551,7 +541,7 @@ let approve (self:erc20_cel_address) (sender:address) (value:uint) (now:uint) (_
 let cs = get_contract self in
 let balance = get_balance self in
 let _ = (if (_spender <> null) then begin
-let _ = (_approve self self 0 now sender _spender _amount) in
+let _ = (_approve self self 0 tx block sender _spender _amount) in
 let cs = get_contract self in
 () end
 else ()) in
@@ -562,15 +552,14 @@ true
 let transferFromReverts (_to:address) (_from:address) (_amount:uint) (old_balances:(m:(M.t address uint lt){M.def_of m == 0})) (old_allowances:(m:(M.t address (m:(M.t address uint lt){M.def_of m == 0}) lt){M.def_of m == M.const (0)})) (_sender:address)
 = (((_from == null) \/ (_to == null)) \/ ((((M.sel old_balances _from) < _amount) \/ ((M.sel old_balances _to) > (uint_max - _amount))))) \/ (((M.sel (M.sel old_allowances _from) _sender) < _amount))
 
-let transferFrom (self:erc20_cel_address) (sender:address) (value:uint) (now:uint) (_from:address) (_to:address) (_amount:uint)
+let transferFrom (self:erc20_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_from:address) (_to:address) (_amount:uint)
 : Eth1 bool
   (fun bst ->
     erc20_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (totalSupplyInv self bst)
+      (totalSupplyInv self bst)
   ))
   (fun bst ->
     let cs = CM.sel self bst.cmap in
@@ -604,7 +593,7 @@ let cs = get_contract self in
 let balance = get_balance self in
 let x1 = (((M.sel cs.erc20_cel_balances _from) >= _amount) && ((M.sel cs.erc20_cel_balances _to) <= ((_sub uint_max _amount)))) in
 let _ = (if x1 then begin
-let _ = (_transfer self self 0 now _from _to _amount) in
+let _ = (_transfer self self 0 tx block _from _to _amount) in
 let cs = get_contract self in
 () end
 else begin
@@ -614,7 +603,7 @@ let cs = get_contract self in
 let balance = get_contract self in
 let x1 = ((M.sel (M.sel cs.erc20_cel_allowances _from) sender) >= _amount) in
 let _ = (if x1 then begin
-let _ = (_approve self self 0 now _from sender (_sub (M.sel (M.sel cs.erc20_cel_allowances _from) sender) _amount)) in
+let _ = (_approve self self 0 tx block _from sender (_sub (M.sel (M.sel cs.erc20_cel_allowances _from) sender) _amount)) in
 let cs = get_contract self in
 () end
 else begin
@@ -624,15 +613,14 @@ let cs = get_contract self in
 let balance = get_contract self in
 true
 
-let increaseAllowance (self:erc20_cel_address) (sender:address) (value:uint) (now:uint) (_spender:address) (_addedValue:uint)
+let increaseAllowance (self:erc20_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_spender:address) (_addedValue:uint)
 : Eth1 bool
   (fun bst ->
     erc20_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (totalSupplyInv self bst)
+      (totalSupplyInv self bst)
   ))
   (fun bst -> False)
   (fun bst0 x bst1 ->
@@ -654,7 +642,7 @@ let cs = get_contract self in
 let balance = get_balance self in
 let x1 = ((_spender <> null) && ((M.sel (M.sel cs.erc20_cel_allowances sender) _spender) <= ((_sub uint_max _addedValue)))) in
 let _ = (if x1 then begin
-let _ = (_approve self self 0 now sender _spender (_add (M.sel (M.sel cs.erc20_cel_allowances sender) _spender) _addedValue)) in
+let _ = (_approve self self 0 tx block sender _spender (_add (M.sel (M.sel cs.erc20_cel_allowances sender) _spender) _addedValue)) in
 let cs = get_contract self in
 () end
 else ()) in
@@ -662,15 +650,14 @@ let cs = get_contract self in
 let balance = get_balance self in
 true
 
-let decreaseAllowance (self:erc20_cel_address) (sender:address) (value:uint) (now:uint) (_spender:address) (_subtractedValue:uint)
+let decreaseAllowance (self:erc20_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_spender:address) (_subtractedValue:uint)
 : Eth1 bool
   (fun bst ->
     erc20_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (totalSupplyInv self bst)
+      (totalSupplyInv self bst)
   ))
   (fun bst -> False)
   (fun bst0 x bst1 ->
@@ -692,7 +679,7 @@ let cs = get_contract self in
 let balance = get_balance self in
 let x1 = ((_spender <> null) && ((M.sel (M.sel cs.erc20_cel_allowances sender) _spender) >= _subtractedValue)) in
 let _ = (if x1 then begin
-let _ = (_approve self self 0 now sender _spender (_sub (M.sel (M.sel cs.erc20_cel_allowances sender) _spender) _subtractedValue)) in
+let _ = (_approve self self 0 tx block sender _spender (_sub (M.sel (M.sel cs.erc20_cel_allowances sender) _spender) _subtractedValue)) in
 let cs = get_contract self in
 () end
 else ()) in

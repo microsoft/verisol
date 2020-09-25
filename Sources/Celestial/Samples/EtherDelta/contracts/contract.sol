@@ -15,8 +15,8 @@ contract EtherDelta_Cel
         _;
     }
 
-    event Deposit(address indexed, address, uint, uint);
-    event Withdraw(address indexed, address, uint, uint);
+    event Deposit(address, address, uint, uint);
+    event Withdraw(address, address, uint, uint);
     address admin;
     address feeAccount;
     uint feeMake;
@@ -83,7 +83,7 @@ contract EtherDelta_Cel
     function deposit () public isUnlocked payable {
         totalBalance = Safe_Arith.safe_add(totalBalance, msg.value);
         tokens[0][msg.sender] = tokens[0][msg.sender] + msg.value;
-        emit Deposit(msg.sender, address(0), msg.value, tokens[0][msg.sender]);
+        emit Deposit(address(0), msg.sender, msg.value, tokens[0][msg.sender]);
         return;
     }
 
@@ -99,7 +99,7 @@ contract EtherDelta_Cel
         {
             tokens[0][msg.sender] = tokens[0][msg.sender] - amount;
             totalBalance = totalBalance - amount;
-            emit Withdraw(msg.sender, address(0), amount, tokens[0][msg.sender]);
+            emit Withdraw(address(0), msg.sender, amount, tokens[0][msg.sender]);
         }
         return;
     }
@@ -120,7 +120,7 @@ contract EtherDelta_Cel
         if (tokenTxStatus == true)
         {
             tokens[tokenId][msg.sender] = tokens[tokenId][msg.sender] + amount;
-            emit Deposit(msg.sender, token, amount, tokens[tokenId][msg.sender]);
+            emit Deposit(token, msg.sender, amount, tokens[tokenId][msg.sender]);
         }
         return;
     }

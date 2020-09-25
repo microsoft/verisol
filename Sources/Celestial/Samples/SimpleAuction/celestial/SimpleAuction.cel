@@ -6,8 +6,8 @@ contract SimpleAuction_Cel {
     mapping (address => uint) pendingReturns;
     bool ended;
 
-    event eHighestBidIncreased (uint);
-    event eAuctionEnded (uint);
+    event HighestBidIncreased (address, uint);
+    event AuctionEnded (address, uint);
 
     uint totalReturns;
 
@@ -26,10 +26,10 @@ contract SimpleAuction_Cel {
     //   before it was deployed, but it is not probable.
     constructor (uint _biddingTime, address _beneficiary) public
         pre balance == 0
-        tx_reverts now + _biddingTime > uint_max
+        tx_reverts block.timestamp + _biddingTime > uint_max
     {
         beneficiary = _beneficiary;
-        auctionEndTime = safe_add (now, _biddingTime);
+        auctionEndTime = safe_add (block.timestamp, _biddingTime);
         return;
     }
 
@@ -53,13 +53,13 @@ contract SimpleAuction_Cel {
     function bid () public
         credit
         post bidPost (highestBid, new(highestBid), highestBidder, new(highestBidder), sender, value, pendingReturns, new(pendingReturns))
-        tx_reverts now > auctionEndTime
+        tx_reverts block.timestamp > auctionEndTime
                    || value <= highestBid
                    || pendingReturns[highestBidder] + highestBid > uint_max
                    || totalReturns + value > uint_max
         modifies [totalReturns, highestBidder, highestBid, log, pendingReturns]
     {
-        if (now > auctionEndTime)
+        if (block.timestamp > auctionEndTime)
             revert ("Auction already ended.");
 
         if (value <= highestBid)
@@ -72,7 +72,7 @@ contract SimpleAuction_Cel {
 
         highestBidder = sender;
         highestBid = value;
-        send (sender, eHighestBidIncreased, value);
+        emit HighestBidIncreased (sender, value);
         return;
     }
 
@@ -121,22 +121,22 @@ contract SimpleAuction_Cel {
         bool new_ended, eventlog old_log, eventlog new_log,
         address old_beneficiary, uint old_highestBid, address old_highestBidder)
     {
-        new_ended && (new_log == (old_beneficiary, eTransfer, old_highestBid)::(old_highestBidder, eAuctionEnded, old_highestBid)::old_log)
+        new_ended && (new_log == (old_beneficiary, eTransfer, old_highestBid)::(AuctionEnded, old_highestBidder, old_highestBid)::old_log)
     }
 
     function auctionEnd () public 
         post auctionEndPost (new(ended), log, new(log), beneficiary, highestBid, highestBidder)
         debit
-        tx_reverts now < auctionEndTime || ended || balance < highestBid
+        tx_reverts block.timestamp < auctionEndTime || ended || balance < highestBid
         modifies [totalReturns, ended]
     {
-        if (now < auctionEndTime)
+        if (block.timestamp < auctionEndTime)
             revert ("Auction not yet ended.");
         if (ended)
             revert ("auctionEnd has already been called.");
 
         ended = true;
-        send (highestBidder, eAuctionEnded, highestBid);
+        emit AuctionEnded (highestBidder, highestBid);
 
         uint bal = balance;
         

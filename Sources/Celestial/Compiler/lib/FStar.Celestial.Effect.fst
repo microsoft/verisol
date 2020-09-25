@@ -234,10 +234,10 @@ let modifies_log_balances_only (l: list event) (bs:Set.set address) (bst0 bst1:b
 
 (* emit and send definitions *)
 
-let emit (#a:Type0) (to:address) (evn:string) (payload:a)
+let emit (#a:Type0) (evn:string) (payload:a)
 : STETH unit
-  (fun p st -> p () (pure_update_log st ((mk_event to evn payload)::(pure_get_log st))))
-= add_event (mk_event to evn payload)
+  (fun p st -> p () (pure_update_log st ((mk_event null evn payload)::(pure_get_log st))))
+= add_event (mk_event null evn payload)
 
 assume val call_value (sender:address) (recipient:address) (amount:uint)
 : Eth bool

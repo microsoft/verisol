@@ -18,8 +18,8 @@ contract MarketPlace_Cel
     {
         marketPlace_Active, marketPlace_OfferPlaced, marketPlace_NotionalAccept, marketPlace_BuyerAccept, marketPlace_SellerAccept, marketPlace_Accept
     }
-    event eMakeOffer(address indexed, uint);
-    event eAcceptOffer(address indexed, uint);
+    event eMakeOffer(address, uint);
+    event eAcceptOffer(address, uint);
     address seller;
     address buyer;
     uint sellingPrice;

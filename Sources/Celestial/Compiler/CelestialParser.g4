@@ -141,7 +141,8 @@ statement : //# CompoundStmt
           | SEND LPAREN contract=expr COMMA ETRANSFER COMMA payload=expr RPAREN SEMI
 
             //# SendStmt
-          | SEND LPAREN contract=expr COMMA event=iden COMMA payload=expr (COMMA payload=expr)* RPAREN SEMI
+          // | SEND LPAREN contract=expr COMMA event=iden COMMA payload=expr (COMMA payload=expr)* RPAREN SEMI
+          | EMIT event=iden LPAREN payload=expr (COMMA payload=expr)* RPAREN SEMI
 
             //# RevertStmt
           | REVERT LPAREN StringLiteral (COMMA rvalueList)? RPAREN SEMI
@@ -154,7 +155,7 @@ lvalue : name=iden                 //# VarLvalue
        | lvalue LBRACK expr RBRACK //# MapOrArrayLvalue
        ;
 
-logcheck : LPAREN to=expr COMMA event=iden COMMA payload=expr (COMMA payload=expr)* RPAREN
+logcheck : LPAREN event=iden COMMA payload=expr (COMMA payload=expr)* RPAREN
          | LPAREN to=expr COMMA ETRANSFER COMMA payload=expr RPAREN
          ;
 
