@@ -80,11 +80,24 @@ namespace SolToBoogie
 
         public void GenerateSpec()
         {
-            StreamWriter writer = new StreamWriter("__ERC20__.config");
+            String filename = context.ASTNodeToSourcePathMap[entryContract];
+            StreamWriter writer = new StreamWriter($"{filename.Substring(0, filename.Length - 4)}.config");
             
             string totSupply = varDecls.ContainsKey("totalSupply") ? varDecls["totalSupply"].Name : "";
+            if (String.IsNullOrEmpty(totSupply))
+            {
+                Console.WriteLine("Warning: Could not find totalSupply variable");
+            }
             string bal = varDecls.ContainsKey("balanceOf") ? varDecls["balanceOf"].Name : "";
+            if (String.IsNullOrEmpty(bal))
+            {
+                Console.WriteLine("Warning: Could not find balance variable");
+            }
             string allowances = varDecls.ContainsKey("allowance") ? varDecls["allowance"].Name : "";
+            if (String.IsNullOrEmpty(allowances))
+            {
+                Console.WriteLine("Warning: Could not find allowances variable");
+            }
             string totContract = fnContracts.ContainsKey("totalSupply") ? fnContracts["totalSupply"].Name : "";
             string balContract = fnContracts.ContainsKey("balanceOf") ? fnContracts["balanceOf"].Name : "";
             string allowanceContract = fnContracts.ContainsKey("allowance") ? fnContracts["allowance"].Name : "";
@@ -94,7 +107,7 @@ namespace SolToBoogie
                 fnContracts.ContainsKey("transferFrom") ? fnContracts["transferFrom"].Name : "";
             string extraVars = String.Join(" ", otherVars.Select(v => v.Name));
 
-            writer.WriteLine($"FILE_NAME={context.ASTNodeToSourcePathMap[entryContract]}");
+            writer.WriteLine($"FILE_NAME={filename}");
             writer.WriteLine($"CONTRACT_NAME={entryContract.Name}");
             writer.WriteLine($"TOTAL={totSupply}");
             writer.WriteLine($"BALANCES={bal}");
