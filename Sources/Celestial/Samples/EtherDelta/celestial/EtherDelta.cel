@@ -6,8 +6,8 @@ contract EtherDelta_Cel
     uint feeTake;       //percentage times (1 ether)
     uint feeRebate;     //percentage times (1 ether)
     mapping (uint => mapping (address => uint)) tokens; //mapping of token addresses to mapping of account balances (token=0 means Ether)
-    event Deposit(address, uint, uint);
-    event Withdraw(address, uint, uint);
+    event Deposit(address, address, uint, uint);
+    event Withdraw(address, address, uint, uint);
 
     bool tokenTxStatus;
     uint totalBalance;
@@ -105,13 +105,13 @@ contract EtherDelta_Cel
     {
         totalBalance = safe_add(totalBalance, value);
         tokens[0][sender] = tokens[0][sender] + value;
-        send (sender, Deposit, null, value, tokens[0][sender]);
+        emit Deposit (null, sender, value, tokens[0][sender]);
         return;
     }
 
     function withdraw (uint amount) public
         post (balance != new(balance) ==> (new(tokens) == tokens[0 => tokens[0][sender => tokens[0][sender] - amount]])
-             && new(log) == (sender, Withdraw, null, amount, new(tokens)[0][sender])::(sender, eTransfer, amount)::log)
+             && new(log) == (Withdraw, null, sender, amount, new(tokens)[0][sender])::(sender, eTransfer, amount)::log)
         debit
         tx_reverts (tokens[0][sender] < amount) 
     {
@@ -126,7 +126,7 @@ contract EtherDelta_Cel
         {
             tokens[0][sender] = tokens[0][sender] - amount;
             totalBalance = totalBalance - amount;
-            send (sender, Withdraw, null, amount, tokens[0][sender]);
+            emit Withdraw (null, sender, amount, tokens[0][sender]);
         }
         return;
     }
@@ -150,7 +150,7 @@ contract EtherDelta_Cel
         
         if (tokenTxStatus == true) {
             tokens[tokenId][sender] = tokens[tokenId][sender] + amount;
-            send (sender, Deposit, token, amount, tokens[tokenId][sender]);
+            emit Deposit (token, sender, amount, tokens[tokenId][sender]);
         }
         return;
     }
@@ -173,7 +173,7 @@ contract EtherDelta_Cel
 
         if (tokenTxStatus == true) {
             tokens[tokenId][sender] = tokens[tokenId][sender] - amount;
-            send (sender, Withdraw, token, amount, tokens[tokenId][sender]);
+            emit Withdraw (sender, token, amount, tokens[tokenId][sender]);
         }
         return;
     }

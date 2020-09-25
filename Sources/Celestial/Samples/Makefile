@@ -63,7 +63,7 @@ verify:
 	elif [ '$(experiment)' = 'erc20' ]; then \
 		$(call TIME,--z3rlimit 50,OpenZeppelin/ERC20/fstar/ERC20_Cel.fst,ERC20); \
 	elif [ '$(experiment)' = 'wrapped_ether' ]; then \
-		$(call TIME,--z3rlimit 100,WrappedEther/fstar/WETH9_Cel.fst,Wrapped Ether); \
+		$(call TIME,--z3rlimit 150,WrappedEther/fstar/WETH9_Cel.fst,Wrapped Ether); \
 	elif [ '$(experiment)' = 'multisig' ]; then \
 		$(call TIME,--z3rlimit 50,ConsenSys/MultiSig/fstar/MultiSigWalletWithDailyLimit_Cel.fst,ConsenSys MultiSigWallet); \
 	elif [ '$(experiment)' = 'simple_auction' ]; then \

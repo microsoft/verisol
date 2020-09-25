@@ -13,8 +13,8 @@ contract MarketPlace_Cel
     }
     state contractCurrentState;
 
-    event eMakeOffer(uint);
-    event eAcceptOffer(uint);
+    event eMakeOffer (address, uint);
+    event eAcceptOffer (address, uint);
 
     // ======================= Specification of AssetTransfer =============
 
@@ -77,7 +77,7 @@ contract MarketPlace_Cel
 
         sellingPrice = _sellingPrice;
         contractCurrentState = state.marketPlace_OfferPlaced;
-        send (buyer, eMakeOffer, sellingPrice);
+        emit eMakeOffer (buyer, sellingPrice);
         return;
     }
 
@@ -136,7 +136,7 @@ contract MarketPlace_Cel
         address _seller, state old_state, state new_state, uint _val, 
         uint _sellingPrice, uint _buyingPrice, eventlog old_log, eventlog new_log)
     {
-        (_val >= _sellingPrice) ==> ((_buyingPrice == _val) && (new_state == state.marketPlace_NotionalAccept) && new_log == (_seller, eAcceptOffer, _buyingPrice)::old_log)
+        (_val >= _sellingPrice) ==> ((_buyingPrice == _val) && (new_state == state.marketPlace_NotionalAccept) && new_log == (eAcceptOffer, _seller, _buyingPrice)::old_log)
     }
 
     function acceptOffer ()
@@ -155,7 +155,7 @@ contract MarketPlace_Cel
         if (value >= sellingPrice)
         {
             buyingPrice = value;
-            send (seller, eAcceptOffer, buyingPrice);
+            emit eAcceptOffer (seller, buyingPrice);
             contractCurrentState = state.marketPlace_NotionalAccept;
         }
         return;

@@ -11,13 +11,13 @@ contract MultiSigWalletWithDailyLimit_Cel {
         bool executed;
     }
 
-    event Confirmation(uint);
-    event Revocation(uint);
+    event Confirmation(address, uint);
+    event Revocation(address, uint);
     event Submission(uint);
     event Execution(uint);
     // event ExecutionFailure(uint transactionId);
-    event OwnerAddition(bool);
-    event OwnerRemoval(bool);
+    event OwnerAddition(address);
+    event OwnerRemoval(address);
     event RequirementChange(uint);
 
     mapping (uint => Transaction) transactions;
@@ -109,7 +109,7 @@ contract MultiSigWalletWithDailyLimit_Cel {
         {
             walletActive = true;
         }
-        send(owner, OwnerAddition, true);
+        emit OwnerAddition (owner);
         return;
     }
 
@@ -144,7 +144,7 @@ contract MultiSigWalletWithDailyLimit_Cel {
             walletActive = false;
         }
 
-        send (owner, OwnerRemoval, true);
+        emit OwnerRemoval (owner);
         return;
     }
 
@@ -165,8 +165,8 @@ contract MultiSigWalletWithDailyLimit_Cel {
 
         isOwner[owner] = false;
         isOwner[newOwner] = true;
-        send (owner, OwnerRemoval, true);
-        send (newOwner, OwnerAddition, true);
+        emit OwnerRemoval (owner);
+        emit OwnerAddition (newOwner);
         return;
     }
 
@@ -188,7 +188,7 @@ contract MultiSigWalletWithDailyLimit_Cel {
         {
             walletActive = false;
         }
-        send (sender, RequirementChange, _required);
+        emit RequirementChange (_required);
         return;
     }
 
@@ -212,7 +212,7 @@ contract MultiSigWalletWithDailyLimit_Cel {
         transactionId = transactionCount;
         transactions[transactionId] = Transaction (_destination, _val, false);
         confirmationCounts[transactionId] = 0;
-        send (_destination, Submission, transactionId);
+        emit Submission (transactionId);
         return transactionId;
     }
 
@@ -258,15 +258,15 @@ contract MultiSigWalletWithDailyLimit_Cel {
     }
 
     function isUnderLimit (uint _amount) private
-        post isUnderLimitPost (now, lastDay, new(lastDay), spentToday, new(spentToday), _amount, dailyLimit, ret)
+        post isUnderLimitPost (block.timestamp, lastDay, new(lastDay), spentToday, new(spentToday), _amount, dailyLimit, ret)
         tx_reverts (lastDay + 86400 > uint_max)
         modifies [lastDay, spentToday]
         returns (bool ret)
     {
         uint t = safe_add (lastDay, 86400);
-        if (now > t)
+        if (block.timestamp > t)
         {
-            lastDay = now;
+            lastDay = block.timestamp;
             spentToday = 0;
         }
         if (_amount > uint_max - spentToday) 
@@ -306,7 +306,7 @@ contract MultiSigWalletWithDailyLimit_Cel {
             )
             && (ite (
                 new(tx_isConfirmed) || new(tx_isUnderLimit),
-                (new(log) == (sender, Execution, transactionId)::(transactions[transactionId].destination, eTransfer, transactions[transactionId].tval)::log)
+                (new(log) == (Execution, transactionId)::(transactions[transactionId].destination, eTransfer, transactions[transactionId].tval)::log)
                 && (new(transactions) == transactions[transactionId => Transaction(transactions[transactionId].destination, transactions[transactionId].tval, true)]),
                 new(log) == log && new(transactions) == transactions
             ))
@@ -318,20 +318,20 @@ contract MultiSigWalletWithDailyLimit_Cel {
             revert ("invalid");
         }
 
-        Transaction tx = transactions[transactionId];
+        Transaction trx = transactions[transactionId];
         tx_isConfirmed = isConfirmed (transactionId);
-        tx_isUnderLimit = isUnderLimit (tx.tval);
+        tx_isUnderLimit = isUnderLimit (trx.tval);
 
         if (tx_isConfirmed || tx_isUnderLimit)
         {
             if (!tx_isConfirmed)
             {
-                spentToday = spentToday + tx.tval;
+                spentToday = spentToday + trx.tval;
             }
 
             transactions[transactionId].executed = true;
-            send (transactions[transactionId].destination, eTransfer, tx.tval);
-            send (sender, Execution, transactionId);
+            send (transactions[transactionId].destination, eTransfer, trx.tval);
+            emit Execution (transactionId);
         }
         return;
     }
@@ -342,7 +342,7 @@ contract MultiSigWalletWithDailyLimit_Cel {
             new(confirmations) == confirmations[transactionId => confirmations[transactionId][sender => true]] &&
             ite (
                 new(confirmationCounts)[transactionId] == required || new(tx_isUnderLimit),
-                new(log) == (address(this), Execution, transactionId)::(transactions[transactionId].destination, eTransfer, transactions[transactionId].tval)::(sender, Confirmation, transactionId)::log
+                new(log) == (Execution, transactionId)::(transactions[transactionId].destination, eTransfer, transactions[transactionId].tval)::(Confirmation, sender, transactionId)::log
                     && new(transactions) == transactions[transactionId => Transaction(transactions[transactionId].destination, transactions[transactionId].tval, true)],
                 new(transactions) == transactions
             )
@@ -359,7 +359,7 @@ contract MultiSigWalletWithDailyLimit_Cel {
         }
         confirmationCounts[transactionId] = safe_add (confirmationCounts[transactionId], 1);
         confirmations[transactionId][sender] = true;
-        send (sender, Confirmation, transactionId);
+        emit Confirmation (sender, transactionId);
         executeTransaction (transactionId);
         return;
     }
@@ -389,7 +389,7 @@ contract MultiSigWalletWithDailyLimit_Cel {
         confirmations[transactionId][sender] = false;
         // assuming the _confirmationCounts invariant at the start should prove the safety of the following
         confirmationCounts[transactionId] = safe_sub (confirmationCounts[transactionId], 1);
-        send (sender, Revocation, transactionId);
+        emit Revocation (sender, transactionId);
         return;
     }
 
@@ -405,7 +405,7 @@ contract MultiSigWalletWithDailyLimit_Cel {
         modifies [dailyLimit, log]
     {
         dailyLimit = _dailyLimit;
-        send (sender, DailyLimitChange, _dailyLimit);
+        emit DailyLimitChange (_dailyLimit);
         return;
     }
 
@@ -416,7 +416,7 @@ contract MultiSigWalletWithDailyLimit_Cel {
     {
         uint ret;
         uint endTime = safe_add (lastDay, 86400);
-        if (now > endTime)  // rewrite 24 hours as 86400 seconds
+        if (block.timestamp > endTime)  // rewrite 24 hours as 86400 seconds
         {
             ret =  dailyLimit;
         }

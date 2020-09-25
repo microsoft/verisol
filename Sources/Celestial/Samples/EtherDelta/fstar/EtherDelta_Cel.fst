@@ -216,7 +216,7 @@ let eth_balances (self:etherdelta_cel_address) (bst:bstate{self `etherdelta_cel_
   let cs = CM.sel self bst.cmap in
     cs.etherdelta_cel_totalBalance >= ((sum_mapping (M.sel cs.etherdelta_cel_tokens 0)))
 
-let etherdelta_cel_constructor (self:etherdelta_cel_address) (sender:address) (value:uint) (now:uint) (admin_:address) (feeAccount_:address) (feeMake_:uint) (feeTake_:uint) (feeRebate_:uint)
+let etherdelta_cel_constructor (self:etherdelta_cel_address) (sender:address) (value:uint) (tx:tx) (block:block) (admin_:address) (feeAccount_:address) (feeMake_:uint) (feeTake_:uint) (feeRebate_:uint)
 : Eth1 unit
   (fun bst -> 
     etherdelta_cel_live self bst /\
@@ -255,15 +255,14 @@ let _ = etherdelta_cel_set_feeRebate self feeRebate_ in
 let cs = get_contract self in
 ()
 
-let changeAdmin (self:etherdelta_cel_address) (sender:address) (value:uint) (now:uint) (admin_:address)
+let changeAdmin (self:etherdelta_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (admin_:address)
 : Eth1 unit
   (fun bst ->
     etherdelta_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (eth_balances2 self bst)
+      (eth_balances2 self bst)
       /\ (eth_balances self bst)
   ))
   (fun bst ->
@@ -286,10 +285,10 @@ let changeAdmin (self:etherdelta_cel_address) (sender:address) (value:uint) (now
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
       /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
-      /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
+      /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
       /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
       /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
-      /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
+      /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
       /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
       /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
   ))
@@ -306,15 +305,14 @@ let _ = etherdelta_cel_set_admin self admin_ in
 let cs = get_contract self in
 ()
 
-let changeFeeAccount (self:etherdelta_cel_address) (sender:address) (value:uint) (now:uint) (feeAccount_:address)
+let changeFeeAccount (self:etherdelta_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (feeAccount_:address)
 : Eth1 unit
   (fun bst ->
     etherdelta_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (eth_balances2 self bst)
+      (eth_balances2 self bst)
       /\ (eth_balances self bst)
   ))
   (fun bst ->
@@ -336,10 +334,10 @@ let changeFeeAccount (self:etherdelta_cel_address) (sender:address) (value:uint)
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
       /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
-      /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
+      /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
       /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
       /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
-      /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
+      /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
       /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
       /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
   ))
@@ -356,15 +354,14 @@ let _ = etherdelta_cel_set_feeAccount self feeAccount_ in
 let cs = get_contract self in
 ()
 
-let changeFeeMake (self:etherdelta_cel_address) (sender:address) (value:uint) (now:uint) (feeMake_:uint)
+let changeFeeMake (self:etherdelta_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (feeMake_:uint)
 : Eth1 unit
   (fun bst ->
     etherdelta_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (eth_balances2 self bst)
+      (eth_balances2 self bst)
       /\ (eth_balances self bst)
   ))
   (fun bst ->
@@ -388,10 +385,10 @@ let changeFeeMake (self:etherdelta_cel_address) (sender:address) (value:uint) (n
       /\ (l0 == l1)
       /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
       /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
-      /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
+      /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
       /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
       /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
-      /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
+      /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
       /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
   ))
 =
@@ -407,15 +404,14 @@ let _ = etherdelta_cel_set_feeMake self feeMake_ in
 let cs = get_contract self in
 ()
 
-let changeFeeTake (self:etherdelta_cel_address) (sender:address) (value:uint) (now:uint) (feeTake_:uint)
+let changeFeeTake (self:etherdelta_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (feeTake_:uint)
 : Eth1 unit
   (fun bst ->
     etherdelta_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (eth_balances2 self bst)
+      (eth_balances2 self bst)
       /\ (eth_balances self bst)
   ))
   (fun bst ->
@@ -439,9 +435,9 @@ let changeFeeTake (self:etherdelta_cel_address) (sender:address) (value:uint) (n
       /\ (l0 == l1)
       /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
       /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
+      /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
       /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
       /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
-      /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
       /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
       /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
   ))
@@ -458,15 +454,14 @@ let _ = etherdelta_cel_set_feeTake self feeTake_ in
 let cs = get_contract self in
 ()
 
-let changeFeeRebate (self:etherdelta_cel_address) (sender:address) (value:uint) (now:uint) (feeRebate_:uint)
+let changeFeeRebate (self:etherdelta_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (feeRebate_:uint)
 : Eth1 unit
   (fun bst ->
     etherdelta_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (eth_balances2 self bst)
+      (eth_balances2 self bst)
       /\ (eth_balances self bst)
   ))
   (fun bst ->
@@ -490,9 +485,9 @@ let changeFeeRebate (self:etherdelta_cel_address) (sender:address) (value:uint) 
       /\ (l0 == l1)
       /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
       /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
-      /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
-      /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
       /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
+      /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
+      /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
       /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
       /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
   ))
@@ -509,15 +504,14 @@ let _ = etherdelta_cel_set_feeRebate self feeRebate_ in
 let cs = get_contract self in
 ()
 
-let deposit (self:etherdelta_cel_address) (sender:address) (value:uint) (now:uint)
+let deposit (self:etherdelta_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block)
 : Eth1 unit
   (fun bst ->
     etherdelta_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (eth_balances2 self bst)
+      (eth_balances2 self bst)
       /\ (eth_balances self bst)
   ))
   (fun bst ->
@@ -550,8 +544,8 @@ let deposit (self:etherdelta_cel_address) (sender:address) (value:uint) (now:uin
       /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
       /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
       /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
-      /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
       /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
+      /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
       /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
   ))
 =
@@ -574,20 +568,19 @@ let x0 = (M.sel x2 x1) in
 
 let _ = etherdelta_cel_set_tokens self (M.upd x4 x3 (M.upd x2 x1 x5)) in
 let cs = get_contract self in
-let _ = emit sender etherdelta_cel_Deposit (null, value, M.sel (M.sel cs.etherdelta_cel_tokens 0) sender) in
+let _ = emit etherdelta_cel_Deposit (null, sender, value, M.sel (M.sel cs.etherdelta_cel_tokens 0) sender) in
 let cs = get_contract self in
 let balance = get_balance self in
 ()
 
-let withdraw (self:etherdelta_cel_address) (sender:address) (value:uint) (now:uint) (amount:uint)
+let withdraw (self:etherdelta_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (amount:uint)
 : Eth1 unit
   (fun bst ->
     etherdelta_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (eth_balances2 self bst)
+      (eth_balances2 self bst)
       /\ (eth_balances self bst)
   ))
   (fun bst ->
@@ -616,7 +609,7 @@ let withdraw (self:etherdelta_cel_address) (sender:address) (value:uint) (now:ui
           let x1 = (M.upd x1 x2 x3) in
           x1) in
         let x1 = (M.upd x1 x2 x3) in
-        x1))) /\ (l1 == ((mk_event sender etherdelta_cel_Withdraw (null, amount, M.sel (M.sel cs1.etherdelta_cel_tokens 0) sender))::(mk_event sender eTransfer amount)::l0)))))
+        x1))) /\ (l1 == ((mk_event null etherdelta_cel_Withdraw (null, sender, amount, M.sel (M.sel cs1.etherdelta_cel_tokens 0) sender))::(mk_event sender eTransfer amount)::l0)))))
       /\ (b1 <= b0)
   ))
 =
@@ -645,7 +638,7 @@ let _ = etherdelta_cel_set_tokens self (M.upd x4 x3 (M.upd x2 x1 x5)) in
 let cs = get_contract self in
 let _ = etherdelta_cel_set_totalBalance self (_sub cs.etherdelta_cel_totalBalance amount) in
 let cs = get_contract self in
-let _ = emit sender etherdelta_cel_Withdraw (null, amount, M.sel (M.sel cs.etherdelta_cel_tokens 0) sender) in
+let _ = emit etherdelta_cel_Withdraw (null, sender, amount, M.sel (M.sel cs.etherdelta_cel_tokens 0) sender) in
 let cs = get_contract self in
 let balance = get_balance self in
 () end
@@ -654,15 +647,14 @@ let cs = get_contract self in
 let balance = get_balance self in
 ()
 
-let depositToken (self:etherdelta_cel_address) (sender:address) (value:uint) (now:uint) (tokenId:uint) (token:address) (amount:uint)
+let depositToken (self:etherdelta_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (tokenId:uint) (token:address) (amount:uint)
 : Eth1 unit
   (fun bst ->
     etherdelta_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (eth_balances2 self bst)
+      (eth_balances2 self bst)
       /\ (eth_balances self bst)
   ))
   (fun bst ->
@@ -694,8 +686,8 @@ let depositToken (self:etherdelta_cel_address) (sender:address) (value:uint) (no
         x1)))
       /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
       /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
-      /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
       /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
+      /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
       /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
   ))
 =
@@ -732,7 +724,7 @@ let x0 = (M.sel x2 x1) in
   
 let _ = etherdelta_cel_set_tokens self (M.upd x4 x3 (M.upd x2 x1 x5)) in
 let cs = get_contract self in
-let _ = emit sender etherdelta_cel_Deposit (token, amount, M.sel (M.sel cs.etherdelta_cel_tokens tokenId) sender) in
+let _ = emit etherdelta_cel_Deposit (token, sender, amount, M.sel (M.sel cs.etherdelta_cel_tokens tokenId) sender) in
 let cs = get_contract self in
 let balance = get_balance self in
 () end
@@ -741,15 +733,14 @@ let cs = get_contract self in
 let balance = get_balance self in
 ()
 
-let withdrawToken (self:etherdelta_cel_address) (sender:address) (value:uint) (now:uint) (tokenId:uint) (token:address) (amount:uint)
+let withdrawToken (self:etherdelta_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (tokenId:uint) (token:address) (amount:uint)
 : Eth1 unit
   (fun bst ->
     etherdelta_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (eth_balances2 self bst)
+      (eth_balances2 self bst)
       /\ (eth_balances self bst)
   ))
   (fun bst ->
@@ -781,8 +772,8 @@ let withdrawToken (self:etherdelta_cel_address) (sender:address) (value:uint) (n
         x1))))
       /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
       /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
-      /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
       /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
+      /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
       /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
   ))
 =
@@ -819,7 +810,7 @@ let x0 = (M.sel x2 x1) in
   
 let _ = etherdelta_cel_set_tokens self (M.upd x4 x3 (M.upd x2 x1 x5)) in
 let cs = get_contract self in
-let _ = emit sender etherdelta_cel_Withdraw (token, amount, M.sel (M.sel cs.etherdelta_cel_tokens tokenId) sender) in
+let _ = emit etherdelta_cel_Withdraw (sender, token, amount, M.sel (M.sel cs.etherdelta_cel_tokens tokenId) sender) in
 let cs = get_contract self in
 let balance = get_balance self in
 () end

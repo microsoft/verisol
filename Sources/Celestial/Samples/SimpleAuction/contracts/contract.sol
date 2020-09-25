@@ -15,8 +15,8 @@ contract SimpleAuction_Cel
         _;
     }
 
-    event eHighestBidIncreased(address indexed, uint);
-    event eAuctionEnded(address indexed, uint);
+    event HighestBidIncreased(address, uint);
+    event AuctionEnded(address, uint);
     address beneficiary;
     uint auctionEndTime;
     address highestBidder;
@@ -27,12 +27,12 @@ contract SimpleAuction_Cel
 
     constructor (uint _biddingTime, address _beneficiary) public {
         beneficiary = _beneficiary;
-        auctionEndTime = Safe_Arith.safe_add(now, _biddingTime);
+        auctionEndTime = Safe_Arith.safe_add(block.timestamp, _biddingTime);
         return;
     }
 
     function bid () public isUnlocked payable {
-        if (now > auctionEndTime)
+        if (block.timestamp > auctionEndTime)
         revert ("Auction already ended.");
         if (msg.value <= highestBid)
         revert ("There already is a higher bid.");
@@ -41,7 +41,7 @@ contract SimpleAuction_Cel
         pendingReturns[highestBidder] = Safe_Arith.safe_add(pendingReturns[highestBidder], highestBid);
         highestBidder = msg.sender;
         highestBid = msg.value;
-        emit eHighestBidIncreased(msg.sender, msg.value);
+        emit HighestBidIncreased(msg.sender, msg.value);
         return;
     }
 
@@ -62,12 +62,12 @@ contract SimpleAuction_Cel
     }
 
     function auctionEnd () public isUnlocked {
-        if (now < auctionEndTime)
+        if (block.timestamp < auctionEndTime)
         revert ("Auction not yet ended.");
         if (ended)
         revert ("auctionEnd has already been called.");
         ended = true;
-        emit eAuctionEnded(highestBidder, highestBid);
+        emit AuctionEnded(highestBidder, highestBid);
         uint bal = address(this).balance;
         if (address(this).balance < highestBid) revert ("Insufficient balance");
         beneficiary.call{value: (highestBid), gas: 2300}("");

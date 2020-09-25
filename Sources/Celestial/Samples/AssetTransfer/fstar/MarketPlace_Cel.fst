@@ -164,7 +164,7 @@ else
 let acceptPost (_from:address) (_seller:address) (_buyer:address) (old_state:marketplace_cel_state) (new_state:marketplace_cel_state)
 = (((((((old_state == MarketPlace_NotionalAccept) /\ (_from == _buyer)) ==> (new_state == MarketPlace_BuyerAccept)))) /\ (((((old_state == MarketPlace_NotionalAccept) /\ (_from == _seller)) ==> (new_state == MarketPlace_SellerAccept))))) /\ (((((old_state == MarketPlace_BuyerAccept) /\ (_from == _seller)) ==> (new_state == MarketPlace_Accept))))) /\ (((((old_state == MarketPlace_SellerAccept) /\ (_from == _buyer)) ==> (new_state == MarketPlace_Accept))))
 
-let marketplace_cel_constructor (self:marketplace_cel_address) (sender:address) (value:uint) (now:uint) (_seller:address) (_buyer:address)
+let marketplace_cel_constructor (self:marketplace_cel_address) (sender:address) (value:uint) (tx:tx) (block:block) (_seller:address) (_buyer:address)
 : Eth1 unit
   (fun bst -> 
     marketplace_cel_live self bst /\
@@ -203,15 +203,14 @@ let _ = marketplace_cel_set_contractCurrentState self MarketPlace_Active in
 let cs = get_contract self in
 ()
 
-let makeOffer (self:marketplace_cel_address) (sender:address) (value:uint) (now:uint) (_sellingPrice:uint)
+let makeOffer (self:marketplace_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_sellingPrice:uint)
 : Eth1 unit
   (fun bst ->
     marketplace_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (distinctBuyerSeller self bst)
+      (distinctBuyerSeller self bst)
   ))
   (fun bst ->
     let cs = CM.sel self bst.cmap in
@@ -253,22 +252,19 @@ let _ = marketplace_cel_set_sellingPrice self _sellingPrice in
 let cs = get_contract self in
 let _ = marketplace_cel_set_contractCurrentState self MarketPlace_OfferPlaced in
 let cs = get_contract self in
-let x1 = (cs.marketplace_cel_buyer) in
-let x2 = (cs.marketplace_cel_sellingPrice) in
-let _ = emit x1 marketplace_cel_eMakeOffer x2 in
+let _ = emit marketplace_cel_eMakeOffer (cs.marketplace_cel_buyer, cs.marketplace_cel_sellingPrice) in
 let cs = get_contract self in
 let balance = get_balance self in
 ()
 
-let modifyOffer (self:marketplace_cel_address) (sender:address) (value:uint) (now:uint) (_increase:bool) (_change:uint)
+let modifyOffer (self:marketplace_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_increase:bool) (_change:uint)
 : Eth1 unit
   (fun bst ->
     marketplace_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (distinctBuyerSeller self bst)
+      (distinctBuyerSeller self bst)
   ))
   (fun bst ->
     let cs = CM.sel self bst.cmap in
@@ -328,15 +324,14 @@ let cs = get_contract self in
 let balance = get_contract self in
 ()
 
-let rejectOffer (self:marketplace_cel_address) (sender:address) (value:uint) (now:uint)
+let rejectOffer (self:marketplace_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block)
 : Eth1 unit
   (fun bst ->
     marketplace_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (distinctBuyerSeller self bst)
+      (distinctBuyerSeller self bst)
   ))
   (fun bst ->
     let cs = CM.sel self bst.cmap in
@@ -356,8 +351,8 @@ let rejectOffer (self:marketplace_cel_address) (sender:address) (value:uint) (no
       /\ (cs1.marketplace_cel_contractCurrentState == MarketPlace_Active)
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.marketplace_cel_sellingPrice == cs1.marketplace_cel_sellingPrice)
       /\ (cs0.marketplace_cel_seller == cs1.marketplace_cel_seller)
+      /\ (cs0.marketplace_cel_sellingPrice == cs1.marketplace_cel_sellingPrice)
       /\ (cs0.marketplace_cel_buyingPrice == cs1.marketplace_cel_buyingPrice)
       /\ (cs0.marketplace_cel_buyer == cs1.marketplace_cel_buyer)
   ))
@@ -382,17 +377,16 @@ let cs = get_contract self in
 ()
 
 let acceptOfferPost (_seller:address) (old_state:marketplace_cel_state) (new_state:marketplace_cel_state) (_val:uint) (_sellingPrice:uint) (_buyingPrice:uint) (old_log:log) (new_log:log)
-= ((_val >= _sellingPrice) ==> ((((_buyingPrice == _val)) /\ ((new_state == MarketPlace_NotionalAccept))) /\ (new_log == ((mk_event _seller marketplace_cel_eAcceptOffer _buyingPrice)::old_log))))
+= ((_val >= _sellingPrice) ==> ((((_buyingPrice == _val)) /\ ((new_state == MarketPlace_NotionalAccept))) /\ (new_log == ((mk_event null marketplace_cel_eAcceptOffer (_seller, _buyingPrice))::old_log))))
 
-let acceptOffer (self:marketplace_cel_address) (sender:address) (value:uint) (now:uint)
+let acceptOffer (self:marketplace_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block)
 : Eth1 unit
   (fun bst ->
     marketplace_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (distinctBuyerSeller self bst)
+      (distinctBuyerSeller self bst)
   ))
   (fun bst ->
     let cs = CM.sel self bst.cmap in
@@ -410,8 +404,8 @@ let acceptOffer (self:marketplace_cel_address) (sender:address) (value:uint) (no
     let l1 = bst1.log in
     (distinctBuyerSeller self bst1)
       /\ ((acceptOfferPost cs0.marketplace_cel_seller cs0.marketplace_cel_contractCurrentState cs1.marketplace_cel_contractCurrentState value cs0.marketplace_cel_sellingPrice cs1.marketplace_cel_buyingPrice l0 l1))
-      /\ (cs0.marketplace_cel_sellingPrice == cs1.marketplace_cel_sellingPrice)
       /\ (cs0.marketplace_cel_seller == cs1.marketplace_cel_seller)
+      /\ (cs0.marketplace_cel_sellingPrice == cs1.marketplace_cel_sellingPrice)
       /\ (cs0.marketplace_cel_buyer == cs1.marketplace_cel_buyer)
   ))
 =
@@ -431,9 +425,7 @@ let x1 = (value >= cs.marketplace_cel_sellingPrice) in
 let _ = (if x1 then begin
 let _ = marketplace_cel_set_buyingPrice self value in
 let cs = get_contract self in
-let x1 = (cs.marketplace_cel_seller) in
-let x2 = (cs.marketplace_cel_buyingPrice) in
-let _ = emit x1 marketplace_cel_eAcceptOffer x2 in
+let _ = emit marketplace_cel_eAcceptOffer (cs.marketplace_cel_seller, cs.marketplace_cel_buyingPrice) in
 let cs = get_contract self in
 let balance = get_balance self in
 let _ = marketplace_cel_set_contractCurrentState self MarketPlace_NotionalAccept in
@@ -447,15 +439,14 @@ let balance = get_balance self in
 let acceptReverts (old_contractCurrentState:marketplace_cel_state)
 = ((old_contractCurrentState =!= MarketPlace_NotionalAccept) /\ (old_contractCurrentState =!= MarketPlace_BuyerAccept)) /\ (old_contractCurrentState =!= MarketPlace_SellerAccept)
 
-let accept (self:marketplace_cel_address) (sender:address) (value:uint) (now:uint)
+let accept (self:marketplace_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block)
 : Eth1 unit
   (fun bst ->
     marketplace_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (distinctBuyerSeller self bst)
+      (distinctBuyerSeller self bst)
   ))
   (fun bst ->
     let cs = CM.sel self bst.cmap in
@@ -475,8 +466,8 @@ let accept (self:marketplace_cel_address) (sender:address) (value:uint) (now:uin
       /\ ((acceptPost sender cs0.marketplace_cel_seller cs0.marketplace_cel_buyer cs0.marketplace_cel_contractCurrentState cs1.marketplace_cel_contractCurrentState))
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.marketplace_cel_sellingPrice == cs1.marketplace_cel_sellingPrice)
       /\ (cs0.marketplace_cel_seller == cs1.marketplace_cel_seller)
+      /\ (cs0.marketplace_cel_sellingPrice == cs1.marketplace_cel_sellingPrice)
       /\ (cs0.marketplace_cel_buyingPrice == cs1.marketplace_cel_buyingPrice)
       /\ (cs0.marketplace_cel_buyer == cs1.marketplace_cel_buyer)
   ))
@@ -533,15 +524,14 @@ let withdrawReverts (old_contractCurrentState:marketplace_cel_state) (_sender:ad
 let withdrawPost (old_balance:uint) (new_balance:uint) (old_buyingPrice:uint) (old_seller:address) (old_log:log) (new_log:log)
 = (new_log == ((mk_event old_seller eTransfer old_buyingPrice)::old_log)) /\ (((new_balance == (old_balance - old_buyingPrice)) \/ (new_balance == old_balance)))
 
-let withdraw (self:marketplace_cel_address) (sender:address) (value:uint) (now:uint)
+let withdraw (self:marketplace_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block)
 : Eth1 unit
   (fun bst ->
     marketplace_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (distinctBuyerSeller self bst)
+      (distinctBuyerSeller self bst)
   ))
   (fun bst ->
     let cs = CM.sel self bst.cmap in

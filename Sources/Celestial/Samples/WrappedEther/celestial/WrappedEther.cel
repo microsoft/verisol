@@ -8,10 +8,10 @@ contract WETH9_Cel {
     string symbol   = "WETH";
     uint decimals   = 18;
 
-    event Approval (address, uint);
-    event Transfer (address, uint);
-    event Deposit (uint);
-    event Withdrawal (uint);
+    event Approval (address, address, uint);
+    event Transfer (address, address, uint);
+    event Deposit (address, uint);
+    event Withdrawal (address, uint);
 
     mapping (address => uint) balanceOf;
     mapping (address => mapping (address => uint)) allowance;
@@ -30,19 +30,19 @@ contract WETH9_Cel {
 
     function deposit () public 
         post new(balanceOf) == balanceOf [sender => balanceOf[sender] + value]
-             && new(log) == (sender, Deposit, value)::log
+             && new(log) == (Deposit, sender, value)::log
         credit
         tx_reverts (value + totalBalance > uint_max)
         modifies [balanceOf, totalBalance]
     {
         totalBalance = safe_add(totalBalance, value);
         balanceOf[sender] = balanceOf[sender] + value;
-        send (sender, Deposit, value);
+        emit Deposit (sender, value);
         return;
     }
 
     function withdraw (uint _wad) public 
-        post new(log) == (sender, Withdrawal, _wad)::(sender, eTransfer, _wad)::log
+        post new(log) == (Withdrawal, sender, _wad)::(sender, eTransfer, _wad)::log
              && ite (
                  new(balance) < balance,
                  new(balanceOf) == balanceOf[sender => balanceOf[sender] - _wad],
@@ -60,7 +60,7 @@ contract WETH9_Cel {
         }
         
         send (sender, eTransfer, _wad);
-        send (sender, Withdrawal, _wad);
+        emit Withdrawal (sender, _wad);
 
         if (balance < bal) 
         {
@@ -85,7 +85,7 @@ contract WETH9_Cel {
         returns (bool)
     {
         allowance[sender][_guy] = _wad;
-        send (sender, Approval, _guy, _wad);
+        emit Approval (sender, _guy, _wad);
         return true;
     }
 
@@ -149,7 +149,7 @@ contract WETH9_Cel {
         balanceOf[_src] = balanceOf[_src] - _wad;
         balanceOf[_dst] = balanceOf[_dst] + _wad;
 
-        send (_src, Transfer, _dst, _wad);
+        emit Transfer (_src, _dst, _wad);
 
         return true;
     }

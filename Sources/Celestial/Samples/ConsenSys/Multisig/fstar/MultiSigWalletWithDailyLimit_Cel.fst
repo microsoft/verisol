@@ -375,7 +375,7 @@ let confirmationCountsInv (self:multisigwalletwithdailylimit_cel_address) (bst:b
     (forall (i:uint). ((((M.contains cs.multisigwalletwithdailylimit_cel_transactions i)) ==> ((M.contains cs.multisigwalletwithdailylimit_cel_confirmationCounts i)))))
 
 
-let multisigwalletwithdailylimit_cel_constructor (self:multisigwalletwithdailylimit_cel_address) (sender:address) (value:uint) (now:uint) (initial_owner:address) (_required:uint) (_dailyLimit:uint)
+let multisigwalletwithdailylimit_cel_constructor (self:multisigwalletwithdailylimit_cel_address) (sender:address) (value:uint) (tx:tx) (block:block) (initial_owner:address) (_required:uint) (_dailyLimit:uint)
 : Eth1 unit
   (fun bst -> 
     multisigwalletwithdailylimit_cel_live self bst /\
@@ -438,15 +438,14 @@ else
  (new_walletActive == old_walletActive)
 )
 
-let addOwner (self:multisigwalletwithdailylimit_cel_address) (sender:address) (value:uint) (now:uint) (owner:address)
+let addOwner (self:multisigwalletwithdailylimit_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (owner:address)
 : Eth1 unit
   (fun bst ->
     multisigwalletwithdailylimit_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (walletActiveInv self bst)
+      (walletActiveInv self bst)
       /\ (ownerCountInv self bst)
       /\ (transactionCountInv self bst)
       /\ (confirmationCountsInv self bst)
@@ -471,17 +470,17 @@ let addOwner (self:multisigwalletwithdailylimit_cel_address) (sender:address) (v
       /\ (confirmationCountsInv self bst1)
       /\ ((addOwnerPost cs0.multisigwalletwithdailylimit_cel_isOwner cs1.multisigwalletwithdailylimit_cel_isOwner cs0.multisigwalletwithdailylimit_cel_ownerCount cs1.multisigwalletwithdailylimit_cel_ownerCount cs0.multisigwalletwithdailylimit_cel_required cs0.multisigwalletwithdailylimit_cel_walletActive cs1.multisigwalletwithdailylimit_cel_walletActive owner))
       /\ (bst0.balances == bst1.balances)
+      /\ (cs0.multisigwalletwithdailylimit_cel_confirmationCounts == cs1.multisigwalletwithdailylimit_cel_confirmationCounts)
+      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isConfirmed == cs1.multisigwalletwithdailylimit_cel_tx_isConfirmed)
+      /\ (cs0.multisigwalletwithdailylimit_cel_lastDay == cs1.multisigwalletwithdailylimit_cel_lastDay)
       /\ (cs0.multisigwalletwithdailylimit_cel_transactionCount == cs1.multisigwalletwithdailylimit_cel_transactionCount)
       /\ (cs0.multisigwalletwithdailylimit_cel_confirmations == cs1.multisigwalletwithdailylimit_cel_confirmations)
+      /\ (cs0.multisigwalletwithdailylimit_cel_required == cs1.multisigwalletwithdailylimit_cel_required)
+      /\ (cs0.multisigwalletwithdailylimit_cel_transactions == cs1.multisigwalletwithdailylimit_cel_transactions)
+      /\ (cs0.multisigwalletwithdailylimit_cel_dailyLimit == cs1.multisigwalletwithdailylimit_cel_dailyLimit)
+      /\ (cs0.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT == cs1.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT)
       /\ (cs0.multisigwalletwithdailylimit_cel_spentToday == cs1.multisigwalletwithdailylimit_cel_spentToday)
       /\ (cs0.multisigwalletwithdailylimit_cel_tx_isUnderLimit == cs1.multisigwalletwithdailylimit_cel_tx_isUnderLimit)
-      /\ (cs0.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT == cs1.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT)
-      /\ (cs0.multisigwalletwithdailylimit_cel_lastDay == cs1.multisigwalletwithdailylimit_cel_lastDay)
-      /\ (cs0.multisigwalletwithdailylimit_cel_transactions == cs1.multisigwalletwithdailylimit_cel_transactions)
-      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isConfirmed == cs1.multisigwalletwithdailylimit_cel_tx_isConfirmed)
-      /\ (cs0.multisigwalletwithdailylimit_cel_required == cs1.multisigwalletwithdailylimit_cel_required)
-      /\ (cs0.multisigwalletwithdailylimit_cel_dailyLimit == cs1.multisigwalletwithdailylimit_cel_dailyLimit)
-      /\ (cs0.multisigwalletwithdailylimit_cel_confirmationCounts == cs1.multisigwalletwithdailylimit_cel_confirmationCounts)
   ))
 =
 let cs = get_contract self in
@@ -507,7 +506,7 @@ let cs = get_contract self in
 else ()) in
 let cs = get_contract self in
 let balance = get_balance self in
-let _ = emit owner multisigwalletwithdailylimit_cel_OwnerAddition true in
+let _ = emit multisigwalletwithdailylimit_cel_OwnerAddition owner in
 let cs = get_contract self in
 let balance = get_balance self in
 ()
@@ -524,15 +523,14 @@ else
  (new_walletActive == old_walletActive)
 )
 
-let removeOwner (self:multisigwalletwithdailylimit_cel_address) (sender:address) (value:uint) (now:uint) (owner:address)
+let removeOwner (self:multisigwalletwithdailylimit_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (owner:address)
 : Eth1 unit
   (fun bst ->
     multisigwalletwithdailylimit_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (walletActiveInv self bst)
+      (walletActiveInv self bst)
       /\ (ownerCountInv self bst)
       /\ (transactionCountInv self bst)
       /\ (confirmationCountsInv self bst)
@@ -557,17 +555,17 @@ let removeOwner (self:multisigwalletwithdailylimit_cel_address) (sender:address)
       /\ (confirmationCountsInv self bst1)
       /\ ((removeOwnerPost owner cs0.multisigwalletwithdailylimit_cel_isOwner cs1.multisigwalletwithdailylimit_cel_isOwner cs0.multisigwalletwithdailylimit_cel_ownerCount cs1.multisigwalletwithdailylimit_cel_ownerCount cs0.multisigwalletwithdailylimit_cel_required cs0.multisigwalletwithdailylimit_cel_walletActive cs1.multisigwalletwithdailylimit_cel_walletActive))
       /\ (bst0.balances == bst1.balances)
+      /\ (cs0.multisigwalletwithdailylimit_cel_confirmationCounts == cs1.multisigwalletwithdailylimit_cel_confirmationCounts)
+      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isConfirmed == cs1.multisigwalletwithdailylimit_cel_tx_isConfirmed)
+      /\ (cs0.multisigwalletwithdailylimit_cel_lastDay == cs1.multisigwalletwithdailylimit_cel_lastDay)
       /\ (cs0.multisigwalletwithdailylimit_cel_transactionCount == cs1.multisigwalletwithdailylimit_cel_transactionCount)
       /\ (cs0.multisigwalletwithdailylimit_cel_confirmations == cs1.multisigwalletwithdailylimit_cel_confirmations)
+      /\ (cs0.multisigwalletwithdailylimit_cel_required == cs1.multisigwalletwithdailylimit_cel_required)
+      /\ (cs0.multisigwalletwithdailylimit_cel_transactions == cs1.multisigwalletwithdailylimit_cel_transactions)
+      /\ (cs0.multisigwalletwithdailylimit_cel_dailyLimit == cs1.multisigwalletwithdailylimit_cel_dailyLimit)
+      /\ (cs0.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT == cs1.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT)
       /\ (cs0.multisigwalletwithdailylimit_cel_spentToday == cs1.multisigwalletwithdailylimit_cel_spentToday)
       /\ (cs0.multisigwalletwithdailylimit_cel_tx_isUnderLimit == cs1.multisigwalletwithdailylimit_cel_tx_isUnderLimit)
-      /\ (cs0.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT == cs1.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT)
-      /\ (cs0.multisigwalletwithdailylimit_cel_lastDay == cs1.multisigwalletwithdailylimit_cel_lastDay)
-      /\ (cs0.multisigwalletwithdailylimit_cel_transactions == cs1.multisigwalletwithdailylimit_cel_transactions)
-      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isConfirmed == cs1.multisigwalletwithdailylimit_cel_tx_isConfirmed)
-      /\ (cs0.multisigwalletwithdailylimit_cel_required == cs1.multisigwalletwithdailylimit_cel_required)
-      /\ (cs0.multisigwalletwithdailylimit_cel_dailyLimit == cs1.multisigwalletwithdailylimit_cel_dailyLimit)
-      /\ (cs0.multisigwalletwithdailylimit_cel_confirmationCounts == cs1.multisigwalletwithdailylimit_cel_confirmationCounts)
   ))
 =
 let cs = get_contract self in
@@ -591,7 +589,7 @@ let cs = get_contract self in
 else ()) in
 let cs = get_contract self in
 let balance = get_balance self in
-let _ = emit owner multisigwalletwithdailylimit_cel_OwnerRemoval true in
+let _ = emit multisigwalletwithdailylimit_cel_OwnerRemoval owner in
 let cs = get_contract self in
 let balance = get_balance self in
 ()
@@ -607,15 +605,14 @@ let replaceOwnerPost (old_isOwner:(m:(M.t address bool lt){M.def_of m == false})
               let x1 = (M.upd x1 x2 x3) in
               x1)
 
-let replaceOwner (self:multisigwalletwithdailylimit_cel_address) (sender:address) (value:uint) (now:uint) (owner:address) (newOwner:address)
+let replaceOwner (self:multisigwalletwithdailylimit_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (owner:address) (newOwner:address)
 : Eth1 unit
   (fun bst ->
     multisigwalletwithdailylimit_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (walletActiveInv self bst)
+      (walletActiveInv self bst)
       /\ (ownerCountInv self bst)
       /\ (transactionCountInv self bst)
       /\ (confirmationCountsInv self bst)
@@ -640,19 +637,19 @@ let replaceOwner (self:multisigwalletwithdailylimit_cel_address) (sender:address
       /\ (confirmationCountsInv self bst1)
       /\ ((replaceOwnerPost cs0.multisigwalletwithdailylimit_cel_isOwner cs1.multisigwalletwithdailylimit_cel_isOwner owner newOwner))
       /\ (bst0.balances == bst1.balances)
+      /\ (cs0.multisigwalletwithdailylimit_cel_confirmationCounts == cs1.multisigwalletwithdailylimit_cel_confirmationCounts)
+      /\ (cs0.multisigwalletwithdailylimit_cel_spentToday == cs1.multisigwalletwithdailylimit_cel_spentToday)
+      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isConfirmed == cs1.multisigwalletwithdailylimit_cel_tx_isConfirmed)
       /\ (cs0.multisigwalletwithdailylimit_cel_transactionCount == cs1.multisigwalletwithdailylimit_cel_transactionCount)
       /\ (cs0.multisigwalletwithdailylimit_cel_confirmations == cs1.multisigwalletwithdailylimit_cel_confirmations)
-      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isUnderLimit == cs1.multisigwalletwithdailylimit_cel_tx_isUnderLimit)
-      /\ (cs0.multisigwalletwithdailylimit_cel_spentToday == cs1.multisigwalletwithdailylimit_cel_spentToday)
+      /\ (cs0.multisigwalletwithdailylimit_cel_ownerCount == cs1.multisigwalletwithdailylimit_cel_ownerCount)
+      /\ (cs0.multisigwalletwithdailylimit_cel_walletActive == cs1.multisigwalletwithdailylimit_cel_walletActive)
+      /\ (cs0.multisigwalletwithdailylimit_cel_required == cs1.multisigwalletwithdailylimit_cel_required)
+      /\ (cs0.multisigwalletwithdailylimit_cel_transactions == cs1.multisigwalletwithdailylimit_cel_transactions)
+      /\ (cs0.multisigwalletwithdailylimit_cel_dailyLimit == cs1.multisigwalletwithdailylimit_cel_dailyLimit)
       /\ (cs0.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT == cs1.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT)
       /\ (cs0.multisigwalletwithdailylimit_cel_lastDay == cs1.multisigwalletwithdailylimit_cel_lastDay)
-      /\ (cs0.multisigwalletwithdailylimit_cel_transactions == cs1.multisigwalletwithdailylimit_cel_transactions)
-      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isConfirmed == cs1.multisigwalletwithdailylimit_cel_tx_isConfirmed)
-      /\ (cs0.multisigwalletwithdailylimit_cel_ownerCount == cs1.multisigwalletwithdailylimit_cel_ownerCount)
-      /\ (cs0.multisigwalletwithdailylimit_cel_required == cs1.multisigwalletwithdailylimit_cel_required)
-      /\ (cs0.multisigwalletwithdailylimit_cel_dailyLimit == cs1.multisigwalletwithdailylimit_cel_dailyLimit)
-      /\ (cs0.multisigwalletwithdailylimit_cel_walletActive == cs1.multisigwalletwithdailylimit_cel_walletActive)
-      /\ (cs0.multisigwalletwithdailylimit_cel_confirmationCounts == cs1.multisigwalletwithdailylimit_cel_confirmationCounts)
+      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isUnderLimit == cs1.multisigwalletwithdailylimit_cel_tx_isUnderLimit)
   ))
 =
 let cs = get_contract self in
@@ -669,10 +666,10 @@ let cs = get_contract self in
 let isOwner = cs.multisigwalletwithdailylimit_cel_isOwner in
 let _ = multisigwalletwithdailylimit_cel_set_isOwner self (M.upd isOwner newOwner true) in
 let cs = get_contract self in
-let _ = emit owner multisigwalletwithdailylimit_cel_OwnerRemoval true in
+let _ = emit multisigwalletwithdailylimit_cel_OwnerRemoval owner in
 let cs = get_contract self in
 let balance = get_balance self in
-let _ = emit newOwner multisigwalletwithdailylimit_cel_OwnerAddition true in
+let _ = emit multisigwalletwithdailylimit_cel_OwnerAddition newOwner in
 let cs = get_contract self in
 let balance = get_balance self in
 ()
@@ -684,15 +681,14 @@ else
  (new_walletActive == old_walletActive)
 
 
-let changeRequirement (self:multisigwalletwithdailylimit_cel_address) (sender:address) (value:uint) (now:uint) (_required:uint)
+let changeRequirement (self:multisigwalletwithdailylimit_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_required:uint)
 : Eth1 unit
   (fun bst ->
     multisigwalletwithdailylimit_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (walletActiveInv self bst)
+      (walletActiveInv self bst)
       /\ (ownerCountInv self bst)
       /\ (transactionCountInv self bst)
       /\ (confirmationCountsInv self bst)
@@ -712,17 +708,17 @@ let changeRequirement (self:multisigwalletwithdailylimit_cel_address) (sender:ad
       /\ (confirmationCountsInv self bst1)
       /\ ((changeRequirementsPost cs1.multisigwalletwithdailylimit_cel_required cs0.multisigwalletwithdailylimit_cel_ownerCount cs0.multisigwalletwithdailylimit_cel_walletActive cs1.multisigwalletwithdailylimit_cel_walletActive))
       /\ (bst0.balances == bst1.balances)
+      /\ (cs0.multisigwalletwithdailylimit_cel_isOwner == cs1.multisigwalletwithdailylimit_cel_isOwner)
+      /\ (cs0.multisigwalletwithdailylimit_cel_confirmationCounts == cs1.multisigwalletwithdailylimit_cel_confirmationCounts)
+      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isConfirmed == cs1.multisigwalletwithdailylimit_cel_tx_isConfirmed)
+      /\ (cs0.multisigwalletwithdailylimit_cel_lastDay == cs1.multisigwalletwithdailylimit_cel_lastDay)
       /\ (cs0.multisigwalletwithdailylimit_cel_transactionCount == cs1.multisigwalletwithdailylimit_cel_transactionCount)
       /\ (cs0.multisigwalletwithdailylimit_cel_confirmations == cs1.multisigwalletwithdailylimit_cel_confirmations)
-      /\ (cs0.multisigwalletwithdailylimit_cel_isOwner == cs1.multisigwalletwithdailylimit_cel_isOwner)
-      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isUnderLimit == cs1.multisigwalletwithdailylimit_cel_tx_isUnderLimit)
-      /\ (cs0.multisigwalletwithdailylimit_cel_spentToday == cs1.multisigwalletwithdailylimit_cel_spentToday)
-      /\ (cs0.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT == cs1.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT)
-      /\ (cs0.multisigwalletwithdailylimit_cel_lastDay == cs1.multisigwalletwithdailylimit_cel_lastDay)
       /\ (cs0.multisigwalletwithdailylimit_cel_transactions == cs1.multisigwalletwithdailylimit_cel_transactions)
-      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isConfirmed == cs1.multisigwalletwithdailylimit_cel_tx_isConfirmed)
       /\ (cs0.multisigwalletwithdailylimit_cel_dailyLimit == cs1.multisigwalletwithdailylimit_cel_dailyLimit)
-      /\ (cs0.multisigwalletwithdailylimit_cel_confirmationCounts == cs1.multisigwalletwithdailylimit_cel_confirmationCounts)
+      /\ (cs0.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT == cs1.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT)
+      /\ (cs0.multisigwalletwithdailylimit_cel_spentToday == cs1.multisigwalletwithdailylimit_cel_spentToday)
+      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isUnderLimit == cs1.multisigwalletwithdailylimit_cel_tx_isUnderLimit)
   ))
 =
 let cs = get_contract self in
@@ -736,7 +732,7 @@ let cs = get_contract self in
 else ()) in
 let cs = get_contract self in
 let balance = get_balance self in
-let _ = emit sender multisigwalletwithdailylimit_cel_RequirementChange _required in
+let _ = emit multisigwalletwithdailylimit_cel_RequirementChange _required in
 let cs = get_contract self in
 let balance = get_balance self in
 ()
@@ -754,15 +750,14 @@ let addTransactionPost (old_transactions:(m:(M.t uint multisigwalletwithdailylim
                   let x1 = (M.upd x1 x2 x3) in
                   x1))) /\ (_txId == old_transactionCount)
 
-let addTransaction (self:multisigwalletwithdailylimit_cel_address) (sender:address) (value:uint) (now:uint) (_destination:address) (_val:uint)
+let addTransaction (self:multisigwalletwithdailylimit_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_destination:address) (_val:uint)
 : Eth1 uint
   (fun bst ->
     multisigwalletwithdailylimit_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ ((_destination =!= null))
+      ((_destination =!= null))
   ))
   (fun bst -> False)
   (fun bst0 transactionId bst1 ->
@@ -775,18 +770,18 @@ let addTransaction (self:multisigwalletwithdailylimit_cel_address) (sender:addre
     let l1 = bst1.log in
       ((addTransactionPost cs0.multisigwalletwithdailylimit_cel_transactions cs1.multisigwalletwithdailylimit_cel_transactions transactionId _destination _val cs0.multisigwalletwithdailylimit_cel_confirmationCounts cs1.multisigwalletwithdailylimit_cel_confirmationCounts cs0.multisigwalletwithdailylimit_cel_transactionCount))
       /\ (bst0.balances == bst1.balances)
+      /\ (cs0.multisigwalletwithdailylimit_cel_isOwner == cs1.multisigwalletwithdailylimit_cel_isOwner)
+      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isConfirmed == cs1.multisigwalletwithdailylimit_cel_tx_isConfirmed)
+      /\ (cs0.multisigwalletwithdailylimit_cel_lastDay == cs1.multisigwalletwithdailylimit_cel_lastDay)
       /\ (cs0.multisigwalletwithdailylimit_cel_transactionCount == cs1.multisigwalletwithdailylimit_cel_transactionCount)
       /\ (cs0.multisigwalletwithdailylimit_cel_confirmations == cs1.multisigwalletwithdailylimit_cel_confirmations)
-      /\ (cs0.multisigwalletwithdailylimit_cel_isOwner == cs1.multisigwalletwithdailylimit_cel_isOwner)
-      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isUnderLimit == cs1.multisigwalletwithdailylimit_cel_tx_isUnderLimit)
-      /\ (cs0.multisigwalletwithdailylimit_cel_spentToday == cs1.multisigwalletwithdailylimit_cel_spentToday)
-      /\ (cs0.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT == cs1.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT)
-      /\ (cs0.multisigwalletwithdailylimit_cel_lastDay == cs1.multisigwalletwithdailylimit_cel_lastDay)
-      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isConfirmed == cs1.multisigwalletwithdailylimit_cel_tx_isConfirmed)
       /\ (cs0.multisigwalletwithdailylimit_cel_ownerCount == cs1.multisigwalletwithdailylimit_cel_ownerCount)
+      /\ (cs0.multisigwalletwithdailylimit_cel_walletActive == cs1.multisigwalletwithdailylimit_cel_walletActive)
       /\ (cs0.multisigwalletwithdailylimit_cel_required == cs1.multisigwalletwithdailylimit_cel_required)
       /\ (cs0.multisigwalletwithdailylimit_cel_dailyLimit == cs1.multisigwalletwithdailylimit_cel_dailyLimit)
-      /\ (cs0.multisigwalletwithdailylimit_cel_walletActive == cs1.multisigwalletwithdailylimit_cel_walletActive)
+      /\ (cs0.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT == cs1.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT)
+      /\ (cs0.multisigwalletwithdailylimit_cel_spentToday == cs1.multisigwalletwithdailylimit_cel_spentToday)
+      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isUnderLimit == cs1.multisigwalletwithdailylimit_cel_tx_isUnderLimit)
   ))
 =
 let transactionId:uint = 0 in
@@ -801,7 +796,7 @@ let cs = get_contract self in
 let confirmationCounts = cs.multisigwalletwithdailylimit_cel_confirmationCounts in
 let _ = multisigwalletwithdailylimit_cel_set_confirmationCounts self (M.upd confirmationCounts transactionId 0) in
 let cs = get_contract self in
-let _ = emit _destination multisigwalletwithdailylimit_cel_Submission transactionId in
+let _ = emit multisigwalletwithdailylimit_cel_Submission transactionId in
 let cs = get_contract self in
 let balance = get_balance self in
 transactionId
@@ -809,15 +804,11 @@ transactionId
 let isConfirmedPost (old_confirmationCounts:(m:(M.t uint uint lt){M.def_of m == 0})) (_transactionId:uint) (old_required:uint) (_ret:bool)
 = (((_ret == true <==> (M.sel old_confirmationCounts _transactionId) == old_required))) /\ (((_ret == false <==> (M.sel old_confirmationCounts _transactionId) =!= old_required)))
 
-let isConfirmed (self:multisigwalletwithdailylimit_cel_address) (sender:address) (value:uint) (now:uint) (transactionId:uint)
+let isConfirmed (self:multisigwalletwithdailylimit_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (transactionId:uint)
 : Eth1 bool
   (fun bst ->
-    multisigwalletwithdailylimit_cel_live self bst /\ (
-    let cs = CM.sel self bst.cmap in
-    let b = pure_get_balance_bst self bst in
-    let l = bst.log in
-      (sender <> null)
-  ))
+    multisigwalletwithdailylimit_cel_live self bst
+  )
   (fun bst -> False)
   (fun bst0 ret bst1 ->
     multisigwalletwithdailylimit_cel_live self bst1 /\ (
@@ -860,15 +851,11 @@ else
  (_ret == true)
 )
 
-let isUnderLimit (self:multisigwalletwithdailylimit_cel_address) (sender:address) (value:uint) (now:uint) (_amount:uint)
+let isUnderLimit (self:multisigwalletwithdailylimit_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_amount:uint)
 : Eth1 bool
   (fun bst ->
-    multisigwalletwithdailylimit_cel_live self bst /\ (
-    let cs = CM.sel self bst.cmap in
-    let b = pure_get_balance_bst self bst in
-    let l = bst.log in
-      (sender <> null)
-  ))
+    multisigwalletwithdailylimit_cel_live self bst
+  )
   (fun bst ->
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
@@ -883,29 +870,29 @@ let isUnderLimit (self:multisigwalletwithdailylimit_cel_address) (sender:address
     let b1 = pure_get_balance_bst self bst1 in
     let l0 = bst0.log in
     let l1 = bst1.log in
-      ((isUnderLimitPost now cs0.multisigwalletwithdailylimit_cel_lastDay cs1.multisigwalletwithdailylimit_cel_lastDay cs0.multisigwalletwithdailylimit_cel_spentToday cs1.multisigwalletwithdailylimit_cel_spentToday _amount cs0.multisigwalletwithdailylimit_cel_dailyLimit ret))
+      ((isUnderLimitPost block.timestamp cs0.multisigwalletwithdailylimit_cel_lastDay cs1.multisigwalletwithdailylimit_cel_lastDay cs0.multisigwalletwithdailylimit_cel_spentToday cs1.multisigwalletwithdailylimit_cel_spentToday _amount cs0.multisigwalletwithdailylimit_cel_dailyLimit ret))
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
+      /\ (cs0.multisigwalletwithdailylimit_cel_isOwner == cs1.multisigwalletwithdailylimit_cel_isOwner)
+      /\ (cs0.multisigwalletwithdailylimit_cel_confirmationCounts == cs1.multisigwalletwithdailylimit_cel_confirmationCounts)
+      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isConfirmed == cs1.multisigwalletwithdailylimit_cel_tx_isConfirmed)
       /\ (cs0.multisigwalletwithdailylimit_cel_transactionCount == cs1.multisigwalletwithdailylimit_cel_transactionCount)
       /\ (cs0.multisigwalletwithdailylimit_cel_confirmations == cs1.multisigwalletwithdailylimit_cel_confirmations)
-      /\ (cs0.multisigwalletwithdailylimit_cel_isOwner == cs1.multisigwalletwithdailylimit_cel_isOwner)
-      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isUnderLimit == cs1.multisigwalletwithdailylimit_cel_tx_isUnderLimit)
-      /\ (cs0.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT == cs1.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT)
-      /\ (cs0.multisigwalletwithdailylimit_cel_transactions == cs1.multisigwalletwithdailylimit_cel_transactions)
-      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isConfirmed == cs1.multisigwalletwithdailylimit_cel_tx_isConfirmed)
       /\ (cs0.multisigwalletwithdailylimit_cel_ownerCount == cs1.multisigwalletwithdailylimit_cel_ownerCount)
-      /\ (cs0.multisigwalletwithdailylimit_cel_required == cs1.multisigwalletwithdailylimit_cel_required)
-      /\ (cs0.multisigwalletwithdailylimit_cel_dailyLimit == cs1.multisigwalletwithdailylimit_cel_dailyLimit)
       /\ (cs0.multisigwalletwithdailylimit_cel_walletActive == cs1.multisigwalletwithdailylimit_cel_walletActive)
-      /\ (cs0.multisigwalletwithdailylimit_cel_confirmationCounts == cs1.multisigwalletwithdailylimit_cel_confirmationCounts)
+      /\ (cs0.multisigwalletwithdailylimit_cel_required == cs1.multisigwalletwithdailylimit_cel_required)
+      /\ (cs0.multisigwalletwithdailylimit_cel_transactions == cs1.multisigwalletwithdailylimit_cel_transactions)
+      /\ (cs0.multisigwalletwithdailylimit_cel_dailyLimit == cs1.multisigwalletwithdailylimit_cel_dailyLimit)
+      /\ (cs0.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT == cs1.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT)
+      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isUnderLimit == cs1.multisigwalletwithdailylimit_cel_tx_isUnderLimit)
   ))
 =
 let ret:bool = false in
 let cs = get_contract self in
 let balance = get_balance self in
 let t:uint = ((if cs.multisigwalletwithdailylimit_cel_lastDay <= uint_max - 86400 then (cs.multisigwalletwithdailylimit_cel_lastDay + 86400) else revert "Overflow error")) in
-let ret = (if (now > t) then begin
-let _ = multisigwalletwithdailylimit_cel_set_lastDay self now in
+let ret = (if (block.timestamp > t) then begin
+let _ = multisigwalletwithdailylimit_cel_set_lastDay self block.timestamp in
 let cs = get_contract self in
 let _ = multisigwalletwithdailylimit_cel_set_spentToday self 0 in
 let cs = get_contract self in
@@ -941,15 +928,14 @@ ret
 let executeTransactionReverts (_transactionId:uint) (old_transactionCount:uint) (old_transactions:(m:(M.t uint multisigwalletwithdailylimit_cel_Transaction lt){M.def_of m == {multisigwalletwithdailylimit_cel_destination = null; multisigwalletwithdailylimit_cel_tval = 0; multisigwalletwithdailylimit_cel_executed = false; }})) (old_balance:uint)
 = ((_transactionId >= old_transactionCount) \/ ((M.sel old_transactions _transactionId).multisigwalletwithdailylimit_cel_executed)) \/ (old_balance < ((M.sel old_transactions _transactionId).multisigwalletwithdailylimit_cel_tval))
 
-let executeTransaction (self:multisigwalletwithdailylimit_cel_address) (sender:address) (value:uint) (now:uint) (transactionId:uint)
+let executeTransaction (self:multisigwalletwithdailylimit_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (transactionId:uint)
 : Eth1 unit
   (fun bst ->
     multisigwalletwithdailylimit_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (walletActiveInv self bst)
+      (walletActiveInv self bst)
       /\ (ownerCountInv self bst)
       /\ (transactionCountInv self bst)
       /\ (confirmationCountsInv self bst)
@@ -977,7 +963,7 @@ let executeTransaction (self:multisigwalletwithdailylimit_cel_address) (sender:a
 else
  (cs1.multisigwalletwithdailylimit_cel_tx_isConfirmed == false)
 ) /\ ((if (cs1.multisigwalletwithdailylimit_cel_tx_isConfirmed || cs1.multisigwalletwithdailylimit_cel_tx_isUnderLimit) then
-  (((l1 == ((mk_event sender multisigwalletwithdailylimit_cel_Execution transactionId)::(mk_event ((M.sel cs0.multisigwalletwithdailylimit_cel_transactions transactionId).multisigwalletwithdailylimit_cel_destination) eTransfer ((M.sel cs0.multisigwalletwithdailylimit_cel_transactions transactionId).multisigwalletwithdailylimit_cel_tval))::l0))) /\ ((M.equal cs1.multisigwalletwithdailylimit_cel_transactions (
+  (((l1 == ((mk_event null multisigwalletwithdailylimit_cel_Execution transactionId)::(mk_event ((M.sel cs0.multisigwalletwithdailylimit_cel_transactions transactionId).multisigwalletwithdailylimit_cel_destination) eTransfer ((M.sel cs0.multisigwalletwithdailylimit_cel_transactions transactionId).multisigwalletwithdailylimit_cel_tval))::l0))) /\ ((M.equal cs1.multisigwalletwithdailylimit_cel_transactions (
                               let x1 = (cs0.multisigwalletwithdailylimit_cel_transactions) in
                               let x2 = (transactionId) in
                               let x3 = ({ multisigwalletwithdailylimit_cel_destination = ((M.sel cs0.multisigwalletwithdailylimit_cel_transactions transactionId).multisigwalletwithdailylimit_cel_destination); multisigwalletwithdailylimit_cel_tval = ((M.sel cs0.multisigwalletwithdailylimit_cel_transactions transactionId).multisigwalletwithdailylimit_cel_tval); multisigwalletwithdailylimit_cel_executed = true; }) in
@@ -987,15 +973,15 @@ else
  ((l1 == l0) /\ (M.equal cs1.multisigwalletwithdailylimit_cel_transactions cs0.multisigwalletwithdailylimit_cel_transactions))
 )))
       /\ (b1 <= b0)
+      /\ (cs0.multisigwalletwithdailylimit_cel_isOwner == cs1.multisigwalletwithdailylimit_cel_isOwner)
+      /\ (cs0.multisigwalletwithdailylimit_cel_confirmationCounts == cs1.multisigwalletwithdailylimit_cel_confirmationCounts)
       /\ (cs0.multisigwalletwithdailylimit_cel_transactionCount == cs1.multisigwalletwithdailylimit_cel_transactionCount)
       /\ (cs0.multisigwalletwithdailylimit_cel_confirmations == cs1.multisigwalletwithdailylimit_cel_confirmations)
-      /\ (cs0.multisigwalletwithdailylimit_cel_isOwner == cs1.multisigwalletwithdailylimit_cel_isOwner)
-      /\ (cs0.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT == cs1.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT)
       /\ (cs0.multisigwalletwithdailylimit_cel_ownerCount == cs1.multisigwalletwithdailylimit_cel_ownerCount)
+      /\ (cs0.multisigwalletwithdailylimit_cel_walletActive == cs1.multisigwalletwithdailylimit_cel_walletActive)
       /\ (cs0.multisigwalletwithdailylimit_cel_required == cs1.multisigwalletwithdailylimit_cel_required)
       /\ (cs0.multisigwalletwithdailylimit_cel_dailyLimit == cs1.multisigwalletwithdailylimit_cel_dailyLimit)
-      /\ (cs0.multisigwalletwithdailylimit_cel_walletActive == cs1.multisigwalletwithdailylimit_cel_walletActive)
-      /\ (cs0.multisigwalletwithdailylimit_cel_confirmationCounts == cs1.multisigwalletwithdailylimit_cel_confirmationCounts)
+      /\ (cs0.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT == cs1.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT)
   ))
 =
 let cs = get_contract self in
@@ -1007,16 +993,16 @@ revert "invalid";
 else ()) in
 let cs = get_contract self in
 let balance = get_balance self in
-let tx:multisigwalletwithdailylimit_cel_Transaction = (M.sel cs.multisigwalletwithdailylimit_cel_transactions transactionId) in
-let x1 = ((isConfirmed self self 0 now transactionId)) in
+let trx:multisigwalletwithdailylimit_cel_Transaction = (M.sel cs.multisigwalletwithdailylimit_cel_transactions transactionId) in
+let x1 = ((isConfirmed self self 0 tx block transactionId)) in
 let _ = multisigwalletwithdailylimit_cel_set_tx_isConfirmed self x1 in
 let cs = get_contract self in
-let x1 = ((isUnderLimit self self 0 now tx.multisigwalletwithdailylimit_cel_tval)) in
+let x1 = ((isUnderLimit self self 0 tx block trx.multisigwalletwithdailylimit_cel_tval)) in
 let _ = multisigwalletwithdailylimit_cel_set_tx_isUnderLimit self x1 in
 let cs = get_contract self in
 let _ = (if (cs.multisigwalletwithdailylimit_cel_tx_isConfirmed || cs.multisigwalletwithdailylimit_cel_tx_isUnderLimit) then begin
 let _ = (if (op_Negation (cs.multisigwalletwithdailylimit_cel_tx_isConfirmed)) then begin
-let _ = multisigwalletwithdailylimit_cel_set_spentToday self (_add cs.multisigwalletwithdailylimit_cel_spentToday tx.multisigwalletwithdailylimit_cel_tval) in
+let _ = multisigwalletwithdailylimit_cel_set_spentToday self (_add cs.multisigwalletwithdailylimit_cel_spentToday trx.multisigwalletwithdailylimit_cel_tval) in
 let cs = get_contract self in
 () end
 else ()) in
@@ -1029,10 +1015,10 @@ let x4 = M.sel x2 x3 in
 let x5 = M.upd x2 x3 ({x4 with multisigwalletwithdailylimit_cel_executed = x1}) in
 let _ = multisigwalletwithdailylimit_cel_set_transactions self x5 in
 let cs = get_contract self in
-let _ = send self (M.sel cs.multisigwalletwithdailylimit_cel_transactions transactionId).multisigwalletwithdailylimit_cel_destination tx.multisigwalletwithdailylimit_cel_tval in
+let _ = send self (M.sel cs.multisigwalletwithdailylimit_cel_transactions transactionId).multisigwalletwithdailylimit_cel_destination trx.multisigwalletwithdailylimit_cel_tval in
 let cs = get_contract self in
 let balance = get_balance self in
-let _ = emit sender multisigwalletwithdailylimit_cel_Execution transactionId in
+let _ = emit multisigwalletwithdailylimit_cel_Execution transactionId in
 let cs = get_contract self in
 let balance = get_balance self in
 () end
@@ -1041,15 +1027,14 @@ let cs = get_contract self in
 let balance = get_balance self in
 ()
 
-let confirmTransaction (self:multisigwalletwithdailylimit_cel_address) (sender:address) (value:uint) (now:uint) (transactionId:uint)
+let confirmTransaction (self:multisigwalletwithdailylimit_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (transactionId:uint)
 : Eth1 unit
   (fun bst ->
     multisigwalletwithdailylimit_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (walletActiveInv self bst)
+      (walletActiveInv self bst)
       /\ (ownerCountInv self bst)
       /\ (transactionCountInv self bst)
       /\ (confirmationCountsInv self bst)
@@ -1088,7 +1073,7 @@ let confirmTransaction (self:multisigwalletwithdailylimit_cel_address) (sender:a
                                                   x1) in
                                                 let x1 = (M.upd x1 x2 x3) in
                                                 x1))) /\ (if (((M.sel cs1.multisigwalletwithdailylimit_cel_confirmationCounts transactionId) = cs0.multisigwalletwithdailylimit_cel_required) || cs1.multisigwalletwithdailylimit_cel_tx_isUnderLimit) then
-  ((l1 == ((mk_event self multisigwalletwithdailylimit_cel_Execution transactionId)::(mk_event ((M.sel cs0.multisigwalletwithdailylimit_cel_transactions transactionId).multisigwalletwithdailylimit_cel_destination) eTransfer ((M.sel cs0.multisigwalletwithdailylimit_cel_transactions transactionId).multisigwalletwithdailylimit_cel_tval))::(mk_event sender multisigwalletwithdailylimit_cel_Confirmation transactionId)::l0)) /\ (M.equal cs1.multisigwalletwithdailylimit_cel_transactions (
+  ((l1 == ((mk_event null multisigwalletwithdailylimit_cel_Execution transactionId)::(mk_event ((M.sel cs0.multisigwalletwithdailylimit_cel_transactions transactionId).multisigwalletwithdailylimit_cel_destination) eTransfer ((M.sel cs0.multisigwalletwithdailylimit_cel_transactions transactionId).multisigwalletwithdailylimit_cel_tval))::(mk_event null multisigwalletwithdailylimit_cel_Confirmation (sender, transactionId))::l0)) /\ (M.equal cs1.multisigwalletwithdailylimit_cel_transactions (
                                                         let x1 = (cs0.multisigwalletwithdailylimit_cel_transactions) in
                                                         let x2 = (transactionId) in
                                                         let x3 = ({ multisigwalletwithdailylimit_cel_destination = ((M.sel cs0.multisigwalletwithdailylimit_cel_transactions transactionId).multisigwalletwithdailylimit_cel_destination); multisigwalletwithdailylimit_cel_tval = ((M.sel cs0.multisigwalletwithdailylimit_cel_transactions transactionId).multisigwalletwithdailylimit_cel_tval); multisigwalletwithdailylimit_cel_executed = true; }) in
@@ -1098,13 +1083,13 @@ else
  (M.equal cs1.multisigwalletwithdailylimit_cel_transactions cs0.multisigwalletwithdailylimit_cel_transactions)
 ))
       /\ (b1 <= b0)
-      /\ (cs0.multisigwalletwithdailylimit_cel_transactionCount == cs1.multisigwalletwithdailylimit_cel_transactionCount)
       /\ (cs0.multisigwalletwithdailylimit_cel_isOwner == cs1.multisigwalletwithdailylimit_cel_isOwner)
-      /\ (cs0.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT == cs1.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT)
+      /\ (cs0.multisigwalletwithdailylimit_cel_transactionCount == cs1.multisigwalletwithdailylimit_cel_transactionCount)
       /\ (cs0.multisigwalletwithdailylimit_cel_ownerCount == cs1.multisigwalletwithdailylimit_cel_ownerCount)
+      /\ (cs0.multisigwalletwithdailylimit_cel_walletActive == cs1.multisigwalletwithdailylimit_cel_walletActive)
       /\ (cs0.multisigwalletwithdailylimit_cel_required == cs1.multisigwalletwithdailylimit_cel_required)
       /\ (cs0.multisigwalletwithdailylimit_cel_dailyLimit == cs1.multisigwalletwithdailylimit_cel_dailyLimit)
-      /\ (cs0.multisigwalletwithdailylimit_cel_walletActive == cs1.multisigwalletwithdailylimit_cel_walletActive)
+      /\ (cs0.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT == cs1.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT)
   ))
 =
 let cs = get_contract self in
@@ -1130,22 +1115,21 @@ let x0 = (M.sel x2 x1) in
                                                   
 let _ = multisigwalletwithdailylimit_cel_set_confirmations self (M.upd x4 x3 (M.upd x2 x1 x5)) in
 let cs = get_contract self in
-let _ = emit sender multisigwalletwithdailylimit_cel_Confirmation transactionId in
+let _ = emit multisigwalletwithdailylimit_cel_Confirmation (sender, transactionId) in
 let cs = get_contract self in
 let balance = get_balance self in
-let _ = (executeTransaction self self 0 now transactionId) in
+let _ = (executeTransaction self self 0 tx block transactionId) in
 let cs = get_contract self in
 ()
 
-let submitTransaction (self:multisigwalletwithdailylimit_cel_address) (sender:address) (value:uint) (now:uint) (_dest:address) (_amount:uint)
+let submitTransaction (self:multisigwalletwithdailylimit_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_dest:address) (_amount:uint)
 : Eth1 uint
   (fun bst ->
     multisigwalletwithdailylimit_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (walletActiveInv self bst)
+      (walletActiveInv self bst)
       /\ (ownerCountInv self bst)
       /\ (transactionCountInv self bst)
       /\ (confirmationCountsInv self bst)
@@ -1174,7 +1158,7 @@ transactionId end
 else transactionId) in
 let cs = get_contract self in
 let balance = get_balance self in
-let x1 = ((addTransaction self self 0 now _dest _amount)) in
+let x1 = ((addTransaction self self 0 tx block _dest _amount)) in
 let transactionId = x1 in
 let cs = get_contract self in
 let x1 = ((if cs.multisigwalletwithdailylimit_cel_transactionCount <= uint_max - 1 then (cs.multisigwalletwithdailylimit_cel_transactionCount + 1) else revert "Overflow error")) in
@@ -1182,15 +1166,14 @@ let _ = multisigwalletwithdailylimit_cel_set_transactionCount self x1 in
 let cs = get_contract self in
 transactionId
 
-let revokeConfirmation (self:multisigwalletwithdailylimit_cel_address) (sender:address) (value:uint) (now:uint) (transactionId:uint)
+let revokeConfirmation (self:multisigwalletwithdailylimit_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (transactionId:uint)
 : Eth1 unit
   (fun bst ->
     multisigwalletwithdailylimit_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (walletActiveInv self bst)
+      (walletActiveInv self bst)
       /\ (ownerCountInv self bst)
       /\ (transactionCountInv self bst)
       /\ (confirmationCountsInv self bst)
@@ -1215,18 +1198,18 @@ let revokeConfirmation (self:multisigwalletwithdailylimit_cel_address) (sender:a
       /\ (transactionCountInv self bst1)
       /\ (confirmationCountsInv self bst1)
       /\ (bst0.balances == bst1.balances)
-      /\ (cs0.multisigwalletwithdailylimit_cel_transactionCount == cs1.multisigwalletwithdailylimit_cel_transactionCount)
-      /\ (cs0.multisigwalletwithdailylimit_cel_spentToday == cs1.multisigwalletwithdailylimit_cel_spentToday)
       /\ (cs0.multisigwalletwithdailylimit_cel_isOwner == cs1.multisigwalletwithdailylimit_cel_isOwner)
-      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isUnderLimit == cs1.multisigwalletwithdailylimit_cel_tx_isUnderLimit)
-      /\ (cs0.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT == cs1.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT)
-      /\ (cs0.multisigwalletwithdailylimit_cel_lastDay == cs1.multisigwalletwithdailylimit_cel_lastDay)
-      /\ (cs0.multisigwalletwithdailylimit_cel_transactions == cs1.multisigwalletwithdailylimit_cel_transactions)
       /\ (cs0.multisigwalletwithdailylimit_cel_tx_isConfirmed == cs1.multisigwalletwithdailylimit_cel_tx_isConfirmed)
+      /\ (cs0.multisigwalletwithdailylimit_cel_lastDay == cs1.multisigwalletwithdailylimit_cel_lastDay)
+      /\ (cs0.multisigwalletwithdailylimit_cel_transactionCount == cs1.multisigwalletwithdailylimit_cel_transactionCount)
       /\ (cs0.multisigwalletwithdailylimit_cel_ownerCount == cs1.multisigwalletwithdailylimit_cel_ownerCount)
-      /\ (cs0.multisigwalletwithdailylimit_cel_required == cs1.multisigwalletwithdailylimit_cel_required)
-      /\ (cs0.multisigwalletwithdailylimit_cel_dailyLimit == cs1.multisigwalletwithdailylimit_cel_dailyLimit)
       /\ (cs0.multisigwalletwithdailylimit_cel_walletActive == cs1.multisigwalletwithdailylimit_cel_walletActive)
+      /\ (cs0.multisigwalletwithdailylimit_cel_required == cs1.multisigwalletwithdailylimit_cel_required)
+      /\ (cs0.multisigwalletwithdailylimit_cel_transactions == cs1.multisigwalletwithdailylimit_cel_transactions)
+      /\ (cs0.multisigwalletwithdailylimit_cel_dailyLimit == cs1.multisigwalletwithdailylimit_cel_dailyLimit)
+      /\ (cs0.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT == cs1.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT)
+      /\ (cs0.multisigwalletwithdailylimit_cel_spentToday == cs1.multisigwalletwithdailylimit_cel_spentToday)
+      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isUnderLimit == cs1.multisigwalletwithdailylimit_cel_tx_isUnderLimit)
   ))
 =
 let cs = get_contract self in
@@ -1251,20 +1234,19 @@ let x1 = ((if 1 <= (M.sel cs.multisigwalletwithdailylimit_cel_confirmationCounts
 let confirmationCounts = cs.multisigwalletwithdailylimit_cel_confirmationCounts in
 let _ = multisigwalletwithdailylimit_cel_set_confirmationCounts self (M.upd confirmationCounts transactionId x1) in
 let cs = get_contract self in
-let _ = emit sender multisigwalletwithdailylimit_cel_Revocation transactionId in
+let _ = emit multisigwalletwithdailylimit_cel_Revocation (sender, transactionId) in
 let cs = get_contract self in
 let balance = get_balance self in
 ()
 
-let getConfirmationCount (self:multisigwalletwithdailylimit_cel_address) (sender:address) (value:uint) (now:uint) (transactionId:uint)
+let getConfirmationCount (self:multisigwalletwithdailylimit_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (transactionId:uint)
 : Eth1 uint
   (fun bst ->
     multisigwalletwithdailylimit_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (walletActiveInv self bst)
+      (walletActiveInv self bst)
       /\ (ownerCountInv self bst)
       /\ (transactionCountInv self bst)
       /\ (confirmationCountsInv self bst)
@@ -1291,15 +1273,14 @@ let cs = get_contract self in
 let balance = get_balance self in
 M.sel cs.multisigwalletwithdailylimit_cel_confirmationCounts transactionId
 
-let changeDailyLimit (self:multisigwalletwithdailylimit_cel_address) (sender:address) (value:uint) (now:uint) (_dailyLimit:uint)
+let changeDailyLimit (self:multisigwalletwithdailylimit_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_dailyLimit:uint)
 : Eth1 unit
   (fun bst ->
     multisigwalletwithdailylimit_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (walletActiveInv self bst)
+      (walletActiveInv self bst)
       /\ (ownerCountInv self bst)
       /\ (transactionCountInv self bst)
       /\ (confirmationCountsInv self bst)
@@ -1318,39 +1299,38 @@ let changeDailyLimit (self:multisigwalletwithdailylimit_cel_address) (sender:add
       /\ (transactionCountInv self bst1)
       /\ (confirmationCountsInv self bst1)
       /\ (bst0.balances == bst1.balances)
+      /\ (cs0.multisigwalletwithdailylimit_cel_isOwner == cs1.multisigwalletwithdailylimit_cel_isOwner)
+      /\ (cs0.multisigwalletwithdailylimit_cel_confirmationCounts == cs1.multisigwalletwithdailylimit_cel_confirmationCounts)
+      /\ (cs0.multisigwalletwithdailylimit_cel_spentToday == cs1.multisigwalletwithdailylimit_cel_spentToday)
+      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isConfirmed == cs1.multisigwalletwithdailylimit_cel_tx_isConfirmed)
       /\ (cs0.multisigwalletwithdailylimit_cel_transactionCount == cs1.multisigwalletwithdailylimit_cel_transactionCount)
       /\ (cs0.multisigwalletwithdailylimit_cel_confirmations == cs1.multisigwalletwithdailylimit_cel_confirmations)
-      /\ (cs0.multisigwalletwithdailylimit_cel_isOwner == cs1.multisigwalletwithdailylimit_cel_isOwner)
-      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isUnderLimit == cs1.multisigwalletwithdailylimit_cel_tx_isUnderLimit)
-      /\ (cs0.multisigwalletwithdailylimit_cel_spentToday == cs1.multisigwalletwithdailylimit_cel_spentToday)
+      /\ (cs0.multisigwalletwithdailylimit_cel_ownerCount == cs1.multisigwalletwithdailylimit_cel_ownerCount)
+      /\ (cs0.multisigwalletwithdailylimit_cel_walletActive == cs1.multisigwalletwithdailylimit_cel_walletActive)
+      /\ (cs0.multisigwalletwithdailylimit_cel_required == cs1.multisigwalletwithdailylimit_cel_required)
+      /\ (cs0.multisigwalletwithdailylimit_cel_transactions == cs1.multisigwalletwithdailylimit_cel_transactions)
       /\ (cs0.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT == cs1.multisigwalletwithdailylimit_cel_MAX_OWNER_COUNT)
       /\ (cs0.multisigwalletwithdailylimit_cel_lastDay == cs1.multisigwalletwithdailylimit_cel_lastDay)
-      /\ (cs0.multisigwalletwithdailylimit_cel_transactions == cs1.multisigwalletwithdailylimit_cel_transactions)
-      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isConfirmed == cs1.multisigwalletwithdailylimit_cel_tx_isConfirmed)
-      /\ (cs0.multisigwalletwithdailylimit_cel_ownerCount == cs1.multisigwalletwithdailylimit_cel_ownerCount)
-      /\ (cs0.multisigwalletwithdailylimit_cel_required == cs1.multisigwalletwithdailylimit_cel_required)
-      /\ (cs0.multisigwalletwithdailylimit_cel_walletActive == cs1.multisigwalletwithdailylimit_cel_walletActive)
-      /\ (cs0.multisigwalletwithdailylimit_cel_confirmationCounts == cs1.multisigwalletwithdailylimit_cel_confirmationCounts)
+      /\ (cs0.multisigwalletwithdailylimit_cel_tx_isUnderLimit == cs1.multisigwalletwithdailylimit_cel_tx_isUnderLimit)
   ))
 =
 let cs = get_contract self in
 let balance = get_balance self in
 let _ = multisigwalletwithdailylimit_cel_set_dailyLimit self _dailyLimit in
 let cs = get_contract self in
-let _ = emit sender multisigwalletwithdailylimit_cel_DailyLimitChange _dailyLimit in
+let _ = emit multisigwalletwithdailylimit_cel_DailyLimitChange _dailyLimit in
 let cs = get_contract self in
 let balance = get_balance self in
 ()
 
-let calcMaxWithdraw (self:multisigwalletwithdailylimit_cel_address) (sender:address) (value:uint) (now:uint)
+let calcMaxWithdraw (self:multisigwalletwithdailylimit_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block)
 : Eth1 uint
   (fun bst ->
     multisigwalletwithdailylimit_cel_live self bst /\ (
     let cs = CM.sel self bst.cmap in
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
-      (sender <> null)
-      /\ (walletActiveInv self bst)
+      (walletActiveInv self bst)
       /\ (ownerCountInv self bst)
       /\ (transactionCountInv self bst)
       /\ (confirmationCountsInv self bst)
@@ -1382,7 +1362,7 @@ let cs = get_contract self in
 let balance = get_balance self in
 let ret:uint = (0) in
 let endTime:uint = ((if cs.multisigwalletwithdailylimit_cel_lastDay <= uint_max - 86400 then (cs.multisigwalletwithdailylimit_cel_lastDay + 86400) else revert "Overflow error")) in
-let _ = (if (now > endTime) then begin
+let _ = (if (block.timestamp > endTime) then begin
 let ret = cs.multisigwalletwithdailylimit_cel_dailyLimit in
 let cs = get_contract self in
 () end

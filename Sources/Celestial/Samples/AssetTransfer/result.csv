@@ -1,8 +1,8 @@
 Method,Celestial Gas,Solidity Gas
-Deployment,976770,800621
-MakeOffer,68144,67157
+Deployment,989328,800621
+MakeOffer,68051,67157
 ModifyOffer,31975,29332
-AcceptOffer,53775,52752
+AcceptOffer,53682,52752
 Accept (Buyer),30692,29843
 Accept (Seller),33511,32612
 Withdraw,34874,32146

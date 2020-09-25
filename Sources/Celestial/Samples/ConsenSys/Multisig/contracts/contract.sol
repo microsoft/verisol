@@ -21,14 +21,14 @@ contract MultiSigWalletWithDailyLimit_Cel
         uint tval;
         bool executed;
     }
-    event Confirmation(address indexed, uint);
-    event Revocation(address indexed, uint);
-    event Submission(address indexed, uint);
-    event Execution(address indexed, uint);
-    event OwnerAddition(address indexed, bool);
-    event OwnerRemoval(address indexed, bool);
-    event RequirementChange(address indexed, uint);
-    event DailyLimitChange(address indexed, uint);
+    event Confirmation(address, uint);
+    event Revocation(address, uint);
+    event Submission(uint);
+    event Execution(uint);
+    event OwnerAddition(address);
+    event OwnerRemoval(address);
+    event RequirementChange(uint);
+    event DailyLimitChange(uint);
     uint MAX_OWNER_COUNT;
     mapping (uint => Transaction) transactions;
     mapping (uint => uint) confirmationCounts;
@@ -65,7 +65,7 @@ contract MultiSigWalletWithDailyLimit_Cel
         {
             walletActive = true;
         }
-        emit OwnerAddition(owner, true);
+        emit OwnerAddition(owner);
         return;
     }
 
@@ -80,7 +80,7 @@ contract MultiSigWalletWithDailyLimit_Cel
         {
             walletActive = false;
         }
-        emit OwnerRemoval(owner, true);
+        emit OwnerRemoval(owner);
         return;
     }
 
@@ -91,8 +91,8 @@ contract MultiSigWalletWithDailyLimit_Cel
         }
         isOwner[owner] = false;
         isOwner[newOwner] = true;
-        emit OwnerRemoval(owner, true);
-        emit OwnerAddition(newOwner, true);
+        emit OwnerRemoval(owner);
+        emit OwnerAddition(newOwner);
         return;
     }
 
@@ -102,7 +102,7 @@ contract MultiSigWalletWithDailyLimit_Cel
         {
             walletActive = false;
         }
-        emit RequirementChange(msg.sender, _required);
+        emit RequirementChange(_required);
         return;
     }
 
@@ -110,7 +110,7 @@ contract MultiSigWalletWithDailyLimit_Cel
         transactionId = transactionCount;
         transactions[transactionId] = Transaction(_destination, _val, false);
         confirmationCounts[transactionId] = 0;
-        emit Submission(_destination, transactionId);
+        emit Submission(transactionId);
         return transactionId;
     }
 
@@ -128,9 +128,9 @@ contract MultiSigWalletWithDailyLimit_Cel
 
     function isUnderLimit (uint _amount) private returns (bool ret) {
         uint t = Safe_Arith.safe_add(lastDay, 86400);
-        if (now > t)
+        if (block.timestamp > t)
         {
-            lastDay = now;
+            lastDay = block.timestamp;
             spentToday = 0;
         }
         if (_amount > (~uint256(0)) - spentToday)
@@ -157,19 +157,19 @@ contract MultiSigWalletWithDailyLimit_Cel
         {
             revert ("invalid");
         }
-        Transaction storage tx = transactions[transactionId];
+        Transaction storage trx = transactions[transactionId];
         tx_isConfirmed = isConfirmed(transactionId);
-        tx_isUnderLimit = isUnderLimit(tx.tval);
+        tx_isUnderLimit = isUnderLimit(trx.tval);
         if (tx_isConfirmed || tx_isUnderLimit)
         {
             if (! tx_isConfirmed)
             {
-                spentToday = spentToday + tx.tval;
+                spentToday = spentToday + trx.tval;
             }
             transactions[transactionId].executed = true;
-            if (address(this).balance < tx.tval) revert ("Insufficient balance");
-            transactions[transactionId].destination.call{value: (tx.tval), gas: 2300}("");
-            emit Execution(msg.sender, transactionId);
+            if (address(this).balance < trx.tval) revert ("Insufficient balance");
+            transactions[transactionId].destination.call{value: (trx.tval), gas: 2300}("");
+            emit Execution(transactionId);
         }
         return;
     }
@@ -213,14 +213,14 @@ contract MultiSigWalletWithDailyLimit_Cel
 
     function changeDailyLimit (uint _dailyLimit) public isUnlocked {
         dailyLimit = _dailyLimit;
-        emit DailyLimitChange(msg.sender, _dailyLimit);
+        emit DailyLimitChange(_dailyLimit);
         return;
     }
 
     function calcMaxWithdraw () public isUnlocked returns (uint) {
         uint ret;
         uint endTime = Safe_Arith.safe_add(lastDay, 86400);
-        if (now > endTime)
+        if (block.timestamp > endTime)
         {
             ret = dailyLimit;
         }

@@ -15,10 +15,10 @@ contract WETH9_Cel
         _;
     }
 
-    event Approval(address indexed, address, uint);
-    event Transfer(address indexed, address, uint);
-    event Deposit(address indexed, uint);
-    event Withdrawal(address indexed, uint);
+    event Approval(address, address, uint);
+    event Transfer(address, address, uint);
+    event Deposit(address, uint);
+    event Withdrawal(address, uint);
     string name = "Wrapped Ether";
     string symbol = "WETH";
     uint decimals = 18;
