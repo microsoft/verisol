@@ -1627,6 +1627,12 @@ class MyListener(CelestialParserListener):
                 if sym.name == eventName:
                     requiredPayloadTypes = sym.params
                     break
+            
+            numberOfProvidedArguments = len(ctx.expr())
+            numberOfRequiredArguments = len(requiredPayloadTypes)
+            if (numberOfProvidedArguments != numberOfRequiredArguments):
+                revert ("<ERROR>: Got " + str(numberOfProvidedArguments) + " arguments, expected " + str(numberOfRequiredArguments) + " for event '" + eventName + "'", ctx.expr()[-1])
+
             for (payloadExpr, requiredPayloadType) in zip(ctx.expr(), requiredPayloadTypes):
                 payloadType = self.exprType(payloadExpr, self.currentScope, inFunctionCall=False)
                 if payloadType != requiredPayloadType:
