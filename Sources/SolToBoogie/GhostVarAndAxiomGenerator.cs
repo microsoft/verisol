@@ -45,6 +45,7 @@ namespace SolToBoogie
             context.Program.AddDeclaration(GenerateAbiEncodedFunctionOneArgRef());
             context.Program.AddDeclaration(GenerateAbiEncodedFunctionTwoArgsOneRef());
 
+            HashSet<String> addedDecls = new HashSet<String>();
             if (context.TranslateFlags.QuantFreeAllocs)
             {
                 if (context.TranslateFlags.UseMultiDim)
@@ -54,7 +55,14 @@ namespace SolToBoogie
                         TypeName type = decl.TypeName;
                         if (type is Mapping || type is ArrayTypeName)
                         {
-                            context.Program.AddDeclaration(MapArrayHelper.GenerateMultiDimZeroFunction(decl));
+                            BoogieFunction initFn = MapArrayHelper.GenerateMultiDimZeroFunction(decl);
+
+                            if (!addedDecls.Contains(initFn.Name))
+                            {
+                                context.Program.AddDeclaration(initFn);
+                                addedDecls.Add(initFn.Name);
+                            }
+                            
                         }
                     }
                 }

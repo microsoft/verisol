@@ -62,7 +62,7 @@ namespace SolidityAST
             p.Start();
 
             string configString = "{ \"language\": \"Solidity\", \"sources\": { %SOLPLACEHOLDER%: { \"urls\": [ %URLPLACEHOLDER% ]}},"
-                + "\"settings\": {\"evmVersion\": \"byzantium\", \"outputSelection\": {\"*\": {\"\": [ \"ast\" ]}}}}";
+                + "\"settings\": {\"evmVersion\": \"constantinople\", \"outputSelection\": {\"*\": {\"\": [ \"ast\" ]}}}}";
             configString = configString.Replace("%SOLPLACEHOLDER%", "\"" + derivedFileName + "\"" /*, StringComparison.CurrentCulture*/);
             configString = configString.Replace("%URLPLACEHOLDER%", "\"" + derivedFilePath + "\""/*, StringComparison.CurrentCulture*/);
 

@@ -802,15 +802,17 @@ namespace SolToBoogie
                 TypeName type = decl.TypeName;
 
                 int curLvl = 0;
+                List<BoogieType> indTypes = new List<BoogieType>() {};
                 while (type is Mapping || type is ArrayTypeName)
                 {
                     if (type is Mapping map)
                     {
                         type = map.ValueType;
+                        indTypes.Add(TransUtils.GetBoogieTypeFromSolidityTypeName(map.KeyType));
                     }
                     else if (type is ArrayTypeName arr)
                     {
-                        ArrayTypeName lenType = new ArrayTypeName();
+                        /*ArrayTypeName lenType = new ArrayTypeName();
                         ElementaryTypeName intType = new ElementaryTypeName();
                         intType.TypeDescriptions = new TypeDescription();
                         intType.TypeDescriptions.TypeString = "uint";
@@ -825,9 +827,36 @@ namespace SolToBoogie
 
                         string lenName = MapArrayHelper.GetMultiDimLengthName(decl, curLvl);
                         BoogieMapSelect lenAccess = new BoogieMapSelect(new BoogieIdentifierExpr(lenName), contractVar.Arguments);
+                        init.AddStatement(new BoogieAssignCmd(lenAccess, lenZero));*/
+                        
+                        if (arr.Length != null)
+                        {
+                            throw new Exception("Must add support for static arrays");
+                        }
+                        
+                        BoogieType lenType = BoogieType.Int;
+                        for (int i = indTypes.Count - 1; i >= 0; i--)
+                        {
+                            lenType = new BoogieMapType(indTypes[i], lenType);
+                        }
+                    
+                        String lenName = MapArrayHelper.GetMultiDimLengthName(decl, curLvl);
+                        BoogieMapSelect lenAccess = new BoogieMapSelect(new BoogieIdentifierExpr(lenName), contractVar.Arguments);
+                        
+                        BoogieExpr lenZero = null;
+                        if (lenType is BoogieMapType)
+                        {
+                            lenZero = MapArrayHelper.GetCallExprForZeroInit(lenType);
+                        }
+                        else
+                        {
+                            lenZero = new BoogieLiteralExpr(BigInteger.Zero);
+                        }
+                        
                         init.AddStatement(new BoogieAssignCmd(lenAccess, lenZero));
                             
                         type = arr.BaseType;
+                        indTypes.Add(BoogieType.Int);
                     }
 
                     curLvl++;
@@ -2555,7 +2584,7 @@ namespace SolToBoogie
             }
             else
             {
-                num = BigInteger.Parse(node.Value);
+                num = BigInteger.Parse(node.Value, NumberStyles.AllowExponent);
             }
 
             //if (node.TypeDescriptions.IsAddress())

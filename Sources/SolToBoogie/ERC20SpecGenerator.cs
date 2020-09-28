@@ -138,6 +138,11 @@ namespace SolToBoogie
 
             public VariableDeclaration findDecl(ContractDefinition curContract, FunctionDefinition def)
             {
+                if (def.Body == null)
+                {
+                    return null;
+                }
+                
                 if (def.ReturnParameters.Parameters.Count != 1)
                 {
                     return null;

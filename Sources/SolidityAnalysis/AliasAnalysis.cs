@@ -10,7 +10,7 @@ namespace SolidityAnalysis
     public class AliasAnalysis : BasicASTVisitor
     {
         private List<VariableDeclaration> results;
-        private Dictionary<String, StructDefinition> nameToStruct;
+        //private Dictionary<String, StructDefinition> nameToStruct;
         private AST solidityAST;
         private HashSet<Tuple<string, string>> ignoredMethods;
         private String entryPoint;
@@ -20,7 +20,7 @@ namespace SolidityAnalysis
             this.solidityAST = solidityAST;
             this.ignoredMethods = ignoredMethods;
             this.entryPoint = entryPointContract;
-            this.nameToStruct = new Dictionary<string, StructDefinition>();
+            //this.nameToStruct = new Dictionary<string, StructDefinition>();
             this.results = null;
         }
         
@@ -52,7 +52,7 @@ namespace SolidityAnalysis
 
         public override bool Visit(StructDefinition def)
         {
-            nameToStruct.Add(def.Name, def);
+            //nameToStruct.Add(def.Name, def);
             return true;
         }
 
@@ -134,6 +134,11 @@ namespace SolidityAnalysis
         
         public override bool Visit(IndexAccess access)
         {
+            if (access.BaseExpression.ToString().Equals("msg.data"))
+            {
+                return false;
+            }
+            
             DeclarationFinder declFinder = new DeclarationFinder(access, solidityAST);
             VariableDeclaration decl = declFinder.getDecl();
 

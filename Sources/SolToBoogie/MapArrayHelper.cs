@@ -303,6 +303,20 @@ namespace SolToBoogie
             var smtDefinedAttr = new BoogieAttribute("smtdefined", $"\"{smtInit}\"");
             return new BoogieFunction($"zero{fnName}", new List<BoogieVariable>(), new List<BoogieVariable>() {outVar}, new List<BoogieAttribute>() {smtDefinedAttr});
         }
+        
+        public static BoogieFuncCallExpr GetCallExprForZeroInit(BoogieType curType)
+        {
+            string fnName = "zero";
+            
+            while (curType is BoogieMapType map)
+            {
+                fnName = $"{fnName}{String.Join("", map.Arguments)}";
+                curType = map.Result;
+            }
+            
+            fnName = $"{fnName}{curType}Arr";
+            return new BoogieFuncCallExpr(fnName, new List<BoogieExpr>());
+        }
 
         public static BoogieFuncCallExpr GetCallExprForZeroInit(TypeName curType)
         {
@@ -390,7 +404,7 @@ namespace SolToBoogie
                 if (curType is Mapping map)
                 {
                     curType = map.ValueType;
-                    indTypes.Add(TransUtils.GetBoogieTypeFromSolidityTypeName(map.ValueType));
+                    indTypes.Add(TransUtils.GetBoogieTypeFromSolidityTypeName(map.KeyType));
                 }
                 else if (curType is ArrayTypeName arr)
                 {

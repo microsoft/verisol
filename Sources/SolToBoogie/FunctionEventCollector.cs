@@ -96,12 +96,12 @@ namespace SolToBoogie
                 paramDecl.StorageLocation = EnumLocation.DEFAULT;
                 paramDecl.Id = id;
                 context.IdToNodeMap.Add(id, paramDecl);
+                fnParams.Parameters.Add(paramDecl);
                 
                 if (curType is Mapping map)
                 {
                     paramDecl.TypeName = map.KeyType;
                     paramDecl.TypeDescriptions = map.KeyType.TypeDescriptions;
-                    fnParams.Parameters.Add(paramDecl);
                     curType = map.ValueType;
                 }
                 else if (curType is ArrayTypeName arr)
