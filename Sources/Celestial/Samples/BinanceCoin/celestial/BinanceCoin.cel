@@ -9,11 +9,11 @@ contract BNB_Cel {
     string symbol; 
     uint8 decimals; 
     uint totalSupply; 
-	address owner; 
+    address owner; 
 
     ///* This creates an array with all balances */ 
     mapping (address => uint) balanceOf; //This was public
-	mapping (address => uint) freezeOf; //This was public
+    mapping (address => uint) freezeOf; //This was public
     mapping (address => mapping (address => uint)) allowance; //This was public
 
     ///* This generates a public event on the blockchain that will notify clients */
