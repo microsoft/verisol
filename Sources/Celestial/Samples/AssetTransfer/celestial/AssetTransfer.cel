@@ -98,16 +98,13 @@ contract MarketPlace_Cel
             revert ("<modifyOffer> function invoked in invalid state");
         }
 
-        if ( _increase && sellingPrice <= uint_max - _change)
+        if ( _increase )
         {
-            sellingPrice = sellingPrice + _change;  // ensures no overflow
+            sellingPrice = safe_add(sellingPrice, _change);  // ensures no overflow
         }
         else
         {
-            if (sellingPrice >= _change)
-            {
-                sellingPrice = sellingPrice - _change;  // ensures no underflow
-            }
+            sellingPrice = safe_sub(sellingPrice, _change); // ensures no underflow
         }
         return;
     }

@@ -3,6 +3,7 @@
 
 pragma solidity >=0.5.0 <0.7.0;
 
+import {Safe_Arith} from "./Safe_Arith.sol";
 
 contract MarketPlace_Cel
 {
@@ -57,16 +58,13 @@ contract MarketPlace_Cel
         {
             revert ("<modifyOffer> function invoked in invalid state");
         }
-        if (_increase && sellingPrice <= (~uint256(0)) - _change)
+        if (_increase)
         {
-            sellingPrice = sellingPrice + _change;
+            sellingPrice = Safe_Arith.safe_add(sellingPrice, _change);
         }
         else
         {
-            if (sellingPrice >= _change)
-            {
-                sellingPrice = sellingPrice - _change;
-            }
+            sellingPrice = Safe_Arith.safe_sub(sellingPrice, _change);
         }
         return;
     }

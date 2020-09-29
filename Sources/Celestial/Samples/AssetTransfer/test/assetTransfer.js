@@ -9,6 +9,7 @@ const csvWriter = createCsvWriter({
   });
 const MarketPlace = artifacts.require("MarketPlace");
 const MarketPlace_cel = artifacts.require("MarketPlace_Cel");
+const Safe_Arith = artifacts.require("Safe_Arith");
 
 contract("AssetTransfer evaluation", async accounts => {
     it("Evaluating Solidity and Celestial versions of AssetTransfer for gas consumption", async () => {
@@ -42,9 +43,13 @@ contract("AssetTransfer evaluation", async accounts => {
       var withdrawGas = tx.receipt.gasUsed;
 
       // get data for Celestial AssetTransfer
+      let libraryInstance_cel = await Safe_Arith.new();
+      let libraryReceipt_cel = await web3.eth.getTransactionReceipt(libraryInstance_cel.transactionHash);
+      var libraryGas_cel = parseInt(libraryReceipt_cel.gasUsed);
+      await MarketPlace_cel.link("Safe_Arith", libraryInstance_cel.address);
       let instance_cel = await MarketPlace_cel.new(seller, buyer);
       let deploymentReceipt_cel = await web3.eth.getTransactionReceipt(instance_cel.transactionHash);
-      var deploymentGas_cel = parseInt(deploymentReceipt_cel.gasUsed);  // retrieve gas needed for deployment
+      var deploymentGas_cel = parseInt(deploymentReceipt_cel.gasUsed) + libraryGas_cel;  // retrieve gas needed for deployment
       
       let tx_cel = await instance_cel.makeOffer(sellingPrice, {from:seller});
       var makeOfferGas_cel = tx_cel.receipt.gasUsed;

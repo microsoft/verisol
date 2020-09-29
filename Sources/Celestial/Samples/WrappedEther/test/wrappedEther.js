@@ -46,7 +46,7 @@ contract("WrappedEther evaluation", async accounts => {
       await Weth9_cel.link("Safe_Arith", libraryInstance_cel.address);
       let instance_cel = await Weth9_cel.new();
       let deploymentReceipt_cel = await web3.eth.getTransactionReceipt(instance_cel.transactionHash);
-      var deploymentGas_cel = parseInt(deploymentReceipt_cel.gasUsed);
+      var deploymentGas_cel = parseInt(deploymentReceipt_cel.gasUsed) + libraryGas_cel;
 
       let tx_cel = await instance_cel.deposit({from:sender, value:depositAmt});
       var depositGas_cel = tx_cel.receipt.gasUsed;

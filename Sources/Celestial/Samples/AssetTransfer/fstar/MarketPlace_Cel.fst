@@ -284,8 +284,8 @@ let modifyOffer (self:marketplace_cel_address) (sender:address{sender <> null}) 
       /\ ((modifyOfferPost _increase _change cs0.marketplace_cel_sellingPrice cs1.marketplace_cel_sellingPrice))
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.marketplace_cel_seller == cs1.marketplace_cel_seller)
       /\ (cs0.marketplace_cel_contractCurrentState == cs1.marketplace_cel_contractCurrentState)
+      /\ (cs0.marketplace_cel_seller == cs1.marketplace_cel_seller)
       /\ (cs0.marketplace_cel_buyingPrice == cs1.marketplace_cel_buyingPrice)
       /\ (cs0.marketplace_cel_buyer == cs1.marketplace_cel_buyer)
   ))
@@ -305,20 +305,15 @@ revert "<modifyOffer> function invoked in invalid state";
 else ()) in
 let cs = get_contract self in
 let balance = get_balance self in
-let x1 = (_increase && (cs.marketplace_cel_sellingPrice <= ((_sub uint_max _change)))) in
-let _ = (if x1 then begin
-let _ = marketplace_cel_set_sellingPrice self (_add cs.marketplace_cel_sellingPrice _change) in
+let _ = (if (_increase) then begin
+let x1 = ((if cs.marketplace_cel_sellingPrice <= uint_max - _change then (cs.marketplace_cel_sellingPrice + _change) else revert "Overflow error")) in
+let _ = marketplace_cel_set_sellingPrice self x1 in
 let cs = get_contract self in
 () end
 else begin
-let x1 = (cs.marketplace_cel_sellingPrice >= _change) in
-let _ = (if x1 then begin
-let _ = marketplace_cel_set_sellingPrice self (_sub cs.marketplace_cel_sellingPrice _change) in
+let x1 = ((if _change <= cs.marketplace_cel_sellingPrice then (cs.marketplace_cel_sellingPrice - _change) else revert "Underflow error")) in
+let _ = marketplace_cel_set_sellingPrice self x1 in
 let cs = get_contract self in
-() end
-else ()) in
-let cs = get_contract self in
-let balance = get_balance self in
 () end) in
 let cs = get_contract self in
 let balance = get_contract self in
@@ -352,8 +347,8 @@ let rejectOffer (self:marketplace_cel_address) (sender:address{sender <> null}) 
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
       /\ (cs0.marketplace_cel_seller == cs1.marketplace_cel_seller)
-      /\ (cs0.marketplace_cel_sellingPrice == cs1.marketplace_cel_sellingPrice)
       /\ (cs0.marketplace_cel_buyingPrice == cs1.marketplace_cel_buyingPrice)
+      /\ (cs0.marketplace_cel_sellingPrice == cs1.marketplace_cel_sellingPrice)
       /\ (cs0.marketplace_cel_buyer == cs1.marketplace_cel_buyer)
   ))
 =
@@ -467,8 +462,8 @@ let accept (self:marketplace_cel_address) (sender:address{sender <> null}) (valu
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
       /\ (cs0.marketplace_cel_seller == cs1.marketplace_cel_seller)
-      /\ (cs0.marketplace_cel_sellingPrice == cs1.marketplace_cel_sellingPrice)
       /\ (cs0.marketplace_cel_buyingPrice == cs1.marketplace_cel_buyingPrice)
+      /\ (cs0.marketplace_cel_sellingPrice == cs1.marketplace_cel_sellingPrice)
       /\ (cs0.marketplace_cel_buyer == cs1.marketplace_cel_buyer)
   ))
 =
