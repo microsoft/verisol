@@ -1,65 +1,49 @@
 //address: https://etherscan.io/address/0xb8c77482e45f1f44de1745f52c74426c631bdd52
 //relevantPaper: https://www.mdpi.com/2079-9292/9/2/255/htm
-// CoinMarketCap lists Binance as the biggest crypto exchange on the market. Binance is a crypto-to-crypto exchange. This means that users can only use it to trade cryptocurrencies. 
-//Issues during conversion: confusion in how to translate events. 
-
 
 // Math operations with safety checks
 // SafeMath including assert defined 
 contract BNB_Cel {
 
-    string name; //This was public - Ignored since only used for display purpose
-    string symbol; //This was public - Ignored since only used for display purpose
-    uint8 decimals; //This was public
-    uint totalSupply; //This was public and uint256
-	address owner; //This was public
+    string name; 
+    string symbol; 
+    uint8 decimals; 
+    uint totalSupply; 
+	address owner; 
 
-    ///* This creates an array with all balances */ //CB:cf: all values were of type uint256
-    //The balance (the amount of tokens) of each asset is composed of 3 different parts:
-    //Available: the amount of tokens that can be transferred, and spent to swap (buy) other assets
-    //Locked: the amount of tokens that has been used in any outstanding orders. Once the order terminates (either filled, canceled or expired), the locked amount will decrease.
-    //Frozen: the amount of tokens that has been frozen via Freeze transactions.
-
+    ///* This creates an array with all balances */ 
     mapping (address => uint) balanceOf; //This was public
 	mapping (address => uint) freezeOf; //This was public
     mapping (address => mapping (address => uint)) allowance; //This was public
 
     ///* This generates a public event on the blockchain that will notify clients */
-    //event Transfer(address indexed from, address indexed to, uint256 value);
     event Transfer(address , address , uint);
 
     ///* This notifies clients about the amount burnt */
-    //event Burn(address indexed from, uint256 value);
     event Burn(address , uint );
 	
 	///* This notifies clients about the amount frozen */
-    // event Freeze(address indexed from, uint256 value);
     event Freeze(address , uint );
 	
 	///* This notifies clients about the amount unfrozen */
-    //event Unfreeze(address indexed from, uint256 value);
     event Unfreeze(address , uint );
 
-    // the sum of the account balances in the BNB contract is always equal to the total supply.
-    // invariant doesn't hold for unfreeze function.
     invariant totalSupplyInv 
     {
         totalSupply == sum_mapping (balanceOf) + sum_mapping (freezeOf)
         //totalSupply == sum_mapping (balanceOf) // not satisfied by unfreeze. This invariant is mentioned in aformentioned paper. 
-        // totalSupply == sum_mapping (balanceOf) || totalSupply == sum_mapping (freezeOf) // Weird: not satisfied by burn and unfreeze
     }
 
-    ///* Initializes contract with initial supply tokens to the creator of the contract */ // CB:cf: replaced uint256 with uint everywhere
-    //function BNB( uint initialSupply, string tokenName, uint8 decimalUnits, string tokenSymbol) {  //CB:cf converted function with name of file to constructor
+    ///* Initializes contract with initial supply tokens to the creator of the contract */ 
     constructor( uint initialSupply, string tokenName, uint8 decimalUnits, string tokenSymbol)   
     {
-        balanceOf[sender] = initialSupply;              // Give the creator all initial tokens  //CB: msg.sender converted to sender everywhere
+        balanceOf[sender] = initialSupply;              // Give the creator all initial tokens  
         totalSupply = initialSupply;                        // Update total supply
         name = tokenName;                                   // Set the name for display purposes
         symbol = tokenSymbol;                               // Set the symbol for display purposes
         decimals = decimalUnits;                            // Amount of decimals for display purposes
 		owner = sender;
-        return ;                                            //CB: added return in end of each function.
+        return;                                            
     }
 
     ///* Send coins */
@@ -67,21 +51,16 @@ contract BNB_Cel {
         tx_reverts _to == null || _value <= 0 || balanceOf[sender] < _value || balanceOf[_to] > uint_max - _value
         post new(log) == (sender, Transfer, _to, _value)::log 
         && ite (sender != _to, new(balanceOf) == balanceOf[sender => balanceOf[sender] - _value, _to => balanceOf[_to] + _value], 
-                //new(balanceOf) == balanceOf) //bcz runtime check sender!=_to is missing in runtime code, fstar can't prove this line on its own, and can prove the condition below only!
                 new(balanceOf) == balanceOf[sender => balanceOf[sender]] ) 
         modifies [balanceOf, log]
     {
-        if (_to == null) revert ("Preventing transfer to 0x0 address"); // Prevent transfer to 0x0 address. Use burn() instead //CB:cf: replaced throw with revert & 0x00 with null everywhere    
-		if (_value <= 0) revert ("Value is 0");       //CB:cf: replaced throw
-        if (balanceOf[sender] < _value) revert ("Sender doesn't have enough");   // Check if the sender has enough  //CB:cf: replaced throw
-        // if (balanceOf[_to] + _value < balanceOf[_to]) revert ("Overflow!"); // Check for overflows     //CB:cf: replaced throw
-        // if (balanceOf[_to] > uint_max - _value)          // Observe: + is actually statically safe in Celestial, so its safer than runtime safe safe_add.
+        if (_to == null) revert ("Preventing transfer to 0x0 address"); // Prevent transfer to 0x0 address. Use burn() instead
+		if (_value <= 0) revert ("Value is 0");       
+        if (balanceOf[sender] < _value) revert ("Sender doesn't have enough");   // Check if the sender has enough  
         if (balanceOf[_to] > uint_max - _value) revert ("Overflow!");
-        balanceOf[sender] = safe_sub(balanceOf[sender], _value);  // Subtract from the sender   //CB:cf: replaced SafeMath.safeSub with safe_sub
-        balanceOf[_to] = safe_add(balanceOf[_to], _value);  // Add the same to the recipient       //CB:cf: replaced SafeMath.safeAdd with safe_add
-        //Transfer(sender, _to, _value);                   // Notify anyone listening that this transfer took place
-        //CB:cf: converted all events to the following format:
-        send (sender, Transfer, _to, _value);
+        balanceOf[sender] = safe_sub(balanceOf[sender], _value);  // Subtract from the sender   
+        balanceOf[_to] = safe_add(balanceOf[_to], _value);  // Add the same to the recipient     
+        send (sender, Transfer, _to, _value); // Notify anyone listening that this transfer took place
         return ;
     }
 
@@ -100,10 +79,8 @@ contract BNB_Cel {
 
     ///* A contract attempts to get the coins */
     function transferFrom(address _from, address _to, uint _value)
-        //_from == null || // can't prove this in tx_revert due to constructor // CB: Missing check!!
         tx_reverts  _to == null || _value <= 0 || balanceOf[_from] < _value || balanceOf[_to] > uint_max - _value || _value > allowance[_from][sender]
         post new(allowance) == allowance[_from =>  allowance[_from][sender => allowance[_from][sender] - _value]] && new(log) == (_from, Transfer, _to, _value)::log 
-        //&& (_from != _to ==> new(balanceOf) == balanceOf[_from => balanceOf[_from] - _value, _to => balanceOf[_to] + _value])
         && ite ( _from != _to, new(balanceOf) == balanceOf[_from => balanceOf[_from] - _value, _to => balanceOf[_to] + _value], 
                                new(balanceOf) == balanceOf[_from => balanceOf[_from]] )
         modifies [balanceOf,allowance,log]
@@ -112,13 +89,11 @@ contract BNB_Cel {
         if (_to == null) revert("preventing transfer to address 0x00");                       // Prevent transfer to 0x0 address. Use burn() instead
 		if (_value <= 0) revert("value leq 0"); 
         if (balanceOf[_from] < _value) revert ("sender doesn't have enough!");                 // Check if the sender has enough
-        // if (balanceOf[_to] + _value < balanceOf[_to]) revert ("Overflow!");  // Check for overflows //CB:cf: we had to re-write overflow check bcz we statically check addition overflow.
         if (balanceOf[_to] > uint_max - _value) revert ("Overflow!");
         if (_value > allowance[_from][sender]) revert ("allowance check failed");     // Check allowance
         balanceOf[_from] = safe_sub(balanceOf[_from], _value);                           // Subtract from the sender
         balanceOf[_to] = safe_add(balanceOf[_to], _value);                             // Add the same to the recipient
         allowance[_from][sender] = safe_sub(allowance[_from][sender], _value);
-        // Transfer(_from, _to, _value);
         send (_from, Transfer, _to, _value);
         return true;
     }
@@ -134,15 +109,13 @@ contract BNB_Cel {
 		if (_value <= 0) revert("value leq 0"); 
         balanceOf[sender] = safe_sub(balanceOf[sender], _value);                      // Subtract from the sender
         totalSupply = safe_sub(totalSupply,_value);                                // Updates totalSupply
-        // Burn(sender, _value);
         send (sender, Burn, _value);
         return true;
     }
 	
     //the requirements that the value must be greater than zero and the balance of message sender must be greater than or equal to the value.
     //The balance of message sender is decreased by value, while the frozen token is increased by value.
-    //CB:cf: note that map update spec requires one to talk abt it differently.
-	function freeze (uint _value) 
+    function freeze (uint _value) 
         tx_reverts freezeOf[sender] > uint_max - _value || balanceOf[sender] < _value || _value <= 0
         post new(balanceOf) == balanceOf[sender => balanceOf[sender] - _value] && new(freezeOf) == freezeOf[sender => freezeOf[sender] + _value]
             && new(log) == (sender, Freeze, _value)::log
@@ -153,7 +126,6 @@ contract BNB_Cel {
 		if (_value <= 0) revert("value leq 0"); 
         balanceOf[sender] = safe_sub(balanceOf[sender], _value);                      // Subtract from the sender
         freezeOf[sender] = safe_add(freezeOf[sender], _value);                                // Updates totalSupply
-        //Freeze(sender, _value);
         send (sender, Freeze, _value);
         return true;
     }
@@ -169,7 +141,6 @@ contract BNB_Cel {
 		if (_value <= 0) revert("value leq 0"); 
         freezeOf[sender] = safe_sub(freezeOf[sender], _value);                      // Subtract from the sender
 		balanceOf[sender] = safe_add(balanceOf[sender], _value);
-        // Unfreeze(sender, _value);
         send (sender, Unfreeze, _value);
         return true;
     }
@@ -180,8 +151,7 @@ contract BNB_Cel {
     tx_reverts sender != owner 
     {
 		if(sender != owner) revert("sender is not owner");
-		//owner.transfer(amount);   //CB:cf: converted this line to the following line:
-        send (owner, eTransfer, amount);
+		send (owner, eTransfer, amount);
         return;
 	}
 }
