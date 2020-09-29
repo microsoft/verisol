@@ -40,6 +40,7 @@ class MyListener(CelestialParserListener):
         self.isSpec = False             # True if the walker is inside a function, invariant or pre/post of a method
         self.methodHasReturn = False    # True if the current method body the walker is in has a return statement
         self.isInPost = False           # True if the walker is currently at the post of a method
+        self.reentrancyReverts = []
 
     def clearCompilerVariables(self):
         """
@@ -64,6 +65,7 @@ class MyListener(CelestialParserListener):
         self.isSpec = False
         self.methodHasReturn = False
         self.isInPost = False
+        self.reentrancyReverts = []
 
     # move this function to a typechecker class
     def isBaseType(self, typ):
@@ -246,6 +248,9 @@ class MyListener(CelestialParserListener):
                         paramType = param.datatype().getText()
                         self.symbols.append(Symbol(paramName, paramType, [], methodName, True, False))
             
+                if methodDeclContext.spec() and methodDeclContext.spec().rreverts:
+                    self.reentrancyReverts.append(methodDeclContext.spec().rreverts)
+
             elif f.enumDecl():
                 enumName = f.enumDecl().name.Iden().getText()
 
@@ -1501,7 +1506,7 @@ class MyListener(CelestialParserListener):
                 # Add to the symbol table if it is not redeclared
                 self.symbols.append(Symbol(_name=varName, _type="bool", _scope=self.currentScope, _isParam=False, _isLocal=True))
                 
-            self.FSTCodegen.writeCallStatement(ctx, self.symbols, self.currentScope)
+            self.FSTCodegen.writeCallStatement(ctx, self.symbols, self.currentScope, self.reentrancyReverts)
 
         # Other contract method call statement
         elif ctx.otherContractInstance and not ctx.ASSIGN():
@@ -1604,7 +1609,7 @@ class MyListener(CelestialParserListener):
             else:
                 self.FSTCodegen.writeMethodCallStatement(ctx, self.symbols, self.currentScope, False)
 
-        # Revert Statement                        
+        # Revert Statement
         elif ctx.REVERT():
             self.FSTCodegen.writeRevertStatement(ctx)
 

@@ -80,10 +80,10 @@ eventDecl : EVENT name=iden LPAREN (datatype (COMMA datatype)*)? RPAREN SEMI ;
 
 constructorDecl : CONSTR LPAREN methodParamList? RPAREN (PUBLIC|PRIVATE)? spec (MODIFIES LBRACK (modifies=rvalueList)? RBRACK)? (MODIFIESA LBRACK (modifies_addrs=rvalueList)? RBRACK)? methodBody ;
 
-spec : (PRE pre=expr)? (POST post=expr)? (CREDIT)? (DEBIT)? (TXREVERTS reverts=expr)?
-     | (CREDIT)? (DEBIT)? (PRE pre=expr)? (POST post=expr)? (TXREVERTS reverts=expr)?
-     | (PRE pre=expr)? (TXREVERTS reverts=expr)? (CREDIT)? (DEBIT)? (POST post=expr)?
-     | (PRE pre=expr)? (TXREVERTS reverts=expr)? (POST post=expr)? (CREDIT)? (DEBIT)? ;
+spec : (PRE pre=expr)? (POST post=expr)? (CREDIT)? (DEBIT)? (TXREVERTS reverts=expr)? (RREVERTS rreverts=expr)?
+     | (CREDIT)? (DEBIT)? (PRE pre=expr)? (POST post=expr)? (TXREVERTS reverts=expr)? (RREVERTS rreverts=expr)?
+     | (PRE pre=expr)? (TXREVERTS reverts=expr)? (CREDIT)? (DEBIT)? (POST post=expr)? (RREVERTS rreverts=expr)?
+     | (PRE pre=expr)? (TXREVERTS reverts=expr)? (POST post=expr)? (CREDIT)? (DEBIT)? (RREVERTS rreverts=expr)?;
 methodDecl : FUNCTION name=iden LPAREN methodParamList? RPAREN (PUBLIC|PRIVATE)? spec (MODIFIES LBRACK (modifies=rvalueList)? RBRACK)? (MODIFIESA LBRACK (modifies_addrs=rvalueList)? RBRACK)? (RETURNS LPAREN datatype (returnval=iden)? RPAREN)? methodBody # MDecl
         ;
 methodParamList : methodParam (COMMA methodParam)* ;
