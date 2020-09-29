@@ -35,8 +35,10 @@ contract EtherDelta_Cel
     function changeAdmin (address admin_) public
         post (new(admin) == admin_)
         tx_reverts (sender != admin)
+        r_reverts _lock_
         modifies [admin]
     {
+        if (_lock_) revert ("Reentrancy detected");
         if (sender != admin) 
         {
             revert("invalid");
@@ -47,8 +49,10 @@ contract EtherDelta_Cel
 
     function changeFeeAccount (address feeAccount_) public
         tx_reverts (sender != admin)
+        r_reverts _lock_
         modifies [feeAccount]
     {
+        if (_lock_) revert ("Reentrancy detected");
         if (sender != admin) 
         {
             revert("invalid");
@@ -60,8 +64,10 @@ contract EtherDelta_Cel
     function changeFeeMake (uint feeMake_) public
         post new(feeMake) == feeMake_
         tx_reverts (sender != admin || feeMake_ > feeMake) 
+        r_reverts _lock_
         modifies [feeMake]
     {
+        if (_lock_) revert ("Reentrancy detected");
         if (sender != admin || feeMake_ > feeMake) 
         {
             revert("invalid");
@@ -74,8 +80,10 @@ contract EtherDelta_Cel
     function changeFeeTake (uint feeTake_) public
         post new(feeTake) == feeTake_
         tx_reverts (sender != admin || feeTake_ > feeTake || feeTake_ < feeRebate) 
+        r_reverts _lock_
         modifies [feeTake]
     {
+        if (_lock_) revert ("Reentrancy detected");
         if (sender != admin || feeTake_ > feeTake || feeTake_ < feeRebate) {
             revert("invalid");
         }
@@ -87,8 +95,10 @@ contract EtherDelta_Cel
     function changeFeeRebate (uint feeRebate_) public
         post new(feeRebate) == feeRebate_
         tx_reverts (sender != admin || feeRebate_ < feeRebate || feeRebate_ > feeTake)
+        r_reverts _lock_
         modifies [feeRebate]
     {
+        if (_lock_) revert ("Reentrancy detected");
         if (sender != admin || feeRebate_ < feeRebate || feeRebate_ > feeTake) 
         {
             revert("invalid");
@@ -102,8 +112,10 @@ contract EtherDelta_Cel
              && (new(totalBalance) == totalBalance + value)
         credit
         tx_reverts (totalBalance + value > uint_max)
+        r_reverts _lock_
         modifies [tokens, totalBalance, log]
     {
+        if (_lock_) revert ("Reentrancy detected");
         totalBalance = safe_add(totalBalance, value);
         tokens[0][sender] = tokens[0][sender] + value;
         emit Deposit (null, sender, value, tokens[0][sender]);
@@ -115,7 +127,9 @@ contract EtherDelta_Cel
              && new(log) == (Withdraw, null, sender, amount, new(tokens)[0][sender])::(sender, eTransfer, amount)::log)
         debit
         tx_reverts (tokens[0][sender] < amount) 
+        r_reverts _lock_
     {
+        if (_lock_) revert ("Reentrancy detected");
         if (tokens[0][sender] < amount) 
         {
             revert ("Insufficient balance");
@@ -139,6 +153,7 @@ contract EtherDelta_Cel
         r_reverts _lock_
         modifies [tokenTxStatus, tokens, totalBalance, balance, log, _lock_]
     {
+        if (_lock_) revert ("Reentrancy detected");
         if (tokenId == 0 || amount > uint_max - tokens[tokenId][sender])
         {
             revert ("Invalid token type or overflow");
@@ -162,8 +177,10 @@ contract EtherDelta_Cel
     function withdrawToken (uint tokenId, address token, uint amount) 
         post new(tokenTxStatus) ==> (new(tokens) == tokens[tokenId => tokens[tokenId][sender => tokens[tokenId][sender] - amount]])
         tx_reverts tokenId == 0 || tokens[tokenId][sender] < amount
+        r_reverts _lock_
         modifies[tokenTxStatus, tokens, totalBalance, balance, log, _lock_]
     {
+        if (_lock_) revert ("Reentrancy detected");
         if (tokenId == 0 || tokens[tokenId][sender] < amount)
         {
             revert ("Invalid token type or overflow");

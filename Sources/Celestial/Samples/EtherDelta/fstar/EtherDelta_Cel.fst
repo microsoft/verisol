@@ -293,6 +293,7 @@ let changeAdmin (self:etherdelta_cel_address) (sender:address{sender <> null}) (
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
     ((sender =!= cs.etherdelta_cel_admin))
+    \/ (cs.etherdelta_cel__lock_)
   )
   (fun bst0 x bst1 ->
     etherdelta_cel_live self bst1 /\ (
@@ -307,16 +308,22 @@ let changeAdmin (self:etherdelta_cel_address) (sender:address{sender <> null}) (
       /\ ((cs1.etherdelta_cel_admin == admin_))
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
-      /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
-      /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
-      /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
-      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
-      /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
       /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
       /\ (cs0.etherdelta_cel__lock_ == cs1.etherdelta_cel__lock_)
+      /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
+      /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
+      /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
+      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
+      /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
+      /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
   ))
 =
+let cs = get_contract self in
+let balance = get_balance self in
+let _ = (if (cs.etherdelta_cel__lock_) then begin
+revert "Reentrancy detected";
+() end
+else ()) in
 let cs = get_contract self in
 let balance = get_balance self in
 let _ = (if (sender <> cs.etherdelta_cel_admin) then begin
@@ -344,6 +351,7 @@ let changeFeeAccount (self:etherdelta_cel_address) (sender:address{sender <> nul
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
     ((sender =!= cs.etherdelta_cel_admin))
+    \/ (cs.etherdelta_cel__lock_)
   )
   (fun bst0 x bst1 ->
     etherdelta_cel_live self bst1 /\ (
@@ -357,16 +365,22 @@ let changeFeeAccount (self:etherdelta_cel_address) (sender:address{sender <> nul
       /\ (eth_balances self bst1)
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
-      /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
-      /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
-      /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
-      /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
-      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
       /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
       /\ (cs0.etherdelta_cel__lock_ == cs1.etherdelta_cel__lock_)
+      /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
+      /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
+      /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
+      /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
+      /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
+      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
   ))
 =
+let cs = get_contract self in
+let balance = get_balance self in
+let _ = (if (cs.etherdelta_cel__lock_) then begin
+revert "Reentrancy detected";
+() end
+else ()) in
 let cs = get_contract self in
 let balance = get_balance self in
 let _ = (if (sender <> cs.etherdelta_cel_admin) then begin
@@ -394,6 +408,7 @@ let changeFeeMake (self:etherdelta_cel_address) (sender:address{sender <> null})
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
     (((sender =!= cs.etherdelta_cel_admin) \/ (feeMake_ > cs.etherdelta_cel_feeMake)))
+    \/ (cs.etherdelta_cel__lock_)
   )
   (fun bst0 x bst1 ->
     etherdelta_cel_live self bst1 /\ (
@@ -408,16 +423,22 @@ let changeFeeMake (self:etherdelta_cel_address) (sender:address{sender <> null})
       /\ (cs1.etherdelta_cel_feeMake == feeMake_)
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
-      /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
-      /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
-      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
-      /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
-      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
       /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
       /\ (cs0.etherdelta_cel__lock_ == cs1.etherdelta_cel__lock_)
+      /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
+      /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
+      /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
+      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
+      /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
+      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
   ))
 =
+let cs = get_contract self in
+let balance = get_balance self in
+let _ = (if (cs.etherdelta_cel__lock_) then begin
+revert "Reentrancy detected";
+() end
+else ()) in
 let cs = get_contract self in
 let balance = get_balance self in
 let _ = (if ((sender <> cs.etherdelta_cel_admin) || (feeMake_ > cs.etherdelta_cel_feeMake)) then begin
@@ -445,6 +466,7 @@ let changeFeeTake (self:etherdelta_cel_address) (sender:address{sender <> null})
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
     ((((sender =!= cs.etherdelta_cel_admin) \/ (feeTake_ > cs.etherdelta_cel_feeTake)) \/ (feeTake_ < cs.etherdelta_cel_feeRebate)))
+    \/ (cs.etherdelta_cel__lock_)
   )
   (fun bst0 x bst1 ->
     etherdelta_cel_live self bst1 /\ (
@@ -459,16 +481,22 @@ let changeFeeTake (self:etherdelta_cel_address) (sender:address{sender <> null})
       /\ (cs1.etherdelta_cel_feeTake == feeTake_)
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
-      /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
-      /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
-      /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
-      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
-      /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
-      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
       /\ (cs0.etherdelta_cel__lock_ == cs1.etherdelta_cel__lock_)
+      /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
+      /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
+      /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
+      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
+      /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
+      /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
+      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
   ))
 =
+let cs = get_contract self in
+let balance = get_balance self in
+let _ = (if (cs.etherdelta_cel__lock_) then begin
+revert "Reentrancy detected";
+() end
+else ()) in
 let cs = get_contract self in
 let balance = get_balance self in
 let _ = (if (((sender <> cs.etherdelta_cel_admin) || (feeTake_ > cs.etherdelta_cel_feeTake)) || (feeTake_ < cs.etherdelta_cel_feeRebate)) then begin
@@ -496,6 +524,7 @@ let changeFeeRebate (self:etherdelta_cel_address) (sender:address{sender <> null
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
     ((((sender =!= cs.etherdelta_cel_admin) \/ (feeRebate_ < cs.etherdelta_cel_feeRebate)) \/ (feeRebate_ > cs.etherdelta_cel_feeTake)))
+    \/ (cs.etherdelta_cel__lock_)
   )
   (fun bst0 x bst1 ->
     etherdelta_cel_live self bst1 /\ (
@@ -510,16 +539,22 @@ let changeFeeRebate (self:etherdelta_cel_address) (sender:address{sender <> null
       /\ (cs1.etherdelta_cel_feeRebate == feeRebate_)
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
-      /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
-      /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
-      /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
-      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
-      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
       /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
       /\ (cs0.etherdelta_cel__lock_ == cs1.etherdelta_cel__lock_)
+      /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
+      /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
+      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
+      /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
+      /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
+      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
   ))
 =
+let cs = get_contract self in
+let balance = get_balance self in
+let _ = (if (cs.etherdelta_cel__lock_) then begin
+revert "Reentrancy detected";
+() end
+else ()) in
 let cs = get_contract self in
 let balance = get_balance self in
 let _ = (if (((sender <> cs.etherdelta_cel_admin) || (feeRebate_ < cs.etherdelta_cel_feeRebate)) || (feeRebate_ > cs.etherdelta_cel_feeTake)) then begin
@@ -547,6 +582,7 @@ let deposit (self:etherdelta_cel_address) (sender:address{sender <> null}) (valu
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
     (((cs.etherdelta_cel_totalBalance + value) > uint_max))
+    \/ (cs.etherdelta_cel__lock_)
   )
   (fun bst0 x bst1 ->
     etherdelta_cel_live self bst1 /\ (
@@ -569,19 +605,25 @@ let deposit (self:etherdelta_cel_address) (sender:address{sender <> null}) (valu
         x1) in
       let x1 = (M.upd x1 x2 x3) in
       x1))) /\ ((cs1.etherdelta_cel_totalBalance == (cs0.etherdelta_cel_totalBalance + value))))
-      /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
-      /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
-      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
-      /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
-      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
       /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
       /\ (cs0.etherdelta_cel__lock_ == cs1.etherdelta_cel__lock_)
+      /\ (cs0.etherdelta_cel_tokenTxStatus == cs1.etherdelta_cel_tokenTxStatus)
+      /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
+      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
+      /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
+      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
   ))
 =
 let b = get_balance self in
 let _ = set_balance self (
           if (b + value > uint_max) then (b + value - uint_max)
           else (b + value)) in
+let cs = get_contract self in
+let balance = get_balance self in
+let _ = (if (cs.etherdelta_cel__lock_) then begin
+revert "Reentrancy detected";
+() end
+else ()) in
 let cs = get_contract self in
 let balance = get_balance self in
 let x1 = ((if cs.etherdelta_cel_totalBalance <= uint_max - value then (cs.etherdelta_cel_totalBalance + value) else revert "Overflow error")) in
@@ -617,6 +659,7 @@ let withdraw (self:etherdelta_cel_address) (sender:address{sender <> null}) (val
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
     (((M.sel (M.sel cs.etherdelta_cel_tokens 0) sender) < amount))
+    \/ (cs.etherdelta_cel__lock_)
   )
   (fun bst0 x bst1 ->
     etherdelta_cel_live self bst1 /\ (
@@ -642,6 +685,12 @@ let withdraw (self:etherdelta_cel_address) (sender:address{sender <> null}) (val
       /\ (b1 <= b0)
   ))
 =
+let cs = get_contract self in
+let balance = get_balance self in
+let _ = (if (cs.etherdelta_cel__lock_) then begin
+revert "Reentrancy detected";
+() end
+else ()) in
 let cs = get_contract self in
 let balance = get_balance self in
 let _ = (if ((M.sel (M.sel cs.etherdelta_cel_tokens 0) sender) < amount) then begin
@@ -691,7 +740,7 @@ let depositToken (self:etherdelta_cel_address) (sender:address{sender <> null}) 
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
     ((tokenId == 0) \/ (((M.sel (M.sel cs.etherdelta_cel_tokens tokenId) sender) + amount) > uint_max))
-    \/ ((tokenId == 0) \/ (((M.sel (M.sel cs.etherdelta_cel_tokens tokenId) sender) + amount) > uint_max))
+    \/ (cs.etherdelta_cel__lock_)
   )
   (fun bst0 x bst1 ->
     etherdelta_cel_live self bst1 /\ (
@@ -714,13 +763,19 @@ let depositToken (self:etherdelta_cel_address) (sender:address{sender <> null}) 
           x1) in
         let x1 = (M.upd x1 x2 x3) in
         x1)))
-      /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
-      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
-      /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
-      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
       /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
+      /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
+      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
+      /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
+      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
   ))
 =
+let cs = get_contract self in
+let balance = get_balance self in
+let _ = (if (cs.etherdelta_cel__lock_) then begin
+revert "Reentrancy detected";
+() end
+else ()) in
 let cs = get_contract self in
 let balance = get_balance self in
 let x1 = ((tokenId = 0) || (amount > ((_sub uint_max (M.sel (M.sel cs.etherdelta_cel_tokens tokenId) sender))))) in
@@ -783,6 +838,7 @@ let withdrawToken (self:etherdelta_cel_address) (sender:address{sender <> null})
     let b = pure_get_balance_bst self bst in
     let l = bst.log in
     ((tokenId == 0) \/ ((M.sel (M.sel cs.etherdelta_cel_tokens tokenId) sender) < amount))
+    \/ (cs.etherdelta_cel__lock_)
   )
   (fun bst0 x bst1 ->
     etherdelta_cel_live self bst1 /\ (
@@ -805,13 +861,19 @@ let withdrawToken (self:etherdelta_cel_address) (sender:address{sender <> null})
           x1) in
         let x1 = (M.upd x1 x2 x3) in
         x1))))
-      /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
-      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
-      /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
-      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
       /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
+      /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
+      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
+      /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
+      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
   ))
 =
+let cs = get_contract self in
+let balance = get_balance self in
+let _ = (if (cs.etherdelta_cel__lock_) then begin
+revert "Reentrancy detected";
+() end
+else ()) in
 let cs = get_contract self in
 let balance = get_balance self in
 let x1 = ((tokenId = 0) || ((M.sel (M.sel cs.etherdelta_cel_tokens tokenId) sender) < amount)) in
