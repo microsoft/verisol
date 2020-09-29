@@ -27,8 +27,9 @@ help:
 	@echo "    wrapped_ether"
 	@echo "    multisig"
 	@echo "    simple_auction"
+	@echo "    binancecoin"
 
-all: overview asset_transfer erc20 etherdelta wrapped_ether multisig westlake simple_auction
+all: overview asset_transfer erc20 etherdelta wrapped_ether multisig westlake simple_auction binancecoin
 
 compile:
 	@if [ '$(experiment)' = 'overview' ]; then \
@@ -47,6 +48,8 @@ compile:
 		${COMPILER} ConsenSys/MultiSig/celestial/MultiSig.cel --fstDir="../Samples/ConsenSys/MultiSig/fstar" --solDir="../Samples/ConsenSys/MultiSig/contracts"; \
 	elif [ '$(experiment)' = 'simple_auction' ]; then \
 		${COMPILER} SimpleAuction/celestial/SimpleAuction.cel --fstDir="../Samples/SimpleAuction/fstar" --solDir="../Samples/SimpleAuction/contracts"; \
+	elif [ '$(experiment)' = 'binancecoin' ]; then \
+		${COMPILER} BinanceCoin/celestial/BinanceCoin.cel --fstDir="../Samples/BinanceCoin/fstar" --solDir="../Samples/BinanceCoin/contracts"; \
 	else \
 		echo "Invalid experiment argument to target 'compile'"; \
 	fi;
@@ -68,6 +71,8 @@ verify:
 		$(call TIME,--z3rlimit 50,ConsenSys/MultiSig/fstar/MultiSigWalletWithDailyLimit_Cel.fst,ConsenSys MultiSigWallet); \
 	elif [ '$(experiment)' = 'simple_auction' ]; then \
 		$(call TIME,--z3rlimit 50,SimpleAuction/fstar/SimpleAuction_Cel.fst,Simple Auction); \
+	elif [ '$(experiment)' = 'binancecoin' ]; then \
+		$(call TIME,--z3rlimit 50,BinanceCoin/fstar/BNB_Cel.fst,BNB); \
 	else \
 		echo "Invalid experiment argument to target 'verify'"; \
 	fi;
@@ -85,6 +90,8 @@ perf:
 		cd ConsenSys/MultiSig && ${TRUFFLE} test/multisig.js; \
 	elif [ '$(experiment)' = 'simple_auction' ]; then \
 		cd SimpleAuction && ${TRUFFLE} test/simpleAuction.js; \
+	elif [ '$(experiment)' = 'binancecoin' ]; then \
+		cd BinanceCoin && ${TRUFFLE} test/binanceCoin.js; \
 	else \
 		echo "Invalid experiment argument to target 'perf'"; \
 	fi;
@@ -130,3 +137,8 @@ simple_auction:
 	$(MAKE) compile experiment=simple_auction
 	$(MAKE) verify experiment=simple_auction
 	$(MAKE) perf experiment=simple_auction
+
+binancecoin:
+	$(MAKE) compile experiment=binancecoin
+	$(MAKE) verify experiment=binancecoin
+	$(MAKE) perf experiment=binancecoin
