@@ -9,11 +9,11 @@ contract BNB_Cel {
     string symbol; 
     uint8 decimals; 
     uint totalSupply; 
-	address owner; 
+    address owner; 
 
     ///* This creates an array with all balances */ 
     mapping (address => uint) balanceOf; //This was public
-	mapping (address => uint) freezeOf; //This was public
+    mapping (address => uint) freezeOf; //This was public
     mapping (address => mapping (address => uint)) allowance; //This was public
 
     ///* This generates a public event on the blockchain that will notify clients */
@@ -22,10 +22,10 @@ contract BNB_Cel {
     ///* This notifies clients about the amount burnt */
     event Burn(address , uint );
 	
-	///* This notifies clients about the amount frozen */
+    ///* This notifies clients about the amount frozen */
     event Freeze(address , uint );
 	
-	///* This notifies clients about the amount unfrozen */
+    ///* This notifies clients about the amount unfrozen */
     event Unfreeze(address , uint );
 
     invariant totalSupplyInv 
@@ -42,7 +42,7 @@ contract BNB_Cel {
         name = tokenName;                                   // Set the name for display purposes
         symbol = tokenSymbol;                               // Set the symbol for display purposes
         decimals = decimalUnits;                            // Amount of decimals for display purposes
-		owner = sender;
+	owner = sender;
         return;                                            
     }
 
@@ -55,13 +55,13 @@ contract BNB_Cel {
         modifies [balanceOf, log]
     {
         if (_to == null) revert ("Preventing transfer to 0x0 address"); // Prevent transfer to 0x0 address. Use burn() instead
-		if (_value <= 0) revert ("Value is 0");       
+	if (_value <= 0) revert ("Value is 0");       
         if (balanceOf[sender] < _value) revert ("Sender doesn't have enough");   // Check if the sender has enough  
         if (balanceOf[_to] > uint_max - _value) revert ("Overflow!");
         balanceOf[sender] = safe_sub(balanceOf[sender], _value);  // Subtract from the sender   
         balanceOf[_to] = safe_add(balanceOf[_to], _value);  // Add the same to the recipient     
         send (sender, Transfer, _to, _value); // Notify anyone listening that this transfer took place
-        return ;
+        return;
     }
 
     ///* Allow another contract to spend some tokens in your behalf */
@@ -71,7 +71,7 @@ contract BNB_Cel {
         modifies [allowance]
         returns (bool success) 
     {
-		if (_value <= 0) revert ("value leq 0"); 
+	if (_value <= 0) revert ("value leq 0"); 
         allowance[sender][_spender] = _value;
         return true;
     }
@@ -87,7 +87,7 @@ contract BNB_Cel {
         returns (bool success) 
     {
         if (_to == null) revert("preventing transfer to address 0x00");                       // Prevent transfer to 0x0 address. Use burn() instead
-		if (_value <= 0) revert("value leq 0"); 
+	if (_value <= 0) revert("value leq 0"); 
         if (balanceOf[_from] < _value) revert ("sender doesn't have enough!");                 // Check if the sender has enough
         if (balanceOf[_to] > uint_max - _value) revert ("Overflow!");
         if (_value > allowance[_from][sender]) revert ("allowance check failed");     // Check allowance
@@ -106,7 +106,7 @@ contract BNB_Cel {
         returns (bool success) 
     {
         if (balanceOf[sender] < _value) revert("sender doesn't have enough!");            // Check if the sender has enough
-		if (_value <= 0) revert("value leq 0"); 
+	if (_value <= 0) revert("value leq 0"); 
         balanceOf[sender] = safe_sub(balanceOf[sender], _value);                      // Subtract from the sender
         totalSupply = safe_sub(totalSupply,_value);                                // Updates totalSupply
         send (sender, Burn, _value);
@@ -118,44 +118,44 @@ contract BNB_Cel {
     function freeze (uint _value) 
         tx_reverts freezeOf[sender] > uint_max - _value || balanceOf[sender] < _value || _value <= 0
         post new(balanceOf) == balanceOf[sender => balanceOf[sender] - _value] && new(freezeOf) == freezeOf[sender => freezeOf[sender] + _value]
-            && new(log) == (sender, Freeze, _value)::log
+             && new(log) == (sender, Freeze, _value)::log
         modifies [balanceOf,freezeOf,log]
         returns (bool success)
     {
         if (balanceOf[sender] < _value) revert("sender doesn't have enough!");            // Check if the sender has enough
-		if (_value <= 0) revert("value leq 0"); 
+	if (_value <= 0) revert("value leq 0"); 
         balanceOf[sender] = safe_sub(balanceOf[sender], _value);                      // Subtract from the sender
         freezeOf[sender] = safe_add(freezeOf[sender], _value);                                // Updates totalSupply
         send (sender, Freeze, _value);
         return true;
     }
 	
-	function unfreeze(uint _value) 
+    function unfreeze(uint _value) 
         tx_reverts balanceOf[sender] > uint_max - _value || freezeOf[sender] < _value || _value <= 0
         post new(balanceOf) == balanceOf[sender => balanceOf[sender] + _value] && new(freezeOf) == freezeOf[sender => freezeOf[sender] - _value]
-            && new(log) == (sender, Unfreeze, _value)::log
+             && new(log) == (sender, Unfreeze, _value)::log
         modifies [balanceOf,freezeOf,log]
         returns (bool success) 
     {
         if (freezeOf[sender] < _value) revert("sender doesn't have enough!");            // Check if the sender has enough
-		if (_value <= 0) revert("value leq 0"); 
+	if (_value <= 0) revert("value leq 0"); 
         freezeOf[sender] = safe_sub(freezeOf[sender], _value);                      // Subtract from the sender
-		balanceOf[sender] = safe_add(balanceOf[sender], _value);
+	balanceOf[sender] = safe_add(balanceOf[sender], _value);
         send (sender, Unfreeze, _value);
         return true;
     }
 	
-	// transfer balance to owner
-	function withdrawEther(uint amount) debit
-    post (new(log) == (owner, eTransfer, amount)::log) //What about balance updates
-    tx_reverts sender != owner 
+    // transfer balance to owner
+    function withdrawEther(uint amount) debit
+    	post (new(log) == (owner, eTransfer, amount)::log) //What about balance updates
+    	tx_reverts sender != owner 
     {
-		if(sender != owner) revert("sender is not owner");
-		send (owner, eTransfer, amount);
+	if(sender != owner) revert("sender is not owner");
+	send (owner, eTransfer, amount);
         return;
-	}
+    }
 }
 
 // can accept ether             //CB: commented out as it will be generated automatically.
-	//function() payable {
-    //}
+//function() payable {
+//}
