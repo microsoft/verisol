@@ -8,13 +8,6 @@ import {Safe_Arith} from "./Safe_Arith.sol";
 contract EtherDelta_Cel
 {
     receive() external payable {}
-    bool _lock_ = false;
-
-    modifier isUnlocked () {
-        require (_lock_ == false);
-        _;
-    }
-
     event Deposit(address, address, uint, uint);
     event Withdraw(address, address, uint, uint);
     address admin;
@@ -25,6 +18,7 @@ contract EtherDelta_Cel
     mapping (uint => mapping (address => uint)) tokens;
     bool tokenTxStatus;
     uint totalBalance;
+    bool _lock_;
 
     constructor (address admin_, address feeAccount_, uint feeMake_, uint feeTake_, uint feeRebate_) public {
         admin = admin_;
@@ -36,6 +30,8 @@ contract EtherDelta_Cel
     }
 
     function changeAdmin (address admin_) public isUnlocked {
+        if (_lock_)
+        revert ("Reentrancy detected");
         if (msg.sender != admin)
         {
             revert ("invalid");
@@ -45,6 +41,8 @@ contract EtherDelta_Cel
     }
 
     function changeFeeAccount (address feeAccount_) public isUnlocked {
+        if (_lock_)
+        revert ("Reentrancy detected");
         if (msg.sender != admin)
         {
             revert ("invalid");
@@ -54,6 +52,8 @@ contract EtherDelta_Cel
     }
 
     function changeFeeMake (uint feeMake_) public isUnlocked {
+        if (_lock_)
+        revert ("Reentrancy detected");
         if (msg.sender != admin || feeMake_ > feeMake)
         {
             revert ("invalid");
@@ -63,6 +63,8 @@ contract EtherDelta_Cel
     }
 
     function changeFeeTake (uint feeTake_) public isUnlocked {
+        if (_lock_)
+        revert ("Reentrancy detected");
         if (msg.sender != admin || feeTake_ > feeTake || feeTake_ < feeRebate)
         {
             revert ("invalid");
@@ -72,6 +74,8 @@ contract EtherDelta_Cel
     }
 
     function changeFeeRebate (uint feeRebate_) public isUnlocked {
+        if (_lock_)
+        revert ("Reentrancy detected");
         if (msg.sender != admin || feeRebate_ < feeRebate || feeRebate_ > feeTake)
         {
             revert ("invalid");
@@ -81,6 +85,8 @@ contract EtherDelta_Cel
     }
 
     function deposit () public isUnlocked payable {
+        if (_lock_)
+        revert ("Reentrancy detected");
         totalBalance = Safe_Arith.safe_add(totalBalance, msg.value);
         tokens[0][msg.sender] = tokens[0][msg.sender] + msg.value;
         emit Deposit(address(0), msg.sender, msg.value, tokens[0][msg.sender]);
@@ -88,6 +94,8 @@ contract EtherDelta_Cel
     }
 
     function withdraw (uint amount) public isUnlocked {
+        if (_lock_)
+        revert ("Reentrancy detected");
         if (tokens[0][msg.sender] < amount)
         {
             revert ("Insufficient balance");
@@ -105,6 +113,8 @@ contract EtherDelta_Cel
     }
 
     function depositToken (uint tokenId, address token, uint amount) public isUnlocked {
+        if (_lock_)
+        revert ("Reentrancy detected");
         if (tokenId == 0 || amount > (~uint256(0)) - tokens[tokenId][msg.sender])
         {
             revert ("Invalid token type or overflow");
@@ -126,6 +136,8 @@ contract EtherDelta_Cel
     }
 
     function withdrawToken (uint tokenId, address token, uint amount) public isUnlocked {
+        if (_lock_)
+        revert ("Reentrancy detected");
         if (tokenId == 0 || tokens[tokenId][msg.sender] < amount)
         {
             revert ("Invalid token type or overflow");

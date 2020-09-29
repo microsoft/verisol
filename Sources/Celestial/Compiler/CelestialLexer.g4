@@ -68,6 +68,7 @@ PUSH      : 'push' ;
 RETURN    : 'return' ;
 RETURNS   : 'returns' ;
 REVERT	  : 'revert' ;
+RREVERTS  : 'r_reverts' ;
 SAFEADD   : 'safe_add' ;
 SAFEDIV   : 'safe_div' ;
 SAFEMOD   : 'safe_mod' ;
