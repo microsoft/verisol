@@ -1437,7 +1437,7 @@ class FStarCodegen:
 
         ################# Begin reverts clause #################
 
-        if not ctx.spec().reverts and not ctx.spec().CREDIT():
+        if not ctx.spec().reverts and not ctx.spec().CREDIT() and not ctx.spec().rreverts:
             self.writeToFStar("\n  (fun bst -> False)")
         else:
             self.writeToFStar("\n  (fun bst ->")
@@ -1449,14 +1449,21 @@ class FStarCodegen:
 
             if (ctx.spec().reverts):
                 reverts = self.getFStarExpression(ctx.spec().reverts, symbols, scope, isInvariant=False, isMethod=False, isFunctionCall=False, isIf=False, isPre=True, isPost=False)
-                # reverts = self.getFStarPrePost(ctx.spec().reverts, symbols, scope, isPre=True)
                 self.writeToFStar("\n    (" + reverts + ")")
                 flag = True
-            else:
-                self.writeToFStar("\n    false")
+
+            if (ctx.spec().rreverts):
+                rreverts = self.getFStarExpression(ctx.spec().reverts, symbols, scope, isInvariant=False, isMethod=False, isFunctionCall=False, isIf=False, isPre=True, isPost=False)
+                if flag:
+                    self.writeToFStar("\n    \/ (" + rreverts + ")")
+                else:
+                    self.writeToFStar("\n    (" + rreverts + ")")
                 flag = True
 
-            self.writeToFStar("\n  )")
+            if not flag:
+                self.writeToFStar("\n  False)")
+            else:
+                self.writeToFStar("\n  )")
 
         ################# Begin post #################
 
@@ -1864,7 +1871,22 @@ class FStarCodegen:
 
         self.writeToFStar("\nlet cs = get_contract self in")
 
-    def writeCallStatement(self, ctx:CelestialParser.StatementContext, symbols, scope):
+    def writeCallStatement(self, ctx:CelestialParser.StatementContext, symbols, scope, reentrancyReverts):
+        reentrancyRevertsStrings = []
+        for expr in reentrancyReverts:
+            conditionString = self.getFStarExpression(expr, symbols, scope, isMethod=True)
+            if conditionString not in reentrancyRevertsStrings:
+                reentrancyRevertsStrings.append(conditionString)
+        
+        reentrancyRevertsString = ""
+        if reentrancyRevertsStrings:
+            reentrancyRevertsString = "(" + reentrancyRevertsStrings[0] + ")"
+            for string in reentrancyRevertsStrings[1:]:
+                reentrancyRevertsString += " /\ (" + string + ")"
+
+        if reentrancyRevertsString:
+            self.writeToFStar("\nassert (" + reentrancyRevertsString + ");")
+
         # If the return value of the '.call' is assigned to a variable
         if ctx.ASSIGN():
             if ctx.lvalue()[0] and ctx.lvalue()[0].name:

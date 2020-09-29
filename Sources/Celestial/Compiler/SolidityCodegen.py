@@ -100,15 +100,15 @@ class SolidityCodegen:
         
         # Each contract has a lock to prevent re-entrancy
         # Lock status is checked at the beginning of every function
-        self.writeToSolidity("bool _lock_ = false;")
-        self.writeToSolidity("")
-        self.writeToSolidity("modifier isUnlocked () {")
-        self.indentationLevel += 1
-        self.writeToSolidity("require (_lock_ == false);")
-        self.writeToSolidity("_;")
-        self.indentationLevel -= 1
-        self.writeToSolidity("}")
-        self.writeToSolidity("")
+        # self.writeToSolidity("bool _lock_ = false;")
+        # self.writeToSolidity("")
+        # self.writeToSolidity("modifier isUnlocked () {")
+        # self.indentationLevel += 1
+        # self.writeToSolidity("require (_lock_ == false);")
+        # self.writeToSolidity("_;")
+        # self.indentationLevel -= 1
+        # self.writeToSolidity("}")
+        # self.writeToSolidity("")
 
     def getSolidityDatatype(self, ctx:CelestialParser.DatatypeContext):
         if ctx.MAP():
@@ -571,7 +571,7 @@ class SolidityCodegen:
             s = caller + ".call(" + s + ");"
 
             # Set the lock to true to disallow re-entrancy due to '.call'
-            self.writeToSolidity("_lock_ = true;")
+            # self.writeToSolidity("_lock_ = true;")
             if ctx.BOOL():
                 self.writeToSolidity("(bool " + ctx.iden().getText() + ", ) = " + s)
             elif ctx.lvalue():
@@ -581,7 +581,7 @@ class SolidityCodegen:
                 self.writeToSolidity(s)
             
             # Set the lock to false after the execution of '.call'
-            self.writeToSolidity("_lock_ = false;")
+            # self.writeToSolidity("_lock_ = false;")
 
         elif ctx.assignment:
             self.writeToSolidity(self.getSolidityLvalueExpr(ctx.assignTo, symbols, scope) + " = " + self.getSolidityExpr(ctx.rvalue().expr(), symbols, scope) + ";")
