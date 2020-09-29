@@ -1453,7 +1453,7 @@ class FStarCodegen:
                 flag = True
 
             if (ctx.spec().rreverts):
-                rreverts = self.getFStarExpression(ctx.spec().reverts, symbols, scope, isInvariant=False, isMethod=False, isFunctionCall=False, isIf=False, isPre=True, isPost=False)
+                rreverts = self.getFStarExpression(ctx.spec().rreverts, symbols, scope, isInvariant=False, isMethod=False, isFunctionCall=False, isIf=False, isPre=True, isPost=False)
                 if flag:
                     self.writeToFStar("\n    \/ (" + rreverts + ")")
                 else:
