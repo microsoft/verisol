@@ -11,6 +11,7 @@ contract EtherDelta_Cel
 
     bool tokenTxStatus;
     uint totalBalance;
+    bool _lock_;
 
     invariant eth_balances2 {
         balance == totalBalance
@@ -135,14 +136,17 @@ contract EtherDelta_Cel
         post new(tokenTxStatus) ==>
                  new(tokens) == tokens[tokenId => tokens[tokenId][sender => tokens[tokenId][sender] + amount]]
         tx_reverts tokenId == 0 || tokens[tokenId][sender] + amount > uint_max
-        modifies [tokenTxStatus, tokens, totalBalance, balance, log]
+        r_reverts _lock_
+        modifies [tokenTxStatus, tokens, totalBalance, balance, log, _lock_]
     {
         if (tokenId == 0 || amount > uint_max - tokens[tokenId][sender])
         {
             revert ("Invalid token type or overflow");
         }
 
+        _lock_ = true;
         tokenTxStatus = token.call("transferFrom(address,address,uint)", sender, address(this), amount);
+        _lock_ = false;
         if (totalBalance > balance) {
             revert ("Unexpected Ether transferred to self");
         }
@@ -158,14 +162,16 @@ contract EtherDelta_Cel
     function withdrawToken (uint tokenId, address token, uint amount) 
         post new(tokenTxStatus) ==> (new(tokens) == tokens[tokenId => tokens[tokenId][sender => tokens[tokenId][sender] - amount]])
         tx_reverts tokenId == 0 || tokens[tokenId][sender] < amount
-        modifies[tokenTxStatus, tokens, totalBalance, balance, log]
+        modifies[tokenTxStatus, tokens, totalBalance, balance, log, _lock_]
     {
         if (tokenId == 0 || tokens[tokenId][sender] < amount)
         {
             revert ("Invalid token type or overflow");
         }
 
+        _lock_ = true;
         tokenTxStatus = token.call("transfer(address,uint)", sender, amount);
+        _lock_ = false;
         if (totalBalance > balance) {
             revert ("Unexpected Ether transferred to self");
         }

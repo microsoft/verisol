@@ -8,13 +8,6 @@ import {Safe_Arith} from "./Safe_Arith.sol";
 contract EtherDelta_Cel
 {
     receive() external payable {}
-    bool _lock_ = false;
-
-    modifier isUnlocked () {
-        require (_lock_ == false);
-        _;
-    }
-
     event Deposit(address, address, uint, uint);
     event Withdraw(address, address, uint, uint);
     address admin;
@@ -25,6 +18,7 @@ contract EtherDelta_Cel
     mapping (uint => mapping (address => uint)) tokens;
     bool tokenTxStatus;
     uint totalBalance;
+    bool _lock_;
 
     constructor (address admin_, address feeAccount_, uint feeMake_, uint feeTake_, uint feeRebate_) public {
         admin = admin_;
