@@ -140,6 +140,9 @@ statement : //# CompoundStmt
             //# eTransferSendStmt
           | SEND LPAREN contract=expr COMMA ETRANSFER COMMA payload=expr RPAREN SEMI
 
+          // Ether transfer statement
+          | to=expr DOT TRANSFER LPAREN amount=expr RPAREN SEMI
+
             //# SendStmt
           // | SEND LPAREN contract=expr COMMA event=iden COMMA payload=expr (COMMA payload=expr)* RPAREN SEMI
           | EMIT event=iden LPAREN payload=expr (COMMA payload=expr)* RPAREN SEMI
@@ -189,6 +192,7 @@ expr : primitive                                      //# PrimitiveExpr
                   elseBranch=expr RPAREN              //# ite()
      | DEFAULT LPAREN datatype RPAREN
      | logcheck (COLON COLON logcheck)* COLON COLON logName=primitive
+     | PAYABLE LPAREN expr RPAREN
 //   | contractInstance=lvalue DOT method=iden LPAREN rvalueList? RPAREN // Contract Instance method call
      ;
 

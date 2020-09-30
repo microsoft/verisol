@@ -1329,6 +1329,9 @@ class MyListener(CelestialParserListener):
             #     revert ("<ERROR>: " + logName + " has to be of type log", ctx.logName)
             return "eventlog"
 
+        elif (ctx.PAYABLE()):
+            return self.exprType(ctx.expr(0), scope)
+
     def lvalueType(self, ctx:CelestialParser.LvalueContext, scope):
         """
         Similar to exprType but for the lvalue production rule to typecheck assignment, create and delete statements
@@ -1614,16 +1617,28 @@ class MyListener(CelestialParserListener):
             self.FSTCodegen.writeRevertStatement(ctx)
 
         # Send Statement
-        elif ctx.SEND():
-            payloadType = self.exprType(ctx.payload, self.currentScope, inFunctionCall=False)
-            toType = self.exprType(ctx.contract, self.currentScope, inFunctionCall=False)
+        # elif ctx.SEND():
+        #     payloadType = self.exprType(ctx.payload, self.currentScope, inFunctionCall=False)
+        #     toType = self.exprType(ctx.contract, self.currentScope, inFunctionCall=False)
+        #     if toType != "address":
+        #         revert ("<ERROR>: First arg of send is address", ctx)
+
+        #     if payloadType != "uint" and not (ctx.payload.primitive() and ctx.payload.primitive().IntLiteral()):
+        #         revert ("<ERROR>: eTransfer send expects a uint", ctx)
+
+        #     self.FSTCodegen.writeSendStatement(ctx, self.symbols, self.currentScope)
+
+        elif ctx.TRANSFER():
+            payloadType = self.exprType(ctx.amount, self.currentScope, inFunctionCall=False)
+            toType = self.exprType(ctx.to, self.currentScope, inFunctionCall=False)
             if toType != "address":
-                revert ("<ERROR>: First arg of send is address", ctx)
+                revert ("<ERROR>: 'transfer' is defined only on addresses", ctx.to)
 
-            if payloadType != "uint" and not (ctx.payload.primitive() and ctx.payload.primitive().IntLiteral()):
-                revert ("<ERROR>: eTransfer send expects a uint", ctx)
+            if payloadType != "uint" and not (ctx.amount.primitive() and ctx.amount.primitive().IntLiteral()):
+                revert ("<ERROR>: 'transfer' expects a uint", ctx)
 
-            self.FSTCodegen.writeSendStatement(ctx, self.symbols, self.currentScope)
+            self.FSTCodegen.writeTransferStatement(ctx, self.symbols, self.currentScope)
+ 
 
         elif ctx.EMIT():
             eventName = ctx.event.Iden().getText()

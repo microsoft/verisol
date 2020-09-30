@@ -298,6 +298,9 @@ class FStarCodegen:
         elif (ctx.logcheck()):
             return "eventlog"
 
+        elif (ctx.PAYABLE()):
+            return self.exprType(ctx.expr(0), symbols, scope, isInvariant, isMethod, isFunctionCall, isIf, isPre, isPost)
+
     # assumes already typechecked (for eg: does not allow map[array[int], int])
     # replace F* type names with those provided in the F* data structure library by aseem
     # implement similar function replacing the return strings with what needed, to get map/ds for types in Celestial/Solidity
@@ -425,11 +428,11 @@ class FStarCodegen:
                 idenName = c.iden().Iden().getText()
                 if idenName in self.fields:
                     if isInvariant:
-                        return "cs." + self.addPrefix(varName)
+                        return "cs." + self.addPrefix(idenName)
                     elif isMethod or isPre:
-                        return "cs." + self.addPrefix(varName)
+                        return "cs." + self.addPrefix(idenName)
                     elif isPost:
-                        return "cs0." + self.addPrefix(varName)
+                        return "cs0." + self.addPrefix(idenName)
                 else:
                     return idenName
             else:
@@ -994,6 +997,10 @@ class FStarCodegen:
             s += logName
 
             return s
+
+        elif (expr.PAYABLE()):
+            self.indentationLevel -= 1
+            return "(" + self.getFStarExpression(expr.expr(0), symbols, scope, isInvariant, isMethod, isFunctionCall, isIf, isPre, isPost) + ")"
 
     def getFStarExpressionLvalue(self, lvalue:CelestialParser.LvalueContext, symbols, scope):
         if lvalue.name:
@@ -2098,16 +2105,12 @@ class FStarCodegen:
             returnExpression = self.getFStarExpression(ctx.expr(), symbols, scope, isMethod=True)
             self.writeToFStar("\n" + returnExpression)
 
-    def writeSendStatement(self, ctx:CelestialParser.StatementContext, symbols, scope):
+    def writeTransferStatement(self, ctx:CelestialParser.StatementContext, symbols, scope):
         # val = self.getFStarExpression(ctx.expr(1), symbols, scope, isMethod=True)
-        to = self.getFStarExpression(ctx.contract, symbols, scope, isMethod=True)
-        payloadString = ""
-        for payloadExpr in ctx.expr()[1:]:
-            payloadString += self.getFStarExpression(payloadExpr, symbols, scope, isMethod=True)
-            if payloadExpr != ctx.expr()[-1]:
-                payloadString += ", "
-        indentation = self.indentationLevel * "  "
-        if "=" in to or ctx.contract.getText() in self.fields:
+        to = self.getFStarExpression(ctx.to, symbols, scope, isMethod=True)
+        payloadString = self.getFStarExpression(ctx.amount, symbols, scope, isMethod=True)
+        
+        if "=" in to or ctx.to.getText() in self.fields:
             self.writeToFStar("\n" + "let x1 = (" + to + ") in")
             to = "x1"
         if "=" in payloadString or ctx.expr(1).getText() in self.fields:
@@ -2117,8 +2120,7 @@ class FStarCodegen:
         if "," in payloadString:
             payloadString = "(" + payloadString + ")"
 
-        if ctx.ETRANSFER():
-            self.writeToFStar("\n" + "let _ = send self " + to + " " + payloadString + " in")
+        self.writeToFStar("\n" + "let _ = transfer self " + to + " " + payloadString + " in")
 
         self.writeToFStar("\nlet cs = get_contract self in")
         self.writeToFStar("\nlet balance = get_balance self in")

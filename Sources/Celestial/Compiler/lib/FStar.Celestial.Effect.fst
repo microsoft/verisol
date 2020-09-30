@@ -239,20 +239,20 @@ let emit (#a:Type0) (evn:string) (payload:a)
   (fun p st -> p () (pure_update_log st ((mk_event null evn payload)::(pure_get_log st))))
 = add_event (mk_event null evn payload)
 
-assume val call_value (sender:address) (recipient:address) (amount:uint)
-: Eth bool
-  (fun _ -> True)
-  (fun _ -> False)
-  (fun st0 _ st1 -> st0 == st1)
+// assume val call_value (sender:address) (recipient:address) (amount:uint)
+// : Eth bool
+//   (fun _ -> True)
+//   (fun _ -> False)
+//   (fun st0 _ st1 -> st0 == st1)
 
-let send (#a:Type0) (c_addr:contract a) (to:address) (amount:uint)
-: Eth bool
+let transfer (#a:Type0) (c_addr:contract a) (to:address) (amount:uint)
+: Eth unit
   (fun bst -> c_addr `CM.live_in` bst.cmap)
   (fun bst -> amount > pure_get_balance_bst c_addr bst)
   (fun bst0 r bst1 ->
     (bst1.log == ((mk_event to eTransfer amount)::[])@(bst0.log)) /\
     (bst1.cmap == bst0.cmap) /\
-    (r ==> (
+    (
       if c_addr <> to then
         modifies_cmap_log_balances (Set.empty) ((mk_event to eTransfer amount)::[]) (Set.union (Set.singleton c_addr) (Set.singleton to)) bst0 bst1 /\
         (let b = pure_get_balance_bst c_addr bst0 in
@@ -261,26 +261,20 @@ let send (#a:Type0) (c_addr:contract a) (to:address) (amount:uint)
         M.equal bst1.balances (M.upd (M.upd bst0.balances c_addr (b - amount)) to (b_to_updated)))
       else
         bst1.balances == bst0.balances
-    )) /\
-    (~r ==> (bst1.balances == bst0.balances))
+    )
   )
 = let b = get_balance c_addr in
   if amount > b then revert "Insufficient balance"
   else
     let _ = add_event (mk_event to eTransfer amount) in
     let b_to = get_balance to in
-    let success = call_value c_addr to amount in
-    if (success) then 
-      if c_addr <> to then begin
-        set_balance c_addr (b - amount);
-        (if b_to + amount > uint_max then set_balance to (b_to + amount - uint_max)
-        else set_balance to (b_to + amount));
-        true
-      end
-      else
-        true
-    else 
-      false
+    if c_addr <> to then begin
+      set_balance c_addr (b - amount);
+      (if b_to + amount > uint_max then set_balance to (b_to + amount - uint_max)
+      else set_balance to (b_to + amount))
+    end
+    else
+      ()
 
 /// Models a call made to an external/unknown entity
 /// caller's state remains the same since reentrancy is disallowed

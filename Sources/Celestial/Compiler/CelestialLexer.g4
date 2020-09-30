@@ -80,6 +80,7 @@ SPEC      : 'spec' ;
 STRUCT    : 'struct' ;
 // SUMEQ     : 'sumEquals' ;
 THIS      : 'this' ;
+TRANSFER  : 'transfer' ;
 TXREVERTS : 'tx_reverts' ;
 TXGASPRICE: 'tx.gasprice' ;
 TXORIGIN  : 'tx.origin' ;

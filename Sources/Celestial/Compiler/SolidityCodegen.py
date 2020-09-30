@@ -215,7 +215,7 @@ class SolidityCodegen:
         if ctx.PRIVATE():
             methodDeclString += " private"
         else:
-            methodDeclString += " public isUnlocked"
+            methodDeclString += " public"
 
         # if (not (ctx.spec() and (ctx.spec().CREDIT() or ctx.spec().DEBIT()))) and (ctx.MODIFIES() and not ctx.modifies):
         #     methodDeclString += " view"
@@ -416,6 +416,9 @@ class SolidityCodegen:
         elif (ctx.logcheck()):
             return "eventlog"
 
+        elif (ctx.PAYABLE()):
+            return self.exprType(ctx.expr(0), symbols, scope, isMethod, isFunctionCall, isIf, isPre, isPost)
+
     def getSolidityExpr(self, ctx:CelestialParser.ExprContext, symbols, scope):
         if ctx.primitive():
             if ctx.primitive().VALUE():
@@ -519,6 +522,9 @@ class SolidityCodegen:
             return "address(add_to_" + ctx.instmap.Iden().getText() + "(new " + ctx.contractName.Iden().getText() + s + "))"
             # return ctx.getChild(4).getText() + " " + ctx.getChild(5).getText() + " " + ctx.getChild(6).getText() + " " + ctx.getChild(7).getText()
 
+        elif ctx.PAYABLE():
+            return "payable(" + self.getSolidityExpr(ctx.expr(0), symbols, scope) + ")"
+
         # TODO: Cast Expr, Create Expr
 
     def getSolidityLvalueExpr(self, ctx:CelestialParser.LvalueContext, symbols, scope):
@@ -615,15 +621,16 @@ class SolidityCodegen:
             s += ");"
             self.writeToSolidity(s)
 
-        elif ctx.SEND():
-            to = self.getSolidityExpr(ctx.contract, symbols, scope)
-            amount = self.getSolidityExpr(ctx.payload, symbols, scope)
+        elif ctx.TRANSFER():
+            to = self.getSolidityExpr(ctx.to, symbols, scope)
+            amount = self.getSolidityExpr(ctx.amount, symbols, scope)
+            self.writeToSolidity(to + ".transfer(" + amount + ");")
 
-            self.writeToSolidity("if (address(this).balance < " + amount + ") revert (\"Insufficient balance\");")
-            if self.verificationMode == "VeriSol":
-                self.writeToSolidity(to + ".call.value(" + amount + ").gas(2300)(\"\");")
-            else:
-                self.writeToSolidity(to + ".call{value: (" + amount + "), gas: 2300}(\"\");")
+            # self.writeToSolidity("if (address(this).balance < " + amount + ") revert (\"Insufficient balance\");")
+            # if self.verificationMode == "VeriSol":
+            #     self.writeToSolidity(to + ".call.value(" + amount + ").gas(2300)(\"\");")
+            # else:
+            #     self.writeToSolidity(to + ".call{value: (" + amount + "), gas: 2300}(\"\");")
             # self.indentationLevel += 1
             # self.writeToSolidity("if (!success)")
             # self.indentationLevel += 1
