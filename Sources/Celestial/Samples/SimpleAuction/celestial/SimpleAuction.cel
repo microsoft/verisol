@@ -68,6 +68,9 @@ contract SimpleAuction_Cel {
         totalReturns = safe_add (totalReturns, value);
 
         if (highestBid != 0)
+            // If the fact that ended == false can be proved here,
+            //   the safe_add can be replaced with a normal addition
+            //   since the invariant guarantees no overflow
             pendingReturns[highestBidder] = safe_add (pendingReturns[highestBidder], highestBid);
 
         highestBidder = sender;
@@ -83,7 +86,7 @@ contract SimpleAuction_Cel {
         uint old_balance, uint new_balance)
     {
         ite (
-            old_pendingReturns[_sender] > 0,
+            old_pendingReturns[_sender] > 0 && old_balance >= old_pendingReturns[_sender],
             new_log == (_sender, eTransfer, old_pendingReturns[_sender])::old_log
             && ite 
             (
@@ -98,17 +101,18 @@ contract SimpleAuction_Cel {
     function withdraw () public
         debit
         post withdrawPost (sender, log, new(log), pendingReturns, new(pendingReturns), balance, new(balance))
-        tx_reverts balance < pendingReturns[sender]
         modifies [pendingReturns, totalReturns]
         returns (bool)
     {
-        uint bal = balance;
         uint amount = pendingReturns[sender];
-        if (amount > 0) 
+        if (amount > 0 && balance >= pendingReturns[sender]) 
         {
             sender.transfer(amount);
 
-            if (balance < bal) 
+            // Check if balance did reduce (only happens in the case
+            //   that address(this) == sender, which may be expressed
+            //   as a precondition on this function)
+            if (balance < totalReturns) 
             {
                 pendingReturns[sender] = 0;
                 totalReturns = totalReturns - amount;
@@ -117,15 +121,8 @@ contract SimpleAuction_Cel {
         return true;
     }
 
-    spec auctionEndPost (
-        bool new_ended, eventlog old_log, eventlog new_log,
-        address old_beneficiary, uint old_highestBid, address old_highestBidder)
-    {
-        new_ended && (new_log == (old_beneficiary, eTransfer, old_highestBid)::(AuctionEnded, old_highestBidder, old_highestBid)::old_log)
-    }
-
     function auctionEnd () public 
-        post auctionEndPost (new(ended), log, new(log), beneficiary, highestBid, highestBidder)
+        post (new(ended) && (new(log) == (beneficiary, eTransfer, highestBid)::(AuctionEnded, highestBidder, highestBid)::log))
         debit
         tx_reverts block.timestamp < auctionEndTime || ended || balance < highestBid
         modifies [totalReturns, ended]
@@ -138,11 +135,12 @@ contract SimpleAuction_Cel {
         ended = true;
         emit AuctionEnded (highestBidder, highestBid);
 
-        uint bal = balance;
-        
         payable(beneficiary).transfer(highestBid);
         
-        if (balance < bal)
+        // Check if balance did reduce (only happens in the case
+        //   that address(this) == beneficiary, which may be 
+        //   expressed as a precondition on this function)
+        if (balance < totalReturns)
             totalReturns = totalReturns - highestBid;
 
         return;

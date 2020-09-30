@@ -31,7 +31,7 @@ contract SimpleAuction_Cel
         revert ("There already is a higher bid.");
         totalReturns = Safe_Arith.safe_add(totalReturns, msg.value);
         if (highestBid != 0)
-        pendingReturns[highestBidder] = Safe_Arith.safe_add(pendingReturns[highestBidder], highestBid);
+        pendingReturns[highestBidder] = (pendingReturns[highestBidder] + highestBid);
         highestBidder = msg.sender;
         highestBid = msg.value;
         emit HighestBidIncreased(msg.sender, msg.value);
@@ -39,12 +39,11 @@ contract SimpleAuction_Cel
     }
 
     function withdraw () public returns (bool) {
-        uint bal = address(this).balance;
         uint amount = pendingReturns[msg.sender];
-        if (amount > 0)
+        if (amount > 0 && address(this).balance >= pendingReturns[msg.sender])
         {
             msg.sender.transfer(amount);
-            if (address(this).balance < bal)
+            if (address(this).balance < totalReturns)
             {
                 pendingReturns[msg.sender] = 0;
                 totalReturns = totalReturns - amount;
@@ -60,9 +59,8 @@ contract SimpleAuction_Cel
         revert ("auctionEnd has already been called.");
         ended = true;
         emit AuctionEnded(highestBidder, highestBid);
-        uint bal = address(this).balance;
         payable(beneficiary).transfer(highestBid);
-        if (address(this).balance < bal)
+        if (address(this).balance < totalReturns)
         totalReturns = totalReturns - highestBid;
         return;
     }
