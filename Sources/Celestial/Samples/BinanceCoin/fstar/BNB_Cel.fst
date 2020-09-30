@@ -250,7 +250,7 @@ let _ = bnb_cel_set_owner self sender in
 let cs = get_contract self in
 ()
 
-let transfer (self:bnb_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_to:address) (_value:uint)
+let _transfer (self:bnb_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_to:address) (_value:uint)
 : Eth1 unit
   (fun bst ->
     bnb_cel_live self bst /\ (
@@ -274,7 +274,7 @@ let transfer (self:bnb_cel_address) (sender:address{sender <> null}) (value:uint
     let l0 = bst0.log in
     let l1 = bst1.log in
     (totalSupplyInv self bst1)
-      /\ ((l1 == ((mk_event sender bnb_cel_Transfer (_to, _value))::l0)) /\ (if (sender <> _to) then
+      /\ ((l1 == ((mk_event null bnb_cel_Transfer (sender, _to, _value))::l0)) /\ (if (sender <> _to) then
   (M.equal cs1.bnb_cel_balanceOf (
           let x1 = (cs0.bnb_cel_balanceOf) in
           let x2 = (sender) in
@@ -293,13 +293,13 @@ else
           x1))
 ))
       /\ (bst0.balances == bst1.balances)
-      /\ (cs0.bnb_cel_symbol == cs1.bnb_cel_symbol)
-      /\ (cs0.bnb_cel_freezeOf == cs1.bnb_cel_freezeOf)
-      /\ (cs0.bnb_cel_name == cs1.bnb_cel_name)
-      /\ (cs0.bnb_cel_decimals == cs1.bnb_cel_decimals)
       /\ (cs0.bnb_cel_owner == cs1.bnb_cel_owner)
-      /\ (cs0.bnb_cel_allowance == cs1.bnb_cel_allowance)
+      /\ (cs0.bnb_cel_freezeOf == cs1.bnb_cel_freezeOf)
       /\ (cs0.bnb_cel_totalSupply == cs1.bnb_cel_totalSupply)
+      /\ (cs0.bnb_cel_decimals == cs1.bnb_cel_decimals)
+      /\ (cs0.bnb_cel_name == cs1.bnb_cel_name)
+      /\ (cs0.bnb_cel_symbol == cs1.bnb_cel_symbol)
+      /\ (cs0.bnb_cel_allowance == cs1.bnb_cel_allowance)
   ))
 =
 let cs = get_contract self in
@@ -338,7 +338,7 @@ let x1 = ((if (M.sel cs.bnb_cel_balanceOf _to) <= uint_max - _value then ((M.sel
 let balanceOf = cs.bnb_cel_balanceOf in
 let _ = bnb_cel_set_balanceOf self (M.upd balanceOf _to x1) in
 let cs = get_contract self in
-let _ = emit sender bnb_cel_Transfer (_to, _value) in
+let _ = emit bnb_cel_Transfer (sender, _to, _value) in
 let cs = get_contract self in
 let balance = get_balance self in
 ()
@@ -380,13 +380,13 @@ let approve (self:bnb_cel_address) (sender:address{sender <> null}) (value:uint)
       x1))
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.bnb_cel_symbol == cs1.bnb_cel_symbol)
-      /\ (cs0.bnb_cel_freezeOf == cs1.bnb_cel_freezeOf)
-      /\ (cs0.bnb_cel_name == cs1.bnb_cel_name)
-      /\ (cs0.bnb_cel_balanceOf == cs1.bnb_cel_balanceOf)
-      /\ (cs0.bnb_cel_decimals == cs1.bnb_cel_decimals)
       /\ (cs0.bnb_cel_owner == cs1.bnb_cel_owner)
+      /\ (cs0.bnb_cel_freezeOf == cs1.bnb_cel_freezeOf)
       /\ (cs0.bnb_cel_totalSupply == cs1.bnb_cel_totalSupply)
+      /\ (cs0.bnb_cel_decimals == cs1.bnb_cel_decimals)
+      /\ (cs0.bnb_cel_balanceOf == cs1.bnb_cel_balanceOf)
+      /\ (cs0.bnb_cel_name == cs1.bnb_cel_name)
+      /\ (cs0.bnb_cel_symbol == cs1.bnb_cel_symbol)
   ))
 =
 let success:bool = false in
@@ -445,7 +445,7 @@ let transferFrom (self:bnb_cel_address) (sender:address{sender <> null}) (value:
             let x1 = (M.upd x1 x2 x3) in
             x1) in
           let x1 = (M.upd x1 x2 x3) in
-          x1)) /\ (l1 == ((mk_event _from bnb_cel_Transfer (_to, _value))::l0))) /\ (if (_from <> _to) then
+          x1)) /\ (l1 == ((mk_event null bnb_cel_Transfer (_from, _to, _value))::l0))) /\ (if (_from <> _to) then
   (M.equal cs1.bnb_cel_balanceOf (
             let x1 = (cs0.bnb_cel_balanceOf) in
             let x2 = (_from) in
@@ -464,12 +464,12 @@ else
             x1))
 ))
       /\ (bst0.balances == bst1.balances)
-      /\ (cs0.bnb_cel_symbol == cs1.bnb_cel_symbol)
-      /\ (cs0.bnb_cel_freezeOf == cs1.bnb_cel_freezeOf)
-      /\ (cs0.bnb_cel_name == cs1.bnb_cel_name)
-      /\ (cs0.bnb_cel_decimals == cs1.bnb_cel_decimals)
       /\ (cs0.bnb_cel_owner == cs1.bnb_cel_owner)
+      /\ (cs0.bnb_cel_freezeOf == cs1.bnb_cel_freezeOf)
       /\ (cs0.bnb_cel_totalSupply == cs1.bnb_cel_totalSupply)
+      /\ (cs0.bnb_cel_decimals == cs1.bnb_cel_decimals)
+      /\ (cs0.bnb_cel_name == cs1.bnb_cel_name)
+      /\ (cs0.bnb_cel_symbol == cs1.bnb_cel_symbol)
   ))
 =
 let success:bool = false in
@@ -525,7 +525,7 @@ let x0 = (M.sel x2 x1) in
     
 let _ = bnb_cel_set_allowance self (M.upd x4 x3 (M.upd x2 x1 x5)) in
 let cs = get_contract self in
-let _ = emit _from bnb_cel_Transfer (_to, _value) in
+let _ = emit bnb_cel_Transfer (_from, _to, _value) in
 let cs = get_contract self in
 let balance = get_balance self in
 true
@@ -559,13 +559,13 @@ let burn (self:bnb_cel_address) (sender:address{sender <> null}) (value:uint) (t
             let x2 = (sender) in
             let x3 = ((M.sel cs0.bnb_cel_balanceOf sender) - _value) in
             let x1 = (M.upd x1 x2 x3) in
-            x1)) /\ (cs1.bnb_cel_totalSupply == (cs0.bnb_cel_totalSupply - _value))) /\ (l1 == ((mk_event sender bnb_cel_Burn _value)::l0)))
+            x1)) /\ (cs1.bnb_cel_totalSupply == (cs0.bnb_cel_totalSupply - _value))) /\ (l1 == ((mk_event null bnb_cel_Burn (sender, _value))::l0)))
       /\ (bst0.balances == bst1.balances)
-      /\ (cs0.bnb_cel_symbol == cs1.bnb_cel_symbol)
-      /\ (cs0.bnb_cel_freezeOf == cs1.bnb_cel_freezeOf)
-      /\ (cs0.bnb_cel_name == cs1.bnb_cel_name)
-      /\ (cs0.bnb_cel_decimals == cs1.bnb_cel_decimals)
       /\ (cs0.bnb_cel_owner == cs1.bnb_cel_owner)
+      /\ (cs0.bnb_cel_freezeOf == cs1.bnb_cel_freezeOf)
+      /\ (cs0.bnb_cel_decimals == cs1.bnb_cel_decimals)
+      /\ (cs0.bnb_cel_name == cs1.bnb_cel_name)
+      /\ (cs0.bnb_cel_symbol == cs1.bnb_cel_symbol)
       /\ (cs0.bnb_cel_allowance == cs1.bnb_cel_allowance)
   ))
 =
@@ -592,7 +592,7 @@ let cs = get_contract self in
 let x1 = ((if _value <= cs.bnb_cel_totalSupply then (cs.bnb_cel_totalSupply - _value) else revert "Underflow error")) in
 let _ = bnb_cel_set_totalSupply self x1 in
 let cs = get_contract self in
-let _ = emit sender bnb_cel_Burn _value in
+let _ = emit bnb_cel_Burn (sender, _value) in
 let cs = get_contract self in
 let balance = get_balance self in
 true
@@ -631,14 +631,14 @@ let freeze (self:bnb_cel_address) (sender:address{sender <> null}) (value:uint) 
               let x2 = (sender) in
               let x3 = ((M.sel cs0.bnb_cel_freezeOf sender) + _value) in
               let x1 = (M.upd x1 x2 x3) in
-              x1))) /\ (l1 == ((mk_event sender bnb_cel_Freeze _value)::l0)))
+              x1))) /\ (l1 == ((mk_event null bnb_cel_Freeze (sender, _value))::l0)))
       /\ (bst0.balances == bst1.balances)
-      /\ (cs0.bnb_cel_symbol == cs1.bnb_cel_symbol)
-      /\ (cs0.bnb_cel_name == cs1.bnb_cel_name)
-      /\ (cs0.bnb_cel_decimals == cs1.bnb_cel_decimals)
       /\ (cs0.bnb_cel_owner == cs1.bnb_cel_owner)
-      /\ (cs0.bnb_cel_allowance == cs1.bnb_cel_allowance)
       /\ (cs0.bnb_cel_totalSupply == cs1.bnb_cel_totalSupply)
+      /\ (cs0.bnb_cel_decimals == cs1.bnb_cel_decimals)
+      /\ (cs0.bnb_cel_name == cs1.bnb_cel_name)
+      /\ (cs0.bnb_cel_symbol == cs1.bnb_cel_symbol)
+      /\ (cs0.bnb_cel_allowance == cs1.bnb_cel_allowance)
   ))
 =
 let success:bool = false in
@@ -665,7 +665,7 @@ let x1 = ((if (M.sel cs.bnb_cel_freezeOf sender) <= uint_max - _value then ((M.s
 let freezeOf = cs.bnb_cel_freezeOf in
 let _ = bnb_cel_set_freezeOf self (M.upd freezeOf sender x1) in
 let cs = get_contract self in
-let _ = emit sender bnb_cel_Freeze _value in
+let _ = emit bnb_cel_Freeze (sender, _value) in
 let cs = get_contract self in
 let balance = get_balance self in
 true
@@ -704,14 +704,14 @@ let unfreeze (self:bnb_cel_address) (sender:address{sender <> null}) (value:uint
                 let x2 = (sender) in
                 let x3 = ((M.sel cs0.bnb_cel_freezeOf sender) - _value) in
                 let x1 = (M.upd x1 x2 x3) in
-                x1))) /\ (l1 == ((mk_event sender bnb_cel_Unfreeze _value)::l0)))
+                x1))) /\ (l1 == ((mk_event null bnb_cel_Unfreeze (sender, _value))::l0)))
       /\ (bst0.balances == bst1.balances)
-      /\ (cs0.bnb_cel_symbol == cs1.bnb_cel_symbol)
-      /\ (cs0.bnb_cel_name == cs1.bnb_cel_name)
-      /\ (cs0.bnb_cel_decimals == cs1.bnb_cel_decimals)
       /\ (cs0.bnb_cel_owner == cs1.bnb_cel_owner)
-      /\ (cs0.bnb_cel_allowance == cs1.bnb_cel_allowance)
       /\ (cs0.bnb_cel_totalSupply == cs1.bnb_cel_totalSupply)
+      /\ (cs0.bnb_cel_decimals == cs1.bnb_cel_decimals)
+      /\ (cs0.bnb_cel_name == cs1.bnb_cel_name)
+      /\ (cs0.bnb_cel_symbol == cs1.bnb_cel_symbol)
+      /\ (cs0.bnb_cel_allowance == cs1.bnb_cel_allowance)
   ))
 =
 let success:bool = false in
@@ -738,7 +738,7 @@ let x1 = ((if (M.sel cs.bnb_cel_balanceOf sender) <= uint_max - _value then ((M.
 let balanceOf = cs.bnb_cel_balanceOf in
 let _ = bnb_cel_set_balanceOf self (M.upd balanceOf sender x1) in
 let cs = get_contract self in
-let _ = emit sender bnb_cel_Unfreeze _value in
+let _ = emit bnb_cel_Unfreeze (sender, _value) in
 let cs = get_contract self in
 let balance = get_balance self in
 true
@@ -779,8 +779,7 @@ revert "sender is not owner";
 else ()) in
 let cs = get_contract self in
 let balance = get_balance self in
-let x1 = (cs.bnb_cel_owner) in
-let _ = send self x1 amount in
+let _ = transfer self (cs.bnb_cel_owner) amount in
 let cs = get_contract self in
 let balance = get_balance self in
 ()

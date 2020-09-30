@@ -1,9 +1,0 @@
-Method,Celestial Gas,Solidity Gas,,Overhead
-Deployment,1316681,800621,,1.644574649
-MakeOffer,68051,67157,,1.01331209
-ModifyOffer,33181,29332,,1.131221874
-AcceptOffer,53682,52752,,1.017629663
-Accept (Buyer),30692,29843,,1.028448882
-Accept (Seller),33511,32612,,1.02756654
-Withdraw,34874,32146,,1.084862813
-G-Mean,,,,1.119180836

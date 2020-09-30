@@ -8,13 +8,6 @@ import {Safe_Arith} from "./Safe_Arith.sol";
 contract MarketPlace_Cel
 {
     receive() external payable {}
-    bool _lock_ = false;
-
-    modifier isUnlocked () {
-        require (_lock_ == false);
-        _;
-    }
-
     enum state
     {
         marketPlace_Active, marketPlace_OfferPlaced, marketPlace_NotionalAccept, marketPlace_BuyerAccept, marketPlace_SellerAccept, marketPlace_Accept
@@ -34,7 +27,7 @@ contract MarketPlace_Cel
         return;
     }
 
-    function makeOffer (uint _sellingPrice) public isUnlocked {
+    function makeOffer (uint _sellingPrice) public {
         if (msg.sender != seller)
         {
             revert ("");
@@ -49,7 +42,7 @@ contract MarketPlace_Cel
         return;
     }
 
-    function modifyOffer (bool _increase, uint _change) public isUnlocked {
+    function modifyOffer (bool _increase, uint _change) public {
         if (msg.sender != seller)
         {
             revert ("");
@@ -69,7 +62,7 @@ contract MarketPlace_Cel
         return;
     }
 
-    function rejectOffer () public isUnlocked {
+    function rejectOffer () public {
         if (msg.sender != buyer)
         {
             revert ("");
@@ -82,7 +75,7 @@ contract MarketPlace_Cel
         return;
     }
 
-    function acceptOffer () public isUnlocked payable {
+    function acceptOffer () public payable {
         if (contractCurrentState != state.marketPlace_OfferPlaced || msg.sender != buyer)
         {
             revert ("<acceptOffer> function invoked in invalid state");
@@ -96,7 +89,7 @@ contract MarketPlace_Cel
         return;
     }
 
-    function accept () public isUnlocked {
+    function accept () public {
         if (! (contractCurrentState == state.marketPlace_NotionalAccept || contractCurrentState == state.marketPlace_BuyerAccept || contractCurrentState == state.marketPlace_SellerAccept))
         {
             revert ("<accept> function invoked in invalid state");
@@ -123,7 +116,7 @@ contract MarketPlace_Cel
         return;
     }
 
-    function withdraw () public isUnlocked {
+    function withdraw () public {
         if (msg.sender != seller)
         {
             revert ("");
@@ -132,8 +125,7 @@ contract MarketPlace_Cel
         {
             revert ("<withdraw> function invoked in invalid state");
         }
-        if (address(this).balance < buyingPrice) revert ("Insufficient balance");
-        seller.call{value: (buyingPrice), gas: 2300}("");
+        payable(seller).transfer(buyingPrice);
         return;
     }
 }

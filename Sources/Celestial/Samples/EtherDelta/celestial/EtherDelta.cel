@@ -136,7 +136,7 @@ contract EtherDelta_Cel
         }
 
         uint b = balance;
-        send (sender, eTransfer, amount);
+        sender.transfer(amount);
         if (b != balance)
         {
             tokens[0][sender] = tokens[0][sender] - amount;

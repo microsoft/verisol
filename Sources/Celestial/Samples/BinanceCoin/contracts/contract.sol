@@ -8,17 +8,10 @@ import {Safe_Arith} from "./Safe_Arith.sol";
 contract BNB_Cel
 {
     receive() external payable {}
-    bool _lock_ = false;
-
-    modifier isUnlocked () {
-        require (_lock_ == false);
-        _;
-    }
-
-    event Transfer(address indexed, address, address, uint);
-    event Burn(address indexed, address, uint);
-    event Freeze(address indexed, address, uint);
-    event Unfreeze(address indexed, address, uint);
+    event Transfer(address, address, uint);
+    event Burn(address, uint);
+    event Freeze(address, uint);
+    event Unfreeze(address, uint);
     string name;
     string symbol;
     uint8 decimals;
@@ -38,7 +31,7 @@ contract BNB_Cel
         return;
     }
 
-    function transfer (address _to, uint _value) public isUnlocked {
+    function _transfer (address _to, uint _value) public {
         if (_to == address(0))
         revert ("Preventing transfer to 0x0 address");
         if (_value <= 0)
@@ -53,14 +46,14 @@ contract BNB_Cel
         return;
     }
 
-    function approve (address _spender, uint _value) public isUnlocked returns (bool success) {
+    function approve (address _spender, uint _value) public returns (bool success) {
         if (_value <= 0)
         revert ("value leq 0");
         allowance[msg.sender][_spender] = _value;
         return true;
     }
 
-    function transferFrom (address _from, address _to, uint _value) public isUnlocked returns (bool success) {
+    function transferFrom (address _from, address _to, uint _value) public returns (bool success) {
         if (_to == address(0))
         revert ("preventing transfer to address 0x00");
         if (_value <= 0)
@@ -78,7 +71,7 @@ contract BNB_Cel
         return true;
     }
 
-    function burn (uint _value) public isUnlocked returns (bool success) {
+    function burn (uint _value) public returns (bool success) {
         if (balanceOf[msg.sender] < _value)
         revert ("sender doesn't have enough!");
         if (_value <= 0)
@@ -89,7 +82,7 @@ contract BNB_Cel
         return true;
     }
 
-    function freeze (uint _value) public isUnlocked returns (bool success) {
+    function freeze (uint _value) public returns (bool success) {
         if (balanceOf[msg.sender] < _value)
         revert ("sender doesn't have enough!");
         if (_value <= 0)
@@ -100,7 +93,7 @@ contract BNB_Cel
         return true;
     }
 
-    function unfreeze (uint _value) public isUnlocked returns (bool success) {
+    function unfreeze (uint _value) public returns (bool success) {
         if (freezeOf[msg.sender] < _value)
         revert ("sender doesn't have enough!");
         if (_value <= 0)
@@ -111,11 +104,10 @@ contract BNB_Cel
         return true;
     }
 
-    function withdrawEther (uint amount) public isUnlocked {
+    function withdrawEther (uint amount) public {
         if (msg.sender != owner)
         revert ("sender is not owner");
-        if (address(this).balance < amount) revert ("Insufficient balance");
-        owner.call{value: (amount), gas: 2300}("");
+        payable(owner).transfer(amount);
         return;
     }
 }

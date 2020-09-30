@@ -267,8 +267,8 @@ let bid (self:simpleauction_cel_address) (sender:address{sender <> null}) (value
     (inv1 self bst1)
       /\ (inv self bst1)
       /\ ((bidPost cs0.simpleauction_cel_highestBid cs1.simpleauction_cel_highestBid cs0.simpleauction_cel_highestBidder cs1.simpleauction_cel_highestBidder sender value cs0.simpleauction_cel_pendingReturns cs1.simpleauction_cel_pendingReturns))
-      /\ (cs0.simpleauction_cel_ended == cs1.simpleauction_cel_ended)
       /\ (cs0.simpleauction_cel_auctionEndTime == cs1.simpleauction_cel_auctionEndTime)
+      /\ (cs0.simpleauction_cel_ended == cs1.simpleauction_cel_ended)
       /\ (cs0.simpleauction_cel_beneficiary == cs1.simpleauction_cel_beneficiary)
   ))
 =
@@ -357,10 +357,10 @@ let withdraw (self:simpleauction_cel_address) (sender:address{sender <> null}) (
       /\ (inv self bst1)
       /\ ((withdrawPost sender l0 l1 cs0.simpleauction_cel_pendingReturns cs1.simpleauction_cel_pendingReturns b0 b1))
       /\ (b1 <= b0)
+      /\ (cs0.simpleauction_cel_highestBid == cs1.simpleauction_cel_highestBid)
       /\ (cs0.simpleauction_cel_auctionEndTime == cs1.simpleauction_cel_auctionEndTime)
       /\ (cs0.simpleauction_cel_ended == cs1.simpleauction_cel_ended)
       /\ (cs0.simpleauction_cel_highestBidder == cs1.simpleauction_cel_highestBidder)
-      /\ (cs0.simpleauction_cel_highestBid == cs1.simpleauction_cel_highestBid)
       /\ (cs0.simpleauction_cel_beneficiary == cs1.simpleauction_cel_beneficiary)
   ))
 =
@@ -369,7 +369,7 @@ let balance = get_balance self in
 let bal:uint = (balance) in
 let amount:uint = (M.sel cs.simpleauction_cel_pendingReturns sender) in
 let _ = (if (amount > 0) then begin
-let _ = send self sender amount in
+let _ = transfer self sender amount in
 let cs = get_contract self in
 let balance = get_balance self in
 let _ = (if (balance < bal) then begin
@@ -419,10 +419,10 @@ let auctionEnd (self:simpleauction_cel_address) (sender:address{sender <> null})
       /\ (inv self bst1)
       /\ ((auctionEndPost cs1.simpleauction_cel_ended l0 l1 cs0.simpleauction_cel_beneficiary cs0.simpleauction_cel_highestBid cs0.simpleauction_cel_highestBidder))
       /\ (b1 <= b0)
-      /\ (cs0.simpleauction_cel_auctionEndTime == cs1.simpleauction_cel_auctionEndTime)
-      /\ (cs0.simpleauction_cel_highestBidder == cs1.simpleauction_cel_highestBidder)
       /\ (cs0.simpleauction_cel_highestBid == cs1.simpleauction_cel_highestBid)
+      /\ (cs0.simpleauction_cel_auctionEndTime == cs1.simpleauction_cel_auctionEndTime)
       /\ (cs0.simpleauction_cel_pendingReturns == cs1.simpleauction_cel_pendingReturns)
+      /\ (cs0.simpleauction_cel_highestBidder == cs1.simpleauction_cel_highestBidder)
       /\ (cs0.simpleauction_cel_beneficiary == cs1.simpleauction_cel_beneficiary)
   ))
 =
@@ -446,9 +446,8 @@ let _ = emit simpleauction_cel_AuctionEnded (cs.simpleauction_cel_highestBidder,
 let cs = get_contract self in
 let balance = get_balance self in
 let bal:uint = (balance) in
-let x1 = (cs.simpleauction_cel_beneficiary) in
 let x2 = (cs.simpleauction_cel_highestBid) in
-let _ = send self x1 x2 in
+let _ = transfer self (cs.simpleauction_cel_beneficiary) x2 in
 let cs = get_contract self in
 let balance = get_balance self in
 let _ = (if (balance < bal) then begin

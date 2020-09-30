@@ -8,13 +8,6 @@ import {Safe_Arith} from "./Safe_Arith.sol";
 contract MultiSigWalletWithDailyLimit_Cel
 {
     receive() external payable {}
-    bool _lock_ = false;
-
-    modifier isUnlocked () {
-        require (_lock_ == false);
-        _;
-    }
-
     struct Transaction
     {
         address destination;
@@ -53,7 +46,7 @@ contract MultiSigWalletWithDailyLimit_Cel
         return;
     }
 
-    function addOwner (address owner) public isUnlocked {
+    function addOwner (address owner) public {
         uint target_ownerCount = Safe_Arith.safe_add(ownerCount, 1);
         if (isOwner[owner] || owner == address(0) || target_ownerCount > MAX_OWNER_COUNT)
         {
@@ -69,7 +62,7 @@ contract MultiSigWalletWithDailyLimit_Cel
         return;
     }
 
-    function removeOwner (address owner) public isUnlocked {
+    function removeOwner (address owner) public {
         if (! isOwner[owner])
         {
             revert ("Invalid owner removal");
@@ -84,7 +77,7 @@ contract MultiSigWalletWithDailyLimit_Cel
         return;
     }
 
-    function replaceOwner (address owner, address newOwner) public isUnlocked {
+    function replaceOwner (address owner, address newOwner) public {
         if (! isOwner[owner] || isOwner[newOwner])
         {
             revert ("Invalid owner replacement");
@@ -96,7 +89,7 @@ contract MultiSigWalletWithDailyLimit_Cel
         return;
     }
 
-    function changeRequirement (uint _required) public isUnlocked {
+    function changeRequirement (uint _required) public {
         required = _required;
         if (required > ownerCount)
         {
@@ -152,7 +145,7 @@ contract MultiSigWalletWithDailyLimit_Cel
         return ret;
     }
 
-    function executeTransaction (uint transactionId) public isUnlocked {
+    function executeTransaction (uint transactionId) public {
         if (transactionId >= transactionCount || transactions[transactionId].executed || address(this).balance < transactions[transactionId].tval)
         {
             revert ("invalid");
@@ -167,14 +160,13 @@ contract MultiSigWalletWithDailyLimit_Cel
                 spentToday = spentToday + trx.tval;
             }
             transactions[transactionId].executed = true;
-            if (address(this).balance < trx.tval) revert ("Insufficient balance");
-            transactions[transactionId].destination.call{value: (trx.tval), gas: 2300}("");
+            payable(transactions[transactionId].destination).transfer(trx.tval);
             emit Execution(transactionId);
         }
         return;
     }
 
-    function confirmTransaction (uint transactionId) public isUnlocked {
+    function confirmTransaction (uint transactionId) public {
         if (! walletActive || ! isOwner[msg.sender] || transactionId >= transactionCount || confirmations[transactionId][msg.sender])
         {
             revert ("invalid");
@@ -186,7 +178,7 @@ contract MultiSigWalletWithDailyLimit_Cel
         return;
     }
 
-    function submitTransaction (address _dest, uint _amount) public isUnlocked returns (uint transactionId) {
+    function submitTransaction (address _dest, uint _amount) public returns (uint transactionId) {
         if (! walletActive || ! isOwner[msg.sender] || _dest == address(0))
         {
             revert ("invalid");
@@ -196,7 +188,7 @@ contract MultiSigWalletWithDailyLimit_Cel
         return transactionId;
     }
 
-    function revokeConfirmation (uint transactionId) public isUnlocked {
+    function revokeConfirmation (uint transactionId) public {
         if (! isOwner[msg.sender] || ! confirmations[transactionId][msg.sender] || transactionId > transactionCount || transactions[transactionId].executed)
         {
             revert ("Invalid");
@@ -207,17 +199,17 @@ contract MultiSigWalletWithDailyLimit_Cel
         return;
     }
 
-    function getConfirmationCount (uint transactionId) public isUnlocked returns (uint) {
+    function getConfirmationCount (uint transactionId) public returns (uint) {
         return confirmationCounts[transactionId];
     }
 
-    function changeDailyLimit (uint _dailyLimit) public isUnlocked {
+    function changeDailyLimit (uint _dailyLimit) public {
         dailyLimit = _dailyLimit;
         emit DailyLimitChange(_dailyLimit);
         return;
     }
 
-    function calcMaxWithdraw () public isUnlocked returns (uint) {
+    function calcMaxWithdraw () public returns (uint) {
         uint ret;
         uint endTime = Safe_Arith.safe_add(lastDay, 86400);
         if (block.timestamp > endTime)

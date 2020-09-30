@@ -106,7 +106,7 @@ contract SimpleAuction_Cel {
         uint amount = pendingReturns[sender];
         if (amount > 0) 
         {
-            send (sender, eTransfer, amount);
+            sender.transfer(amount);
 
             if (balance < bal) 
             {
@@ -140,7 +140,7 @@ contract SimpleAuction_Cel {
 
         uint bal = balance;
         
-        send (beneficiary, eTransfer, highestBid);
+        payable(beneficiary).transfer(highestBid);
         
         if (balance < bal)
             totalReturns = totalReturns - highestBid;

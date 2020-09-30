@@ -330,7 +330,7 @@ contract MultiSigWalletWithDailyLimit_Cel {
             }
 
             transactions[transactionId].executed = true;
-            send (transactions[transactionId].destination, eTransfer, trx.tval);
+            payable(transactions[transactionId].destination).transfer(trx.tval);
             emit Execution (transactionId);
         }
         return;

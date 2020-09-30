@@ -29,7 +29,7 @@ contract EtherDelta_Cel
         return;
     }
 
-    function changeAdmin (address admin_) public isUnlocked {
+    function changeAdmin (address admin_) public {
         if (_lock_)
         revert ("Reentrancy detected");
         if (msg.sender != admin)
@@ -40,7 +40,7 @@ contract EtherDelta_Cel
         return;
     }
 
-    function changeFeeAccount (address feeAccount_) public isUnlocked {
+    function changeFeeAccount (address feeAccount_) public {
         if (_lock_)
         revert ("Reentrancy detected");
         if (msg.sender != admin)
@@ -51,7 +51,7 @@ contract EtherDelta_Cel
         return;
     }
 
-    function changeFeeMake (uint feeMake_) public isUnlocked {
+    function changeFeeMake (uint feeMake_) public {
         if (_lock_)
         revert ("Reentrancy detected");
         if (msg.sender != admin || feeMake_ > feeMake)
@@ -62,7 +62,7 @@ contract EtherDelta_Cel
         return;
     }
 
-    function changeFeeTake (uint feeTake_) public isUnlocked {
+    function changeFeeTake (uint feeTake_) public {
         if (_lock_)
         revert ("Reentrancy detected");
         if (msg.sender != admin || feeTake_ > feeTake || feeTake_ < feeRebate)
@@ -73,7 +73,7 @@ contract EtherDelta_Cel
         return;
     }
 
-    function changeFeeRebate (uint feeRebate_) public isUnlocked {
+    function changeFeeRebate (uint feeRebate_) public {
         if (_lock_)
         revert ("Reentrancy detected");
         if (msg.sender != admin || feeRebate_ < feeRebate || feeRebate_ > feeTake)
@@ -84,7 +84,7 @@ contract EtherDelta_Cel
         return;
     }
 
-    function deposit () public isUnlocked payable {
+    function deposit () public payable {
         if (_lock_)
         revert ("Reentrancy detected");
         totalBalance = Safe_Arith.safe_add(totalBalance, msg.value);
@@ -93,7 +93,7 @@ contract EtherDelta_Cel
         return;
     }
 
-    function withdraw (uint amount) public isUnlocked {
+    function withdraw (uint amount) public {
         if (_lock_)
         revert ("Reentrancy detected");
         if (tokens[0][msg.sender] < amount)
@@ -101,8 +101,7 @@ contract EtherDelta_Cel
             revert ("Insufficient balance");
         }
         uint b = address(this).balance;
-        if (address(this).balance < amount) revert ("Insufficient balance");
-        msg.sender.call{value: (amount), gas: 2300}("");
+        msg.sender.transfer(amount);
         if (b != address(this).balance)
         {
             tokens[0][msg.sender] = tokens[0][msg.sender] - amount;
@@ -112,7 +111,7 @@ contract EtherDelta_Cel
         return;
     }
 
-    function depositToken (uint tokenId, address token, uint amount) public isUnlocked {
+    function depositToken (uint tokenId, address token, uint amount) public {
         if (_lock_)
         revert ("Reentrancy detected");
         if (tokenId == 0 || amount > (~uint256(0)) - tokens[tokenId][msg.sender])
@@ -135,7 +134,7 @@ contract EtherDelta_Cel
         return;
     }
 
-    function withdrawToken (uint tokenId, address token, uint amount) public isUnlocked {
+    function withdrawToken (uint tokenId, address token, uint amount) public {
         if (_lock_)
         revert ("Reentrancy detected");
         if (tokenId == 0 || tokens[tokenId][msg.sender] < amount)

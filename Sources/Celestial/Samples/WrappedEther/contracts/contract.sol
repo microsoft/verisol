@@ -8,13 +8,6 @@ import {Safe_Arith} from "./Safe_Arith.sol";
 contract WETH9_Cel
 {
     receive() external payable {}
-    bool _lock_ = false;
-
-    modifier isUnlocked () {
-        require (_lock_ == false);
-        _;
-    }
-
     event Approval(address, address, uint);
     event Transfer(address, address, uint);
     event Deposit(address, uint);
@@ -26,21 +19,20 @@ contract WETH9_Cel
     mapping (address => mapping (address => uint)) allowance;
     uint totalBalance;
 
-    function deposit () public isUnlocked payable {
+    function deposit () public payable {
         totalBalance = Safe_Arith.safe_add(totalBalance, msg.value);
         balanceOf[msg.sender] = balanceOf[msg.sender] + msg.value;
         emit Deposit(msg.sender, msg.value);
         return;
     }
 
-    function withdraw (uint _wad) public isUnlocked {
+    function withdraw (uint _wad) public {
         uint bal = address(this).balance;
         if (balanceOf[msg.sender] < _wad)
         {
             revert ("Insufficient balance");
         }
-        if (address(this).balance < _wad) revert ("Insufficient balance");
-        msg.sender.call{value: (_wad), gas: 2300}("");
+        msg.sender.transfer(_wad);
         emit Withdrawal(msg.sender, _wad);
         if (address(this).balance < bal)
         {
@@ -50,18 +42,18 @@ contract WETH9_Cel
         return;
     }
 
-    function totalSupply () public isUnlocked returns (uint a) {
+    function totalSupply () public returns (uint a) {
         a = address(this).balance;
         return a;
     }
 
-    function approve (address _guy, uint _wad) public isUnlocked returns (bool) {
+    function approve (address _guy, uint _wad) public returns (bool) {
         allowance[msg.sender][_guy] = _wad;
         emit Approval(msg.sender, _guy, _wad);
         return true;
     }
 
-    function transferFrom (address _src, address _dst, uint _wad) public isUnlocked returns (bool) {
+    function transferFrom (address _src, address _dst, uint _wad) public returns (bool) {
         if (_src == _dst)
         {
             revert ("Redundant transfer");
@@ -84,7 +76,7 @@ contract WETH9_Cel
         return true;
     }
 
-    function transfer (address _dst, uint _wad) public isUnlocked returns (bool) {
+    function _transfer (address _dst, uint _wad) public returns (bool) {
         return transferFrom(msg.sender, _dst, _wad);
     }
 }

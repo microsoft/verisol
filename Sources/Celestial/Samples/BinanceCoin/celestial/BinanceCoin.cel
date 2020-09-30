@@ -1,10 +1,8 @@
 //address: https://etherscan.io/address/0xb8c77482e45f1f44de1745f52c74426c631bdd52
 //relevantPaper: https://www.mdpi.com/2079-9292/9/2/255/htm
 
-// Math operations with safety checks
-// SafeMath including assert defined 
-contract BNB_Cel {
-
+contract BNB_Cel
+{
     string name; 
     string symbol; 
     uint8 decimals; 
@@ -16,16 +14,9 @@ contract BNB_Cel {
     mapping (address => uint) freezeOf; //This was public
     mapping (address => mapping (address => uint)) allowance; //This was public
 
-    ///* This generates a public event on the blockchain that will notify clients */
     event Transfer(address , address , uint);
-
-    ///* This notifies clients about the amount burnt */
     event Burn(address , uint );
-	
-    ///* This notifies clients about the amount frozen */
     event Freeze(address , uint );
-	
-    ///* This notifies clients about the amount unfrozen */
     event Unfreeze(address , uint );
 
     invariant totalSupplyInv 
@@ -35,7 +26,7 @@ contract BNB_Cel {
     }
 
     ///* Initializes contract with initial supply tokens to the creator of the contract */ 
-    constructor( uint initialSupply, string tokenName, uint8 decimalUnits, string tokenSymbol)   
+    constructor (uint initialSupply, string tokenName, uint8 decimalUnits, string tokenSymbol)   
     {
         balanceOf[sender] = initialSupply;              // Give the creator all initial tokens  
         totalSupply = initialSupply;                        // Update total supply
@@ -47,7 +38,7 @@ contract BNB_Cel {
     }
 
     ///* Send coins */
-    function transfer(address _to, uint _value) 
+    function _transfer (address _to, uint _value) 
         tx_reverts _to == null || _value <= 0 || balanceOf[sender] < _value || balanceOf[_to] > uint_max - _value
         post new(log) == (Transfer, sender, _to, _value)::log 
         && ite (sender != _to, new(balanceOf) == balanceOf[sender => balanceOf[sender] - _value, _to => balanceOf[_to] + _value], 
@@ -96,7 +87,6 @@ contract BNB_Cel {
         balanceOf[_to] = safe_add(balanceOf[_to], _value);                             // Add the same to the recipient
         allowance[_from][sender] = safe_sub(allowance[_from][sender], _value);
         emit Transfer(_from, _to, _value);
-        //send (_from, Transfer, _to, _value);
         return true;
     }
 
@@ -130,7 +120,6 @@ contract BNB_Cel {
         balanceOf[sender] = safe_sub(balanceOf[sender], _value);                      // Subtract from the sender
         freezeOf[sender] = safe_add(freezeOf[sender], _value);                                // Updates totalSupply
         emit Freeze(sender, _value);
-        //send (sender, Freeze, _value);
         return true;
     }
 	
@@ -146,7 +135,6 @@ contract BNB_Cel {
         freezeOf[sender] = safe_sub(freezeOf[sender], _value);                      // Subtract from the sender
 	    balanceOf[sender] = safe_add(balanceOf[sender], _value);
         emit Unfreeze(sender, _value);
-        //send (sender, Unfreeze, _value);
         return true;
     }
 	
@@ -156,7 +144,7 @@ contract BNB_Cel {
     	tx_reverts sender != owner 
     {
 	    if(sender != owner) revert("sender is not owner");
-	    send (owner, eTransfer, amount);
+	    payable(owner).transfer(amount);
         return;
     }
 }

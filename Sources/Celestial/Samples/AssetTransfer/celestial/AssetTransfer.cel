@@ -225,7 +225,7 @@ contract MarketPlace_Cel
             revert ("<withdraw> function invoked in invalid state");
         }
         
-        send (seller, eTransfer, buyingPrice);
+        payable(seller).transfer(buyingPrice);
         return;
     }
 }

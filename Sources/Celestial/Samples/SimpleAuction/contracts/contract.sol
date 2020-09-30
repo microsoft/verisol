@@ -8,13 +8,6 @@ import {Safe_Arith} from "./Safe_Arith.sol";
 contract SimpleAuction_Cel
 {
     receive() external payable {}
-    bool _lock_ = false;
-
-    modifier isUnlocked () {
-        require (_lock_ == false);
-        _;
-    }
-
     event HighestBidIncreased(address, uint);
     event AuctionEnded(address, uint);
     address beneficiary;
@@ -31,7 +24,7 @@ contract SimpleAuction_Cel
         return;
     }
 
-    function bid () public isUnlocked payable {
+    function bid () public payable {
         if (block.timestamp > auctionEndTime)
         revert ("Auction already ended.");
         if (msg.value <= highestBid)
@@ -45,13 +38,12 @@ contract SimpleAuction_Cel
         return;
     }
 
-    function withdraw () public isUnlocked returns (bool) {
+    function withdraw () public returns (bool) {
         uint bal = address(this).balance;
         uint amount = pendingReturns[msg.sender];
         if (amount > 0)
         {
-            if (address(this).balance < amount) revert ("Insufficient balance");
-            msg.sender.call{value: (amount), gas: 2300}("");
+            msg.sender.transfer(amount);
             if (address(this).balance < bal)
             {
                 pendingReturns[msg.sender] = 0;
@@ -61,7 +53,7 @@ contract SimpleAuction_Cel
         return true;
     }
 
-    function auctionEnd () public isUnlocked {
+    function auctionEnd () public {
         if (block.timestamp < auctionEndTime)
         revert ("Auction not yet ended.");
         if (ended)
@@ -69,8 +61,7 @@ contract SimpleAuction_Cel
         ended = true;
         emit AuctionEnded(highestBidder, highestBid);
         uint bal = address(this).balance;
-        if (address(this).balance < highestBid) revert ("Insufficient balance");
-        beneficiary.call{value: (highestBid), gas: 2300}("");
+        payable(beneficiary).transfer(highestBid);
         if (address(this).balance < bal)
         totalReturns = totalReturns - highestBid;
         return;
