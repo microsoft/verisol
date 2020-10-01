@@ -31,6 +31,7 @@ BGASLIMIT : 'block.gaslimit' ;
 BNUMBER   : 'block.number' ;
 BTIMESTAMP: 'block.timestamp' ;
 CALL      : 'call' ;
+CONSTANT  : 'constant' ;
 CONSTR    : 'constructor' ;
 CONTAINS  : 'contains' ;
 CREDIT    : 'credit' ;
@@ -41,6 +42,7 @@ ELSE      : 'else' ;
 EMIT      : 'emit' ;
 ETRANSFER : 'eTransfer' ;
 EXISTS    : 'exists' ;
+FALLBACK  : 'fallback' ;
 FOR       : 'for' ;
 FORALL    : 'forall';
 FUNCTION  : 'function' ;
@@ -64,7 +66,9 @@ PRE       : 'pre' ;
 PRINT     : 'print' ;
 PRIVATE   : 'private' ;
 PUBLIC    : 'public' ;
+PURE      : 'pure' ;
 PUSH      : 'push' ;
+RECEIVE   : 'receive';
 RETURN    : 'return' ;
 RETURNS   : 'returns' ;
 REVERT	  : 'revert' ;
@@ -86,6 +90,7 @@ TXGASPRICE: 'tx.gasprice' ;
 TXORIGIN  : 'tx.origin' ;
 UINT_MAX  : 'uint_max' ;
 VALUE     : 'value' ;
+VIEW      : 'view' ;
 
 // Literals
 

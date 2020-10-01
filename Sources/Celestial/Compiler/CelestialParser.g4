@@ -84,7 +84,8 @@ spec : (PRE pre=expr)? (POST post=expr)? (CREDIT)? (DEBIT)? (TXREVERTS reverts=e
      | (CREDIT)? (DEBIT)? (PRE pre=expr)? (POST post=expr)? (TXREVERTS reverts=expr)? (RREVERTS rreverts=expr)?
      | (PRE pre=expr)? (TXREVERTS reverts=expr)? (CREDIT)? (DEBIT)? (POST post=expr)? (RREVERTS rreverts=expr)?
      | (PRE pre=expr)? (TXREVERTS reverts=expr)? (POST post=expr)? (CREDIT)? (DEBIT)? (RREVERTS rreverts=expr)?;
-methodDecl : FUNCTION name=iden LPAREN methodParamList? RPAREN (PUBLIC|PRIVATE)? spec (MODIFIES LBRACK (modifies=rvalueList)? RBRACK)? (MODIFIESA LBRACK (modifies_addrs=rvalueList)? RBRACK)? (RETURNS LPAREN datatype (returnval=iden)? RPAREN)? methodBody # MDecl
+stateMutability : PURE | CONSTANT | VIEW ;
+methodDecl : (RECEIVE | FALLBACK | FUNCTION name=iden) LPAREN methodParamList? RPAREN (PUBLIC|PRIVATE)? stateMutability? spec (MODIFIES LBRACK (modifies=rvalueList)? RBRACK)? (MODIFIESA LBRACK (modifies_addrs=rvalueList)? RBRACK)? (RETURNS LPAREN datatype (returnval=iden)? RPAREN)? methodBody # MDecl
         ;
 methodParamList : methodParam (COMMA methodParam)* ;
 methodParam : datatype name=iden ;
@@ -164,6 +165,7 @@ logcheck : LPAREN event=iden COMMA payload=expr (COMMA payload=expr)* RPAREN
 
 expr : primitive                                      //# PrimitiveExpr
      | LPAREN expr RPAREN                             //# ParenExpr
+     | iden DOT method=iden LPAREN rvalueList? RPAREN
      | expr DOT field=iden                            //# FieldAccessExpr
      | array=expr LBRACK index=expr RBRACK            //# ArrayMapAccessExpr
      | array=expr DOT LENGTH LPAREN RPAREN            //# ArrayLengthExpr

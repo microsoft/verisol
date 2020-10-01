@@ -93,10 +93,7 @@ class SolidityCodegen:
         self.writeToSolidity("{")
         self.indentationLevel = 1
         if self.verificationMode == "VeriSol":
-            self.writeToSolidity("function () external payable {}")     #Added for Verisol
             self.invariants_collected = ""
-        else:
-            self.writeToSolidity("receive() external payable {}")
         
         # Each contract has a lock to prevent re-entrancy
         # Lock status is checked at the beginning of every function
@@ -196,39 +193,50 @@ class SolidityCodegen:
         self.writeToSolidity("}")
 
     def writeMethod(self, ctx:CelestialParser.MethodDeclContext):
-        methodName = ctx.name.Iden().getText()
-        
-        params = ctx.methodParamList()
-        paramString = ""
-        if params:
-            for param in params.methodParam():
-                paramType = self.getSolidityDatatype(param.datatype())
-                if paramType in ["string", "bytes"]:
-                    paramString += paramType + " memory " + param.name.Iden().getText()
-                else:
-                    paramString += paramType + " " + param.name.Iden().getText()
-                if param != params.methodParam()[-1]:
-                    paramString += ", "
-        
-        methodDeclString = "function " + methodName + " (" + paramString + ")"
+        methodDeclString = ""
+        if ctx.name:
+            methodName = ctx.name.Iden().getText()
+            
+            params = ctx.methodParamList()
+            paramString = ""
+            if params:
+                for param in params.methodParam():
+                    paramType = self.getSolidityDatatype(param.datatype())
+                    if paramType in ["string", "bytes"]:
+                        paramString += paramType + " memory " + param.name.Iden().getText()
+                    else:
+                        paramString += paramType + " " + param.name.Iden().getText()
+                    if param != params.methodParam()[-1]:
+                        paramString += ", "
+            
+            methodDeclString = "function " + methodName + " (" + paramString + ")"
 
-        if ctx.PRIVATE():
-            methodDeclString += " private"
-        else:
-            methodDeclString += " public"
+            if ctx.PRIVATE():
+                methodDeclString += " private"
+            else:
+                methodDeclString += " public"
 
-        # if (not (ctx.spec() and (ctx.spec().CREDIT() or ctx.spec().DEBIT()))) and (ctx.MODIFIES() and not ctx.modifies):
-        #     methodDeclString += " view"
+            if ctx.stateMutability():
+                methodDeclString += " " + ctx.stateMutability().getText()
 
-        if (ctx.spec() and ctx.spec().CREDIT()):
-            methodDeclString += " payable"
+            # if (not (ctx.spec() and (ctx.spec().CREDIT() or ctx.spec().DEBIT()))) and (ctx.MODIFIES() and not ctx.modifies):
+            #     methodDeclString += " view"
 
-        if ctx.RETURNS():
-            methodDeclString += " returns (" + self.getSolidityDatatype(ctx.datatype())
-            if ctx.returnval:
-                methodDeclString += " " + ctx.returnval.Iden().getText()
-            methodDeclString += ")"
-        
+            if (ctx.spec() and ctx.spec().CREDIT()):
+                methodDeclString += " payable"
+
+            if ctx.RETURNS():
+                methodDeclString += " returns (" + self.getSolidityDatatype(ctx.datatype())
+                if ctx.returnval:
+                    methodDeclString += " " + ctx.returnval.Iden().getText()
+                methodDeclString += ")"
+        elif ctx.RECEIVE():
+            methodDeclString = "receive () external payable"
+        elif ctx.FALLBACK() and ctx.spec() and ctx.spec().CREDIT():
+            methodDeclString = "fallback () external payable"
+        elif ctx.FALLBACK():
+            methodDeclString = "fallback () external"
+      
         methodDeclString += " {"
 
         self.writeToSolidity("")
@@ -359,7 +367,7 @@ class SolidityCodegen:
             elif lvalueType[0:8] == "inst_map":
                 return lvalueType[9:-1]
         
-        elif (ctx.method):
+        elif (ctx.method and not ctx.DOT()):
             if (ctx.method.Iden().getText() == "sum_mapping"):
                 return "uint"
 
@@ -419,6 +427,11 @@ class SolidityCodegen:
         elif (ctx.PAYABLE()):
             return self.exprType(ctx.expr(0), symbols, scope, isMethod, isFunctionCall, isIf, isPre, isPost)
 
+        elif (ctx.method and ctx.DOT()):
+            if ctx.iden(0).Iden().getText() == "abi":
+                if ctx.method.Iden().getText() in ["encode", "encodePacked", "encodeWithSelector", "encodeWithSignature"]:
+                    return "bytes"
+
     def getSolidityExpr(self, ctx:CelestialParser.ExprContext, symbols, scope):
         if ctx.primitive():
             if ctx.primitive().VALUE():
@@ -467,9 +480,20 @@ class SolidityCodegen:
             elif ctx.LENGTH():
                 return self.getSolidityExpr(ctx.expr(0), symbols, scope) + ".length"
             
-        elif ctx.method:
+        elif ctx.method and not ctx.DOT():
             args = ctx.rvalueList()
             s = ctx.method.Iden().getText() + "("
+            if args:
+                for arg in args.rvalue():
+                    s += self.getSolidityExpr(arg.expr(), symbols, scope)
+                    if arg != args.rvalue()[-1]:
+                        s += ", "
+            s += ")"
+            return s
+
+        elif ctx.method and ctx.DOT():
+            args = ctx.rvalueList()
+            s = ctx.iden(0).Iden().getText() + "." + ctx.method.Iden().getText() + "("
             if args:
                 for arg in args.rvalue():
                     s += self.getSolidityExpr(arg.expr(), symbols, scope)

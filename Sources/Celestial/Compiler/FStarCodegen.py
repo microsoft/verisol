@@ -48,6 +48,7 @@ class FStarCodegen:
         self.moduleName = ""
         self.fieldPrefix = ""
         self.fields = {}
+        self.initialFieldValues = {}
         self.invariants = [] # required for spec
         self.methods = {}    # TODO: can keep these and remove 'scope' in getFStarExpr?
         self.functions = {} # should modify this to store param and return types
@@ -67,6 +68,7 @@ class FStarCodegen:
 
     def clearCompilerVariables(self):
         self.fields = {}
+        self.initialFieldValues = {}
         self.invariants = []
         self.methods = {}
         self.functions = {}
@@ -244,7 +246,7 @@ class FStarCodegen:
             elif lvalueType[0:8] == "inst_map":
                 return lvalueType[9:-1]
         
-        elif (ctx.method):
+        elif (ctx.method and not ctx.DOT()):
             methodName = ctx.method.Iden().getText()
             if methodName in self.contracts: # ContractName(values_of_fields)
                 return methodName
@@ -300,6 +302,11 @@ class FStarCodegen:
 
         elif (ctx.PAYABLE()):
             return self.exprType(ctx.expr(0), symbols, scope, isInvariant, isMethod, isFunctionCall, isIf, isPre, isPost)
+
+        elif (ctx.method and ctx.DOT()):
+            if ctx.iden(0).Iden().getText() == "abi":
+                if ctx.method.Iden().getText() in ["encode", "encodePacked", "encodeWithSelector", "encodeWithSignature"]:
+                    return "bytes"
 
     # assumes already typechecked (for eg: does not allow map[array[int], int])
     # replace F* type names with those provided in the F* data structure library by aseem
@@ -474,7 +481,7 @@ class FStarCodegen:
             self.indentationLevel -= 1
             return "(" + self.getFStarExpression(expr.getChild(1), symbols, scope, isInvariant, isMethod, isFunctionCall, isIf, isPre, isPost) + ")"
         
-        elif expr.method:
+        elif expr.method and not expr.DOT():
             methodName = expr.method.Iden().getText()
 
             if methodName in self.contracts: # ContractName(values_for_fields)
@@ -558,7 +565,39 @@ class FStarCodegen:
                     return FStarExprString + ")"
                 else:
                     return FStarExprString + " }"
-        
+
+        elif expr.method and expr.DOT():
+            methodName = expr.iden(0).getText() + "_" + expr.method.getText()
+            xarr = {}
+            FStarExprString = ""
+            x = 1
+            i = 0
+            if expr.rvalueList():
+                for arg in expr.rvalueList().rvalue():
+                    argString = self.getFStarExpression(arg.expr(), symbols, scope, isInvariant, isMethod, True, isIf, isPre, isPost)
+                    if " " in argString:
+                        argString = "(" + argString + ")"
+                    
+                    # let-bind the argument in case it has further let-bindings
+                    if isMethod and "=" in argString:
+                        FStarExprString += "\nlet x" + str(x) + " = " + argString + " in"
+                        argString = "x" + str(x)
+                    xarr[x] = argString
+                    x = x + 1
+                    i = i + 1
+            
+            # Wrap the callee/struct in paranthesis/braces
+            FStarExprString += "(" + methodName
+
+            argString = xarr[1]
+            
+            # Generate the final call/record string
+            for i in range (2, x):
+                argString += ", " + xarr[i]
+            
+            self.indentationLevel -= 1
+            return FStarExprString + "(" + argString + "))"
+
         elif (expr.SUB() and (expr.getChildCount() == 2)):
             self.indentationLevel -= 1
             # return "\nlet x1 = (-1) * (" + self.getFStarExpression(expr.expr(0), symbols, scope, isInvariant, isMethod) + " ) in x1"
@@ -801,8 +840,9 @@ class FStarCodegen:
             elif expr.SAFESUB():
                 s += "(if " + op2 + " <= " + op1 + " then (" + op1 + " - " + op2 + ") else revert \"Underflow error\")"
             elif expr.SAFEMUL():
-                s += "\nlet c = (_mul " + op1 + " "+ op2 + ") in"
-                s += "(if c /" + op1 + " = " + op2 + " then (" + op1 + " * " + op2 + ") else revert \"Overflow error\")"
+                # s += "\nlet c = (" + op1 + " * " + op2 + ") in"
+                # s += "(if c /" + op1 + " = " + op2 + " then (" + op1 + " * " + op2 + ") else revert \"Overflow error\")"
+                s += "(safe_mul " + op1 + " " + op2 + ")"
             elif expr.SAFEDIV():
                 s += "(if " + op2 + " <> 0 then (" + op1 + " / " + op2 + ") else revert \"Division by 0 error\")"
             elif expr.SAFEMOD():
@@ -1211,8 +1251,15 @@ class FStarCodegen:
         # Need to specify that all its fields are set to default values (other sum_mapping type invariants don't go through)
         if self.fields:
             for field in list(self.fields.keys()):
-                if self.fields[field].getText() not in self.contracts:
-                    self.writeToFStar("\n      /\\ (cs." + self.addPrefix(field) + " == " + self.defaultValue(self.fields[field].getText(), symbols) + ")")
+                fieldName = self.fields[field].getText()
+                if fieldName not in self.contracts:
+                    if fieldName in self.initialFieldValues:
+                        fieldInitialValue = self.getFStarExpression(self.initialFieldValues[fieldName], symbols, scope, isInvariant=False, isMethod=False, isFunctionCall=False, isIf=False, isPre=True, isPost=False)
+                        if " " in fieldInitialValue:
+                            fieldInitialValue = "(" + fieldInitialValue + ")"
+                    else:
+                        fieldInitialValue = self.defaultValue(fieldName, symbols)
+                    self.writeToFStar("\n      /\\ (cs." + self.addPrefix(field) + " == " + fieldInitialValue + ")")
                 else:
                     self.writeToFStar("\n      /\\ (cs." + self.addPrefix(field) + " == null)")
 
@@ -1393,7 +1440,13 @@ class FStarCodegen:
 
     def writeMethod(self, ctx:CelestialParser.MethodDeclContext, symbols, scope):
         # Writing method definition
-        methodName = ctx.name.Iden().getText()
+        if ctx.name:
+            methodName = ctx.name.Iden().getText()
+        elif ctx.RECEIVE():
+            methodName = "receive"
+        else:
+            methodName = "fallback"
+
         self.writeToFStar("\n")
         self.writeToFStar("\nlet " + methodName + " (self:" + self.addPrefix("address") + ") (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block)")
         if ctx.methodParamList():

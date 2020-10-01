@@ -246,9 +246,9 @@ let emit (#a:Type0) (evn:string) (payload:a)
 //   (fun st0 _ st1 -> st0 == st1)
 
 let transfer (#a:Type0) (c_addr:contract a) (to:address) (amount:uint)
-: Eth unit
-  (fun bst -> c_addr `CM.live_in` bst.cmap)
-  (fun bst -> amount > pure_get_balance_bst c_addr bst)
+: Eth1 unit
+  (fun bst -> c_addr `CM.live_in` bst.cmap /\ (pure_get_balance_bst c_addr bst) >= amount)
+  (fun bst -> False)
   (fun bst0 r bst1 ->
     (bst1.log == ((mk_event to eTransfer amount)::[])@(bst0.log)) /\
     (bst1.cmap == bst0.cmap) /\
@@ -264,17 +264,15 @@ let transfer (#a:Type0) (c_addr:contract a) (to:address) (amount:uint)
     )
   )
 = let b = get_balance c_addr in
-  if amount > b then revert "Insufficient balance"
+  let _ = add_event (mk_event to eTransfer amount) in
+  let b_to = get_balance to in
+  if c_addr <> to then begin
+    set_balance c_addr (b - amount);
+    (if b_to + amount > uint_max then set_balance to (b_to + amount - uint_max)
+    else set_balance to (b_to + amount))
+  end
   else
-    let _ = add_event (mk_event to eTransfer amount) in
-    let b_to = get_balance to in
-    if c_addr <> to then begin
-      set_balance c_addr (b - amount);
-      (if b_to + amount > uint_max then set_balance to (b_to + amount - uint_max)
-      else set_balance to (b_to + amount))
-    end
-    else
-      ()
+    ()
 
 /// Models a call made to an external/unknown entity
 /// caller's state remains the same since reentrancy is disallowed
@@ -296,3 +294,13 @@ assume val mulmod : (x:uint) -> (y:uint) -> (k:uint) -> Eth uint
 (fun _ -> True)
 (fun _ -> k == 0)
 (fun _ r _ -> r == (op_Multiply x y) % k)
+
+let safe_mul (a:uint) (b:uint) : Eth uint
+(fun _ -> True)
+(fun _ -> (op_Multiply a b) > uint_max)
+(fun bst0 r bst1 ->
+  bst0 == bst1
+  /\ r == (_mul a b)
+)
+= if (op_Multiply a b) > uint_max then revert ""
+  else (_mul a b)

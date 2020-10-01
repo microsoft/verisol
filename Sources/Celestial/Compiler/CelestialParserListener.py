@@ -179,6 +179,15 @@ class CelestialParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by CelestialParser#stateMutability.
+    def enterStateMutability(self, ctx:CelestialParser.StateMutabilityContext):
+        pass
+
+    # Exit a parse tree produced by CelestialParser#stateMutability.
+    def exitStateMutability(self, ctx:CelestialParser.StateMutabilityContext):
+        pass
+
+
     # Enter a parse tree produced by CelestialParser#MDecl.
     def enterMDecl(self, ctx:CelestialParser.MDeclContext):
         pass
