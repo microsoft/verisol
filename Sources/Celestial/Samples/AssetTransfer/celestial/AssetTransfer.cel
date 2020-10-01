@@ -98,7 +98,7 @@ contract MarketPlace_Cel
             revert ("<modifyOffer> function invoked in invalid state");
         }
 
-        if ( _increase )
+        if (_increase)
         {
             sellingPrice = safe_add(sellingPrice, _change);  // ensures no overflow
         }
@@ -223,6 +223,11 @@ contract MarketPlace_Cel
         if (! (contractCurrentState == state.marketPlace_Accept && sender == seller))
         {
             revert ("<withdraw> function invoked in invalid state");
+        }
+        
+        if (balance < buyingPrice)
+        {
+            revert ("Insufficient balance");
         }
         
         payable(seller).transfer(buyingPrice);

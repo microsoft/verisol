@@ -7,7 +7,6 @@ import {Safe_Arith} from "./Safe_Arith.sol";
 
 contract MarketPlace_Cel
 {
-    receive() external payable {}
     enum state
     {
         marketPlace_Active, marketPlace_OfferPlaced, marketPlace_NotionalAccept, marketPlace_BuyerAccept, marketPlace_SellerAccept, marketPlace_Accept
@@ -124,6 +123,10 @@ contract MarketPlace_Cel
         if (! (contractCurrentState == state.marketPlace_Accept && msg.sender == seller))
         {
             revert ("<withdraw> function invoked in invalid state");
+        }
+        if (address(this).balance < buyingPrice)
+        {
+            revert ("Insufficient balance");
         }
         payable(seller).transfer(buyingPrice);
         return;
