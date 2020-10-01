@@ -99,6 +99,31 @@ let totalSupplyInv (self:erc20_cel_address) (bst:bstate{self `erc20_cel_live` bs
 let nullCheckPre (a1:address) (a2:address)
 = (a1 =!= null) /\ (a2 =!= null)
 
+let _msgSender (self:erc20_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block)
+: Eth1 address
+  (fun bst ->
+    erc20_cel_live self bst
+  )
+  (fun bst -> False)
+  (fun bst0 ret bst1 ->
+    erc20_cel_live self bst1 /\ (
+    let cs0 = CM.sel self bst0.cmap in
+    let cs1 = CM.sel self bst1.cmap in
+    let b0 = pure_get_balance_bst self bst0 in
+    let b1 = pure_get_balance_bst self bst1 in
+    let l0 = bst0.log in
+    let l1 = bst1.log in
+      (ret == sender)
+      /\ (bst0.balances == bst1.balances)
+      /\ (cs0 == cs1)
+      /\ (l0 == l1)
+  ))
+=
+let ret:address = null in
+let cs = get_contract self in
+let balance = get_balance self in
+sender
+
 let transferPost (old_balances:(m:(M.t address uint lt){M.def_of m == 0})) (new_balances:(m:(M.t address uint lt){M.def_of m == 0})) (_from:address) (_to:address) (_amount:uint)
 = ((((M.sel old_balances _from) >= _amount)) /\ ((((M.sel old_balances _to) + _amount) <= uint_max))) /\ (if (_from = _to) then
   (M.equal new_balances old_balances)
@@ -375,8 +400,8 @@ let _approve (self:erc20_cel_address) (sender:address{sender <> null}) (value:ui
       ((_approvePost cs0.erc20_cel_allowances cs1.erc20_cel_allowances _owner _spender _amount))
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.erc20_cel_totalSupply == cs1.erc20_cel_totalSupply)
       /\ (cs0.erc20_cel_balances == cs1.erc20_cel_balances)
+      /\ (cs0.erc20_cel_totalSupply == cs1.erc20_cel_totalSupply)
   ))
 =
 let cs = get_contract self in
@@ -435,7 +460,7 @@ let cs = get_contract self in
 let balance = get_balance self in
 ()
 
-let transfer (self:erc20_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_to:address) (_amount:uint)
+let transfer_ (self:erc20_cel_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block) (_to:address) (_amount:uint)
 : Eth1 bool
   (fun bst ->
     erc20_cel_live self bst /\ (
@@ -534,8 +559,8 @@ let approve (self:erc20_cel_address) (sender:address{sender <> null}) (value:uin
     (totalSupplyInv self bst1)
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.erc20_cel_totalSupply == cs1.erc20_cel_totalSupply)
       /\ (cs0.erc20_cel_balances == cs1.erc20_cel_balances)
+      /\ (cs0.erc20_cel_totalSupply == cs1.erc20_cel_totalSupply)
   ))
 =
 let cs = get_contract self in
@@ -634,8 +659,8 @@ let increaseAllowance (self:erc20_cel_address) (sender:address{sender <> null}) 
     (totalSupplyInv self bst1)
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.erc20_cel_totalSupply == cs1.erc20_cel_totalSupply)
       /\ (cs0.erc20_cel_balances == cs1.erc20_cel_balances)
+      /\ (cs0.erc20_cel_totalSupply == cs1.erc20_cel_totalSupply)
   ))
 =
 let cs = get_contract self in
@@ -671,8 +696,8 @@ let decreaseAllowance (self:erc20_cel_address) (sender:address{sender <> null}) 
     (totalSupplyInv self bst1)
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.erc20_cel_totalSupply == cs1.erc20_cel_totalSupply)
       /\ (cs0.erc20_cel_balances == cs1.erc20_cel_balances)
+      /\ (cs0.erc20_cel_totalSupply == cs1.erc20_cel_totalSupply)
   ))
 =
 let cs = get_contract self in

@@ -229,9 +229,9 @@ let makeOffer (self:marketplace_cel_address) (sender:address{sender <> null}) (v
     (distinctBuyerSeller self bst1)
       /\ (((cs1.marketplace_cel_sellingPrice == _sellingPrice)) /\ ((cs1.marketplace_cel_contractCurrentState == MarketPlace_OfferPlaced)))
       /\ (bst0.balances == bst1.balances)
-      /\ (cs0.marketplace_cel_buyingPrice == cs1.marketplace_cel_buyingPrice)
       /\ (cs0.marketplace_cel_buyer == cs1.marketplace_cel_buyer)
       /\ (cs0.marketplace_cel_seller == cs1.marketplace_cel_seller)
+      /\ (cs0.marketplace_cel_buyingPrice == cs1.marketplace_cel_buyingPrice)
   ))
 =
 let cs = get_contract self in
@@ -284,10 +284,10 @@ let modifyOffer (self:marketplace_cel_address) (sender:address{sender <> null}) 
       /\ ((modifyOfferPost _increase _change cs0.marketplace_cel_sellingPrice cs1.marketplace_cel_sellingPrice))
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.marketplace_cel_buyingPrice == cs1.marketplace_cel_buyingPrice)
-      /\ (cs0.marketplace_cel_contractCurrentState == cs1.marketplace_cel_contractCurrentState)
       /\ (cs0.marketplace_cel_buyer == cs1.marketplace_cel_buyer)
       /\ (cs0.marketplace_cel_seller == cs1.marketplace_cel_seller)
+      /\ (cs0.marketplace_cel_contractCurrentState == cs1.marketplace_cel_contractCurrentState)
+      /\ (cs0.marketplace_cel_buyingPrice == cs1.marketplace_cel_buyingPrice)
   ))
 =
 let cs = get_contract self in
@@ -346,10 +346,10 @@ let rejectOffer (self:marketplace_cel_address) (sender:address{sender <> null}) 
       /\ (cs1.marketplace_cel_contractCurrentState == MarketPlace_Active)
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.marketplace_cel_buyingPrice == cs1.marketplace_cel_buyingPrice)
-      /\ (cs0.marketplace_cel_sellingPrice == cs1.marketplace_cel_sellingPrice)
       /\ (cs0.marketplace_cel_buyer == cs1.marketplace_cel_buyer)
       /\ (cs0.marketplace_cel_seller == cs1.marketplace_cel_seller)
+      /\ (cs0.marketplace_cel_buyingPrice == cs1.marketplace_cel_buyingPrice)
+      /\ (cs0.marketplace_cel_sellingPrice == cs1.marketplace_cel_sellingPrice)
   ))
 =
 let cs = get_contract self in
@@ -399,9 +399,9 @@ let acceptOffer (self:marketplace_cel_address) (sender:address{sender <> null}) 
     let l1 = bst1.log in
     (distinctBuyerSeller self bst1)
       /\ ((acceptOfferPost cs0.marketplace_cel_seller cs0.marketplace_cel_contractCurrentState cs1.marketplace_cel_contractCurrentState value cs0.marketplace_cel_sellingPrice cs1.marketplace_cel_buyingPrice l0 l1))
-      /\ (cs0.marketplace_cel_sellingPrice == cs1.marketplace_cel_sellingPrice)
       /\ (cs0.marketplace_cel_buyer == cs1.marketplace_cel_buyer)
       /\ (cs0.marketplace_cel_seller == cs1.marketplace_cel_seller)
+      /\ (cs0.marketplace_cel_sellingPrice == cs1.marketplace_cel_sellingPrice)
   ))
 =
 let b = get_balance self in
@@ -461,10 +461,10 @@ let accept (self:marketplace_cel_address) (sender:address{sender <> null}) (valu
       /\ ((acceptPost sender cs0.marketplace_cel_seller cs0.marketplace_cel_buyer cs0.marketplace_cel_contractCurrentState cs1.marketplace_cel_contractCurrentState))
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.marketplace_cel_buyingPrice == cs1.marketplace_cel_buyingPrice)
-      /\ (cs0.marketplace_cel_sellingPrice == cs1.marketplace_cel_sellingPrice)
       /\ (cs0.marketplace_cel_buyer == cs1.marketplace_cel_buyer)
       /\ (cs0.marketplace_cel_seller == cs1.marketplace_cel_seller)
+      /\ (cs0.marketplace_cel_buyingPrice == cs1.marketplace_cel_buyingPrice)
+      /\ (cs0.marketplace_cel_sellingPrice == cs1.marketplace_cel_sellingPrice)
   ))
 =
 let cs = get_contract self in
@@ -562,8 +562,14 @@ revert "<withdraw> function invoked in invalid state";
 else ()) in
 let cs = get_contract self in
 let balance = get_balance self in
+let _ = (if (balance < cs.marketplace_cel_buyingPrice) then begin
+revert "Insufficient balance";
+() end
+else ()) in
+let cs = get_contract self in
+let balance = get_balance self in
 let x2 = (cs.marketplace_cel_buyingPrice) in
-let _ = transfer self cs.marketplace_cel_seller x2 in
+let _ = transfer self (cs.marketplace_cel_seller) x2 in
 let cs = get_contract self in
 let balance = get_balance self in
 ()

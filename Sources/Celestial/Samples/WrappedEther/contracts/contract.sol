@@ -27,14 +27,13 @@ contract WETH9_Cel
     }
 
     function withdraw (uint _wad) public {
-        uint bal = address(this).balance;
         if (balanceOf[msg.sender] < _wad)
         {
             revert ("Insufficient balance");
         }
         msg.sender.transfer(_wad);
         emit Withdrawal(msg.sender, _wad);
-        if (address(this).balance < bal)
+        if (address(this).balance < totalBalance)
         {
             balanceOf[msg.sender] = balanceOf[msg.sender] - _wad;
             totalBalance = totalBalance - _wad;

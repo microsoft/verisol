@@ -52,8 +52,6 @@ contract WETH9_Cel {
         tx_reverts balance < _wad || balanceOf[sender] < _wad
         modifies [balanceOf, totalBalance] 
     {
-        uint bal = balance;
-
         if (balanceOf[sender] < _wad) 
         {
             revert ("Insufficient balance");
@@ -62,7 +60,10 @@ contract WETH9_Cel {
         sender.transfer(_wad);
         emit Withdrawal (sender, _wad);
 
-        if (balance < bal) 
+        // Check if balance did reduce (only happens in the case
+        //   that address(this) == sender, which may be expressed
+        //   as a precondition on this function)
+        if (balance < totalBalance) 
         {
             balanceOf[sender] = balanceOf[sender] - _wad;
             totalBalance = totalBalance - _wad;

@@ -14,6 +14,14 @@ contract ERC20_Cel
         a1 != null && a2 != null
     }
 
+    function _msgSender () private view
+        post ret == sender
+        modifies []
+        returns (address ret)
+    {
+        return sender;
+    }
+
     spec transferPost (
         mapping (address => uint) old_balances, mapping (address => uint) new_balances,
         address _from, address _to, uint _amount)
@@ -161,7 +169,7 @@ contract ERC20_Cel
         return;
     }
 
-    function transfer (address _to, uint _amount) public
+    function transfer_ (address _to, uint _amount) public
         post new(balances)[sender] <= balances[sender] && balances[_to] >= balances[_to]
         tx_reverts _to == null
         modifies [balances]
