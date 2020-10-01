@@ -204,10 +204,10 @@ let deposit (self:weth9_cel_address) (sender:address{sender <> null}) (value:uin
       let x3 = ((M.sel cs0.weth9_cel_balanceOf sender) + value) in
       let x1 = (M.upd x1 x2 x3) in
       x1)) /\ (l1 == ((mk_event null weth9_cel_Deposit (sender, value))::l0)))
-      /\ (cs0.weth9_cel_name == cs1.weth9_cel_name)
       /\ (cs0.weth9_cel_symbol == cs1.weth9_cel_symbol)
-      /\ (cs0.weth9_cel_allowance == cs1.weth9_cel_allowance)
+      /\ (cs0.weth9_cel_name == cs1.weth9_cel_name)
       /\ (cs0.weth9_cel_decimals == cs1.weth9_cel_decimals)
+      /\ (cs0.weth9_cel_allowance == cs1.weth9_cel_allowance)
   ))
 =
 let b = get_balance self in
@@ -265,15 +265,14 @@ else
  (M.equal cs1.weth9_cel_balanceOf cs0.weth9_cel_balanceOf)
 ))
       /\ (b1 <= b0)
-      /\ (cs0.weth9_cel_name == cs1.weth9_cel_name)
       /\ (cs0.weth9_cel_symbol == cs1.weth9_cel_symbol)
-      /\ (cs0.weth9_cel_allowance == cs1.weth9_cel_allowance)
+      /\ (cs0.weth9_cel_name == cs1.weth9_cel_name)
       /\ (cs0.weth9_cel_decimals == cs1.weth9_cel_decimals)
+      /\ (cs0.weth9_cel_allowance == cs1.weth9_cel_allowance)
   ))
 =
 let cs = get_contract self in
 let balance = get_balance self in
-let bal:uint = (balance) in
 let _ = (if ((M.sel cs.weth9_cel_balanceOf sender) < _wad) then begin
 revert "Insufficient balance";
 () end
@@ -286,7 +285,7 @@ let balance = get_balance self in
 let _ = emit weth9_cel_Withdrawal (sender, _wad) in
 let cs = get_contract self in
 let balance = get_balance self in
-let _ = (if (balance < bal) then begin
+let _ = (if (balance < cs.weth9_cel_totalBalance) then begin
 let x1 = ((_sub (M.sel cs.weth9_cel_balanceOf sender) _wad)) in
 let balanceOf = cs.weth9_cel_balanceOf in
 let _ = weth9_cel_set_balanceOf self (M.upd balanceOf sender x1) in
@@ -367,10 +366,10 @@ let approve (self:weth9_cel_address) (sender:address{sender <> null}) (value:uin
         let x1 = (M.upd x1 x2 x3) in
         x1))
       /\ (bst0.balances == bst1.balances)
-      /\ (cs0.weth9_cel_totalBalance == cs1.weth9_cel_totalBalance)
-      /\ (cs0.weth9_cel_decimals == cs1.weth9_cel_decimals)
-      /\ (cs0.weth9_cel_symbol == cs1.weth9_cel_symbol)
       /\ (cs0.weth9_cel_name == cs1.weth9_cel_name)
+      /\ (cs0.weth9_cel_decimals == cs1.weth9_cel_decimals)
+      /\ (cs0.weth9_cel_totalBalance == cs1.weth9_cel_totalBalance)
+      /\ (cs0.weth9_cel_symbol == cs1.weth9_cel_symbol)
       /\ (cs0.weth9_cel_balanceOf == cs1.weth9_cel_balanceOf)
   ))
 =
@@ -448,9 +447,9 @@ let transferFrom (self:weth9_cel_address) (sender:address{sender <> null}) (valu
       /\ ((transferFromPost cs0.weth9_cel_balanceOf cs1.weth9_cel_balanceOf cs0.weth9_cel_allowance cs1.weth9_cel_allowance sender _src _dst _wad))
       /\ (bst0.balances == bst1.balances)
       /\ (cs0.weth9_cel_totalBalance == cs1.weth9_cel_totalBalance)
-      /\ (cs0.weth9_cel_symbol == cs1.weth9_cel_symbol)
       /\ (cs0.weth9_cel_name == cs1.weth9_cel_name)
       /\ (cs0.weth9_cel_decimals == cs1.weth9_cel_decimals)
+      /\ (cs0.weth9_cel_symbol == cs1.weth9_cel_symbol)
   ))
 =
 let cs = get_contract self in
