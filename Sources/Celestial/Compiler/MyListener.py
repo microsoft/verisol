@@ -192,62 +192,64 @@ class MyListener(CelestialParserListener):
 
             elif f.methodDecl():
                 methodDeclContext = f.methodDecl()
-                methodName = methodDeclContext.name.Iden().getText()
+                if methodDeclContext.name:
+                    methodName = methodDeclContext.name.Iden().getText()
 
-                # check if the identifier has been declared before
-                if self.checkIdentifierDeclared(methodName, "global"):
-                    revert ("<ERROR>: Identifier '" + methodName + "' already used", f.methodDecl())
+                    # check if the identifier has been declared before
+                    if self.checkIdentifierDeclared(methodName, "global"):
+                        revert ("<ERROR>: Identifier '" + methodName + "' already used", f.methodDecl())
 
-                # typechecking method argument types
-                if methodDeclContext.methodParamList():
-                    for parameter in methodDeclContext.methodParamList().methodParam():
-                        if (parameter.datatype().MAP()):
-                            revert ("<ERROR>: Methods cannot take maps as arguments", f.methodDecl())
-                        elif (parameter.datatype().arrayType):
-                            revert ("<ERROR>: Methods cannot take arrays as arguments", f.methodDecl())
-                        elif (parameter.datatype().EVENTLOG()):
-                            revert ("<ERROR>: Methods cannot take argument of type eventlog", f.methodDecl())
-                        elif (parameter.datatype().EVENT()):
-                            revert ("<ERROR>: Methods cannot take argument of type event", f.methodDecl())
-                if methodDeclContext.datatype():
-                    # typechecking method return types
-                    if methodDeclContext.datatype().arrayType or methodDeclContext.datatype().MAP():
-                        revert ("<ERROR>: Methods cannot return arrays/maps", f.methodDecl())
-                    methodReturnType = methodDeclContext.datatype().getText()
-                else:
-                    methodReturnType = "void"
+                    # typechecking method argument types
+                    if methodDeclContext.methodParamList():
+                        for parameter in methodDeclContext.methodParamList().methodParam():
+                            if (parameter.datatype().MAP()):
+                                revert ("<ERROR>: Methods cannot take maps as arguments", f.methodDecl())
+                            elif (parameter.datatype().arrayType):
+                                revert ("<ERROR>: Methods cannot take arrays as arguments", f.methodDecl())
+                            elif (parameter.datatype().EVENTLOG()):
+                                revert ("<ERROR>: Methods cannot take argument of type eventlog", f.methodDecl())
+                            elif (parameter.datatype().EVENT()):
+                                revert ("<ERROR>: Methods cannot take argument of type event", f.methodDecl())
+                    if methodDeclContext.datatype():
+                        # typechecking method return types
+                        if methodDeclContext.datatype().arrayType or methodDeclContext.datatype().MAP():
+                            revert ("<ERROR>: Methods cannot return arrays/maps", f.methodDecl())
+                        methodReturnType = methodDeclContext.datatype().getText()
+                    else:
+                        methodReturnType = "void"
 
-                # if not declared earlier, write to methods
-                self.FSTCodegen.methods[methodName] = methodDeclContext.datatype() # None if void
-                self.methodsOfContract[self.currentContract][methodName] = ()
-                self.FSTCodegen.methodsOfContract[self.currentContract][methodName] = ()
+                    # if not declared earlier, write to methods
+                    self.FSTCodegen.methods[methodName] = methodDeclContext.datatype() # None if void
+                    self.methodsOfContract[self.currentContract][methodName] = ()
+                    self.FSTCodegen.methodsOfContract[self.currentContract][methodName] = ()
 
-                returnVar = ""
-                if methodDeclContext.returnval:
-                    returnVar = methodDeclContext.returnval.Iden().getText()
-                    self.symbols.append(Symbol(returnVar, methodReturnType, _params=[], _scope=methodName, _isParam=False, _isMethod=False, _isFunction=False, _isInvariant=False, _isMap=False, _mapKeyType="", _isEvent=False))
+                    returnVar = ""
+                    if methodDeclContext.returnval:
+                        returnVar = methodDeclContext.returnval.Iden().getText()
+                        self.symbols.append(Symbol(returnVar, methodReturnType, _params=[], _scope=methodName, _isParam=False, _isMethod=False, _isFunction=False, _isInvariant=False, _isMap=False, _mapKeyType="", _isEvent=False))
 
-                # generating method signature
-                params = []
-                if methodDeclContext.methodParamList():
-                    for parameter in methodDeclContext.methodParamList().methodParam():
-                        params.append(parameter.datatype().getText())
-                self.symbols.append(Symbol(methodName, methodReturnType, params, "global", _isParam=False, _isMethod=True, _isFunction=False, _isInvariant=False, _isMap=False, _mapKeyType="", _isEvent=False, _returnVar=returnVar))
+                    # generating method signature
+                    params = []
+                    if methodDeclContext.methodParamList():
+                        for parameter in methodDeclContext.methodParamList().methodParam():
+                            params.append(parameter.datatype().getText())
+                    self.symbols.append(Symbol(methodName, methodReturnType, params, "global", _isParam=False, _isMethod=True, _isFunction=False, _isInvariant=False, _isMap=False, _mapKeyType="", _isEvent=False, _returnVar=returnVar))
 
-                # adding the method to methodsOfContract
-                self.methodsOfContract[self.currentContract][methodName] = (methodReturnType, params)
-                self.FSTCodegen.methodsOfContract[self.currentContract][methodName] = (methodReturnType, params)
+                    # adding the method to methodsOfContract
+                    self.methodsOfContract[self.currentContract][methodName] = (methodReturnType, params)
+                    self.FSTCodegen.methodsOfContract[self.currentContract][methodName] = (methodReturnType, params)
 
-                # adding it's arguments to the symbol table
-                if methodDeclContext.methodParamList():
-                    params = methodDeclContext.methodParamList().methodParam()
-                    for param in params:
-                        paramName = param.iden().Iden().getText()
-                        if self.checkIdentifierDeclared(paramName, "global"):
-                            revert ("<ERROR>: Variable '" + paramName + "' redeclared", f.methodDecl())
-                        paramType = param.datatype().getText()
-                        self.symbols.append(Symbol(paramName, paramType, [], methodName, True, False))
-            
+                    # adding it's arguments to the symbol table
+                    if methodDeclContext.methodParamList():
+                        params = methodDeclContext.methodParamList().methodParam()
+                        for param in params:
+                            paramName = param.iden().Iden().getText()
+                            if self.checkIdentifierDeclared(paramName, "global"):
+                                revert ("<ERROR>: Variable '" + paramName + "' redeclared", f.methodDecl())
+                            paramType = param.datatype().getText()
+                            self.symbols.append(Symbol(paramName, paramType, [], methodName, True, False))
+                #TODO: Else ensure fallback doesn't have arguments
+                # also ensure there is only one of them defined
                 if methodDeclContext.spec() and methodDeclContext.spec().rreverts:
                     self.reentrancyReverts.append(methodDeclContext.spec().rreverts)
 
@@ -305,6 +307,9 @@ class MyListener(CelestialParserListener):
                 else:
                     self.symbols.append(Symbol(_name=fieldName, _type=fieldType, _scope="global"))
                 self.fieldsOfContract[self.currentContract].append((fieldName, fieldType, False))
+                if f.varDecl().expr():
+                    # TODO: Typecheck this expression, and check if its type matches the field type
+                    self.FSTCodegen.initialFieldValues[fieldName] = f.varDecl().expr()
 
             elif f.structDecl():
                 structContext = f.structDecl()
@@ -591,7 +596,12 @@ class MyListener(CelestialParserListener):
         Writes the method spec to the F* file
         """
 
-        methodName = ctx.name.Iden().getText()
+        if ctx.name:
+            methodName = ctx.name.Iden().getText()
+        elif ctx.RECEIVE():
+            methodName = "receive"
+        else:
+            methodName = "fallback"
         self.currentScope = methodName
 
         if ctx.spec():
@@ -1045,7 +1055,7 @@ class MyListener(CelestialParserListener):
                 revert ("<ERROR>: Not a valid map/array", ctx)
         
         # method=iden LPAREN rvalueList? RPAREN
-        elif (ctx.method):
+        elif (ctx.method and not ctx.DOT()):
             methodName = ctx.method.Iden().getText()
 
             if methodName in self.contracts: # ContractName(values_of_fields)
@@ -1331,6 +1341,11 @@ class MyListener(CelestialParserListener):
 
         elif (ctx.PAYABLE()):
             return self.exprType(ctx.expr(0), scope)
+
+        elif (ctx.method and ctx.DOT()):
+            if ctx.iden(0).Iden().getText() == "abi":
+                if ctx.method.Iden().getText() in ["encode", "encodePacked", "encodeWithSelector", "encodeWithSignature"]:
+                    return "bytes"
 
     def lvalueType(self, ctx:CelestialParser.LvalueContext, scope):
         """
@@ -1720,6 +1735,8 @@ class MyListener(CelestialParserListener):
             return "void"
         elif identifier in self.enums:
             return identifier
+        elif identifier in ["fallback", "receive"]:
+            return "void" 
         for sym in self.symbols:
             if sym.name == identifier and (sym.scope == scope or sym.scope == "global"):
                 return sym.type
