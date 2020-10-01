@@ -6,23 +6,19 @@ pragma solidity >=0.5.0 <0.7.0;
 
 contract ERC20_Cel
 {
-    receive() external payable {}
-    bool _lock_ = false;
-
-    modifier isUnlocked () {
-        require (_lock_ == false);
-        _;
-    }
-
     mapping (address => uint) balances;
     mapping (address => mapping (address => uint)) allowances;
     uint totalSupply;
 
-    function getTotalSupply () public isUnlocked returns (uint) {
+    function _msgSender () private view returns (address ret) {
+        return msg.sender;
+    }
+
+    function getTotalSupply () public returns (uint) {
         return totalSupply;
     }
 
-    function balanceOf (address account) public isUnlocked returns (uint) {
+    function balanceOf (address account) public returns (uint) {
         return balances[account];
     }
 
@@ -35,7 +31,7 @@ contract ERC20_Cel
         return;
     }
 
-    function mint (address _account, uint _amount) public isUnlocked {
+    function mint (address _account, uint _amount) public {
         if (_account == address(0))
         {
             revert ("ERC20: mint to the zero address");
@@ -52,7 +48,7 @@ contract ERC20_Cel
         return;
     }
 
-    function burn (address _account, uint _amount) public isUnlocked {
+    function burn (address _account, uint _amount) public {
         if (_account == address(0))
         {
             revert ("ERC20: burn from the zero address");
@@ -74,7 +70,7 @@ contract ERC20_Cel
         return;
     }
 
-    function burnFrom (address _account, uint _amount) public isUnlocked {
+    function burnFrom (address _account, uint _amount) public {
         burn(_account, _amount);
         if (_account != address(0) && msg.sender != address(0) && allowances[_account][msg.sender] >= _amount)
         {
@@ -83,7 +79,7 @@ contract ERC20_Cel
         return;
     }
 
-    function transfer (address _to, uint _amount) public isUnlocked returns (bool) {
+    function transfer_ (address _to, uint _amount) public returns (bool) {
         if (_to == address(0))
         {
             revert ("Sender/Recipient must be non-null");
@@ -95,11 +91,11 @@ contract ERC20_Cel
         return true;
     }
 
-    function allowance (address _owner, address _spender) public isUnlocked returns (uint) {
+    function allowance (address _owner, address _spender) public returns (uint) {
         return allowances[_owner][_spender];
     }
 
-    function approve (address _spender, uint _amount) public isUnlocked returns (bool) {
+    function approve (address _spender, uint _amount) public returns (bool) {
         if (_spender != address(0))
         {
             _approve(msg.sender, _spender, _amount);
@@ -107,7 +103,7 @@ contract ERC20_Cel
         return true;
     }
 
-    function transferFrom (address _from, address _to, uint _amount) public isUnlocked returns (bool) {
+    function transferFrom (address _from, address _to, uint _amount) public returns (bool) {
         if (_from == address(0) || _to == address(0))
         {
             revert ("<ErrorLog> from/to addresses are null");
@@ -131,7 +127,7 @@ contract ERC20_Cel
         return true;
     }
 
-    function increaseAllowance (address _spender, uint _addedValue) public isUnlocked returns (bool) {
+    function increaseAllowance (address _spender, uint _addedValue) public returns (bool) {
         if (_spender != address(0) && allowances[msg.sender][_spender] <= (~uint256(0)) - _addedValue)
         {
             _approve(msg.sender, _spender, allowances[msg.sender][_spender] + _addedValue);
@@ -139,7 +135,7 @@ contract ERC20_Cel
         return true;
     }
 
-    function decreaseAllowance (address _spender, uint _subtractedValue) public isUnlocked returns (bool) {
+    function decreaseAllowance (address _spender, uint _subtractedValue) public returns (bool) {
         if (_spender != address(0) && allowances[msg.sender][_spender] >= _subtractedValue)
         {
             _approve(msg.sender, _spender, allowances[msg.sender][_spender] - _subtractedValue);
