@@ -45,6 +45,18 @@ namespace SolToBoogie
                 var contract = str.Substring(str.IndexOf("@") + 1);
                 ignoredMethods.Add(Tuple.Create(method, contract));
             }
+
+            foreach (var arg in args.Where(x => x.StartsWith("/SliceFunctions:")))
+            {
+                var str = arg.Substring("/SliceFunctions:".Length);
+                String[] fns = str.Split(",");
+                translatorFlags.PerformFunctionSlice = true;
+                foreach (String fn in fns)
+                {
+                    translatorFlags.SliceFunctionNames.Add(fn);
+                }
+            }
+            
             if (args.Any(x => x.StartsWith("/ignoreMethod:")))
             {
                 Console.WriteLine($"Ignored method/contract pairs ==> \n\t {string.Join(",", ignoredMethods.Select(x => x.Item1 + "@" + x.Item2))}");
@@ -210,6 +222,11 @@ namespace SolToBoogie
             if (args.Any(x => x.Equals("/generateERC20Spec")))
             {
                 translatorFlags.GenerateERC20Spec = true;
+            }
+
+            if (args.Any(x => x.Equals("/modelAssemblyAsHavoc")))
+            {
+                translatorFlags.AssemblyAsHavoc = true;
             }
 
             translatorFlags.PerformContractInferce = args.Any(x => x.StartsWith("/contractInfer"));

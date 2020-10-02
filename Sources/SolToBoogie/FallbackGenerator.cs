@@ -283,12 +283,18 @@ namespace SolToBoogie
 
                 if (function != null)
                 {
+                    if (context.TranslateFlags.PerformFunctionSlice &&
+                        !context.TranslateFlags.SliceFunctions.Contains(function))
+                    {
+                        continue;
+                    }
+                    
                     List<BoogieExpr> arguments = new List<BoogieExpr>()
-                {
-                    new BoogieIdentifierExpr(inParams[1].Name),
-                    new BoogieIdentifierExpr(inParams[0].Name),
-                    new BoogieIdentifierExpr(inParams[2].Name)
-                };
+                    {
+                        new BoogieIdentifierExpr(inParams[1].Name),
+                        new BoogieIdentifierExpr(inParams[0].Name),
+                        new BoogieIdentifierExpr(inParams[2].Name)
+                    };
 
                     string callee = TransUtils.GetCanonicalFunctionName(function, context);
                     // to.fallback(from, amount), thus need to switch param0 and param1

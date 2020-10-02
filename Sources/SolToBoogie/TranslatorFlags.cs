@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using SolidityAST;
 
 namespace SolToBoogie
 {
@@ -42,8 +43,21 @@ namespace SolToBoogie
             PrePostHarness = false;
             GenerateGetters = false;
             GenerateERC20Spec = false;
+            SliceFunctionNames = new HashSet<string>();
+            SliceFunctions = new HashSet<FunctionDefinition>();
+            SliceModifiers = new HashSet<ModifierDefinition>();
+            PerformFunctionSlice = false;
+            AssemblyAsHavoc = false;
         }
+
+        public bool PerformFunctionSlice { get; set; }
         
+        public bool AssemblyAsHavoc { get; set; }
+        
+        public HashSet<ModifierDefinition> SliceModifiers { get; set; }
+        public HashSet<FunctionDefinition> SliceFunctions { get; set; }
+        
+        public HashSet<String> SliceFunctionNames { get; set; }
         public bool UseNumericOperators { get; set; }
         public bool NoNonlinearArith { get; set; }
         

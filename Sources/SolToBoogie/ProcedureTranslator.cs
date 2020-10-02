@@ -1,5 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
+
+using Newtonsoft.Json.Linq;
+
 namespace SolToBoogie
 {
     using System;
@@ -451,6 +454,18 @@ namespace SolToBoogie
         }
         public override bool Visit(FunctionDefinition node)
         {
+            if (context.TranslateFlags.PerformFunctionSlice)
+            {
+                /*if (!node.IsConstructor && !node.IsFallback && !context.TranslateFlags.SliceFunctions.Contains(node))
+                {
+                    return false;
+                } */
+                if (!context.TranslateFlags.SliceFunctions.Contains(node))
+                {
+                    return false;
+                }
+            }
+            
             preTranslationAction(node);
             // VeriSolAssert(node.IsConstructor || node.Modifiers.Count <= 1, "Multiple Modifiers are not supported yet");
             VeriSolAssert(currentContract != null);
@@ -680,6 +695,14 @@ namespace SolToBoogie
 
         public override bool Visit(ModifierDefinition node)
         {
+            if (context.TranslateFlags.PerformFunctionSlice)
+            {
+                if (!context.TranslateFlags.SliceModifiers.Contains(node))
+                {
+                    return false;
+                }
+            }
+            
             preTranslationAction(node);
             currentBoogieProc = node.Name + "_pre";
             boogieToLocalVarsMap[currentBoogieProc] = new List<BoogieVariable>();
@@ -1401,6 +1424,11 @@ namespace SolToBoogie
         // TODO: refactor this code with the code to generate constructor code when definition is present
         private void GenerateDefaultConstructor(ContractDefinition contract)
         {
+            if (context.TranslateFlags.PerformFunctionSlice && context.TranslateFlags.PrePostHarness)
+            {
+                return;
+            }
+            
             // generate the internal one without base constructors
             string procName = contract.Name + "_" + contract.Name + "_NoBaseCtor";
             currentBoogieProc = procName;
@@ -1887,6 +1915,43 @@ namespace SolToBoogie
             }
         }
 
+        public BoogieStmtList performAssignment(Assignment node, BoogieExpr lhs, BoogieExpr rhs)
+        {
+            BoogieStmtList stmtList = new BoogieStmtList();
+            
+            switch (node.Operator)
+            {
+                case "=":
+                    stmtList.AddStatement(new BoogieAssignCmd(lhs, rhs));
+                    break;
+                case "+=":
+                    BoogieExpr addExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, lhs, rhs);
+                    addExpr = AddModuloOp(node.LeftHandSide, addExpr, node.LeftHandSide.TypeDescriptions);
+                    stmtList.AddStatement(new BoogieAssignCmd(lhs, addExpr));
+                    break;
+                case "-=":
+                    BoogieExpr subExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, lhs, rhs);
+                    subExpr = AddModuloOp(node.LeftHandSide, subExpr, node.LeftHandSide.TypeDescriptions);
+                    stmtList.AddStatement(new BoogieAssignCmd(lhs, subExpr));
+                    break;
+                case "*=":
+                    BoogieExpr mulExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.MUL, lhs, rhs);
+                    mulExpr = AddModuloOp(node.LeftHandSide, mulExpr, node.LeftHandSide.TypeDescriptions);
+                    stmtList.AddStatement(new BoogieAssignCmd(lhs, mulExpr));
+                    break;
+                case "/=":
+                    BoogieExpr divExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.DIV, lhs, rhs);
+                    divExpr = AddModuloOp(node.LeftHandSide, divExpr, node.LeftHandSide.TypeDescriptions);
+                    stmtList.AddStatement(new BoogieAssignCmd(lhs, divExpr));
+                    break;
+                default:
+                    VeriSolAssert(false,  $"Unknown assignment operator: {node.Operator}");
+                    break;
+            }
+
+            return stmtList;
+        }
+
         public override bool Visit(Assignment node)
         {
             preTranslationAction(node);
@@ -1935,29 +2000,29 @@ namespace SolToBoogie
                 // a Boolean to decide is we needed to use tmpVar
                 bool usedTmpVar = true;
 
-                if (IsContractConstructor(funcCall))
+                if (FunctionCallHelper.IsContractConstructor(funcCall))
                 {
                     VeriSolAssert(!isTupleAssignment, "Not expecting a tuple for Constructors");
                     TranslateNewStatement(funcCall, tmpVars[0]);
                 }
-                else if (IsStructConstructor(funcCall))
+                else if (FunctionCallHelper.IsStructConstructor(funcCall))
                 {
                     VeriSolAssert(!isTupleAssignment, "Not expecting a tuple for Constructors");
                     TranslateStructConstructor(funcCall, tmpVars[0]);
                 }
-                else if (IsKeccakFunc(funcCall))
+                else if (FunctionCallHelper.IsKeccakFunc(funcCall))
                 {
                     VeriSolAssert(!isTupleAssignment, "Not expecting a tuple for Keccak256");
                     TranslateKeccakFuncCall(funcCall, lhs[0]); //this is not a procedure call in Boogie
                     usedTmpVar = false;
                 }
-                else if (IsAbiEncodePackedFunc(funcCall))
+                else if (FunctionCallHelper.IsAbiEncodePackedFunc(funcCall))
                 {
                     TranslateAbiEncodedFuncCall(funcCall, tmpVars[0]); //this is not a procedure call in Boogie
                     VeriSolAssert(!isTupleAssignment, "Not expecting a tuple for abi.encodePacked");
                     usedTmpVar = false;
                 }
-                else if (IsTypeCast(funcCall))
+                else if (FunctionCallHelper.IsTypeCast(funcCall))
                 {
                     // assume the type cast is used as: obj = C(var);
                     VeriSolAssert(!isTupleAssignment, "Not expecting a tuple for type cast");
@@ -1978,8 +2043,7 @@ namespace SolToBoogie
                 {
                     if (usedTmpVar || !(lhs[0] is BoogieIdentifierExpr)) //bad bug: was && before!!  
                     {
-                        VeriSolAssert(node.Operator.Equals("="), "I don't know why this is only doing assignment");
-                        currentStmtList.AddStatement(new BoogieAssignCmd(lhs[0], tmpVars[0]));
+                        currentStmtList.AppendStmtList(performAssignment(node, lhs[0], tmpVars[0]));
                     }
                 } else
                 {
@@ -2005,43 +2069,14 @@ namespace SolToBoogie
                     VeriSolAssert(false, "Not implemented...currently only support assignment of tuples as returns of a function call");
 
                 BoogieExpr rhs = TranslateExpr(node.RightHandSide);
-                BoogieStmtList stmtList = new BoogieStmtList();
-                BoogieExpr assignedExpr = new BoogieExpr();
-                switch (node.Operator)
-                {
-                    case "=":
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], rhs));
-                        break;
-                    case "+=":
-                        assignedExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, lhs[0], rhs);
-                        assignedExpr = AddModuloOp(node.LeftHandSide, assignedExpr, node.LeftHandSide.TypeDescriptions);
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], assignedExpr));
-                        break;
-                    case "-=":
-                        assignedExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, lhs[0], rhs);
-                        assignedExpr = AddModuloOp(node.LeftHandSide, assignedExpr, node.LeftHandSide.TypeDescriptions);
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], assignedExpr));
-                        break;
-                    case "*=":
-                        assignedExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.MUL, lhs[0], rhs);
-                        assignedExpr = AddModuloOp(node.LeftHandSide, assignedExpr, node.LeftHandSide.TypeDescriptions);
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], assignedExpr));
-                        break;
-                    case "/=":
-                        assignedExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.DIV, lhs[0], rhs);
-                        assignedExpr = AddModuloOp(node.LeftHandSide, assignedExpr, node.LeftHandSide.TypeDescriptions);
-                        stmtList.AddStatement(new BoogieAssignCmd(lhs[0], assignedExpr));
-                        break;
-                    default:
-                        VeriSolAssert(false,  $"Unknown assignment operator: {node.Operator}");
-                        break;
-                }
-                
+
                 if (context.TranslateFlags.InstrumentSums)
                 {
                     updateAssignedSums(BoogieBinaryOperation.Opcode.SUB, lhsExprs, lhs);
                 }
-                currentStmtList.AppendStmtList(stmtList);
+                
+                currentStmtList.AppendStmtList(performAssignment(node, lhs[0], rhs));
+                
                 if (context.TranslateFlags.InstrumentSums)
                 {
                     updateAssignedSums(BoogieBinaryOperation.Opcode.ADD, lhsExprs, lhs);
@@ -2072,7 +2107,7 @@ namespace SolToBoogie
 
         private void TranslateFunctionCalls(FunctionCall funcCall, List<BoogieIdentifierExpr> outParams)
         {
-            if (IsExternalFunctionCall(funcCall))
+            if (FunctionCallHelper.IsExternalFunctionCall(context, funcCall))
             {
                 TranslateExternalFunctionCall(funcCall, outParams);
             }
@@ -2085,8 +2120,12 @@ namespace SolToBoogie
         public override bool Visit(Return node)
         {
             preTranslationAction(node);
-            if (node.Expression == null)
+            if (node.Expression == null || currentFunction.ReturnParameters.Parameters.Count == 0)
             {
+                if (node.Expression != null)
+                {
+                    node.Expression.Accept(this);
+                }
                 //Void
                 BoogieReturnCmd returnCmd = new BoogieReturnCmd();
                 if (currentPostlude == null)
@@ -2517,7 +2556,7 @@ namespace SolToBoogie
         private BoogieExpr TranslateExpr(Expression expr)
         {
             currentExpr = null;
-            if (expr is FunctionCall && IsTypeCast((FunctionCall) expr))
+            if (expr is FunctionCall && FunctionCallHelper.IsTypeCast((FunctionCall) expr))
             {
                 expr.Accept(this);
                 VeriSolAssert(currentExpr != null);
@@ -2835,20 +2874,20 @@ namespace SolToBoogie
                     emitRevertLogic(currentStmtList);
                 }
             }
-            else if (IsImplicitFunc(node))
+            else if (FunctionCallHelper.IsImplicitFunc(node))
             {
                 BoogieIdentifierExpr tmpVarExpr = MkNewLocalVariableForFunctionReturn(node);
                 bool isElementaryCast = false;  
 
-                if (IsContractConstructor(node)) {
+                if (FunctionCallHelper.IsContractConstructor(node)) {
                     TranslateNewStatement(node, tmpVarExpr);
-                } else if (IsTypeCast(node)) {
+                } else if (FunctionCallHelper.IsTypeCast(node)) {
                     TranslateTypeCast(node, tmpVarExpr, out isElementaryCast);
-                } else if (IsAbiEncodePackedFunc(node)) {
+                } else if (FunctionCallHelper.IsAbiEncodePackedFunc(node)) {
                     TranslateAbiEncodedFuncCall(node, tmpVarExpr);
-                } else if (IsKeccakFunc(node)) {
+                } else if (FunctionCallHelper.IsKeccakFunc(node)) {
                     TranslateKeccakFuncCall(node, tmpVarExpr);
-                } else if (IsStructConstructor(node)) {
+                } else if (FunctionCallHelper.IsStructConstructor(node)) {
                     TranslateStructConstructor(node, tmpVarExpr);
                 } else
                 {
@@ -2883,7 +2922,7 @@ namespace SolToBoogie
             {
                 VeriSolAssert(false, "low-level delegatecall statements not supported...");
             }
-            else if (IsBuiltInTransferFunc(functionName, node))
+            else if (FunctionCallHelper.IsBuiltInTransferFunc(functionName, node))
             {
                 TranslateTransferCallStmt(node);
             }
@@ -2898,7 +2937,7 @@ namespace SolToBoogie
             {
                 TranslateDynamicArrayPush(node);
             }
-            else if (IsExternalFunctionCall(node))
+            else if (FunctionCallHelper.IsExternalFunctionCall(context, node))
             {
                 // external function calls
 
@@ -2934,17 +2973,6 @@ namespace SolToBoogie
                     TranslateInternalFunctionCall(node);
                 }
 
-            }
-            return false;
-        }
-
-        private bool IsBuiltInTransferFunc(string functionName, FunctionCall node)
-        {
-            if (!functionName.Equals("transfer")) return false;
-            if (node.Expression is MemberAccess member)
-            {
-                if (member.Expression.TypeDescriptions.IsAddress())
-                    return true;
             }
             return false;
         }
@@ -3045,50 +3073,6 @@ namespace SolToBoogie
         /// </summary>
         /// <param name="node"></param>
         /// <returns></returns>
-        private bool IsImplicitFunc(FunctionCall node)
-        {
-            return
-                IsKeccakFunc(node) ||
-                IsAbiEncodePackedFunc(node) ||
-                IsTypeCast(node) ||
-                IsStructConstructor(node) ||
-                IsContractConstructor(node);
-         }
-
-        private bool IsContractConstructor(FunctionCall node)
-        {
-            return node.Expression is NewExpression;
-        }
-
-        private bool IsStructConstructor(FunctionCall node)
-        {
-            return node.Kind.Equals("structConstructorCall");
-        }
-
-        private bool IsKeccakFunc(FunctionCall node)
-        {
-            if (node.Expression is Identifier ident)
-            {
-                return ident.Name.Equals("keccak256");
-            }
-            return false;
-        }
-
-        private bool IsAbiEncodePackedFunc(FunctionCall node)
-        {
-            if (node.Expression is MemberAccess member)
-            {
-                if (member.Expression is Identifier ident)
-                {
-                    if (ident.Name.Equals("abi"))
-                    {
-                        if (member.MemberName.Equals("encodePacked"))
-                            return true;
-                    }
-                }
-            }
-            return false;
-        }
 
         private void TranslateKeccakFuncCall(FunctionCall funcCall, BoogieExpr lhs)
         {
@@ -3438,70 +3422,6 @@ namespace SolToBoogie
             currentStmtList.AddStatement(assumeCmd);
         }
 
-        private bool IsExternalFunctionCall(FunctionCall node)
-        {
-            if (node.Expression is MemberAccess memberAccess)
-            {
-                if (memberAccess.Expression is Identifier identifier)
-                {
-                    if (identifier.Name == "this")
-                    {
-                        return true;
-                    }
-
-                    if (identifier.Name == "super")
-                    {
-                        return true;
-                    }
-                    var contract = context.GetASTNodeById(identifier.ReferencedDeclaration) as ContractDefinition;
-                    if (contract == null)
-                    {
-                        return true;
-                    }
-                }
-                else if (memberAccess.Expression is MemberAccess structSelect)
-                {
-                    //a.b.c.foo(...)
-                    //TODO: do we want to check that the contract the struct variable is declared
-                    // is not in the "context"? Why this isn't done for IndexAccess?
-                    return true;
-                }
-                else if (memberAccess.Expression.ToString().Equals("msg.sender"))
-                {
-                    // calls can be of the form "msg.sender.call()" or "msg.sender.send()" or "msg.sender.transfer()"
-                    return true;
-                }
-                else if (memberAccess.Expression is FunctionCall)
-                {
-                    // TODO: example?
-                    return true;
-                } else if (memberAccess.Expression is IndexAccess)
-                {
-                    //a[i].foo(..)
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private ContractDefinition IsLibraryFunctionCall(FunctionCall node)
-        {
-            if (node.Expression is MemberAccess memberAccess)
-            {
-                if (memberAccess.Expression is Identifier identifier)
-                {
-                    var contract = context.GetASTNodeById(identifier.ReferencedDeclaration) as ContractDefinition;
-                    // a Library is treated as an external function call
-                    // we need to do it here as the Lib.Foo, Lib is not an expression but name of a contract
-                    if (contract.ContractKind == EnumContractKind.LIBRARY)
-                    {
-                        return contract;
-                    }
-                }
-            }
-            return null;
-        }
-
         private void TranslateExternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
             VeriSolAssert(node.Expression is MemberAccess, $"Expecting a member access expression here {node.Expression.ToString()}");
@@ -3517,13 +3437,13 @@ namespace SolToBoogie
                 TranslateSendCallStmt(node, outParams[0], TranslateExpr(node.Arguments[0]));
                 return;
             }
-            else if (IsBuiltInTransferFunc(memberAccess.MemberName, node))
+            else if (FunctionCallHelper.IsBuiltInTransferFunc(memberAccess.MemberName, node))
             {
                 TranslateTransferCallStmt(node); // this may be unreachable as we already trap transfer directly
                 return;
             }
 
-            if (IsUsingBasedLibraryCall(memberAccess))
+            if (FunctionCallHelper.IsUsingBasedLibraryCall(memberAccess))
             {
                 TranslateUsingLibraryCall(node, outParams);
                 return;
@@ -3654,21 +3574,13 @@ namespace SolToBoogie
             // throw new NotImplementedException("not done implementing using A for B yet");
         }
 
-        private bool IsUsingBasedLibraryCall(MemberAccess memberAccess)
-        {
-            // since we only permit "using A for B" for non-contract types
-            // this is sufficient, but not necessary in general since non
-            // contracts (including libraries) do not have support methods
-            return !memberAccess.Expression.TypeDescriptions.IsContract();
-        }
-
         private void TranslateInternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
             List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
 
             // a Library is treated as an external function call
             // we need to do it here as the Lib.Foo, Lib is not an expression but name of a contract
-            if (IsLibraryFunctionCall(node) != null)
+            if (FunctionCallHelper.IsLibraryFunctionCall(context, node) != null)
             {
                 arguments[1] = arguments[0]; //msg.sender is also this 
             }
@@ -3685,13 +3597,13 @@ namespace SolToBoogie
                 // assume the structAssignment is used as: s = S(args);
                 TranslateStructConstructor(node, outParams[0]);
             }
-            else if (IsDynamicDispatching(node))
+            else if (FunctionCallHelper.IsDynamicDispatching(node))
             {
                 TranslateDynamicDispatchCall(node, outParams, arguments, true, false, new BoogieIdentifierExpr("this"));
             }
-            else if (IsStaticDispatching(node))
+            else if (FunctionCallHelper.IsStaticDispatching(context, node))
             {
-                ContractDefinition contract = GetStaticDispatchingContract(node);
+                ContractDefinition contract = FunctionCallHelper.GetStaticDispatchingContract(context, node);
                 string functionName = TransUtils.GetFuncNameFromFuncCall(node);
                 string callee = functionName + "_" + contract.Name;
                 BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, outParams);
@@ -3836,44 +3748,6 @@ namespace SolToBoogie
             }
 
             return false;
-        }
-
-        private bool IsStaticDispatching(FunctionCall node)
-        {
-            if (node.Expression is MemberAccess memberAccess)
-            {
-                if (memberAccess.Expression is Identifier ident)
-                {
-                    if (context.GetASTNodeById(ident.ReferencedDeclaration) is ContractDefinition)
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        private ContractDefinition GetStaticDispatchingContract(FunctionCall node)
-        {
-            VeriSolAssert(node.Expression is MemberAccess);
-            MemberAccess memberAccess = node.Expression as MemberAccess;
-
-            Identifier contractId = memberAccess.Expression as Identifier;
-            VeriSolAssert(contractId != null, $"Unknown contract name: {memberAccess.Expression}");
-
-            ContractDefinition contract = context.GetASTNodeById(contractId.ReferencedDeclaration) as ContractDefinition;
-            VeriSolAssert(contract != null);
-            return contract;
-        }
-
-        private bool IsDynamicDispatching(FunctionCall node)
-        {
-            return node.Expression is Identifier;
-        }
-
-        private bool IsTypeCast(FunctionCall node)
-        {
-            return node.Kind.Equals("typeConversion");
         }
 
 
@@ -4534,6 +4408,31 @@ namespace SolToBoogie
         public override bool Visit(InlineAssembly node)
         {
             preTranslationAction(node);
+
+            if (context.TranslateFlags.AssemblyAsHavoc)
+            {
+                this.currentStmtList.AddStatement(new BoogieCommentCmd("---- modeling inline assembly ----"));
+                string ops = node.Operations;
+                foreach(Dictionary<String, ExternalReference> refs in node.ExternalReferences)
+                {
+                    foreach (ExternalReference extRef in refs.Values)
+                    {
+                        VariableDeclaration varDecl = context.GetASTNodeById(extRef.declaration) as VariableDeclaration;
+                        Regex assignChk = new Regex($"{varDecl.Name}([^a-zA-Z_0-9].*:=|:=)");
+                        Regex storeCheck = new Regex(@"store.?\s*\(\s*" + varDecl.Name + @"_slot\s*,");
+                        if (assignChk.IsMatch(ops) || storeCheck.IsMatch(ops))
+                        {
+                            string boogieVar = TransUtils.GetCanonicalVariableName(varDecl, context);
+                            BoogieHavocCmd varHavoc = new BoogieHavocCmd(new BoogieIdentifierExpr(boogieVar));
+                            this.currentStmtList.AddStatement(varHavoc);
+                        }
+                        
+                    }
+                }
+
+                return false;
+            }
+            
             Console.WriteLine($"Warning: Inline assembly in function {currentFunction.Name}; replacing function result with non-det value");  
             throw new NotImplementedException("inline assembly");
         }

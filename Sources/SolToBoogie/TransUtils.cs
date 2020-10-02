@@ -800,6 +800,12 @@ namespace SolToBoogie
                 {
                     if (funcDef.IsConstructor) continue;
                     if (funcDef.IsFallback) continue; //let us not call fallback directly in harness
+                    if (context.TranslateFlags.PerformFunctionSlice &&
+                        !context.TranslateFlags.SliceFunctions.Contains(funcDef))
+                    {
+                        continue;
+                    }
+                        
                     if (funcDef.Visibility == EnumVisibility.PUBLIC || funcDef.Visibility == EnumVisibility.EXTERNAL)
                     {
                         publicFuncDefs.Add(funcDef);

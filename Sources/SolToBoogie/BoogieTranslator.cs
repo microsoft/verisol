@@ -82,6 +82,13 @@ namespace SolToBoogie
             UsingCollector usingCollector = new UsingCollector(context);
             sourceUnits.Accept(usingCollector);
 
+            if (context.TranslateFlags.PerformFunctionSlice)
+            {
+                FunctionDependencyCollector depCollector = new FunctionDependencyCollector(context, entryPointContract, context.TranslateFlags.SliceFunctionNames);
+                context.TranslateFlags.SliceFunctions = depCollector.GetFunctionDeps();
+                context.TranslateFlags.SliceModifiers = depCollector.getModifierDeps();
+            }
+            
             // translate procedures
             ProcedureTranslator procTranslator = new ProcedureTranslator(context, mapHelper, generateInlineAttributesInBpl);
             sourceUnits.Accept(procTranslator);

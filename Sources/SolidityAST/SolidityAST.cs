@@ -1300,9 +1300,18 @@ namespace SolidityAST
         }
     }
 
+    public class ExternalReference
+    {
+        public int declaration { get; set; }
+        public bool isOffset { get; set; }
+        public bool isSlot { get; set; }
+        public String src { get; set; }
+        public int valueSize { get; set; }
+    }
     public class InlineAssembly : Statement
     {
-        public List<object> ExternalReferences { get; set; }
+        //public List<object> ExternalReferences { get; set; }
+        public List<Dictionary<string, ExternalReference>> ExternalReferences { get; set; }
 
         public string Operations { get; set; }
 
