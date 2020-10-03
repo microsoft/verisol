@@ -83,6 +83,16 @@ val domain_upd : #key:eqtype -> #value:Type -> #f:cmp key -> m: t key value f ->
                        (ensures (domain (upd m k v)) == (S.union (domain m) (singleton k)))
                  [SMTPat (domain (upd m k v))]
 
+val domain_upd2 : #key:eqtype -> #value:Type -> #f:cmp key -> m: t key value f -> k:key -> v:value ->
+                 Lemma (requires True)
+                       (ensures (contains m k) ==> OrdSet.equal (domain (upd m k v)) (domain m) )
+                 [SMTPat (domain (upd m k v))]
+
+val domain_check : #key:eqtype -> #value:Type -> #f:cmp key -> m: t key value f -> k:key -> v:value ->
+                 Lemma (requires True)
+                       (ensures (not (contains m k)) ==> OrdSet.equal ((empty)) (OrdSet.intersect (domain m) (singleton k)) )
+                 [SMTPat (domain (upd m k v))]
+
 val def_of_upd: #k:eqtype -> #v:Type -> #f:cmp k -> x:k -> y:v -> m:t k v f ->
                 Lemma (requires True)
                       (ensures (def_of m) == (def_of (upd m x y)))
@@ -150,7 +160,7 @@ val upd_delete_same_k: #k:eqtype -> #v:Type -> #f:cmp k -> x:k -> y:v -> m:t k v
 
 val choose_const: #k:eqtype -> #v:Type -> #f:cmp k -> y:v ->
                   Lemma (requires True) 
-                        (ensures (None? (choose #k #v #f (const #k #v #f y))) ==> (domain #k #v #f (const #k #v #f y) == S.empty))
+                        (ensures (None? (choose #k #v #f (const #k #v #f y))) <==> (domain #k #v #f (const #k #v #f y) == S.empty))
                   [SMTPat (choose #k #v #f (const #k #v #f y))]
 
 val choose_m: #k:eqtype -> #v:Type -> #f:cmp k -> m:t k v f ->
@@ -181,36 +191,51 @@ val non_zero_size_choose: #k:eqtype -> #v:Type -> #f:cmp k -> m:t k v f ->
                           (requires size m > 0)
                           (ensures Some? (choose m))
 
-
-val choose_after_update: #k:eqtype -> #v:Type -> #f:cmp k -> m:t k v f -> x:k -> y:v -> Lemma 
-(requires (size m >0))
-(ensures ( choose_upd m x y; non_zero_size_choose m; (x  <> (fst (Some?.v (choose (upd m x y))))) ==>
-((fst (Some?.v (choose m))) == ((fst (Some?.v (choose (upd m x y)))))) /\
-((snd (Some?.v (choose m))) == ((snd (Some?.v (choose (upd m x y))))))
-))
-
-val choose_commute_up_del: #k:eqtype -> #v:Type -> #f:cmp k -> m:t k v f -> x:k -> y:v -> Lemma 
-(requires (size m >0))
-(ensures
-( choose_upd m x y;  non_zero_size_choose m;
-let a = fst (Some?.v (choose m)) in
-let rest_m = (delete m a) in
-let rest_m1 = (upd m x y) in
-let b = fst (Some?.v (choose rest_m1)) in
-let m2= delete rest_m1 b in
-(upd rest_m x y) == m2
-))
-
 val contains_choose: #k:eqtype -> #v:Type -> #f:cmp k -> m:t k v f ->
                      Lemma
                      (requires (Some? (choose m)))
                      (ensures contains m (fst (Some?.v (choose m))))
 
-val size_upd: #k:eqtype -> #v:Type -> #f:cmp k -> m:t k v f -> x:k -> y:v ->
-              Lemma
-              ((m `contains` x ==> size (upd m x y) == size m) /\
-                ((~ (m `contains` x)) ==> size (upd m x y) == size m + 1) /\
-                (size (upd m x y) > 0))
+val size_upd1: #k:eqtype -> #v:Type -> #f:cmp k -> m:t k v f -> x:k -> y:v 
+                -> Lemma (requires True)
+                         (ensures  (not (contains m x) ==> size (upd m x y) == size m + 1))
+
+val size_upd2: #k:eqtype -> #v:Type -> #f:cmp k -> m:t k v f -> x:k -> y:v 
+                -> Lemma (requires True)
+                         (ensures (contains m x) ==> size (upd m x y) == size m)
+
+val size_upd: #k:eqtype -> #v:Type -> #f:cmp k -> m:t k v f -> x:k -> y:v ->  Lemma
+(requires (True))
+(ensures  (
+               (contains #k #v #f m x ==> size (upd m x y) == size m) /\
+                ((~ (contains #k #v #f m x)) ==> size (upd m x y) == size m + 1) /\
+                (size (upd m x y) > 0))   )
+
+
+val choose_after_update: #k:eqtype -> #v:Type -> #f:cmp k -> m:t k v f -> x:k -> y:v -> Lemma 
+(requires (size m > 0))
+(ensures (       
+      (x  <> (fst (Some?.v (choose (upd m x y))))) ==>
+            ((fst (Some?.v (choose m))) == ((fst (Some?.v (choose (upd m x y)))))) /\
+            ((snd (Some?.v (choose m))) == ((snd (Some?.v (choose (upd m x y))))))
+))
+
+val choose_commute_up_del: #k:eqtype -> #v:Type -> #f:cmp k -> m:t k v f -> x:k -> y:v -> Lemma 
+(requires (size m >0))
+(ensures (
+      (  x <> (fst (Some?.v (choose (upd m x y)))) 
+            \/  ((contains m x) /\ (x <> (fst (Some?.v (choose m)))))
+      ) ==>      
+      (
+            let k'' = fst (Some?.v (choose m)) in
+            let rest_m = (delete m k'') in
+            let m1 = (upd m x y) in
+            let k' = fst (Some?.v (choose m1)) in 
+            let rest_m1 = delete m1 k' in
+            (upd rest_m x y) == rest_m1
+      )
+)
+)
 
 val empty_contains: #k:eqtype -> #v:Type -> #f:cmp k -> m:t k v f -> x:k ->
                     Lemma

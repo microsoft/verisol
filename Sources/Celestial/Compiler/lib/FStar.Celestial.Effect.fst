@@ -277,7 +277,24 @@ let transfer (#a:Type0) (c_addr:contract a) (to:address) (amount:uint)
 /// Models a call made to an external/unknown entity
 /// caller's state remains the same since reentrancy is disallowed
 /// caller's balance may increase/decrease due to selfdestruct() and overflow
-assume val unknown_call : (#a:Type0) -> (self:contract a) -> Eth bool
+assume val unknown_call : (#a:Type0) -> (self:contract a) -> bytes -> Eth (bool * bytes)
+(fun bst -> self `CM.live_in` bst.cmap)
+(fun bst -> False)
+(fun bst0 _ bst1 ->
+  (self `CM.live_in` bst1.cmap)
+  /\ (CM.sel self bst1.cmap) == (CM.sel self bst0.cmap)
+)
+
+
+assume val call_uint : (#a:Type0) -> (self:contract a) -> (b:bytes) -> Eth1 uint
+(fun bst -> self `CM.live_in` bst.cmap)
+(fun bst -> False)
+(fun bst0 _ bst1 ->
+  (self `CM.live_in` bst1.cmap)
+  /\ (CM.sel self bst1.cmap) == (CM.sel self bst0.cmap)
+)
+
+assume val call_bool : (#a:Type0) -> (self:contract a) -> (b:bytes) -> Eth1 bool
 (fun bst -> self `CM.live_in` bst.cmap)
 (fun bst -> False)
 (fun bst0 _ bst1 ->

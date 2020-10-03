@@ -11,11 +11,10 @@ assume type bytes20
 
 let contract (a:Type0) : Type0 = address
 
-let int_max : int = (pow2 255) - 1
-let int_min : int = - (pow2 255)
-// let uint_max : int = (pow2 256) -1
+let int_max : int = 57896044618658097711785492504343953926634992332820282019728792003956564819967
+let int_min : int = -1 * (57896044618658097711785492504343953926634992332820282019728792003956564819968)
 let uint_max : int = 115792089237316195423570985008687907853269984665640564039457584007913129639935
-let uint8_max : int = (pow2 8) - 1
+let uint8_max : int = 255
 
 type uint = n:nat{n <= uint_max}
 type int = n:int{n >= int_min /\ n <= int_max}
@@ -80,33 +79,6 @@ let fold_add_fun (#key:eqtype) : key -> uint -> Prims.int -> Prims.int = fun _ v
 
 let sum_mapping_aux (#key:eqtype) (#c:M.cmp key) (m:M.t key uint c) (n:Prims.int) : Prims.int =
   M.fold fold_add_fun m n
-
-(*
-
-H : size m > 0
-
-G1: sum_mapping m n = v + sum_mapping rest_m n  where Some (_, v) = choose M
-
-We have
-
-sum_mapping m n
-= fold fold_add_fun m n
-= fold fold_add_fun rest_m (v + n)
-= sum_mapping rest_m (v + n)
-
-  Use G2
-
-
-G2 : sum_mapping m (n1+n2) = n1 + sum_mapping m n2
-
-sum_mapping m n
-= fold fold_add_fun m (n1+n2)
-= fold fold_add_fun rest_m (v+n1+n2)
-= sum_mapping rest_m (v+n1+n2)
-= n1 + sum_mapping rest_m (v+n2)  (Using I.H.)
-= n1 + sum_mapping m n2
-
-*)
 
 let rec sum_mapping_acc (#key:eqtype) (#c:M.cmp key) (m:M.t key uint c) (n1 n2:Prims.int)
 : Lemma
@@ -248,7 +220,7 @@ assume val strcmp : f:(string -> string -> bool){M.total_order string f}
 assume val abi_encode              : (#a:Type0) -> a -> bytes
 assume val abi_encodePacked        : (#a:Type0) -> a -> bytes
 assume val abi_encodeWithSelector  : (#a:Type0) -> bytes4 -> a -> bytes
-assume val abi_encodeWithSignature : (#a:Type0) -> string -> a -> bytes
+assume val abi_encodeWithSignature : (#a:Type0) -> a -> bytes
 
 (* Precompiles and other pure functions *)
 assume val keccak256 : bytes -> bytes32

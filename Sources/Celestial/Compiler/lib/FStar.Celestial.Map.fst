@@ -74,6 +74,8 @@ let sel_const #key #value #f x y = ()
 let contains_upd1 #key #value #f x y x' m = ()
 let contains_upd2 #key #value #f x y x' m = ()
 let domain_upd #key #value #f m k v = ()
+let domain_upd2 #key #value #f m k v = ()
+let domain_check #key #value #f m k v = ()
 let def_of_upd #key #value #f x y m = ()
 let def_of_delete #key #value #f x m = ()
 let def_of_const #key #value #f y = ()
@@ -92,10 +94,40 @@ let choose_m #key #value #f m = ()
 let choose_upd #key #value #f m x y = ()
 let choose_not_already_exist #key #value #f m x y = ()
 let non_zero_size_choose #_ #_ #_ _ = ()
-let choose_after_update #key #value #f m x y = ()
-let choose_commute_up_del #key #value #f m x y = ()
+
 let contains_choose #_ #_ #_ _ = ()
-let size_upd #_ #_ #_ _ _ _ = ()
+let size_upd1 #k #v #f m x y = 
+    let m1 = (upd m x y) in 
+    if (not (mem x m.domain)) then OrdSet.size_union2 #k #f (m.domain) x; () 
+
+let size_upd2 #k #v #f m x y = 
+    let m1 = (upd m x y) in 
+    if (mem x m.domain) then OrdSet.size_union3 #k #f (m.domain) x; () 
+
+let size_upd #_ #_ #_ m x y = size_upd1 m x y; size_upd2 m x y; ()
+
+let choose_after_update #key #value #f m x y =       
+      choose_upd m x y; 
+      non_zero_size_choose m;
+
+      let m1 = (upd m x y) in
+      let k' = (fst (Some?.v (choose m1))) in 
+      let k'' = (fst (Some?.v (choose m))) in 
+      if (x  <> k') then OrdSet.choose_upd_det (m.domain) x ; ()
+      
+
+let choose_commute_up_del #key #value #f m x y = 
+    choose_upd m x y;  
+    non_zero_size_choose m; 
+    let k'' = fst (Some?.v (choose m)) in
+    let rest_m = (delete m k'') in
+    let m1 = (upd m x y) in
+    let k' = fst (Some?.v (choose m1)) in 
+    let rest_m1 = delete m1 k' in
+      if (x <> k') then OrdSet.choose_upd_det (m.domain) x      
+      else  
+      if ((contains m x) && (x <> k'') ) then OrdSet.choose_upd_det2 (m.domain) x
+
 let empty_contains #_ #_ #_ _ _ = ()
 let contains_size #_ #_ #_ _ _ = ()
 let delete_upd_cancel_out #k #v #f m x y = ()
