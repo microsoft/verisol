@@ -286,7 +286,7 @@ namespace SolToBoogie
             BoogieType type = null;
             if (context.TranslateFlags.UseMultiDim && context.Analysis.Alias.getResults().Contains(varDecl))
             {
-                List<BoogieGlobalVariable> lenVars = mapHelper.GetMultiDimArrayLens(varDecl);
+                List<BoogieDeclaration> lenVars = mapHelper.GetMultiDimArrayLens(varDecl);
                 lenVars.ForEach(context.Program.AddDeclaration);
                 
                 type = MapArrayHelper.GetMultiDimBoogieType(varDecl.TypeName);
@@ -473,11 +473,16 @@ namespace SolToBoogie
             currentFunction = node;
 
             // procedure name
-            string procName = node.Name + "_" + currentContract.Name;
+            //string procName = node.Name + "_" + currentContract.Name;
+            string procName = null;
 
             if (node.IsConstructor)
             {
-                procName += "_NoBaseCtor";
+                procName = $"{TransUtils.GetCanonicalConstructorName(currentContract)}_NoBaseCtor";
+            }
+            else
+            {
+                procName = TransUtils.GetCanonicalFunctionName(node, context);
             }
             currentBoogieProc = procName;
 
@@ -851,30 +856,37 @@ namespace SolToBoogie
                         string lenName = MapArrayHelper.GetMultiDimLengthName(decl, curLvl);
                         BoogieMapSelect lenAccess = new BoogieMapSelect(new BoogieIdentifierExpr(lenName), contractVar.Arguments);
                         init.AddStatement(new BoogieAssignCmd(lenAccess, lenZero));*/
-                        
-                        if (arr.Length != null)
+
+                        BoogieExpr initVal = null;
+                        if (arr.Length == null)
                         {
-                            throw new Exception("Must add support for static arrays");
+                            initVal = new BoogieLiteralExpr(BigInteger.Zero);
+                        }
+                        else
+                        {
+                            initVal = TranslateExpr(arr.Length);
                         }
                         
                         BoogieType lenType = BoogieType.Int;
+                        BoogieType initType = BoogieType.Int;
                         for (int i = indTypes.Count - 1; i >= 0; i--)
                         {
+                            initType = lenType;
                             lenType = new BoogieMapType(indTypes[i], lenType);
                         }
                     
-                        String lenName = MapArrayHelper.GetMultiDimLengthName(decl, curLvl);
+                        String lenName = mapHelper.GetMultiDimLengthName(decl, curLvl);
                         BoogieMapSelect lenAccess = new BoogieMapSelect(new BoogieIdentifierExpr(lenName), contractVar.Arguments);
                         
-                        BoogieExpr lenZero = null;
-                        if (lenType is BoogieMapType)
+                        BoogieExpr lenZero = MapArrayHelper.GetCallExprForInit(initType, initVal);
+                        /*if (lenType is BoogieMapType)
                         {
-                            lenZero = MapArrayHelper.GetCallExprForZeroInit(lenType);
+                            lenZero = 
                         }
                         else
                         {
                             lenZero = new BoogieLiteralExpr(BigInteger.Zero);
-                        }
+                        }*/
                         
                         init.AddStatement(new BoogieAssignCmd(lenAccess, lenZero));
                             
@@ -908,7 +920,7 @@ namespace SolToBoogie
                 else if (curType is ArrayTypeName arr)
                 {
                     qVarTypes.Add(BoogieType.Int);
-                    string lenName = MapArrayHelper.GetMultiDimLengthName(decl, lvl);
+                    string lenName = mapHelper.GetMultiDimLengthName(decl, lvl);
                     BoogieMapSelect lenAccess = new BoogieMapSelect(new BoogieIdentifierExpr(lenName), contractVar.Arguments[0]);
                     
                     List<BoogieIdentifierExpr> lenQVars = new List<BoogieIdentifierExpr>();
@@ -1430,7 +1442,7 @@ namespace SolToBoogie
             }
             
             // generate the internal one without base constructors
-            string procName = contract.Name + "_" + contract.Name + "_NoBaseCtor";
+            string procName = TransUtils.GetCanonicalConstructorName(contract) + "_NoBaseCtor";
             currentBoogieProc = procName;
             if (!boogieToLocalVarsMap.ContainsKey(currentBoogieProc))
             {
@@ -3574,6 +3586,34 @@ namespace SolToBoogie
             // throw new NotImplementedException("not done implementing using A for B yet");
         }
 
+        private void TranslateStaticDispatchCall(FunctionCall node, List<BoogieExpr> arguments,
+            List<BoogieIdentifierExpr> outParams)
+        {
+            ContractDefinition contract = FunctionCallHelper.GetStaticDispatchingContract(context, node);
+            string signature = TransUtils.InferFunctionSignature(context, node);
+            VeriSolAssert(context.HasFuncSignature(signature), $"Cannot find a function with signature: {signature}");
+            var dynamicTypeToFuncMap = context.GetAllFuncDefinitions(signature);
+            VeriSolAssert(dynamicTypeToFuncMap.ContainsKey(contract));
+            FunctionDefinition fnDef = dynamicTypeToFuncMap[contract];
+            string callee = null;
+            if (contract.Name.Equals("VeriSol"))
+            {
+                callee = $"{fnDef.Name}_{contract.Name}";
+            }
+            else
+            {
+                callee = TransUtils.GetCanonicalFunctionName(fnDef, context);
+            }
+            
+            BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, outParams);
+            currentStmtList.AddStatement(callCmd);
+            
+            /*string functionName = TransUtils.GetFuncNameFromFuncCall(node);
+            string callee = functionName + "_" + contract.Name;
+            BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, outParams);
+            currentStmtList.AddStatement(callCmd);*/
+        }
+
         private void TranslateInternalFunctionCall(FunctionCall node, List<BoogieIdentifierExpr> outParams = null)
         {
             List<BoogieExpr> arguments = TransUtils.GetDefaultArguments();
@@ -3603,12 +3643,7 @@ namespace SolToBoogie
             }
             else if (FunctionCallHelper.IsStaticDispatching(context, node))
             {
-                ContractDefinition contract = FunctionCallHelper.GetStaticDispatchingContract(context, node);
-                string functionName = TransUtils.GetFuncNameFromFuncCall(node);
-                string callee = functionName + "_" + contract.Name;
-                BoogieCallCmd callCmd = new BoogieCallCmd(callee, arguments, outParams);
-
-                currentStmtList.AddStatement(callCmd);
+                TranslateStaticDispatchCall(node, arguments, outParams);
             }
             else
             {

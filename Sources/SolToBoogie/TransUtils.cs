@@ -462,7 +462,36 @@ namespace SolToBoogie
         public static string GetCanonicalFunctionName(FunctionDefinition funcDef, TranslatorContext context)
         {
             ContractDefinition contract = context.GetContractByFunction(funcDef);
-            return funcDef.Name + "_" + contract.Name;
+            string paramStr = "";
+
+            if (funcDef.Parameters != null)
+            {
+                foreach (VariableDeclaration paramDecl in funcDef.Parameters.Parameters)
+                {
+                    String typeStr = "";
+                    if (paramDecl.TypeName is Mapping map)
+                    {
+                        typeStr = "map" + map.KeyType.ToString();
+                    }
+                    else if (paramDecl.TypeName is UserDefinedTypeName userDef)
+                    {
+                        typeStr = userDef.Name;
+                    }
+                    else if (paramDecl.TypeName is ArrayTypeName arr)
+                    {
+                        typeStr = "arr";
+                    }
+                    else
+                    {
+                        typeStr = paramDecl.TypeName.ToString();
+                    }
+                    
+                    paramStr = $"{paramStr}~{typeStr}";
+                }
+            }
+
+            return $"{funcDef.Name}{paramStr}_{contract.Name}";
+            //return funcDef.Name + "_" + contract.Name;
         }
 
         public static string GetCanonicalConstructorName(ContractDefinition contract)

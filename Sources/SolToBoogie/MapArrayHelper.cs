@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using solidityAnalysis;
 using SolidityAST;
 
@@ -18,7 +19,7 @@ namespace SolToBoogie
         private static Regex arrayRegex = new Regex(@"(.+)\[\w*\]( storage ref| storage pointer| memory| calldata)?$");
         // mapping (uint => uint[]) does not have storage/memory in Typestring
         // private static Regex arrayRegex = new Regex(@"(.+)\[\w*\]$");
-
+        
         private TranslatorContext context { get; }
         
         private AST solidityAst { get;  }
@@ -236,14 +237,14 @@ namespace SolToBoogie
         
         public string GetNestedAllocName(VariableDeclaration decl, int lvl)
         {
-            return "alloc_" + decl.Name + "_lvl" + lvl;
+            return "alloc_" + TransUtils.GetCanonicalVariableName(decl, context) + "_lvl" + lvl;
         }
         
         public static BoogieFuncCallExpr GetCallExprForZeroInit(BoogieType key, BoogieType value)
         {
-            var keyStr = char.ToUpper(key.ToString()[0]) + key.ToString().Substring(1);
-            var valStr = char.ToUpper(value.ToString()[0]) + value.ToString().Substring(1);
-            return new BoogieFuncCallExpr("zero" + keyStr + valStr + "Arr", new List<BoogieExpr>());
+            /*var keyStr = char.ToUpper(key.ToString()[0]) + key.ToString().Substring(1);
+            var valStr = char.ToUpper(value.ToString()[0]) + value.ToString().Substring(1);*/
+            return new BoogieFuncCallExpr("zero" + key.ToString() + value.ToString() + "Arr", new List<BoogieExpr>());
         }
 
         public static string GetSmtType(BoogieType type)
@@ -262,6 +263,21 @@ namespace SolToBoogie
             }
             
             throw new Exception($"Unknown BoogieType {type}");
+        }
+
+        public static BoogieFunction GenerateMultiDimZeroFunction(BoogieType keyType, BoogieType valType)
+        {
+            BoogieExpr boogieInit = TransUtils.GetDefaultVal(valType);
+            string smtType = GetSmtType(valType);
+            BoogieType mapType = new BoogieMapType(keyType, valType);
+            string fnName = $"zero{keyType.ToString()}{valType.ToString()}Arr";
+            
+            string smtInit = boogieInit.ToString().Equals("null") ? "0" : boogieInit.ToString();
+            smtInit = $"((as const (Array {GetSmtType(keyType)} {smtType})) {smtInit})";
+
+            var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", mapType));
+            var smtDefinedAttr = new BoogieAttribute("smtdefined", $"\"{smtInit}\"");
+            return new BoogieFunction(fnName, new List<BoogieVariable>(), new List<BoogieVariable>() {outVar}, new List<BoogieAttribute>() {smtDefinedAttr});
         }
 
         public static BoogieFunction GenerateMultiDimZeroFunction(VariableDeclaration decl)
@@ -302,6 +318,57 @@ namespace SolToBoogie
             var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", mapType));
             var smtDefinedAttr = new BoogieAttribute("smtdefined", $"\"{smtInit}\"");
             return new BoogieFunction($"zero{fnName}", new List<BoogieVariable>(), new List<BoogieVariable>() {outVar}, new List<BoogieAttribute>() {smtDefinedAttr});
+        }
+        
+        public static BoogieFunction GenerateMultiDimInitFunction(BoogieMapType type)
+        {
+            BoogieType curType = type;
+            List<BoogieType> boogieType = new List<BoogieType>();
+
+            while (curType is BoogieMapType map)
+            {
+                if (map.Arguments.Count != 1)
+                {
+                    throw new Exception("Boogie map must have one argument");
+                }
+                boogieType.Insert(0, map.Arguments[0]);
+                curType = map.Result;
+            }
+            
+            BoogieVariable arg = new BoogieFormalParam(new BoogieTypedIdent("n", curType));
+            string smtInit = "n";
+            string smtType = GetSmtType(curType);
+            string fnName = $"{curType.ToString()}Arr";
+
+            foreach (BoogieType dimType in boogieType)
+            {
+                smtType = $"(Array {GetSmtType(dimType)} {smtType})";
+                smtInit = $"((as const {smtType}) {smtInit})";
+                fnName = $"{dimType.ToString()}{fnName}";
+            }
+
+            var outVar = new BoogieFormalParam(new BoogieTypedIdent("ret", type));
+            var smtDefinedAttr = new BoogieAttribute("smtdefined", $"\"{smtInit}\"");
+            return new BoogieFunction($"init{fnName}", new List<BoogieVariable>() {arg}, new List<BoogieVariable>() {outVar}, new List<BoogieAttribute>() {smtDefinedAttr});
+        }
+        
+        public static BoogieExpr GetCallExprForInit(BoogieType curType, BoogieExpr initExpr)
+        {
+            if (!(curType is BoogieMapType))
+            {
+                return initExpr;
+            }
+            
+            string fnName = "init";
+            
+            while (curType is BoogieMapType map)
+            {
+                fnName = $"{fnName}{String.Join("", map.Arguments)}";
+                curType = map.Result;
+            }
+            
+            fnName = $"{fnName}{curType}Arr";
+            return new BoogieFuncCallExpr(fnName, new List<BoogieExpr>() {initExpr});
         }
         
         public static BoogieFuncCallExpr GetCallExprForZeroInit(BoogieType curType)
@@ -386,14 +453,14 @@ namespace SolToBoogie
             return curType;
         }
 
-        public static string GetMultiDimLengthName(VariableDeclaration varDecl, int lvl)
+        public string GetMultiDimLengthName(VariableDeclaration varDecl, int lvl)
         {
-            return $"Length_{varDecl.Name}_lvl{lvl}";
+            return $"Length_{TransUtils.GetCanonicalVariableName(varDecl, context)}_lvl{lvl}";
         }
 
-        public List<BoogieGlobalVariable> GetMultiDimArrayLens(VariableDeclaration decl)
+        public List<BoogieDeclaration> GetMultiDimArrayLens(VariableDeclaration decl)
         {
-            List<BoogieGlobalVariable> lenVars = new List<BoogieGlobalVariable>();
+            List<BoogieDeclaration> lenVars = new List<BoogieDeclaration>();
             TypeName curType = decl.TypeName;
 
             List<BoogieType> indTypes = new List<BoogieType>() {BoogieType.Ref};
@@ -409,9 +476,17 @@ namespace SolToBoogie
                 else if (curType is ArrayTypeName arr)
                 {
                     BoogieType mapType = BoogieType.Int;
+                    BoogieType initType = BoogieType.Int;
                     for (int i = indTypes.Count - 1; i >= 0; i--)
                     {
+                        initType = mapType;
                         mapType = new BoogieMapType(indTypes[i], mapType);
+                    }
+
+                    if (arr.Length != null && initType is BoogieMapType lenMap)
+                    {
+                        BoogieFunction initFn = GenerateMultiDimInitFunction(lenMap);
+                        lenVars.Add(initFn);
                     }
                     
                     BoogieGlobalVariable lenVar = new BoogieGlobalVariable(new BoogieTypedIdent(GetMultiDimLengthName(decl, lvl), mapType));

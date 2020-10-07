@@ -16,6 +16,8 @@ namespace SolToBoogie
         private MapArrayHelper mapHelper;
 
         private BoogieCtorType contractType = new BoogieCtorType("ContractName");
+        
+        private HashSet<String> addedDecls = new HashSet<string>();
 
         public GhostVarAndAxiomGenerator(TranslatorContext context, MapArrayHelper mapHelper)
         {
@@ -45,7 +47,6 @@ namespace SolToBoogie
             context.Program.AddDeclaration(GenerateAbiEncodedFunctionOneArgRef());
             context.Program.AddDeclaration(GenerateAbiEncodedFunctionTwoArgsOneRef());
 
-            HashSet<String> addedDecls = new HashSet<String>();
             if (context.TranslateFlags.QuantFreeAllocs)
             {
                 if (context.TranslateFlags.UseMultiDim)
@@ -854,6 +855,13 @@ namespace SolToBoogie
             string name = mapHelper.GetMemoryMapName(decl, keyType, valType);
             if (!generatedMaps.Contains(name))
             {
+                BoogieFunction initFn = MapArrayHelper.GenerateMultiDimZeroFunction(keyType, valType);
+                if (!addedDecls.Contains(initFn.Name))
+                {
+                    addedDecls.Add(initFn.Name);
+                    context.Program.AddDeclaration(initFn);
+                }
+                
                 generatedMaps.Add(name);
                 context.Program.AddDeclaration(new BoogieGlobalVariable(new BoogieTypedIdent(name, map)));
             }
