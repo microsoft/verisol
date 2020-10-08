@@ -111,6 +111,10 @@ namespace SolToBoogie
                     //a[i].foo(..)
                     return true;
                 }
+                else if (memberAccess.Expression is TupleExpression)
+                {
+                    return true;
+                }
             }
             return false;
         }

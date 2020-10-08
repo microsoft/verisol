@@ -1826,23 +1826,59 @@ namespace SolToBoogie
             // handle the initial value of variable declaration
             if (node.InitialValue != null)
             {
-                VeriSolAssert(node.Declarations.Count == 1, "Invalid multiple variable declarations");
-
                 // de-sugar to variable declaration and an assignment
-                VariableDeclaration varDecl = node.Declarations[0];
+                List<Expression> components = new List<Expression>();
+                foreach (VariableDeclaration varDecl in node.Declarations)
+                {
+                    Identifier ident = new Identifier();
+                    ident.Name = varDecl.Name;
+                    ident.ReferencedDeclaration = varDecl.Id;
+                    ident.TypeDescriptions = varDecl.TypeDescriptions;
+                        
+                    components.Add(ident);
+                }
 
+                Expression lhs = null;
+                if (components.Count == 1)
+                {
+                    lhs = components[0];
+                }
+                else
+                {
+                    TupleExpression tupleExpr = new TupleExpression();
+                    tupleExpr.Id = node.Id;
+                    tupleExpr.IsLValue = true;
+                    tupleExpr.LValueRequested = true;
+                    tupleExpr.Components = components;
+
+                    lhs = tupleExpr;
+                }
+                
+                Assignment assignment = new Assignment();
+                assignment.LeftHandSide = lhs;
+                assignment.Operator = "=";
+                assignment.RightHandSide = node.InitialValue;
+                    
+                // call the visitor for assignments
+                assignment.Accept(this);
+                
+                    
+                /*
+                VeriSolAssert(node.Declarations.Count == 1, "Invalid multiple variable declarations");
+                VariableDeclaration varDecl = node.Declarations[0];
+                    
                 Identifier identifier = new Identifier();
                 identifier.Name = varDecl.Name;
                 identifier.ReferencedDeclaration = varDecl.Id;
                 identifier.TypeDescriptions = varDecl.TypeDescriptions;
-
+                    
                 Assignment assignment = new Assignment();
                 assignment.LeftHandSide = identifier;
                 assignment.Operator = "=";
                 assignment.RightHandSide = node.InitialValue;
-
+                    
                 // call the visitor for assignments
-                assignment.Accept(this);
+                assignment.Accept(this);*/
             }
             else
             {
@@ -3124,6 +3160,8 @@ namespace SolToBoogie
                 currentStmtList.AddStatement(new BoogieSkipCmd(node.ToString()));
                 VeriSolAssert(false, "low-level call statements with non-empty signature not implemented..");
             }
+            
+            currentStmtList.AddStatement(new BoogieCommentCmd("Havoc data part because we do not currently handle it"));
 
             // almost identical to send(amount)
             BoogieIdentifierExpr tmpVarExpr = outParams[0]; //bool part of the tuple

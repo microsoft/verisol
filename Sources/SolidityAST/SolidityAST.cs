@@ -1271,7 +1271,7 @@ namespace SolidityAST
         {
             if (visitor.Visit(this))
             {
-                Debug.Assert(Declarations.Count == 1);
+                //Debug.Assert(Declarations.Count == 1);
                 Utils.AcceptList(Declarations, visitor);
                 if (InitialValue != null)
                 {
@@ -1289,8 +1289,16 @@ namespace SolidityAST
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
-            Debug.Assert(Declarations.Count == 1, $"Multiple variable declarations: {Declarations.Count}");
-            builder.Append(Declarations[0]);
+            //Debug.Assert(Declarations.Count == 1, $"Multiple variable declarations: {Declarations.Count}");
+            if (Declarations.Count > 1)
+            {
+                builder.Append($"({String.Join(", ", Declarations)})");
+            }
+            else
+            {
+                builder.Append(Declarations[0]);
+            }
+            
             if (InitialValue != null)
             {
                 builder.Append(" = ").Append(InitialValue);
