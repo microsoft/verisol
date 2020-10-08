@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Primitives;
 using solidityAnalysis;
 using SolidityAST;
 
@@ -85,6 +86,26 @@ namespace SolToBoogie
             BoogieIdentifierExpr sumIdent = new BoogieIdentifierExpr(GetSumName(decl));
             BoogieMapSelect sumSelect = new BoogieMapSelect(sumIdent, varExpr);
             return sumSelect;
+        }
+
+        public static BoogieType InferExprTypeFromTupleTypeString(string typeString, int ind)
+        {
+            if (!typeString.StartsWith("tuple"))
+            {
+                return null;
+            }
+
+            int start = typeString.IndexOf("(");
+            int end = typeString.IndexOf(")");
+
+            String[] tupleTypes = typeString.Substring(start + 1, end - start - 1).Split(",");
+
+            if (ind >= tupleTypes.Length)
+            {
+                return null;
+            }
+
+            return InferExprTypeFromTypeString(tupleTypes[ind]);
         }
 
         public static BoogieType InferExprTypeFromTypeString(string typeString)

@@ -1261,7 +1261,7 @@ namespace SolidityAST
 
     public class VariableDeclarationStatement : Statement
     {
-        public List<int> Assignments { get; set; }
+        public List<int?> Assignments { get; set; }
 
         public List<VariableDeclaration> Declarations { get; set; }
 
@@ -1272,7 +1272,14 @@ namespace SolidityAST
             if (visitor.Visit(this))
             {
                 //Debug.Assert(Declarations.Count == 1);
-                Utils.AcceptList(Declarations, visitor);
+                //Utils.AcceptList(Declarations, visitor);
+                foreach (VariableDeclaration varDecl in Declarations)
+                {
+                    if (varDecl != null)
+                    {
+                        varDecl.Accept(visitor);
+                    }
+                }
                 if (InitialValue != null)
                 {
                     InitialValue.Accept(visitor);

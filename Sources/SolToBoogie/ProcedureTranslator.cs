@@ -1812,6 +1812,11 @@ namespace SolToBoogie
             preTranslationAction(node);
             foreach (VariableDeclaration varDecl in node.Declarations)
             {
+                if (varDecl == null)
+                {
+                    continue;
+                }
+                
                 string name = TransUtils.GetCanonicalLocalVariableName(varDecl, context);
                 BoogieType type = TransUtils.GetBoogieTypeFromSolidityTypeName(varDecl.TypeName);
                 // Issue a warning for intXX variables in case /useModularArithemtic option is used:
@@ -1830,12 +1835,18 @@ namespace SolToBoogie
                 List<Expression> components = new List<Expression>();
                 foreach (VariableDeclaration varDecl in node.Declarations)
                 {
-                    Identifier ident = new Identifier();
-                    ident.Name = varDecl.Name;
-                    ident.ReferencedDeclaration = varDecl.Id;
-                    ident.TypeDescriptions = varDecl.TypeDescriptions;
-                        
-                    components.Add(ident);
+                    if (varDecl == null)
+                    {
+                        components.Add(null);
+                    }
+                    else
+                    {
+                        Identifier ident = new Identifier();
+                        ident.Name = varDecl.Name;
+                        ident.ReferencedDeclaration = varDecl.Id;
+                        ident.TypeDescriptions = varDecl.TypeDescriptions;
+                        components.Add(ident);
+                    }
                 }
 
                 Expression lhs = null;
@@ -1954,6 +1965,11 @@ namespace SolToBoogie
             for (int i = 0; i < exprs.Count; i++)
             {
                 Expression expr = exprs[i];
+                if (expr == null)
+                {
+                    continue;
+                }
+                
                 var isInt = expr.TypeDescriptions.IsInt() || expr.TypeDescriptions.IsUint();
                 if (isInt && expr is IndexAccess access && boogieExprs[i] is BoogieMapSelect sel && sel.BaseExpr is BoogieMapSelect arrIdent)
                 {
@@ -2012,9 +2028,28 @@ namespace SolToBoogie
             if (node.LeftHandSide is TupleExpression tuple)
             {
                 // we only handle the case (e1, e2, .., _, _)  = funcCall(...)
-                lhs.AddRange(tuple.Components.ConvertAll(x => TranslateExpr(x)));
+                lhs.AddRange(tuple.Components.ConvertAll(x => x == null ? null : TranslateExpr(x)));
                 isTupleAssignment = true;
-                lhsTypes.AddRange(tuple.Components.ConvertAll(x => MapArrayHelper.InferExprTypeFromTypeString(x.TypeDescriptions.TypeString)));
+
+                lhsTypes = new List<BoogieType>();
+                for (int i = 0; i < tuple.Components.Count; i++)
+                {
+                    Expression expr = tuple.Components[i];
+                    if (expr == null)
+                    {
+                        BoogieType rhsType =
+                            MapArrayHelper.InferExprTypeFromTupleTypeString(
+                                node.RightHandSide.TypeDescriptions.TypeString, i);
+                        VeriSolAssert(rhsType != null, "Could not determine type within tuple from rhs string");
+                        lhsTypes.Add(rhsType);
+                    }
+                    else
+                    {
+                        lhsTypes.Add(MapArrayHelper.InferExprTypeFromTypeString(expr.TypeDescriptions.TypeString));
+                    }
+                }
+                
+                //lhsTypes.AddRange(tuple.Components.ConvertAll(x => MapArrayHelper.InferExprTypeFromTypeString(x.TypeDescriptions.TypeString)));
                 lhsExprs = tuple.Components;
             }
             else
@@ -2097,7 +2132,10 @@ namespace SolToBoogie
                 {
                     for (int i = 0; i < lhs.Count; ++i)
                     {
-                        currentStmtList.AddStatement(new BoogieAssignCmd(lhs[i], tmpVars[i]));
+                        if (lhs[i] != null)
+                        {
+                            currentStmtList.AddStatement(new BoogieAssignCmd(lhs[i], tmpVars[i]));
+                        }
                     }
                 }
                 if (context.TranslateFlags.InstrumentSums)
