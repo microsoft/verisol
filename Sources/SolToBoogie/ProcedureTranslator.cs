@@ -3531,7 +3531,7 @@ namespace SolToBoogie
                 return;
             }
 
-            if (FunctionCallHelper.IsUsingBasedLibraryCall(memberAccess))
+            if (FunctionCallHelper.IsUsingBasedLibraryCall(context, currentContract, memberAccess))
             {
                 TranslateUsingLibraryCall(node, outParams);
                 return;
@@ -3590,62 +3590,8 @@ namespace SolToBoogie
         {
             var memberAccess = node.Expression as MemberAccess;
             VeriSolAssert(memberAccess != null, $"Expecting a member access expression here {node.ToString()}");
-
-            // find the set of libraries that this type is mapped to wiht using
-            string typedescr = memberAccess.Expression.TypeDescriptions.TypeString;
-
-            if (memberAccess.Expression.TypeDescriptions.IsStruct() ||
-                memberAccess.Expression.TypeDescriptions.IsContract()
-                )
-            {
-                //struct Foo.Bar storage ref
-                typedescr = typedescr.Split(" ")[1];
-            } 
-            if (memberAccess.Expression.TypeDescriptions.IsArray())
-            {
-                //uint[] storage ref
-                typedescr = typedescr.Split(" ")[0];
-            }
-
-            //struct Foo.Bar[] storage ref should also work
-
-            VeriSolAssert(context.UsingMap.ContainsKey(currentContract), $"Expect to see a using A for {typedescr} in this contract {currentContract.Name}");
-
-            HashSet<UserDefinedTypeName> usingRange = new HashSet<UserDefinedTypeName>();
-
-            // may need to look into base contracts as well (UsingInBase.sol)
-            foreach (int id in currentContract.LinearizedBaseContracts)
-            {
-                ContractDefinition baseContract = context.GetASTNodeById(id) as ContractDefinition;
-                Debug.Assert(baseContract != null);
-                if (!context.UsingMap.ContainsKey(baseContract)) continue;
-                foreach (var kv in context.UsingMap[baseContract])
-                {
-                    if (kv.Value.ToString().Equals(typedescr))
-                    {
-                        usingRange.Add(kv.Key);
-                    }
-                }
-            }
-            VeriSolAssert(usingRange.Count > 0, $"Expecting at least one using A for B for {typedescr}");
-
-            string signature = TransUtils.InferFunctionSignature(context, node);
-            VeriSolAssert(context.HasFuncSignature(signature), $"Cannot find a function with signature: {signature}");
-            var dynamicTypeToFuncMap = context.GetAllFuncDefinitions(signature);
-            VeriSolAssert(dynamicTypeToFuncMap.Count > 0);
-
-            //intersect the types with a matching function with usingRange
-            var candidateLibraries = new List<Tuple<ContractDefinition, FunctionDefinition>>();
-            foreach(var tf in dynamicTypeToFuncMap)
-            {
-                if (usingRange.Any(x => x.Name.Equals(tf.Key.Name.ToString())))
-                {
-                    candidateLibraries.Add(Tuple.Create(tf.Key, tf.Value));
-                }
-            }
-
-            VeriSolAssert(candidateLibraries.Count == 1, $"Expecting a library call to match exactly one function, found {candidateLibraries.Count}");
-            var funcDefn = candidateLibraries[0];
+            
+            var funcDefn = context.GetASTNodeById(memberAccess.ReferencedDeclaration.Value) as FunctionDefinition;
             //x.f(y1, y2) in Solidity becomes f_lib(this, this, 0, x, y1, y2)
             var arguments = new List<BoogieExpr>()
             {
@@ -3656,7 +3602,7 @@ namespace SolToBoogie
             };
             arguments.AddRange(node.Arguments.Select(x => TranslateExpr(x)));
 
-            var callee = TransUtils.GetCanonicalFunctionName(funcDefn.Item2, context);
+            var callee = TransUtils.GetCanonicalFunctionName(funcDefn, context);
             var callCmd = new BoogieCallCmd(callee, arguments, outParams);
             currentStmtList.AddStatement(callCmd);
             // throw new NotImplementedException("not done implementing using A for B yet");

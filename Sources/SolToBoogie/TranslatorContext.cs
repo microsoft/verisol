@@ -102,7 +102,7 @@ namespace SolToBoogie
         // Options flags
         public TranslatorFlags TranslateFlags { get; private set; }
 
-        public Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, TypeName>> UsingMap => usingMap;
+        public Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, List<TypeName>>> UsingMap => usingMap;
 
         // num of fresh identifiers, should be incremented when making new fresh id
         private int freshIdentifierCount = 0;
@@ -115,7 +115,7 @@ namespace SolToBoogie
 
         // data structures for using
         // maps Contract C --> (source, dest), where source is a library type
-        private readonly Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, TypeName>> usingMap;
+        private readonly Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, List<TypeName>>> usingMap;
 
         public TranslatorContext(AST solidityAST, HashSet<Tuple<string, string>> ignoreMethods, bool _genInlineAttrInBpl, TranslatorFlags _translateFlags = null, String entryPointContract = "")
         {
@@ -144,7 +144,7 @@ namespace SolToBoogie
             ModifierToBoogiePreImpl = new Dictionary<string, BoogieImplementation>();
             ModifierToBoogiePostImpl = new Dictionary<string, BoogieImplementation>();
             ModifierToPreludeLocalVars = new Dictionary<string, List<BoogieLocalVariable>>();
-            usingMap = new Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, TypeName>>();
+            usingMap = new Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, List<TypeName>>>();
             IgnoreMethods = ignoreMethods;
             genInlineAttrInBpl = _genInlineAttrInBpl;
             TranslateFlags = _translateFlags;

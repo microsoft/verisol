@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using SolidityAST;
 
 namespace SolToBoogie
@@ -42,13 +44,81 @@ namespace SolToBoogie
             VeriSolAssert(contract != null);
             return contract;
         }
+
+        public static ContractDefinition GetUsedLibrary(TranslatorContext context, ContractDefinition curContract,
+            MemberAccess memberAccess)
+        {
+            FunctionDefinition fnDef = context.GetASTNodeById(memberAccess.ReferencedDeclaration.Value) as FunctionDefinition;
+
+            if (fnDef == null || !context.FunctionToContractMap.ContainsKey(fnDef))
+            {
+                return null;
+            }
+            
+            ContractDefinition fnContract = context.GetContractByFunction(fnDef);
+
+            Dictionary<ContractDefinition, UserDefinedTypeName> usingLibs = new Dictionary<ContractDefinition, UserDefinedTypeName>();
+            List<int> contractIds = new List<int>();
+            contractIds.Add(curContract.Id);
+            contractIds.AddRange(curContract.LinearizedBaseContracts);
+            
+            foreach (int id in contractIds)
+            {
+                ContractDefinition baseContract = context.GetASTNodeById(id) as ContractDefinition;
+
+                foreach (UserDefinedTypeName typeName in context.UsingMap[baseContract].Keys)
+                {
+                    ContractDefinition libDef = context.GetASTNodeById(typeName.ReferencedDeclaration) as ContractDefinition;
+                    if (!usingLibs.ContainsKey(libDef))
+                    {
+                        usingLibs[libDef] = typeName;
+                    }
+                }
+            }
+
+            if (usingLibs.ContainsKey(fnContract))
+            {
+                if (memberAccess.Expression.TypeDescriptions.IsContract() &&
+                    !memberAccess.Expression.TypeDescriptions.IsArray())
+                {
+                    //search sub-types
+                    UserDefinedTypeName libType = usingLibs[fnContract];
+                    String contractName = memberAccess.Expression.TypeDescriptions.TypeString.Split(" ")[1];
+                    ContractDefinition contractDef = context.GetContractByName(contractName);
+                    HashSet<ContractDefinition> usedBy = context.UsingMap[curContract][libType].FindAll(t =>
+                        t is UserDefinedTypeName u &&
+                        context.GetASTNodeById(u.ReferencedDeclaration) is ContractDefinition).Select(c =>
+                        context.GetASTNodeById(((UserDefinedTypeName) (c))
+                            .ReferencedDeclaration) as ContractDefinition).ToHashSet();
+
+                    bool usesLib = usedBy.Contains(contractDef);
+
+                    foreach (int id in contractDef.LinearizedBaseContracts)
+                    {
+                        ContractDefinition baseContract = context.GetASTNodeById(id) as ContractDefinition;
+                        if (usedBy.Contains(baseContract))
+                        {
+                            usesLib = true;
+                        }
+                    }
+
+                    return usesLib ? fnContract : null;
+                }
+                else
+                {
+                    return fnContract;
+                }
+            }
+
+            return null;
+        }
         
-        public static bool IsUsingBasedLibraryCall(MemberAccess memberAccess)
+        public static bool IsUsingBasedLibraryCall(TranslatorContext context, ContractDefinition curContract, MemberAccess memberAccess)
         {
             // since we only permit "using A for B" for non-contract types
             // this is sufficient, but not necessary in general since non
             // contracts (including libraries) do not have support methods
-            return !memberAccess.Expression.TypeDescriptions.IsContract();
+            return GetUsedLibrary(context, curContract, memberAccess) != null;
         }
         
         public static ContractDefinition IsLibraryFunctionCall(TranslatorContext context, FunctionCall node)

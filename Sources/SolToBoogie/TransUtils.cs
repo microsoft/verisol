@@ -483,7 +483,7 @@ namespace SolToBoogie
                     }
                     else
                     {
-                        typeStr = paramDecl.TypeName.ToString();
+                        typeStr = paramDecl.TypeName.ToString().Replace(" ", "");
                     }
                     
                     paramStr = $"{paramStr}~{typeStr}";
