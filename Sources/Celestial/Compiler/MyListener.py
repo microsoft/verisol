@@ -136,7 +136,7 @@ class MyListener(CelestialParserListener):
         # if not self.constructorDefined:
         #     self.FSTCodegen.writeDefaultConstructor(self.symbols, "constructor")
         self.FSTCodegen.exitContract()
-        self.SolidityCodegen.exitContractDecl()
+        self.SolidityCodegen.exitContractDecl(ctx)
         # Dev Options
         if (self.printSymbolTableFlag):
             self.printSymbolTable()
