@@ -114,6 +114,12 @@ class SolidityCodegen:
             self.invariants_collected = ""
 
     def exitContractDecl(self, ctx:CelestialParser.ContractDeclContext):
+        
+        if self.verificationMode == "VeriSol" and not(self.invariants_collected == ""):
+            self.writeallInvariants()           #Added for VeriSol
+        self.indentationLevel = 0
+        self.writeToSolidity("}")
+        
         if self.callLibFlag:
             contractName = ctx.iden().Iden().getText()
             filename = join(self.outputDir, "contract.sol")
@@ -127,11 +133,6 @@ class SolidityCodegen:
             self.output = open(filename, "w")
             contents = "".join(contents)
             self.output.write(contents)
-
-        if self.verificationMode == "VeriSol" and not(self.invariants_collected == ""):
-            self.writeallInvariants()           #Added for VeriSol
-        self.indentationLevel = 0
-        self.writeToSolidity("}")
 
     def writeUsingForDecl(self, ctx:CelestialParser.UsingForDeclContext, symbols):
         s = ""
