@@ -81,6 +81,12 @@ class MyListener(CelestialParserListener):
     def exitProgram(self, ctx:CelestialParser.ProgramContext):
         self.SolidityCodegen.exitProgram()
 
+    def enterImportDirective(self, ctx:CelestialParser.ImportDirectiveContext):
+        self.SolidityCodegen.writeImportDirective(ctx)
+
+    def enterPragmaDirective(self, ctx:CelestialParser.PragmaDirectiveContext):
+        self.SolidityCodegen.writePragmaDirective(ctx)
+
     def enterDatatype(self, ctx:CelestialParser.DatatypeContext):
         """
         Verifies if maps contain keys that are not maps or arrays themselves
@@ -434,6 +440,9 @@ class MyListener(CelestialParserListener):
         self.FSTCodegen.writeFieldRecord(self.symbols)
         self.FSTCodegen.writeAddressAndLiveness()
         self.FSTCodegen.writeFieldGetterSetters(self.symbols)
+
+    def enterUsingForDecl(self, ctx:CelestialParser.UsingForDeclContext):
+        self.SolidityCodegen.writeUsingForDecl(ctx, self.symbols)
 
     def enterVarDecl(self, ctx:CelestialParser.VarDeclContext):
         """
@@ -881,8 +890,8 @@ class MyListener(CelestialParserListener):
                 return "string"
             elif c.VALUE() or c.BDIFF() or c.BGASLIMIT() or c.BNUMBER() or c.BTIMESTAMP() or c.TXGASPRICE():
                 flag = self.getIsMethodFuncInv(self.currentScope)
-                if flag != "method":
-                    revert ("<ERROR>: Cannot use '" + c.getText() + "' outside methods ", ctx)
+                # if flag != "method":
+                #     revert ("<ERROR>: Cannot use '" + c.getText() + "' outside methods ", ctx)
                 return "uint"
             elif c.BALANCE():
                 flag = self.getIsMethodFuncInv(self.currentScope)
@@ -891,8 +900,8 @@ class MyListener(CelestialParserListener):
                 return "uint"
             elif c.SENDER() or c.TXORIGIN() or c.BCOINBASE():
                 flag = self.getIsMethodFuncInv(self.currentScope)
-                if flag != "method":
-                    revert ("<ERROR>: Cannot use '" + c.getText() + "' outside methods", ctx)
+                # if flag != "method":
+                #     revert ("<ERROR>: Cannot use '" + c.getText() + "' outside methods", ctx)
                 return "address"
             elif c.LOG():
                 flag = self.getIsMethodFuncInv(self.currentScope)
@@ -1505,7 +1514,7 @@ class MyListener(CelestialParserListener):
         #   a.call()
         #   bool s = a.call()
         #   s = a.call()
-        elif ctx.CALL():
+        elif ctx.CALL() or ctx.CALLUINT() or ctx.CALLBOOL():
             
             # Check if the '.call' is used on an 'address' type
             calleeType = self.exprType(ctx.expr(0), self.currentScope)
@@ -1513,7 +1522,7 @@ class MyListener(CelestialParserListener):
                 revert("<ERROR>: '.call()' can only be used on addresses")
 
             # If a local variable is declared
-            if ctx.ASSIGN() and ctx.BOOL():
+            if ctx.ASSIGN() and (ctx.BOOL() or ctx.UINT()):
                 varName = ctx.iden().getText()
 
                 # Check if the variable is redeclared
@@ -1522,7 +1531,7 @@ class MyListener(CelestialParserListener):
                         revert ("<ERROR>: Variable '" + varName + "' redeclared", ctx.expr(0))
 
                 # Add to the symbol table if it is not redeclared
-                self.symbols.append(Symbol(_name=varName, _type="bool", _scope=self.currentScope, _isParam=False, _isLocal=True))
+                self.symbols.append(Symbol(_name=varName, _type=ctx.getChild(0).getText(), _scope=self.currentScope, _isParam=False, _isLocal=True))
                 
             self.FSTCodegen.writeCallStatement(ctx, self.symbols, self.currentScope, self.reentrancyReverts)
 
@@ -1614,7 +1623,7 @@ class MyListener(CelestialParserListener):
             if len(symbol.params) != numberOfPassedArguments:
                 revert ("<ERROR>: Method/function call arguments do not match function signature", ctx)
 
-            if ctx.rvalueList:
+            if ctx.rvalueList():
                 for param in ctx.rvalueList().rvalue():
                     argType = self.exprType(param.expr(), self.currentScope)
                     if (argType != symbol.params[i]):
@@ -1762,7 +1771,7 @@ class MyListener(CelestialParserListener):
         Given an identifier, returns whether it is a function, invariant or method
         """
         
-        if name == "constructor":
+        if name == ["constructor", "receive", "fallback"]:
             return "method"
         for sym in self.symbols:
             if name == sym.name and sym.scope == "global": # scope = global not necessary

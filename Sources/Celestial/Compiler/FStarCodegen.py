@@ -836,8 +836,10 @@ class FStarCodegen:
                 else:
                     s += op1 + " / " + op2
             elif expr.SAFEADD():
+                # s += "(safe_add " + op1 + " " + op2 + ")"
                 s += "(if " + op1 + " <= uint_max - " + op2 + " then (" + op1 + " + " + op2 + ") else revert \"Overflow error\")"
             elif expr.SAFESUB():
+                # s += "(safe_sub " + op2 + " " + op1 + ")"
                 s += "(if " + op2 + " <= " + op1 + " then (" + op1 + " - " + op2 + ") else revert \"Underflow error\")"
             elif expr.SAFEMUL():
                 # s += "\nlet c = (" + op1 + " * " + op2 + ") in"
@@ -1809,6 +1811,7 @@ class FStarCodegen:
             else:
                 s = self.nestedMap(ctx.lvalue(), symbols, scope, x+2)
                 exp = self.getFStarExpression(ctx.expr(), symbols, scope)
+                # print (ctx.expr(0))
                 r = s + "\nlet x" + str(x+1) + " = (" + exp + ") in"
                 r += "\nlet x" + str(x) + " = (M.sel x" + str(x+2) + " x" + str(x+1) + ") in"
                 return r
@@ -1947,20 +1950,36 @@ class FStarCodegen:
         if reentrancyRevertsString:
             self.writeToFStar("\nassert (" + reentrancyRevertsString + ");")
 
+        callName = ""
+        if ctx.CALLBOOL():
+            callName = "call_bool"
+        elif ctx.CALLUINT():
+            callName = "call_uint"
+        else:
+            callName = "unknown_call"
+        
+        argExpr = ctx.rvalueList().rvalue(0).expr()
+        argString = self.getFStarExpression(argExpr, symbols, scope, isMethod=True)
+        if " " in argString:
+            argString = "(" + argString + ")"
+
         # If the return value of the '.call' is assigned to a variable
         if ctx.ASSIGN():
-            if ctx.lvalue()[0] and ctx.lvalue()[0].name:
+            if ctx.lvalue() and ctx.lvalue()[0].name:
                 varName = ctx.lvalue()[0].name.getText()
                 if varName in self.fields:
-                    self.writeToFStar("\nlet x1 = unknown_call self in")
+                    self.writeToFStar("\nlet x1 = " + callName + " self " + argString + " in")
                     self.writeToFStar("\nlet _ = " + self.addPrefix("set_" + varName) + " self (x1) in")
                 else:
-                    self.writeToFStar("\nlet " + varName + " = unknown_call self in")
+                    self.writeToFStar("\nlet " + varName + " = " + callName + " self " + argString + " in")
             # TODO:
             # elif ctx.lvalue()...
-            # elif ctx.BOOL()
+            elif ctx.BOOL():
+                self.writeToFStar("\nlet " + ctx.getChild(1).getText() + ":bool = " + callName + " self " + argString + " in")
+            elif ctx.UINT():
+                self.writeToFStar("\nlet " + ctx.getChild(1).getText() + ":uint = " + callName + " self " + argString + " in")
         else:
-            self.writeToFStar("\nlet _ = unknown_call self in")
+            self.writeToFStar("\nlet _ = " + callName + " self " + argString + " in")
 
         # Fetching balance since '.call' might change balance
         self.writeToFStar("\nlet balance = get_balance self in")
@@ -2066,25 +2085,28 @@ class FStarCodegen:
 
     def writeMethodCallStatement(self, ctx:CelestialParser.StatementContext, symbols, scope, isVoid):
         methodName = ctx.iden().Iden().getText()
-        params = ctx.rvalueList().rvalue()
-        x = 1
-        i = 0
-        xarr = {}
-        for param in params:
-            paramExpr = self.getFStarExpression(param.expr(), symbols, scope, isMethod=True)
-            if (param.expr().primitive() and param.expr().getText() in self.fields) or "=" in paramExpr: # same as if "=" in paramExpr
-            #     paramExpr = param.expr().getText()
-            # else:
-                self.writeToFStar("\nlet x" + str(x) + " = (" + paramExpr + ") in")
-                paramExpr = "x" + str(x)
-            xarr[x] = paramExpr
-            i = i + 1
-            x = x + 1
-        
-        self.writeToFStar("\nlet _ = (" + methodName + " self self 0 tx block")
-        for i in range(1, x):
-            self.writeToFStar(" " + xarr[i])
-        self.writeToFStar(") in")
+        if (ctx.rvalueList()):
+            params = ctx.rvalueList().rvalue()
+            x = 1
+            i = 0
+            xarr = {}
+            for param in params:
+                paramExpr = self.getFStarExpression(param.expr(), symbols, scope, isMethod=True)
+                if (param.expr().primitive() and param.expr().getText() in self.fields) or "=" in paramExpr: # same as if "=" in paramExpr
+                #     paramExpr = param.expr().getText()
+                # else:
+                    self.writeToFStar("\nlet x" + str(x) + " = (" + paramExpr + ") in")
+                    paramExpr = "x" + str(x)
+                xarr[x] = paramExpr
+                i = i + 1
+                x = x + 1
+            
+            self.writeToFStar("\nlet _ = (" + methodName + " self self 0 tx block")
+            for i in range(1, x):
+                self.writeToFStar(" " + xarr[i])
+            self.writeToFStar(") in")
+        else:
+            self.writeToFStar("\nlet _ = (" + methodName + " self self 0 tx block) in")
         self.writeToFStar("\nlet cs = get_contract self in")
 
     def writeCtAssignmentStatement(self, ctx, symbols, scope):

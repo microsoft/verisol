@@ -17,6 +17,69 @@ class CelestialParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by CelestialParser#pragmaDirective.
+    def enterPragmaDirective(self, ctx:CelestialParser.PragmaDirectiveContext):
+        pass
+
+    # Exit a parse tree produced by CelestialParser#pragmaDirective.
+    def exitPragmaDirective(self, ctx:CelestialParser.PragmaDirectiveContext):
+        pass
+
+
+    # Enter a parse tree produced by CelestialParser#pragmaValue.
+    def enterPragmaValue(self, ctx:CelestialParser.PragmaValueContext):
+        pass
+
+    # Exit a parse tree produced by CelestialParser#pragmaValue.
+    def exitPragmaValue(self, ctx:CelestialParser.PragmaValueContext):
+        pass
+
+
+    # Enter a parse tree produced by CelestialParser#version.
+    def enterVersion(self, ctx:CelestialParser.VersionContext):
+        pass
+
+    # Exit a parse tree produced by CelestialParser#version.
+    def exitVersion(self, ctx:CelestialParser.VersionContext):
+        pass
+
+
+    # Enter a parse tree produced by CelestialParser#versionConstraint.
+    def enterVersionConstraint(self, ctx:CelestialParser.VersionConstraintContext):
+        pass
+
+    # Exit a parse tree produced by CelestialParser#versionConstraint.
+    def exitVersionConstraint(self, ctx:CelestialParser.VersionConstraintContext):
+        pass
+
+
+    # Enter a parse tree produced by CelestialParser#versionOperator.
+    def enterVersionOperator(self, ctx:CelestialParser.VersionOperatorContext):
+        pass
+
+    # Exit a parse tree produced by CelestialParser#versionOperator.
+    def exitVersionOperator(self, ctx:CelestialParser.VersionOperatorContext):
+        pass
+
+
+    # Enter a parse tree produced by CelestialParser#importDirective.
+    def enterImportDirective(self, ctx:CelestialParser.ImportDirectiveContext):
+        pass
+
+    # Exit a parse tree produced by CelestialParser#importDirective.
+    def exitImportDirective(self, ctx:CelestialParser.ImportDirectiveContext):
+        pass
+
+
+    # Enter a parse tree produced by CelestialParser#importDeclaration.
+    def enterImportDeclaration(self, ctx:CelestialParser.ImportDeclarationContext):
+        pass
+
+    # Exit a parse tree produced by CelestialParser#importDeclaration.
+    def exitImportDeclaration(self, ctx:CelestialParser.ImportDeclarationContext):
+        pass
+
+
     # Enter a parse tree produced by CelestialParser#iden.
     def enterIden(self, ctx:CelestialParser.IdenContext):
         pass
@@ -239,6 +302,15 @@ class CelestialParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by CelestialParser#varDecl.
     def exitVarDecl(self, ctx:CelestialParser.VarDeclContext):
+        pass
+
+
+    # Enter a parse tree produced by CelestialParser#usingForDecl.
+    def enterUsingForDecl(self, ctx:CelestialParser.UsingForDeclContext):
+        pass
+
+    # Exit a parse tree produced by CelestialParser#usingForDecl.
+    def exitUsingForDecl(self, ctx:CelestialParser.UsingForDeclContext):
         pass
 
 

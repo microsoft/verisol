@@ -23,6 +23,7 @@ BYTES32   : 'bytes32' ;
 // Keywords
 
 ADD       : 'add' ;
+AS        : 'as' ;
 ASSERT    : 'assert' ;
 BALANCE   : 'balance' ;
 BCOINBASE : 'block.coinbase' ;
@@ -31,6 +32,8 @@ BGASLIMIT : 'block.gaslimit' ;
 BNUMBER   : 'block.number' ;
 BTIMESTAMP: 'block.timestamp' ;
 CALL      : 'call' ;
+CALLBOOL  : 'call_bool' ;
+CALLUINT  : 'call_uint' ;
 CONSTANT  : 'constant' ;
 CONSTR    : 'constructor' ;
 CONTAINS  : 'contains' ;
@@ -45,8 +48,10 @@ EXISTS    : 'exists' ;
 FALLBACK  : 'fallback' ;
 FOR       : 'for' ;
 FORALL    : 'forall';
+FROM      : 'from' ;
 FUNCTION  : 'function' ;
 IF        : 'if' ;
+IMPORT    : 'import' ;
 IN        : 'in' ;
 INT_MIN   : 'int_min' ;
 INT_MAX   : 'int_max' ;
@@ -62,6 +67,7 @@ NEW       : 'new' ;
 PAYABLE   : 'payable' ;
 POP       : 'pop' ;
 POST      : 'post' ;
+PRAGMA    : 'pragma' ;
 PRE       : 'pre' ;
 PRINT     : 'print' ;
 PRIVATE   : 'private' ;
@@ -89,6 +95,7 @@ TXREVERTS : 'tx_reverts' ;
 TXGASPRICE: 'tx.gasprice' ;
 TXORIGIN  : 'tx.origin' ;
 UINT_MAX  : 'uint_max' ;
+USING     : 'using' ;
 VALUE     : 'value' ;
 VIEW      : 'view' ;
 
@@ -104,6 +111,8 @@ StringLiteral : '"' StringCharacters? '"' ;
 fragment StringCharacters : StringCharacter+ ;
 fragment StringCharacter : ~["\\] | EscapeSequence ;
 fragment EscapeSequence : '\\' . ;
+
+VersionLiteral : [0-9]+ '.' [0-9]+ ('.' [0-9]+)? ;
 
 // Symbols
 
@@ -131,6 +140,9 @@ SUB    : '-' ;
 MUL    : '*' ;
 DIV    : '/' ;
 MOD    : '%' ;
+
+CARET  : '^' ;
+BNOT   : '~' ;
 
 LBRACE : '{' ;
 RBRACE : '}' ;

@@ -23,7 +23,29 @@ options {tokenVocab = CelestialLexer; language=Python3;}// CelestialLexer;
 // tokens or productions of the same type into a list (list+=part). The `type`
 // production below uses this feature, too.
 
-program : (contractDecl)* EOF ;
+program : (contractDecl | pragmaDirective | importDirective)* EOF ;
+
+pragmaDirective
+  : PRAGMA pragmaName=iden pragmaValue SEMI ;
+
+pragmaValue
+  : version | expr ;
+
+version
+  : versionConstraint versionConstraint? ;
+
+versionConstraint
+  : versionOperator? VersionLiteral ;
+
+versionOperator
+  : CARET | BNOT | GE | GT | LT | LE | ASSIGN ;
+
+importDirective
+  : IMPORT StringLiteral+ (AS iden)? SEMI
+  | IMPORT (MUL | iden) (AS iden)? FROM StringLiteral+ SEMI
+  | IMPORT LBRACE importDeclaration ( COMMA importDeclaration )* RBRACE FROM StringLiteral+ SEMI ;
+
+importDeclaration : iden (AS iden)? ;
 
 iden : Iden ;
 //int  : IntLiteral ;
@@ -60,6 +82,7 @@ contractContents : varDecl
                  | eventDecl
                  | constructorDecl
                  | methodDecl
+                 | usingForDecl
                  ;
 
 enumDecl : ENUM name=iden LBRACE iden (COMMA iden)* RBRACE ;
@@ -94,6 +117,8 @@ returnStatement : RETURN expr? SEMI ;
 
 varDecl : datatype iden (ASSIGN expr)? SEMI ;
 
+usingForDecl : USING iden FOR (datatype | MUL) SEMI ;
+
 loopVarDecl : datatype iden ASSIGN expr 
             | iden ASSIGN expr ;
 
@@ -119,6 +144,12 @@ statement : //# CompoundStmt
           | expr DOT CALL LPAREN rvalueList RPAREN SEMI
           | BOOL iden ASSIGN expr DOT CALL LPAREN rvalueList RPAREN SEMI
           | lvalue ASSIGN expr DOT CALL LPAREN rvalueList RPAREN SEMI
+
+          | expr DOT CALLUINT LPAREN rvalueList RPAREN SEMI
+          | UINT iden ASSIGN expr DOT CALLUINT LPAREN rvalueList RPAREN SEMI
+
+          | expr DOT CALLBOOL LPAREN rvalueList RPAREN SEMI
+          | BOOL iden ASSIGN expr DOT CALLBOOL LPAREN rvalueList RPAREN SEMI
 
             //# ExternalContractMethodCallStmt
           | otherContractInstance=lvalue DOT method=iden LPAREN rvalueList? RPAREN SEMI
