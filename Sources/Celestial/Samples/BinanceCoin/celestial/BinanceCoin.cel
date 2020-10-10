@@ -1,5 +1,9 @@
 //address: https://etherscan.io/address/0xb8c77482e45f1f44de1745f52c74426c631bdd52
 
+pragma solidity^0.6.8;
+
+import {Safe_Arith} from "./Safe_Arith.sol" ;
+
 contract BNB_Cel
 {
     string name; 
@@ -8,7 +12,6 @@ contract BNB_Cel
     uint totalSupply; 
     address owner; 
 
-    ///* This creates an array with all balances */ 
     mapping (address => uint) balanceOf; 
     mapping (address => uint) freezeOf; 
     mapping (address => mapping (address => uint)) allowance; 
@@ -18,9 +21,10 @@ contract BNB_Cel
     event Unfreeze(address , uint );
 
     invariant totalSupplyInv 
-    {        totalSupply == sum_mapping (balanceOf) + sum_mapping (freezeOf)    }
+    {
+        totalSupply == sum_mapping (balanceOf) + sum_mapping (freezeOf)   
+    }
 
-    ///* Initializes contract with initial supply tokens to the creator of the contract */ 
     constructor (uint initialSupply, string tokenName, uint8 decimalUnits, string tokenSymbol)   
     {
         balanceOf[sender] = initialSupply;              // Give the creator all initial tokens  
@@ -28,11 +32,10 @@ contract BNB_Cel
         name = tokenName;                                   // Set the name for display purposes
         symbol = tokenSymbol;                               // Set the symbol for display purposes
         decimals = decimalUnits;                            // Amount of decimals for display purposes
-	owner = sender;
+        owner = sender;
         return;                                            
     }
 
-    ///* Send coins */
     function _transfer (address _to, uint _value) 
         tx_reverts _to == null || _value <= 0 || balanceOf[sender] < _value || balanceOf[_to] > uint_max - _value
         post new(log) == (Transfer, sender, _to, _value)::log 
@@ -49,7 +52,6 @@ contract BNB_Cel
         return;
     }
 
-    ///* Allow another contract to spend some tokens in your behalf */
     function approve(address _spender, uint _value)
         tx_reverts _value <= 0
         post new(allowance) == allowance[sender =>  allowance[sender][_spender => _value]]
@@ -61,8 +63,6 @@ contract BNB_Cel
         return true;
     }
        
-
-    ///* A contract attempts to get the coins */
     function transferFrom(address _from, address _to, uint _value)
         tx_reverts  _to == null || _value <= 0 || balanceOf[_from] < _value || balanceOf[_to] > uint_max - _value || _value > allowance[_from][sender]
         post new(allowance) == allowance[_from =>  allowance[_from][sender => allowance[_from][sender] - _value]] && new(log) == (Transfer, _from, _to, _value)::log 
@@ -71,7 +71,7 @@ contract BNB_Cel
         returns (bool success) 
     {
         if (_to == null) revert("preventing transfer to address 0x00");                       // Prevent transfer to 0x0 address. Use burn() instead
-	if (_value <= 0) revert("value leq 0"); 
+        if (_value <= 0) revert("value leq 0"); 
         if (balanceOf[_from] < _value) revert ("sender doesn't have enough!");                 // Check if the sender has enough
         if (balanceOf[_to] > uint_max - _value) revert ("Overflow!");
         if (_value > allowance[_from][sender]) revert ("allowance check failed");     // Check allowance
@@ -81,7 +81,6 @@ contract BNB_Cel
         emit Transfer(_from, _to, _value);
         return true;
     }
-
     
     function burn(uint _value) 
         tx_reverts _value <= 0 || balanceOf[sender] <  _value || totalSupply < _value
@@ -97,8 +96,6 @@ contract BNB_Cel
         return true;
     }
 	
-    //the requirements that the value must be greater than zero and the balance of message sender must be greater than or equal to the value.
-    //The balance of message sender is decreased by value, while the frozen token is increased by value.
     function freeze (uint _value) 
         tx_reverts freezeOf[sender] > uint_max - _value || balanceOf[sender] < _value || _value <= 0
         post new(balanceOf) == balanceOf[sender => balanceOf[sender] - _value] && new(freezeOf) == freezeOf[sender => freezeOf[sender] + _value]
@@ -107,7 +104,7 @@ contract BNB_Cel
         returns (bool success)
     {
         if (balanceOf[sender] < _value) revert("sender doesn't have enough!");            // Check if the sender has enough
-	if (_value <= 0) revert("value leq 0"); 
+        if (_value <= 0) revert("value leq 0"); 
         balanceOf[sender] = safe_sub(balanceOf[sender], _value);                      // Subtract from the sender
         freezeOf[sender] = safe_add(freezeOf[sender], _value);                                // Updates totalSupply
         emit Freeze(sender, _value);
@@ -121,24 +118,24 @@ contract BNB_Cel
         returns (bool success) 
     {
         if (freezeOf[sender] < _value) revert("sender doesn't have enough!");            // Check if the sender has enough
-	if (_value <= 0) revert("value leq 0"); 
+        if (_value <= 0) revert("value leq 0"); 
         freezeOf[sender] = safe_sub(freezeOf[sender], _value);                      // Subtract from the sender
-	balanceOf[sender] = safe_add(balanceOf[sender], _value);
+        balanceOf[sender] = safe_add(balanceOf[sender], _value);
         emit Unfreeze(sender, _value);
         return true;
     }
 	
-    // transfer balance to owner
     function withdrawEther(uint amount) debit
-    	post (new(log) == (owner, eTransfer, amount)::log) //What about balance updates
+    	post (new(log) == (owner, eTransfer, amount)::log)
     	tx_reverts sender != owner 
     {
 	    if(sender != owner) revert("sender is not owner");
+        if (amount > balance) revert ("Insufficient balance");
 	    payable(owner).transfer(amount);
-            return;
+        return;
+    }
+
+    receive() credit {
+        return;
     }
 }
-
-// can accept ether             //CB: commented out as it will be generated automatically.
-//function() payable {
-//}

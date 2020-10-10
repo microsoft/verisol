@@ -1,3 +1,8 @@
+pragma solidity^0.6.8;
+
+import {Safe_Arith} from "./Safe_Arith.sol";
+import {Call} from "./Call.sol" ;
+
 contract EtherDelta_Cel
 {
     address admin;      //the admin address
@@ -13,9 +18,12 @@ contract EtherDelta_Cel
     event Withdraw(address, address, uint, uint);
     event Order(address, uint, address, uint, uint, uint, address);
     event Cancel(address, uint, address, uint, uint, uint, address, uint8, bytes32, bytes32);
+    event Trade(address, uint, address, uint, address, address);
 
     uint totalBalance;
     bool _lock_;
+
+    using Call for address;
 
     invariant eth_balances2 {
         balance == totalBalance
@@ -196,8 +204,7 @@ contract EtherDelta_Cel
         }
 
         _lock_ = true;
-        bool tokenTxStatus;
-        tokenTxStatus = token.call("transferFrom(address,address,uint)", sender, address(this), amount);
+        bool tokenTxStatus = token.call_bool(abi.encodeWithSignature("transferFrom(address,address,uint)", sender, address(this), amount));
         _lock_ = false;
         if (tokenTxStatus == false)
         {
@@ -233,8 +240,7 @@ contract EtherDelta_Cel
         }
 
         _lock_ = true;
-        bool tokenTxStatus;
-        tokenTxStatus = token.call("transfer(address,uint)", sender, amount);
+        bool tokenTxStatus = token.call_bool(abi.encodeWithSignature("transfer(address,uint)", sender, amount));
         _lock_ = false;
         if (tokenTxStatus == false)
         {
@@ -277,39 +283,9 @@ contract EtherDelta_Cel
         return;
     }
 
-//     function tradeBalances(address tokenGet, uint amountGet, address tokenGive, uint amountGive, address user, uint amount) private {
-//         uint feeMakeXfer = safe_mul(amount, feeMake) / 1000000000000000000;
-//         uint feeTakeXfer = safe_mul(amount, feeTake) / 1000000000000000000;
-//         uint feeRebateXfer = 0;
-//         if (accountLevelsAddr != null) {
-//         uint accountLevel = AccountLevels(accountLevelsAddr).accountLevel(user);
-//         if (accountLevel==1) feeRebateXfer = safeMul(amount, feeRebate) / (1 ether);
-//         if (accountLevel==2) feeRebateXfer = feeTakeXfer;
-//         }
-//         tokens[tokenGet][msg.sender] = safeSub(tokens[tokenGet][msg.sender], safeAdd(amount, feeTakeXfer));
-//         tokens[tokenGet][user] = safeAdd(tokens[tokenGet][user], safeSub(safeAdd(amount, feeRebateXfer), feeMakeXfer));
-//         tokens[tokenGet][feeAccount] = safeAdd(tokens[tokenGet][feeAccount], safeSub(safeAdd(feeMakeXfer, feeTakeXfer), feeRebateXfer));
-//         tokens[tokenGive][user] = safeSub(tokens[tokenGive][user], safeMul(amountGive, amount) / amountGet);
-//         tokens[tokenGive][msg.sender] = safeAdd(tokens[tokenGive][msg.sender], safeMul(amountGive, amount) / amountGet);
-//     }
-
-//     function trade(address tokenGet, uint amountGet, address tokenGive, uint amountGive, uint expires, uint nonce, address user, uint8 v, bytes32 r, bytes32 s, uint amount)
-//     {
-//         bytes32 hash = sha256 (abi.encodePacked(this, tokenGet, amountGet, tokenGive, amountGive, expires, nonce));
-//         if (!(
-//             (orders[user][hash] || ecrecover(keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)),v,r,s) == user) 
-//             && block.number <= expires
-//             && safe_add(orderFills[user][hash], amount) <= amountGet
-//         )) revert ("");
-
-//         tradeBalances (tokenGet, amountGet, tokenGive, amountGive, user, amount);
-//         orderFills[user][hash] = safe_add(orderFills[user][hash], amount);
-//         emit Trade(tokenGet, amount, tokenGive, amountGive * amount / amountGet, user, sender);
-//         return;
-//   }
-
     function availableVolume(address tokenGet, uint amountGet, address tokenGive, uint amountGive, uint expires, uint nonce, address user, uint8 v, bytes32 r, bytes32 s)
         r_reverts _lock_
+        modifies []
         returns (uint ret)
     {
         if (_lock_)
@@ -338,6 +314,7 @@ contract EtherDelta_Cel
 
     function testTrade (address tokenGet, uint amountGet, address tokenGive, uint amountGive, uint expires, uint nonce, address user, uint8 v, bytes32 r, bytes32 s, uint amount, address _sender)
         r_reverts _lock_
+        modifies []
         returns (bool ret)
     {
         if (_lock_)

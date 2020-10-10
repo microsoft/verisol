@@ -1,9 +1,12 @@
 // address: 0x851b7F3Ab81bd8dF354F0D7640EFcD7288553419
 // value: $16,979,667.55
+pragma solidity^0.6.8;
+
+import {Safe_Arith} from "./Safe_Arith.sol" ;
 
 contract MultiSigWalletWithDailyLimit_Cel {
 
-    uint MAX_OWNER_COUNT;
+    uint MAX_OWNER_COUNT = 50;
 
     struct Transaction {
         address destination;
@@ -61,6 +64,10 @@ contract MultiSigWalletWithDailyLimit_Cel {
     invariant confirmationCountsInv
     {
         forall (uint i) ((i in transactions) ==> (i in confirmationCounts))
+    }
+
+    receive () credit {
+        return;
     }
 
     constructor (address initial_owner, uint _required, uint _dailyLimit)

@@ -14,6 +14,7 @@ assume val etherdelta_cel_Deposit : string
 assume val etherdelta_cel_Withdraw : string
 assume val etherdelta_cel_Order : string
 assume val etherdelta_cel_Cancel : string
+assume val etherdelta_cel_Trade : string
 
 noeq type t_etherdelta_cel = {
   etherdelta_cel_admin : address;
@@ -378,16 +379,16 @@ let changeAdmin (self:etherdelta_cel_address) (sender:address{sender <> null}) (
       /\ ((cs1.etherdelta_cel_admin == admin_))
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
+      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
+      /\ (cs0.etherdelta_cel_accountLevelsAddr == cs1.etherdelta_cel_accountLevelsAddr)
+      /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
+      /\ (cs0.etherdelta_cel__lock_ == cs1.etherdelta_cel__lock_)
       /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
       /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
       /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
-      /\ (cs0.etherdelta_cel_accountLevelsAddr == cs1.etherdelta_cel_accountLevelsAddr)
-      /\ (cs0.etherdelta_cel_orderFills == cs1.etherdelta_cel_orderFills)
-      /\ (cs0.etherdelta_cel__lock_ == cs1.etherdelta_cel__lock_)
       /\ (cs0.etherdelta_cel_orders == cs1.etherdelta_cel_orders)
-      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
-      /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
       /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
+      /\ (cs0.etherdelta_cel_orderFills == cs1.etherdelta_cel_orderFills)
   ))
 =
 let cs = get_contract self in
@@ -437,16 +438,16 @@ let changeFeeAccount (self:etherdelta_cel_address) (sender:address{sender <> nul
       /\ (eth_balances self bst1)
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
+      /\ (cs0.etherdelta_cel_accountLevelsAddr == cs1.etherdelta_cel_accountLevelsAddr)
+      /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
+      /\ (cs0.etherdelta_cel__lock_ == cs1.etherdelta_cel__lock_)
       /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
-      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
       /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
       /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
-      /\ (cs0.etherdelta_cel_accountLevelsAddr == cs1.etherdelta_cel_accountLevelsAddr)
-      /\ (cs0.etherdelta_cel_orderFills == cs1.etherdelta_cel_orderFills)
-      /\ (cs0.etherdelta_cel__lock_ == cs1.etherdelta_cel__lock_)
       /\ (cs0.etherdelta_cel_orders == cs1.etherdelta_cel_orders)
-      /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
       /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
+      /\ (cs0.etherdelta_cel_orderFills == cs1.etherdelta_cel_orderFills)
+      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
   ))
 =
 let cs = get_contract self in
@@ -497,16 +498,16 @@ let changeFeeMake (self:etherdelta_cel_address) (sender:address{sender <> null})
       /\ (cs1.etherdelta_cel_feeMake == feeMake_)
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
-      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
-      /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
-      /\ (cs0.etherdelta_cel_accountLevelsAddr == cs1.etherdelta_cel_accountLevelsAddr)
-      /\ (cs0.etherdelta_cel_orderFills == cs1.etherdelta_cel_orderFills)
-      /\ (cs0.etherdelta_cel__lock_ == cs1.etherdelta_cel__lock_)
-      /\ (cs0.etherdelta_cel_orders == cs1.etherdelta_cel_orders)
       /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
+      /\ (cs0.etherdelta_cel_accountLevelsAddr == cs1.etherdelta_cel_accountLevelsAddr)
       /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
+      /\ (cs0.etherdelta_cel__lock_ == cs1.etherdelta_cel__lock_)
+      /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
+      /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
+      /\ (cs0.etherdelta_cel_orders == cs1.etherdelta_cel_orders)
       /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
+      /\ (cs0.etherdelta_cel_orderFills == cs1.etherdelta_cel_orderFills)
+      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
   ))
 =
 let cs = get_contract self in
@@ -557,16 +558,16 @@ let changeFeeTake (self:etherdelta_cel_address) (sender:address{sender <> null})
       /\ (cs1.etherdelta_cel_feeTake == feeTake_)
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
-      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
-      /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
-      /\ (cs0.etherdelta_cel_accountLevelsAddr == cs1.etherdelta_cel_accountLevelsAddr)
-      /\ (cs0.etherdelta_cel_orderFills == cs1.etherdelta_cel_orderFills)
-      /\ (cs0.etherdelta_cel__lock_ == cs1.etherdelta_cel__lock_)
-      /\ (cs0.etherdelta_cel_orders == cs1.etherdelta_cel_orders)
       /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
+      /\ (cs0.etherdelta_cel_accountLevelsAddr == cs1.etherdelta_cel_accountLevelsAddr)
       /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
+      /\ (cs0.etherdelta_cel__lock_ == cs1.etherdelta_cel__lock_)
+      /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
+      /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
+      /\ (cs0.etherdelta_cel_orders == cs1.etherdelta_cel_orders)
       /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
+      /\ (cs0.etherdelta_cel_orderFills == cs1.etherdelta_cel_orderFills)
+      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
   ))
 =
 let cs = get_contract self in
@@ -617,16 +618,16 @@ let changeFeeRebate (self:etherdelta_cel_address) (sender:address{sender <> null
       /\ (cs1.etherdelta_cel_feeRebate == feeRebate_)
       /\ (bst0.balances == bst1.balances)
       /\ (l0 == l1)
-      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
+      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
+      /\ (cs0.etherdelta_cel_accountLevelsAddr == cs1.etherdelta_cel_accountLevelsAddr)
+      /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
+      /\ (cs0.etherdelta_cel__lock_ == cs1.etherdelta_cel__lock_)
       /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
       /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
-      /\ (cs0.etherdelta_cel_accountLevelsAddr == cs1.etherdelta_cel_accountLevelsAddr)
-      /\ (cs0.etherdelta_cel_orderFills == cs1.etherdelta_cel_orderFills)
-      /\ (cs0.etherdelta_cel__lock_ == cs1.etherdelta_cel__lock_)
       /\ (cs0.etherdelta_cel_orders == cs1.etherdelta_cel_orders)
-      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
-      /\ (cs0.etherdelta_cel_totalBalance == cs1.etherdelta_cel_totalBalance)
       /\ (cs0.etherdelta_cel_tokens == cs1.etherdelta_cel_tokens)
+      /\ (cs0.etherdelta_cel_orderFills == cs1.etherdelta_cel_orderFills)
+      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
   ))
 =
 let cs = get_contract self in
@@ -685,15 +686,15 @@ let deposit (self:etherdelta_cel_address) (sender:address{sender <> null}) (valu
         x1) in
       let x1 = (M.upd x1 x2 x3) in
       x1))) /\ ((cs1.etherdelta_cel_totalBalance == (cs0.etherdelta_cel_totalBalance + value))))
+      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
+      /\ (cs0.etherdelta_cel_accountLevelsAddr == cs1.etherdelta_cel_accountLevelsAddr)
+      /\ (cs0.etherdelta_cel__lock_ == cs1.etherdelta_cel__lock_)
       /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
-      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
       /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
       /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
-      /\ (cs0.etherdelta_cel_accountLevelsAddr == cs1.etherdelta_cel_accountLevelsAddr)
-      /\ (cs0.etherdelta_cel_orderFills == cs1.etherdelta_cel_orderFills)
-      /\ (cs0.etherdelta_cel__lock_ == cs1.etherdelta_cel__lock_)
       /\ (cs0.etherdelta_cel_orders == cs1.etherdelta_cel_orders)
-      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
+      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
+      /\ (cs0.etherdelta_cel_orderFills == cs1.etherdelta_cel_orderFills)
   ))
 =
 let b = get_balance self in
@@ -846,14 +847,14 @@ let depositToken (self:etherdelta_cel_address) (sender:address{sender <> null}) 
         x1) in
       let x1 = (M.upd x1 x2 x3) in
       x1))
+      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
+      /\ (cs0.etherdelta_cel_accountLevelsAddr == cs1.etherdelta_cel_accountLevelsAddr)
       /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
-      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
       /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
       /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
-      /\ (cs0.etherdelta_cel_accountLevelsAddr == cs1.etherdelta_cel_accountLevelsAddr)
-      /\ (cs0.etherdelta_cel_orderFills == cs1.etherdelta_cel_orderFills)
       /\ (cs0.etherdelta_cel_orders == cs1.etherdelta_cel_orders)
-      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
+      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
+      /\ (cs0.etherdelta_cel_orderFills == cs1.etherdelta_cel_orderFills)
   ))
 =
 let cs = get_contract self in
@@ -873,9 +874,8 @@ let cs = get_contract self in
 let balance = get_balance self in
 let _ = etherdelta_cel_set__lock_ self true in
 let cs = get_contract self in
-let tokenTxStatus:bool = (false) in
 assert ((cs.etherdelta_cel__lock_));
-let tokenTxStatus = unknown_call self in
+let tokenTxStatus:bool = call_bool self ((abi_encodeWithSignature("transferFrom(address,address,uint)", sender, self, amount))) in
 let balance = get_balance self in
 let _ = etherdelta_cel_set__lock_ self false in
 let cs = get_contract self in
@@ -948,14 +948,14 @@ let withdrawToken (self:etherdelta_cel_address) (sender:address{sender <> null})
         x1) in
       let x1 = (M.upd x1 x2 x3) in
       x1)))
+      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
+      /\ (cs0.etherdelta_cel_accountLevelsAddr == cs1.etherdelta_cel_accountLevelsAddr)
       /\ (cs0.etherdelta_cel_feeRebate == cs1.etherdelta_cel_feeRebate)
-      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
       /\ (cs0.etherdelta_cel_feeMake == cs1.etherdelta_cel_feeMake)
       /\ (cs0.etherdelta_cel_feeTake == cs1.etherdelta_cel_feeTake)
-      /\ (cs0.etherdelta_cel_accountLevelsAddr == cs1.etherdelta_cel_accountLevelsAddr)
-      /\ (cs0.etherdelta_cel_orderFills == cs1.etherdelta_cel_orderFills)
       /\ (cs0.etherdelta_cel_orders == cs1.etherdelta_cel_orders)
-      /\ (cs0.etherdelta_cel_feeAccount == cs1.etherdelta_cel_feeAccount)
+      /\ (cs0.etherdelta_cel_admin == cs1.etherdelta_cel_admin)
+      /\ (cs0.etherdelta_cel_orderFills == cs1.etherdelta_cel_orderFills)
   ))
 =
 let cs = get_contract self in
@@ -975,9 +975,8 @@ let cs = get_contract self in
 let balance = get_balance self in
 let _ = etherdelta_cel_set__lock_ self true in
 let cs = get_contract self in
-let tokenTxStatus:bool = (false) in
 assert ((cs.etherdelta_cel__lock_));
-let tokenTxStatus = unknown_call self in
+let tokenTxStatus:bool = call_bool self ((abi_encodeWithSignature("transfer(address,uint)", sender, amount))) in
 let balance = get_balance self in
 let _ = etherdelta_cel_set__lock_ self false in
 let cs = get_contract self in
@@ -1107,10 +1106,19 @@ let availableVolume (self:etherdelta_cel_address) (sender:address{sender <> null
     (cs.etherdelta_cel__lock_)
   )
   (fun bst0 ret bst1 ->
-    etherdelta_cel_live self bst1
-     /\ (eth_balances2 self bst1)
-     /\ (eth_balances self bst1)
-  )
+    etherdelta_cel_live self bst1 /\ (
+    let cs0 = CM.sel self bst0.cmap in
+    let cs1 = CM.sel self bst1.cmap in
+    let b0 = pure_get_balance_bst self bst0 in
+    let b1 = pure_get_balance_bst self bst1 in
+    let l0 = bst0.log in
+    let l1 = bst1.log in
+    (eth_balances2 self bst1)
+      /\ (eth_balances self bst1)
+      /\ (bst0.balances == bst1.balances)
+      /\ (cs0 == cs1)
+      /\ (l0 == l1)
+  ))
 =
 let ret:uint = 0 in
 let cs = get_contract self in
@@ -1174,10 +1182,19 @@ let testTrade (self:etherdelta_cel_address) (sender:address{sender <> null}) (va
     (cs.etherdelta_cel__lock_)
   )
   (fun bst0 ret bst1 ->
-    etherdelta_cel_live self bst1
-     /\ (eth_balances2 self bst1)
-     /\ (eth_balances self bst1)
-  )
+    etherdelta_cel_live self bst1 /\ (
+    let cs0 = CM.sel self bst0.cmap in
+    let cs1 = CM.sel self bst1.cmap in
+    let b0 = pure_get_balance_bst self bst0 in
+    let b1 = pure_get_balance_bst self bst1 in
+    let l0 = bst0.log in
+    let l1 = bst1.log in
+    (eth_balances2 self bst1)
+      /\ (eth_balances self bst1)
+      /\ (bst0.balances == bst1.balances)
+      /\ (cs0 == cs1)
+      /\ (l0 == l1)
+  ))
 =
 let ret:bool = false in
 let cs = get_contract self in

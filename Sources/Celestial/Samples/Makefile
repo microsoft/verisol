@@ -60,7 +60,7 @@ verify:
 	elif [ '$(experiment)' = 'asset_transfer' ]; then \
 		$(call TIME,--z3rlimit 50,AssetTransfer/fstar/MarketPlace_Cel.fst,AssetTransfer); \
 	elif [ '$(experiment)' = 'etherdelta' ]; then \
-		$(call TIME,--z3rlimit 50,EtherDelta/fstar/EtherDelta_Cel.fst,EtherDelta); \
+		$(call TIME,--z3rlimit 150,EtherDelta/fstar/EtherDelta_Cel.fst,EtherDelta); \
 	elif [ '$(experiment)' = 'westlake' ]; then \
 		$(call TIME,--z3rlimit 50,Westlake/fstar/Members_Cel.fst,Westlake); \
 	elif [ '$(experiment)' = 'erc20' ]; then \
@@ -68,7 +68,7 @@ verify:
 	elif [ '$(experiment)' = 'wrapped_ether' ]; then \
 		$(call TIME,--z3rlimit 150,WrappedEther/fstar/WETH9_Cel.fst,Wrapped Ether); \
 	elif [ '$(experiment)' = 'multisig' ]; then \
-		$(call TIME,--z3rlimit 50,ConsenSys/MultiSig/fstar/MultiSigWalletWithDailyLimit_Cel.fst,ConsenSys MultiSigWallet); \
+		$(call TIME,--z3rlimit 150,ConsenSys/MultiSig/fstar/MultiSigWalletWithDailyLimit_Cel.fst,ConsenSys MultiSigWallet); \
 	elif [ '$(experiment)' = 'simple_auction' ]; then \
 		$(call TIME,--z3rlimit 50,SimpleAuction/fstar/SimpleAuction_Cel.fst,Simple Auction); \
 	elif [ '$(experiment)' = 'binancecoin' ]; then \

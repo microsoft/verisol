@@ -3,6 +3,10 @@ Address: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 Value (April 30, 2020): $549,584,248.00 
  */
 
+pragma solidity^0.6.8;
+
+import { Safe_Arith } from "./Safe_Arith.sol" ; 
+
 contract WETH9_Cel {
     string name     = "Wrapped Ether";
     string symbol   = "WETH";
@@ -52,11 +56,9 @@ contract WETH9_Cel {
         tx_reverts balance < _wad || balanceOf[sender] < _wad
         modifies [balanceOf, totalBalance] 
     {
-        if (balanceOf[sender] < _wad) 
-        {
+        if (balanceOf[sender] < _wad) {
             revert ("Insufficient balance");
         }
-        
         sender.transfer(_wad);
         emit Withdrawal (sender, _wad);
 
@@ -121,37 +123,27 @@ contract WETH9_Cel {
         && new_balanceOf == old_balanceOf[_src => old_balanceOf[_src] - _wad, _dst => old_balanceOf[_dst] + _wad]
     }
 
-    // sender transfers wad uints from src to dst
     function transferFrom (address _src, address _dst, uint _wad) public
         post transferFromPost (balanceOf, new(balanceOf), allowance, new(allowance), sender, _src, _dst, _wad)
         tx_reverts transferFromReverts (balanceOf, allowance, sender, _src, _dst, _wad)
         modifies [balanceOf, allowance, log]
         returns (bool)
     {
-        if (_src == _dst)
-        {
+        if (_src == _dst) {
             revert ("Redundant transfer");
         }
-
-        if (balanceOf[_src] < _wad)
-        {
+        if (balanceOf[_src] < _wad) {
             revert ("Insufficient balance");
         }
-
-        if (_src != sender && allowance[_src][sender] != uint_max)
-        {
-            if (allowance[_src][sender] < _wad)
-            {
+        if (_src != sender && allowance[_src][sender] != uint_max) {
+            if (allowance[_src][sender] < _wad) {
                 revert ("Insufficient allowance");
             }
             allowance[_src][sender] = allowance[_src][sender] - _wad;
         }
-
         balanceOf[_src] = balanceOf[_src] - _wad;
         balanceOf[_dst] = balanceOf[_dst] + _wad;
-
         emit Transfer (_src, _dst, _wad);
-
         return true;
     }
 
@@ -162,4 +154,10 @@ contract WETH9_Cel {
         return transferFrom(sender, _dst, _wad);
     }
 
+    receive () credit {
+        totalBalance = safe_add(totalBalance, value);
+        balanceOf[sender] = balanceOf[sender] + value;
+        emit Deposit (sender, value);
+        return;
+    }
 }

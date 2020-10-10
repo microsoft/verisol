@@ -1,3 +1,7 @@
+pragma solidity^0.6.8;
+
+import {Safe_Arith} from "./Safe_Arith.sol" ;
+
 contract MarketPlace_Cel
 {
     address seller;
@@ -15,8 +19,6 @@ contract MarketPlace_Cel
 
     event eMakeOffer (address, uint);
     event eAcceptOffer (address, uint);
-
-    // ======================= Specification of AssetTransfer =============
 
     invariant distinctBuyerSeller
     {
@@ -45,8 +47,6 @@ contract MarketPlace_Cel
         ((old_state == state.marketPlace_BuyerAccept && _from == _seller) ==> (new_state == state.marketPlace_Accept)) &&
         ((old_state == state.marketPlace_SellerAccept && _from == _buyer) ==> (new_state == state.marketPlace_Accept))
     }
-
-    // =========================== End of specs ===========================
 
     constructor (address _seller, address _buyer)
         public
@@ -86,7 +86,6 @@ contract MarketPlace_Cel
         post modifyOfferPost (_increase, _change, sellingPrice, new(sellingPrice))
         tx_reverts (contractCurrentState != state.marketPlace_OfferPlaced) || (sender != seller)
         modifies [sellingPrice]
-
     {
         if (sender != seller)
         {
