@@ -154,12 +154,18 @@ namespace SolToBoogie
                     {
                         return true;
                     }
-                    var contract = context.GetASTNodeById(identifier.ReferencedDeclaration) as ContractDefinition;
-                    if (contract == null)
+
+                    if (!context.HasASTNodeId(identifier.ReferencedDeclaration))
                     {
                         return true;
                     }
-                }
+
+                    var contract = context.GetASTNodeById(identifier.ReferencedDeclaration) as ContractDefinition;
+                    if (contract == null)
+                    { 
+                        return true;
+                    }
+                    }
                 else if (memberAccess.Expression is MemberAccess structSelect)
                 {
                     //a.b.c.foo(...)
