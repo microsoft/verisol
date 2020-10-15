@@ -608,7 +608,10 @@ class MyListener(CelestialParserListener):
         if ctx.name:
             methodName = ctx.name.Iden().getText()
         elif ctx.RECEIVE():
-            methodName = "receive"
+            if self.verificationMode == "VeriSol":
+                revert ("<ERROR>: VeriSol doesn't support receive function. Uptil Solidity version 0.5.10 is supported!", ctx.spec().pre)
+            else:
+                methodName = "receive"
         else:
             methodName = "fallback"
         self.currentScope = methodName

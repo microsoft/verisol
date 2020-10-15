@@ -1,9 +1,11 @@
 .DEFAULT_GOAL := help
 SHELL := /bin/bash
 
-COMPILER = python3 ../Compiler/main.py
+COMPILER = python3 ../Compiler/main.py 
+COMPILER2 = python3 ../Compiler/main.py --v="VeriSol"
 FSTAR = fstar.exe --include ../Compiler/lib
 TRUFFLE = truffle test
+VERISOL = VeriSol 
 
 define TIME
 	TIMEFORMAT='Contract(s) verified in %Rs'; time ${FSTAR} $(1) $(2) 2>&1 1>/dev/null
@@ -15,6 +17,8 @@ help:
 	@echo Targets:
 	@echo "    compile experiment=<experiment_name>      Compiles the Celestial source for the specified experiment and generates the Solidity and FStar versions."
 	@echo "    verify  experiment=<experiment_name>      Verifies the generated FStar for the specified experiment."
+	@echo "    compileV experiment=<experiment_name>      Compiles the Celestial source for the specified experiment and generates the VeriSol-compatible Solidity version."
+	@echo "    verifyV  experiment=<experiment_name>      Verifies the generated Solidity using VeriSol for the specified experiment."
 	@echo "    perf    experiment=<experiment_name>      Generates a .csv file with gas comparisions for the specified experiment."
 	@echo "    <experiment_name>                         Runs all the above targets for the specified experiment."
 	@echo "    all                                       Compiles, verifies and generates gas performance .csv file for all experiments."
@@ -66,7 +70,7 @@ verify:
 	elif [ '$(experiment)' = 'erc20' ]; then \
 		$(call TIME,--z3rlimit 50,OpenZeppelin/ERC20/fstar/ERC20_Cel.fst,ERC20); \
 	elif [ '$(experiment)' = 'wrapped_ether' ]; then \
-		$(call TIME,--z3rlimit 150,WrappedEther/fstar/WETH9_Cel.fst,Wrapped Ether); \
+		$(call TIME,--z3rlimit 200,WrappedEther/fstar/WETH9_Cel.fst,Wrapped Ether); \
 	elif [ '$(experiment)' = 'multisig' ]; then \
 		$(call TIME,--z3rlimit 150,ConsenSys/MultiSig/fstar/MultiSigWalletWithDailyLimit_Cel.fst,ConsenSys MultiSigWallet); \
 	elif [ '$(experiment)' = 'simple_auction' ]; then \
@@ -75,6 +79,52 @@ verify:
 		$(call TIME,--z3rlimit 50,BinanceCoin/fstar/BNB_Cel.fst,BNB); \
 	else \
 		echo "Invalid experiment argument to target 'verify'"; \
+	fi;
+
+compileV:
+	@if [ '$(experiment)' = 'overview' ]; then \
+		${COMPILER2} Overview/celestial/Overview.cel --fstDir="../Samples/Overview/fstar" --solDir="../Samples/Overview/contracts/"; \
+	elif [ '$(experiment)' = 'asset_transfer' ]; then \
+		${COMPILER2} AssetTransfer/celestial/AssetTransfer.cel --fstDir="../Samples/AssetTransfer/fstar" --solDir="../Samples/AssetTransfer/contracts/"; \
+	elif [ '$(experiment)' = 'etherdelta' ]; then \
+		${COMPILER2} EtherDelta/celestial/EtherDelta.cel --fstDir="../Samples/EtherDelta/fstar" --solDir="../Samples/EtherDelta/contracts/"; \
+	elif [ '$(experiment)' = 'westlake' ]; then \
+		${COMPILER2} Westlake/celestial/Members.cel --fstDir="../Samples/Westlake/fstar" --solDir="../Samples/Westlake/contracts"; \
+	elif [ '$(experiment)' = 'erc20' ]; then \
+		${COMPILER2} OpenZeppelin/ERC20/celestial/OpenZeppelinERC20.cel --fstDir="../Samples/OpenZeppelin/ERC20/fstar" --solDir="../Samples/OpenZeppelin/ERC20/contracts"; \
+	elif [ '$(experiment)' = 'wrapped_ether' ]; then \
+		${COMPILER2} WrappedEther/celestial/WrappedEther.cel --fstDir="../Samples/WrappedEther/fstar" --solDir="../Samples/WrappedEther/contracts"; \
+	elif [ '$(experiment)' = 'multisig' ]; then \
+		${COMPILER2} ConsenSys/MultiSig/celestial/MultiSig.cel --fstDir="../Samples/ConsenSys/MultiSig/fstar" --solDir="../Samples/ConsenSys/MultiSig/contracts"; \
+	elif [ '$(experiment)' = 'simple_auction' ]; then \
+		${COMPILER2} SimpleAuction/celestial/SimpleAuction.cel --fstDir="../Samples/SimpleAuction/fstar" --solDir="../Samples/SimpleAuction/contracts"; \
+	elif [ '$(experiment)' = 'binancecoin' ]; then \
+		${COMPILER2} BinanceCoin/celestial/BinanceCoin.cel --fstDir="../Samples/BinanceCoin/fstar" --solDir="../Samples/BinanceCoin/contracts"; \
+	else \
+		echo "Invalid experiment argument to target 'compile'"; \
+	fi;
+
+verifyV:
+	@if [ '$(experiment)' = 'overview' ]; then \
+		${VERISOL} "Overview\contracts\contract.sol" Flipmart_Cel; \
+	elif [ '$(experiment)' = 'asset_transfer' ]; then \
+		${VERISOL} "AssetTransfer\contracts\contract.sol" MarketPlace_Cel; \
+	elif [ '$(experiment)' = 'etherdelta' ]; then \
+		${VERISOL} "EtherDelta\contracts\contract.sol" EtherDelta_Cel; \
+	elif [ '$(experiment)' = 'westlake' ]; then \
+		${VERISOL} "Westlake\contracts\contract.sol" Members_Cel; \
+	elif [ '$(experiment)' = 'erc20' ]; then \
+		${VERISOL} "OpenZeppelin\ERC20\contracts\contract.sol" ERC20_Cel; \
+	elif [ '$(experiment)' = 'wrapped_ether' ]; then \
+		${VERISOL} "WrappedEther\contracts\contract.sol" WETH9_Cel; \
+	elif [ '$(experiment)' = 'multisig' ]; then \
+		${VERISOL} "ConsenSys\MultiSig\contracts\contract.sol" MultiSigWalletWithDailyLimit_Cel; \
+	elif [ '$(experiment)' = 'simple_auction' ]; then \
+		${VERISOL} "SimpleAuction\contracts\contract.sol" SimpleAuction_Cel; \
+	elif [ '$(experiment)' = 'binancecoin' ]; then \
+		${VERISOL} "BinanceCoin\contracts\contract.sol" BNB_Cel; \
+	else \
+		echo "Invalid experiment argument to target 'verifyWithVeriSol'"; \
 	fi;
 
 perf:

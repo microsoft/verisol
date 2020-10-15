@@ -270,11 +270,13 @@ class SolidityCodegen:
         elif ctx.RECEIVE():
             methodDeclString = "receive () external payable"
         elif ctx.FALLBACK() and ctx.spec() and ctx.spec().CREDIT():
-            methodDeclString = "fallback () external payable"
+            if self.verificationMode == "VeriSol":
+                methodDeclString = "function () external payable"               #Added for Verisol
+            else:
+                methodDeclString = "fallback () external payable"
         elif ctx.FALLBACK():
             if self.verificationMode == "VeriSol":
-                #self.writeToSolidity("function () external payable {}")     #Added for Verisol
-                methodDeclString = "function () external payable"
+                methodDeclString = "function () external"               #Added for Verisol
             else:
                 methodDeclString = "fallback () external"
       
