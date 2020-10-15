@@ -1,6 +1,6 @@
-# CELESTIAL
+# Celestial
 ***
-CELESTIAL is a Microsoft Research project for prototyping a framework for formally verifying smart contracts written in the Solidity language for the Ethereum blockchain. CELESTIAL allows programmers to write expressive functional specifications for their contracts. It translates the contracts and the specifications to F\* to formally verify, against an F\* model of the blockchain semantics, that the contracts meet their specifications. Once the verification succeeds, CELESTIAL performs an erasure of the specifications to generate Solidity code for execution on the Ethereum blockchain. 
+Celestial is a Microsoft Research project for prototyping a framework for formally verifying smart contracts written in the Solidity language for the Ethereum blockchain. CELESTIAL allows programmers to write expressive functional specifications for their contracts. It translates the contracts and the specifications to F\* to formally verify, against an F\* model of the blockchain semantics, that the contracts meet their specifications. Once the verification succeeds, CELESTIAL performs an erasure of the specifications to generate Solidity code for execution on the Ethereum blockchain. 
 Alternatively, one can choose to employ VeriSol as the verification backend, instead of F\*. In this case, CELESTIAL generates a VeriSol-compatible Solidity source code to formally verify that the contract meets its specifications. 
 
 We use CELESTIAL to verify several real-world smart contracts from different application domains such as tokens, digital wallets, and governance. 
@@ -10,16 +10,16 @@ See [this](https://github.com/FStarLang/FStar/blob/master/INSTALL.md) for instal
 
 See [this](https://github.com/microsoft/verisol/blob/master/INSTALL.md) for installing VeriSol.
 
-### Prequisites for CELESTIAL:
+### Prequisites for Celestial:
 * `python3`
 * `antlr4`
 * `prettytable`
 * `argparse`
 
 ---
-### Instructions to compile a CELESTIAL source:
+### Instructions to compile a Celestial source:
 ```
-$ python3 ./main.py <path_to_CELESTIAL_source_code> [--v="FStar|VeriSol"] [--fstDir="path_to_output_directory_for_FStar_code"]
+$ python3 ./main.py <path_to_celestial_source_code> [--v="FStar|VeriSol"] [--fstDir="path_to_output_directory_for_FStar_code"]
 [--solDir="path_to_output_directory_for_Solidity_code"] 
 ```
 
@@ -45,4 +45,4 @@ More details about VeriSol can be found [here](https://github.com/microsoft/veri
 
 ---
 ## License
-CELESTIAL is released under the MIT license.
+Celestial is released under the MIT license.
