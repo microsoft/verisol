@@ -6,10 +6,10 @@ Alternatively, one can choose to employ VeriSol as the verification backend. In 
 We use CELESTIAL to verify several real-world smart contracts from different application domains such as tokens, digital wallets, and governance. 
 
 ## Installation
-See this for installing Celestial. 
+See [this](https://github.com/FStarLang/FStar/blob/master/INSTALL.md) for installing FStar.
 
-See this for installing FStar.
+See [this](https://github.com/microsoft/verisol/blob/master/INSTALL.md) for installing VeriSol.
 
-See this for installing VeriSol.
+See [this](https://github.com/suvamM/verisol/tree/celestial/Sources/Celestial/Compiler/README.md) for using Celestial. 
 
 ## 
