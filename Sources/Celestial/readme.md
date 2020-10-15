@@ -39,7 +39,7 @@ One can increase ```z3rlimit``` if required. More details about FStar can be fou
 ---
 ### Instructions to verify the generated code using VeriSol
 ```
-VeriSol <path_to_top_level_Solidity_file_with_spec> <name_of_the_top_level_contract_to_analyze>
+VeriSol <path_to_generated_Solidity_file_with_spec> <name_of_the_top_level_contract_to_analyze>
 ```
 More details about VeriSol can be found [here](https://github.com/microsoft/verisol/blob/master/INSTALL.md).
 
