@@ -1352,7 +1352,10 @@ class MyListener(CelestialParserListener):
             return "eventlog"
 
         elif (ctx.PAYABLE()):
-            return self.exprType(ctx.expr(0), scope)
+            if self.verificationMode == "VeriSol":
+                revert ("<ERROR>: VeriSol doesn't support payable" + ctx.PAYABLE())     #Added for VeriSol compatibility.
+            else:
+                return self.exprType(ctx.expr(0), scope)
 
         elif (ctx.method and ctx.DOT()):
             if ctx.iden(0).Iden().getText() == "abi":

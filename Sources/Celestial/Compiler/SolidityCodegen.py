@@ -704,7 +704,15 @@ class SolidityCodegen:
         elif ctx.TRANSFER():
             to = self.getSolidityExpr(ctx.to, symbols, scope)
             amount = self.getSolidityExpr(ctx.amount, symbols, scope)
-            self.writeToSolidity(to + ".transfer(" + amount + ");")
+            if self.verificationMode == "VeriSol" and to!="msg.sender":     #Added for VeriSol.
+                payableto = to.replace("(" ,"")
+                payableto = payableto.replace(")" ,"")
+                payableto = payableto.replace("payable" ,"")
+                self.writeToSolidity("address payable "+payableto+" = address(uint160(address("+payableto+")));")
+                self.writeToSolidity(payableto+".transfer(" + amount + ");")
+                #self.writeToSolidity(to + ".call.value(" + amount + ").gas(2300)(\"\");")
+            else:
+                self.writeToSolidity(to + ".transfer(" + amount + ");")
 
             # self.writeToSolidity("if (address(this).balance < " + amount + ") revert (\"Insufficient balance\");")
             # if self.verificationMode == "VeriSol":
