@@ -10,7 +10,7 @@ See [this](https://github.com/FStarLang/FStar/blob/master/INSTALL.md) for instal
 
 See [this](https://github.com/microsoft/verisol/blob/master/INSTALL.md) for installing VeriSol.
 
-### Prequisites for using Celestial:
+### Prequisites for Celestial:
 * `python3`
 * `antlr4`
 * `prettytable`
