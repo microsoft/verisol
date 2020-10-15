@@ -44,3 +44,5 @@ VeriSol <path_to_generated_Solidity_file_with_spec> <name_of_the_top_level_contr
 More details about VeriSol can be found [here](https://github.com/microsoft/verisol/blob/master/INSTALL.md).
 
 ---
+## License
+Celestial is released under the MIT license.
