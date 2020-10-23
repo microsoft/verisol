@@ -200,6 +200,7 @@ namespace SolToBoogie
             return
                 IsKeccakFunc(node) ||
                 IsAbiEncodePackedFunc(node) ||
+                IsGasleft(node) ||
                 IsTypeCast(node) ||
                 IsStructConstructor(node) ||
                 IsContractConstructor(node);
@@ -215,6 +216,16 @@ namespace SolToBoogie
             return node.Kind.Equals("structConstructorCall");
         }
 
+        public static bool IsGasleft(FunctionCall node)
+        {
+            if (node.Expression is Identifier ident)
+            {
+                return ident.Name.Equals("gasleft") && node.Arguments.Count == 0;
+            }
+
+            return false;
+        }
+         
         public static bool IsKeccakFunc(FunctionCall node)
         {
             if (node.Expression is Identifier ident)

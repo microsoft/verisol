@@ -2099,6 +2099,12 @@ namespace SolToBoogie
                     TranslateKeccakFuncCall(funcCall, lhs[0]); //this is not a procedure call in Boogie
                     usedTmpVar = false;
                 }
+                else if (FunctionCallHelper.IsGasleft(funcCall))
+                {
+                    VeriSolAssert(!isTupleAssignment, "Not expecting a tuple for gasleft");
+                    TranslateGasleftCall(funcCall, lhs[0]);
+                    usedTmpVar = false;
+                }
                 else if (FunctionCallHelper.IsAbiEncodePackedFunc(funcCall))
                 {
                     TranslateAbiEncodedFuncCall(funcCall, tmpVars[0]); //this is not a procedure call in Boogie
@@ -2973,6 +2979,8 @@ namespace SolToBoogie
                     TranslateAbiEncodedFuncCall(node, tmpVarExpr);
                 } else if (FunctionCallHelper.IsKeccakFunc(node)) {
                     TranslateKeccakFuncCall(node, tmpVarExpr);
+                } else if (FunctionCallHelper.IsGasleft(node)) {
+                    TranslateGasleftCall(node, tmpVarExpr);
                 } else if (FunctionCallHelper.IsStructConstructor(node)) {
                     TranslateStructConstructor(node, tmpVarExpr);
                 } else
@@ -3153,13 +3161,21 @@ namespace SolToBoogie
             return tmpVarExpr;
         }
 
-        #region implicit functions 
+        #region implicit functions
+
         /// <summary>
         /// Implicit function calls
         /// </summary>
         /// <param name="node"></param>
         /// <returns></returns>
 
+        private void TranslateGasleftCall(FunctionCall node, BoogieExpr lhs)
+        {
+            currentStmtList.AddStatement(new BoogieCommentCmd("gasleft Translation"));
+            BoogieAssignCmd gasAssign = new BoogieAssignCmd(lhs, new BoogieIdentifierExpr("gas"));
+            currentStmtList.AddStatement(gasAssign);
+        }
+        
         private void TranslateKeccakFuncCall(FunctionCall funcCall, BoogieExpr lhs)
         {
             var expression = funcCall.Arguments[0];

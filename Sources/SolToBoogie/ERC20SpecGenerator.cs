@@ -77,9 +77,22 @@ namespace SolToBoogie
             }
         }
 
+        private int CompareVars(VariableDeclaration v1, VariableDeclaration v2)
+        {
+            int v1No = context.ASTNodeToSourceLineNumberMap[v1];
+            int v2No = context.ASTNodeToSourceLineNumberMap[v2];
+
+            if (v1No != v2No)
+            {
+                return v1No < v2No ? -1 : 1;
+            }
+            
+            throw new Exception("Two variables declared on the same line");
+        }
 
         public void GenerateSpec()
         {
+            List<VariableDeclaration> allVars = new List<VariableDeclaration>(otherVars);
             String filename = context.ASTNodeToSourcePathMap[entryContract];
             StreamWriter writer = new StreamWriter($"{filename.Substring(0, filename.Length - 4)}.config");
             
@@ -88,16 +101,31 @@ namespace SolToBoogie
             {
                 Console.WriteLine("Warning: Could not find totalSupply variable");
             }
+            else
+            {
+                allVars.Add(varDecls["totalSupply"]);
+            }
             string bal = varDecls.ContainsKey("balanceOf") ? $"this.{varDecls["balanceOf"].Name}" : "";
             if (String.IsNullOrEmpty(bal))
             {
                 Console.WriteLine("Warning: Could not find balance variable");
+            }
+            else
+            {
+                allVars.Add(varDecls["balanceOf"]);
             }
             string allowances = varDecls.ContainsKey("allowance") ? $"this.{varDecls["allowance"].Name}" : "";
             if (String.IsNullOrEmpty(allowances))
             {
                 Console.WriteLine("Warning: Could not find allowances variable");
             }
+            else
+            {
+                allVars.Add(varDecls["allowance"]);
+            }
+            
+            allVars.Sort(CompareVars);
+            
             string totContract = fnContracts.ContainsKey("totalSupply") ? fnContracts["totalSupply"].Name : "";
             string balContract = fnContracts.ContainsKey("balanceOf") ? fnContracts["balanceOf"].Name : "";
             string allowanceContract = fnContracts.ContainsKey("allowance") ? fnContracts["allowance"].Name : "";
@@ -119,6 +147,10 @@ namespace SolToBoogie
             writer.WriteLine($"TRANSFER_CONTRACT={transferContract}");
             writer.WriteLine($"TRANSFER_FROM_CONTRACT={transferFromContract}");
             writer.WriteLine($"EXTRA_VARS=({extraVars})");
+            for (int i = 0; i < allVars.Count; i++)
+            {
+                writer.WriteLine($"{allVars[i].Name}={i}");
+            }
             writer.Close();
         }
 
