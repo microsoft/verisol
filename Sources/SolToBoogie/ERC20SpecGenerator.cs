@@ -96,7 +96,7 @@ namespace SolToBoogie
             String filename = context.ASTNodeToSourcePathMap[entryContract];
             StreamWriter writer = new StreamWriter($"{filename.Substring(0, filename.Length - 4)}.config");
             
-            string totSupply = varDecls.ContainsKey("totalSupply") ? $"this.{varDecls["totalSupply"].Name}" : "";
+            string totSupply = varDecls.ContainsKey("totalSupply") ? $"{varDecls["totalSupply"].Name}" : "";
             if (String.IsNullOrEmpty(totSupply))
             {
                 Console.WriteLine("Warning: Could not find totalSupply variable");
@@ -105,7 +105,7 @@ namespace SolToBoogie
             {
                 allVars.Add(varDecls["totalSupply"]);
             }
-            string bal = varDecls.ContainsKey("balanceOf") ? $"this.{varDecls["balanceOf"].Name}" : "";
+            string bal = varDecls.ContainsKey("balanceOf") ? $"{varDecls["balanceOf"].Name}" : "";
             if (String.IsNullOrEmpty(bal))
             {
                 Console.WriteLine("Warning: Could not find balance variable");
@@ -114,7 +114,7 @@ namespace SolToBoogie
             {
                 allVars.Add(varDecls["balanceOf"]);
             }
-            string allowances = varDecls.ContainsKey("allowance") ? $"this.{varDecls["allowance"].Name}" : "";
+            string allowances = varDecls.ContainsKey("allowance") ? $"{varDecls["allowance"].Name}" : "";
             if (String.IsNullOrEmpty(allowances))
             {
                 Console.WriteLine("Warning: Could not find allowances variable");
@@ -133,7 +133,7 @@ namespace SolToBoogie
             string transferContract = fnContracts.ContainsKey("transfer") ? fnContracts["transfer"].Name : "";
             string transferFromContract =
                 fnContracts.ContainsKey("transferFrom") ? fnContracts["transferFrom"].Name : "";
-            string extraVars = String.Join(" ", otherVars.Select(v => $"this.{v.Name}"));
+            string extraVars = String.Join(" ", otherVars.Select(v => $"{v.Name}"));
 
             writer.WriteLine($"FILE_NAME={filename}");
             writer.WriteLine($"CONTRACT_NAME={entryContract.Name}");
