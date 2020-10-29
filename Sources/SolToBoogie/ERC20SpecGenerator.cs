@@ -133,7 +133,7 @@ namespace SolToBoogie
             string transferContract = fnContracts.ContainsKey("transfer") ? fnContracts["transfer"].Name : "";
             string transferFromContract =
                 fnContracts.ContainsKey("transferFrom") ? fnContracts["transferFrom"].Name : "";
-            string extraVars = String.Join(" ", otherVars.Select(v => $"{v.Name}"));
+            string extraVars = String.Join(" ", otherVars.Select(v => $"this.{v.Name}"));
 
             writer.WriteLine($"FILE_NAME={filename}");
             writer.WriteLine($"CONTRACT_NAME={entryContract.Name}");
