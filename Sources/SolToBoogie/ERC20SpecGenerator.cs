@@ -79,7 +79,18 @@ namespace SolToBoogie
 
         private int CompareVars(VariableDeclaration v1, VariableDeclaration v2)
         {
-            int v1No = context.ASTNodeToSourceLineNumberMap[v1];
+            string[] v1Tokens = v1.Src.Split(':');
+            int v1Pos = int.Parse(v1Tokens[0]);
+            string[] v2Tokens = v2.Src.Split(':');
+            int v2Pos = int.Parse(v2Tokens[0]);
+
+            if (v1Pos != v2Pos)
+            {
+                return v1Pos < v2Pos ? -1 : 1;
+            }
+
+            throw new Exception("Two variables at the same position");
+            /*int v1No = context.ASTNodeToSourceLineNumberMap[v1];
             int v2No = context.ASTNodeToSourceLineNumberMap[v2];
 
             if (v1No != v2No)
@@ -87,7 +98,7 @@ namespace SolToBoogie
                 return v1No < v2No ? -1 : 1;
             }
             
-            throw new Exception("Two variables declared on the same line");
+            throw new Exception("Two variables declared on the same line");*/
         }
 
         public void GenerateSpec()
