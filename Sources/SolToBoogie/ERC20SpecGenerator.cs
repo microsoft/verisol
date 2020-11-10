@@ -17,6 +17,7 @@ namespace SolToBoogie
         private ContractDefinition entryContract;
         private Dictionary<String, VariableDeclaration> varDecls;
         private Dictionary<String, ContractDefinition> fnContracts;
+        private Dictionary<VariableDeclaration, int> declToContractInd;
         private List<VariableDeclaration> otherVars;
         
         public ERC20SpecGenerator(TranslatorContext context, AST solidityAST, String entryPoint)
@@ -26,6 +27,7 @@ namespace SolToBoogie
             varDecls = new Dictionary<string, VariableDeclaration>();
             fnContracts = new Dictionary<string, ContractDefinition>();
             otherVars = new List<VariableDeclaration>();
+            declToContractInd = new Dictionary<VariableDeclaration, int>();
             
             foreach (ContractDefinition def in context.ContractDefinitions)
             {
@@ -34,14 +36,20 @@ namespace SolToBoogie
                     entryContract = def;
                 }
             }
-            
+
+            int contractInd = 0;
             foreach (int id in entryContract.LinearizedBaseContracts)
             {
+                contractInd++;
                 ContractDefinition contract = context.GetASTNodeById(id) as ContractDefinition;
 
                 if (context.ContractToStateVarsMap.ContainsKey(contract))
                 {
                     otherVars.AddRange(context.ContractToStateVarsMap[contract]);
+                    foreach (VariableDeclaration decl in context.ContractToStateVarsMap[contract])
+                    {
+                        declToContractInd[decl] = contractInd;
+                    }
                 }
 
                 if (!context.ContractToFunctionsMap.ContainsKey(contract))
@@ -75,15 +83,22 @@ namespace SolToBoogie
             {
                 otherVars.Remove(decl);
             }
+
+            otherVars.RemoveAll(v => v.Constant);
         }
 
         private int CompareVars(VariableDeclaration v1, VariableDeclaration v2)
         {
+            if (declToContractInd[v1] != declToContractInd[v2])
+            {
+                return declToContractInd[v1] > declToContractInd[v2] ? -1 : 1;
+            }
+            
             string[] v1Tokens = v1.Src.Split(':');
             int v1Pos = int.Parse(v1Tokens[0]);
             string[] v2Tokens = v2.Src.Split(':');
             int v2Pos = int.Parse(v2Tokens[0]);
-
+            
             if (v1Pos != v2Pos)
             {
                 return v1Pos < v2Pos ? -1 : 1;
