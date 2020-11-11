@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 
 using System;
+using System.Numerics;
 
 namespace SolToBoogie
 {
@@ -162,6 +163,19 @@ namespace SolToBoogie
             if (context.IsConstructorDefined(contract))
             {
                 FunctionDefinition ctor = context.GetConstructorByContract(contract);
+                if (ctor.StateMutability.Equals(EnumStateMutability.PAYABLE))
+                {
+                    BoogieExpr assumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE,
+                        new BoogieIdentifierExpr("msgvalue_MSG"), new BoogieLiteralExpr(BigInteger.Zero));
+                    localStmtList.Add(new BoogieAssumeCmd(assumeExpr));
+                }
+                else
+                {
+                    BoogieExpr assumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ,
+                        new BoogieIdentifierExpr("msgvalue_MSG"), new BoogieLiteralExpr(BigInteger.Zero));
+                    localStmtList.Add(new BoogieAssumeCmd(assumeExpr));
+                }
+                
                 foreach (VariableDeclaration param in ctor.Parameters.Parameters)
                 {
                     string name = TransUtils.GetCanonicalLocalVariableName(param, context);
@@ -174,6 +188,12 @@ namespace SolToBoogie
                             new List<BoogieExpr>(), new List<BoogieIdentifierExpr>() {new BoogieIdentifierExpr(name)}));
                     }
                 }
+            }
+            else
+            {
+                BoogieExpr assumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ,
+                    new BoogieIdentifierExpr("msgvalue_MSG"), new BoogieLiteralExpr(BigInteger.Zero));
+                localStmtList.Add(new BoogieAssumeCmd(assumeExpr));
             }
 
             if (context.TranslateFlags.InstrumentGas)
