@@ -557,11 +557,12 @@ namespace SolToBoogie
             return builder.ToString();
         }
 
-        public static string InferFunctionSignature(TranslatorContext context, FunctionCall node)
+        public static string InferFunctionSignature(TranslatorContext context, FunctionCall node,
+            bool forceNameLookup = false)
         {
             Debug.Assert(node.Arguments != null);
 
-            if (node.Expression is MemberAccess memberAccess)
+            if (!forceNameLookup && node.Expression is MemberAccess memberAccess)
             {
                 Debug.Assert(memberAccess.ReferencedDeclaration != null);
                 FunctionDefinition function = context.GetASTNodeById(memberAccess.ReferencedDeclaration.Value) as FunctionDefinition;

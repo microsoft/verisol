@@ -3707,8 +3707,9 @@ namespace SolToBoogie
             // Solidity internally generates foo() getter for any public state 
             // variable foo in a contract. 
 
-            if (IsGetterForPublicVariable(node, out varDecl, out contractDefn))
+            if (IsGetterForPublicVariable(node, out varDecl, out contractDefn) && !(context.TranslateFlags.GenerateGetters && node.Arguments.Count != 0))
             {
+                VeriSolAssert(node.Arguments.Count == 0, "Cannot access mappings or arrays using public getter right now");
                 VeriSolAssert(!isSuper, "Super is not supported for public getters right now");
                 List<ContractDefinition> subtypes = new List<ContractDefinition>(context.GetSubTypesOfContract(contractDefn));
                 Debug.Assert(subtypes.Count > 0);
@@ -3732,7 +3733,7 @@ namespace SolToBoogie
             }
 
             Dictionary<ContractDefinition, FunctionDefinition> dynamicTypeToFuncMap;
-            string signature = TransUtils.InferFunctionSignature(context, node);
+            string signature = TransUtils.InferFunctionSignature(context, node, IsGetterForPublicVariable(node, out varDecl, out contractDefn));
             VeriSolAssert(context.HasFuncSignature(signature), $"Cannot find a function with signature: {signature}");
             dynamicTypeToFuncMap = context.GetAllFuncDefinitions(signature);
             VeriSolAssert(dynamicTypeToFuncMap.Count > 0);

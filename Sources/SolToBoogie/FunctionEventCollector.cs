@@ -107,7 +107,7 @@ namespace SolToBoogie
                 else if (curType is ArrayTypeName arr)
                 {
                     TypeDescription intDescription = new TypeDescription();
-                    intDescription.TypeString = "uint";
+                    intDescription.TypeString = "uint256";
                     ElementaryTypeName intTypeName = new ElementaryTypeName();
                     intTypeName.TypeDescriptions = intDescription;
                     paramDecl.TypeName = intTypeName;
