@@ -480,6 +480,12 @@ namespace SolToBoogie
             return StateVarNameResolutionMap.ContainsKey(varName);
         }
 
+        public bool HasStateVar(string varName, ContractDefinition dynamicType)
+        {
+            return StateVarNameResolutionMap.ContainsKey(varName) &&
+                   StateVarNameResolutionMap[varName].ContainsKey(dynamicType);
+        }
+
         public VariableDeclaration GetStateVarByDynamicType(string varName, ContractDefinition dynamicType)
         {
             return StateVarNameResolutionMap[varName][dynamicType];

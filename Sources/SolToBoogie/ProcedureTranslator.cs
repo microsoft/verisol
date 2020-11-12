@@ -3826,6 +3826,11 @@ namespace SolToBoogie
                 contractDefinition = context.GetContractByName(contractTypeStr.Substring("contract ".Length));
                 VeriSolAssert(contractDefinition != null, $"Expecting a contract {contractTypeStr} to exist in context");
 
+                if (!context.HasStateVar(memberAccess.MemberName, contractDefinition))
+                {
+                    return false;
+                }
+                
                 var = context.GetStateVarByDynamicType(memberAccess.MemberName, contractDefinition);
                 return true;
             }
