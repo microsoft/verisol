@@ -2985,7 +2985,7 @@ namespace SolToBoogie
                     TranslateStructConstructor(node, tmpVarExpr);
                 } else
                 {
-                    VeriSolAssert(false, $"Unexpected implicit function {node.ToString()}");
+                    VeriSolAssert(false, $"Unsupported implicit function {node.ToString()}");
                 }
 
                 if (!isElementaryCast)

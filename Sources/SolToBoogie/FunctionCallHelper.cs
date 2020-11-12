@@ -203,7 +203,23 @@ namespace SolToBoogie
                 IsGasleft(node) ||
                 IsTypeCast(node) ||
                 IsStructConstructor(node) ||
-                IsContractConstructor(node);
+                IsContractConstructor(node) ||
+                IsAbiFunction(node);
+        }
+        
+        public static bool IsAbiFunction(FunctionCall node)
+        {
+            if (node.Expression is MemberAccess member)
+            {
+                if (member.Expression is Identifier ident)
+                {
+                    if (ident.Name.Equals("abi"))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         public static bool IsContractConstructor(FunctionCall node)
