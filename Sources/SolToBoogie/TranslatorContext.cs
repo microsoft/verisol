@@ -116,6 +116,8 @@ namespace SolToBoogie
         // data structures for using
         // maps Contract C --> (source, dest), where source is a library type
         private readonly Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, List<TypeName>>> usingMap;
+        
+        public HashSet<String> initFns { get; set; }
 
         public TranslatorContext(AST solidityAST, HashSet<Tuple<string, string>> ignoreMethods, bool _genInlineAttrInBpl, TranslatorFlags _translateFlags = null, String entryPointContract = "")
         {
@@ -150,6 +152,7 @@ namespace SolToBoogie
             TranslateFlags = _translateFlags;
             EntryPointContract = entryPointContract;
             Analysis = new SolidityAnalyzer(solidityAST, ignoreMethods, entryPointContract);
+            initFns = new HashSet<String>();
         }
 
         public bool HasASTNodeId(int id)

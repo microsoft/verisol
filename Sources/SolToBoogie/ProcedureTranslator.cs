@@ -879,6 +879,10 @@ namespace SolToBoogie
                         BoogieMapSelect lenAccess = new BoogieMapSelect(new BoogieIdentifierExpr(lenName), contractVar.Arguments);
                         
                         BoogieExpr lenZero = MapArrayHelper.GetCallExprForInit(initType, initVal);
+                        /*if (lenZero is BoogieFuncCallExpr callExpr && !context.initFns.Contains(callExpr.Function))
+                        {
+                            MapArrayHelper.Generate
+                        }*/
                         /*if (lenType is BoogieMapType)
                         {
                             lenZero = 
@@ -1314,8 +1318,14 @@ namespace SolToBoogie
                         BoogieMapSelect lhs = new BoogieMapSelect(new BoogieIdentifierExpr(allocName), index);
                         if (context.TranslateFlags.QuantFreeAllocs)
                         {
-                            currentStmtList.AddStatement((new BoogieAssignCmd(lhs,
-                                MapArrayHelper.GetCallExprForZeroInit(keyType, BoogieType.Bool))));
+                            BoogieFuncCallExpr zeroCall =
+                                MapArrayHelper.GetCallExprForZeroInit(keyType, BoogieType.Bool);
+                            if (!context.initFns.Contains(zeroCall.Function))
+                            {
+                                context.initFns.Add(zeroCall.Function);
+                                context.Program.AddDeclaration(MapArrayHelper.GenerateMultiDimZeroFunction(keyType, BoogieType.Bool));
+                            }
+                            currentStmtList.AddStatement((new BoogieAssignCmd(lhs, zeroCall)));
                         }
                         else
                         {
