@@ -103,6 +103,17 @@ namespace SolToBoogie
 
             var thenBody = new BoogieStmtList();
             var successIdExp = new BoogieIdentifierExpr(outParams[0].Name);
+            
+            thenBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function START "));
+            var balFrom = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr(inParams[0].Name));
+            var balTo = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr(inParams[1].Name));
+            var msgVal = new BoogieIdentifierExpr(inParams[2].Name);
+            //balance[msg.sender] = balance[msg.sender] - msg.value
+            thenBody.AddStatement(new BoogieAssignCmd(balFrom, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, balFrom, msgVal)));
+            //balance[this] = balance[this] + msg.value
+            thenBody.AddStatement(new BoogieAssignCmd(balTo, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, balTo, msgVal)));
+            thenBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function END "));
+            
             thenBody.AddStatement(callStmt); 
             thenBody.AddStatement(new BoogieAssignCmd(successIdExp, new BoogieLiteralExpr(true)));
 
@@ -133,7 +144,7 @@ namespace SolToBoogie
                 "CreateBodyOfUnknownFallback called in unexpected context");
             var procBody = new BoogieStmtList();
 
-            procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function START "));
+            /*procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function START "));
             var balnSender = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr(inParams[0].Name));
             var balnThis = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr(inParams[1].Name));
             var msgVal = new BoogieIdentifierExpr("amount");
@@ -143,7 +154,7 @@ namespace SolToBoogie
             procBody.AddStatement(new BoogieAssignCmd(balnSender, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, balnSender, msgVal)));
             //balance[to] = balance[to] + msg.value
             procBody.AddStatement(new BoogieAssignCmd(balnThis, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, balnThis, msgVal)));
-            procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function END "));
+            procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function END "));*/
 
             BoogieStmtList body = procBody;
             if (context.TranslateFlags.ModelStubsAsCallbacks() ||
@@ -196,7 +207,7 @@ namespace SolToBoogie
                 foreach (ContractDefinition curDef in context.ContractDefinitions.ToList())
                 {
                     BoogieIfCmd reentrantCalls = TransUtils.GenerateChoiceBlock(new List<ContractDefinition>() {curDef},
-                        context, Tuple.Create(inParams[0].Name, inParams[1].Name));
+                        context, false, Tuple.Create(inParams[0].Name, inParams[1].Name));
                     
                     if (reentrantCalls == null)
                     {

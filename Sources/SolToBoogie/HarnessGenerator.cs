@@ -168,6 +168,18 @@ namespace SolToBoogie
                     BoogieExpr assumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE,
                         new BoogieIdentifierExpr("msgvalue_MSG"), new BoogieLiteralExpr(BigInteger.Zero));
                     localStmtList.Add(new BoogieAssumeCmd(assumeExpr));
+                    
+                    localStmtList.Add(new BoogieCommentCmd("---- Logic for payable function START "));
+                    var balnSender = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("msgsender_MSG"));
+                    var balnThis = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("this"));
+                    var msgVal = new BoogieIdentifierExpr("msgvalue_MSG");
+                    //assume Balance[msg.sender] >= msg.value
+                    localStmtList.Add(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, balnSender, msgVal)));
+                    //balance[msg.sender] = balance[msg.sender] - msg.value
+                    localStmtList.Add(new BoogieAssignCmd(balnSender, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, balnSender, msgVal)));
+                    //balance[this] = balance[this] + msg.value
+                    localStmtList.Add(new BoogieAssignCmd(balnThis, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, balnThis, msgVal)));
+                    localStmtList.Add(new BoogieCommentCmd("---- Logic for payable function END "));
                 }
                 else
                 {
@@ -327,7 +339,7 @@ namespace SolToBoogie
         private BoogieIfCmd GenerateChoices(ContractDefinition contract)
         {
             BoogieExpr thisVal = new BoogieIdentifierExpr("this");
-            Tuple<BoogieIfCmd, int> curChoices = TransUtils.GeneratePartialChoiceBlock(new List<ContractDefinition>() {contract}, context, thisVal, 0);
+            Tuple<BoogieIfCmd, int> curChoices = TransUtils.GeneratePartialChoiceBlock(new List<ContractDefinition>() {contract}, context, thisVal, 0, context.TranslateFlags.ModelReverts);
             if (context.TranslateFlags.TxnsOnFields)
             {
                 HashSet<VariableDeclaration> contractFields = context.GetStateVarsByContract(contract);
@@ -340,7 +352,7 @@ namespace SolToBoogie
                         String fieldContractName = contractField.TypeName.ToString();
                         ContractDefinition fieldDef = context.GetContractByName(fieldContractName);
                         curChoices = TransUtils.GeneratePartialChoiceBlock(new List<ContractDefinition>() {fieldDef},
-                            context, fieldInstance, curChoices.Item2, curChoices.Item1);
+                            context, fieldInstance, curChoices.Item2, context.TranslateFlags.ModelReverts, curChoices.Item1);
                     }
                 }
             }

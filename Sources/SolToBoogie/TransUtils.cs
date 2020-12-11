@@ -811,12 +811,12 @@ namespace SolToBoogie
         /// <param name="context"></param>
         /// <param name="callBackTarget">If non-null, this will be the msg.sender for calling back into the contracts</param>
         /// <returns></returns>
-        public static BoogieIfCmd GenerateChoiceBlock(List<ContractDefinition> contracts, TranslatorContext context, Tuple<string, string> callBackTarget = null)
+        public static BoogieIfCmd GenerateChoiceBlock(List<ContractDefinition> contracts, TranslatorContext context, bool canRevert, Tuple<string, string> callBackTarget = null)
         {
-            return GeneratePartialChoiceBlock(contracts, context, new BoogieIdentifierExpr("this"), 0, null, callBackTarget).Item1;
+            return GeneratePartialChoiceBlock(contracts, context, new BoogieIdentifierExpr("this"), 0, canRevert, null, callBackTarget).Item1;
         }
         
-        public static Tuple<BoogieIfCmd, int> GeneratePartialChoiceBlock(List<ContractDefinition> contracts, TranslatorContext context, BoogieExpr thisExpr, int startingPoint, BoogieIfCmd alternatives = null, Tuple<string, string> callBackTarget = null)
+        public static Tuple<BoogieIfCmd, int> GeneratePartialChoiceBlock(List<ContractDefinition> contracts, TranslatorContext context, BoogieExpr thisExpr, int startingPoint, bool canRevert, BoogieIfCmd alternatives = null, Tuple<string, string> callBackTarget = null)
         {
             BoogieIfCmd ifCmd = alternatives;
             int j = startingPoint;
@@ -900,6 +900,22 @@ namespace SolToBoogie
                         BoogieExpr assumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE,
                             new BoogieIdentifierExpr("msgvalue_MSG"), new BoogieLiteralExpr(BigInteger.Zero));
                         thenBody.AddStatement(new BoogieAssumeCmd(assumeExpr));
+
+                        if (!canRevert)
+                        {
+                            thenBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function START "));
+                            var balnSender = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("msgsender_MSG"));
+                            var balnThis = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("this"));
+                            var msgVal = new BoogieIdentifierExpr("msgvalue_MSG");
+                            //assume Balance[msg.sender] >= msg.value
+                            thenBody.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, balnSender, msgVal)));
+                            //balance[msg.sender] = balance[msg.sender] - msg.value
+                            thenBody.AddStatement(new BoogieAssignCmd(balnSender, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, balnSender, msgVal)));
+                            //balance[this] = balance[this] + msg.value
+                            thenBody.AddStatement(new BoogieAssignCmd(balnThis, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, balnThis, msgVal)));
+                            thenBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function END "));
+                        }
+                         
                     }
                     else
                     {
