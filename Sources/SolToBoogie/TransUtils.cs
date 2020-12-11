@@ -1,5 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
+
+using System.Security.Cryptography;
+
 namespace SolToBoogie
 {
     using System;
@@ -459,7 +462,36 @@ namespace SolToBoogie
         public static string GetCanonicalFunctionName(FunctionDefinition funcDef, TranslatorContext context)
         {
             ContractDefinition contract = context.GetContractByFunction(funcDef);
-            return funcDef.Name + "_" + contract.Name;
+            string paramStr = "";
+
+            if (funcDef.Parameters != null)
+            {
+                foreach (VariableDeclaration paramDecl in funcDef.Parameters.Parameters)
+                {
+                    String typeStr = "";
+                    if (paramDecl.TypeName is Mapping map)
+                    {
+                        typeStr = "map" + map.KeyType.ToString();
+                    }
+                    else if (paramDecl.TypeName is UserDefinedTypeName userDef)
+                    {
+                        typeStr = userDef.Name;
+                    }
+                    else if (paramDecl.TypeName is ArrayTypeName arr)
+                    {
+                        typeStr = "arr";
+                    }
+                    else
+                    {
+                        typeStr = paramDecl.TypeName.ToString().Replace(" ", "");
+                    }
+                    
+                    paramStr = $"{paramStr}~{typeStr}";
+                }
+            }
+
+            return $"{funcDef.Name}{paramStr}_{contract.Name}";
+            //return funcDef.Name + "_" + contract.Name;
         }
 
         public static string GetCanonicalConstructorName(ContractDefinition contract)
@@ -525,11 +557,12 @@ namespace SolToBoogie
             return builder.ToString();
         }
 
-        public static string InferFunctionSignature(TranslatorContext context, FunctionCall node)
+        public static string InferFunctionSignature(TranslatorContext context, FunctionCall node,
+            bool forceNameLookup = false)
         {
             Debug.Assert(node.Arguments != null);
 
-            if (node.Expression is MemberAccess memberAccess)
+            if (!forceNameLookup && node.Expression is MemberAccess memberAccess)
             {
                 Debug.Assert(memberAccess.ReferencedDeclaration != null);
                 FunctionDefinition function = context.GetASTNodeById(memberAccess.ReferencedDeclaration.Value) as FunctionDefinition;
@@ -769,7 +802,7 @@ namespace SolToBoogie
             }
             return localVars;
         }
-
+        
         /// <summary>
         /// generate a non-deterministic choice block to call every public visible functions except constructors
         /// 
@@ -778,10 +811,15 @@ namespace SolToBoogie
         /// <param name="context"></param>
         /// <param name="callBackTarget">If non-null, this will be the msg.sender for calling back into the contracts</param>
         /// <returns></returns>
-        public static BoogieIfCmd GenerateChoiceBlock(List<ContractDefinition> contracts, TranslatorContext context, Tuple<string, string> callBackTarget = null)
+        public static BoogieIfCmd GenerateChoiceBlock(List<ContractDefinition> contracts, TranslatorContext context, bool canRevert, Tuple<string, string> callBackTarget = null)
         {
-            BoogieIfCmd ifCmd = null;
-            int j = 0;
+            return GeneratePartialChoiceBlock(contracts, context, new BoogieIdentifierExpr("this"), 0, canRevert, null, callBackTarget).Item1;
+        }
+        
+        public static Tuple<BoogieIfCmd, int> GeneratePartialChoiceBlock(List<ContractDefinition> contracts, TranslatorContext context, BoogieExpr thisExpr, int startingPoint, bool canRevert, BoogieIfCmd alternatives = null, Tuple<string, string> callBackTarget = null)
+        {
+            BoogieIfCmd ifCmd = alternatives;
+            int j = startingPoint;
             foreach (var contract in contracts)
             {
                 if (contract.ContractKind != EnumContractKind.CONTRACT) continue;
@@ -792,6 +830,12 @@ namespace SolToBoogie
                 {
                     if (funcDef.IsConstructor) continue;
                     if (funcDef.IsFallback) continue; //let us not call fallback directly in harness
+                    if (context.TranslateFlags.PerformFunctionSlice &&
+                        !context.TranslateFlags.SliceFunctions.Contains(funcDef))
+                    {
+                        continue;
+                    }
+                        
                     if (funcDef.Visibility == EnumVisibility.PUBLIC || funcDef.Visibility == EnumVisibility.EXTERNAL)
                     {
                         publicFuncDefs.Add(funcDef);
@@ -811,7 +855,7 @@ namespace SolToBoogie
                     List<BoogieExpr> inputs = new List<BoogieExpr>()
                 {
                     // let us just call back into the calling contract
-                    callBackTarget != null ? new BoogieIdentifierExpr(callBackTarget.Item1) : new BoogieIdentifierExpr("this"),
+                    callBackTarget != null ? new BoogieIdentifierExpr(callBackTarget.Item1) : thisExpr,
                     callBackTarget != null ? new BoogieIdentifierExpr(callBackTarget.Item2) : new BoogieIdentifierExpr("msgsender_MSG"), 
                     new BoogieIdentifierExpr("msgvalue_MSG"),
                 };
@@ -823,7 +867,9 @@ namespace SolToBoogie
                         {
                             name = TransUtils.GetCanonicalLocalVariableName(param, context);
                         }
-                        inputs.Add(new BoogieIdentifierExpr(name));
+
+                        BoogieIdentifierExpr boogieVar = new BoogieIdentifierExpr(name);
+                        inputs.Add(boogieVar);
                         if (param.TypeName is ArrayTypeName array)
                         {
                             thenBody.AddStatement(new BoogieCallCmd(
@@ -831,6 +877,7 @@ namespace SolToBoogie
                                 new List<BoogieExpr>(), new List<BoogieIdentifierExpr>() { new BoogieIdentifierExpr(name) }));
                         }
 
+                        thenBody.AppendStmtList(constrainVarValues(context, param, boogieVar));
                     }
 
                     List<BoogieIdentifierExpr> outputs = new List<BoogieIdentifierExpr>();
@@ -848,20 +895,84 @@ namespace SolToBoogie
                         outputs.Add(new BoogieIdentifierExpr(name));
                     }
 
+                    if (funcDef.StateMutability.Equals(EnumStateMutability.PAYABLE))
+                    {
+                        BoogieExpr assumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE,
+                            new BoogieIdentifierExpr("msgvalue_MSG"), new BoogieLiteralExpr(BigInteger.Zero));
+                        thenBody.AddStatement(new BoogieAssumeCmd(assumeExpr));
+
+                        if (!canRevert)
+                        {
+                            thenBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function START "));
+                            var balnSender = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("msgsender_MSG"));
+                            var balnThis = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr("this"));
+                            var msgVal = new BoogieIdentifierExpr("msgvalue_MSG");
+                            //assume Balance[msg.sender] >= msg.value
+                            thenBody.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, balnSender, msgVal)));
+                            //balance[msg.sender] = balance[msg.sender] - msg.value
+                            thenBody.AddStatement(new BoogieAssignCmd(balnSender, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, balnSender, msgVal)));
+                            //balance[this] = balance[this] + msg.value
+                            thenBody.AddStatement(new BoogieAssignCmd(balnThis, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, balnThis, msgVal)));
+                            thenBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function END "));
+                        }
+                         
+                    }
+                    else
+                    {
+                        BoogieExpr assumeExpr = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ,
+                            new BoogieIdentifierExpr("msgvalue_MSG"), new BoogieLiteralExpr(BigInteger.Zero));
+                        thenBody.AddStatement(new BoogieAssumeCmd(assumeExpr));
+                    }
+                                        
+                    BoogieCallCmd callCmd = new BoogieCallCmd(callee, inputs, outputs);
+                    thenBody.AddStatement(callCmd);
+                    
                     if (context.TranslateFlags.InstrumentGas)
                     {
                         var gasVar = new BoogieIdentifierExpr("gas");
+                        
+                        BoogieBinaryOperation gasGuard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, gasVar, new BoogieLiteralExpr(BigInteger.Zero));
+                        
+                        BoogieIfCmd ifExpr = new BoogieIfCmd(gasGuard, thenBody, null);
+                        
+                        thenBody = new BoogieStmtList();
+                        //thenBody.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, gasVar, new BoogieLiteralExpr(TranslatorContext.TX_GAS_COST))));
                         thenBody.AddStatement(new BoogieAssignCmd(gasVar, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, gasVar, new BoogieLiteralExpr(TranslatorContext.TX_GAS_COST))));
+                        thenBody.AddStatement(ifExpr);
                     }
-                    BoogieCallCmd callCmd = new BoogieCallCmd(callee, inputs, outputs);
-                    thenBody.AddStatement(callCmd);
 
                     BoogieStmtList elseBody = ifCmd == null ? null : BoogieStmtList.MakeSingletonStmtList(ifCmd);
                     ifCmd = new BoogieIfCmd(guard, thenBody, elseBody);
                 }
             }
-            return ifCmd;
+            return new Tuple<BoogieIfCmd, int>(ifCmd, j);
         }
+
+        public static BoogieStmtList constrainVarValues(TranslatorContext context, VariableDeclaration var, BoogieIdentifierExpr boogieVar)
+        {
+            BoogieStmtList stmts = new BoogieStmtList();
+            
+            if (context.TranslateFlags.UseModularArithmetic)
+            {
+                if (var.TypeDescriptions.IsUintWSize(null, out uint uintSize))
+                {
+                    BigInteger maxUIntValue = (BigInteger)Math.Pow(2, uintSize);
+                    BoogieBinaryOperation lower = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, boogieVar, new BoogieLiteralExpr(BigInteger.Zero));
+                    BoogieBinaryOperation upper = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.LT, boogieVar, new BoogieLiteralExpr(maxUIntValue));
+                    stmts.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, lower, upper)));
+                }
+                else if (var.TypeDescriptions.IsIntWSize(out uint intSize))
+                {
+                    BigInteger maxIntValue = (BigInteger)Math.Pow(2, intSize);
+                    BoogieBinaryOperation lower = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, boogieVar, new BoogieLiteralExpr(-maxIntValue));
+                    BoogieBinaryOperation upper = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.LT, boogieVar, new BoogieLiteralExpr(maxIntValue));
+                    stmts.AddStatement(new BoogieAssumeCmd(new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, lower, upper)));
+                }
+            }
+
+            return stmts;
+        }
+        
         public static void havocGas(BoogieStmtList list)
         {
             List<BoogieCmd> cmdList = new List<BoogieCmd>();
@@ -878,5 +989,62 @@ namespace SolToBoogie
                 new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.LE, gasVar, new BoogieLiteralExpr(TranslatorContext.MAX_GAS_LIMIT)))));
         }
 
+        public static BoogieExpr GetDefaultVal(TypeName type)
+        {
+            return GetDefaultVal(TransUtils.GetBoogieTypeFromSolidityTypeName(type));
+        }
+        public static BoogieExpr GetDefaultVal(BoogieType boogieType)
+        {
+            if (boogieType.Equals(BoogieType.Int))
+            {
+                return new BoogieLiteralExpr(BigInteger.Zero);
+            }
+            else if (boogieType.Equals(BoogieType.Bool))
+            {
+                return new BoogieLiteralExpr(false);
+            }
+            else if (boogieType.Equals(BoogieType.Ref))
+            {
+                return new BoogieIdentifierExpr("null");
+            }
+            
+            throw new Exception($"Unknown BoogieType {boogieType}");
+        }
+
+        public static TypeDescription TypeNameToTypeDescription(TypeName typeName)
+        {
+            if (typeName is ArrayTypeName arr)
+            {
+                TypeDescription desc = TypeNameToTypeDescription(arr.BaseType);
+                desc.TypeIndentifier = $"{desc.TypeIndentifier}[]";
+                desc.TypeString = $"{desc.TypeString}[]";
+                return desc;
+            }
+            else if (typeName is Mapping map)
+            {
+                TypeDescription keyDesc = TypeNameToTypeDescription(map.KeyType);
+                TypeDescription valDesc = TypeNameToTypeDescription(map.ValueType);
+                TypeDescription desc = new TypeDescription();
+                desc.TypeIndentifier = $"mapping({keyDesc.TypeIndentifier} => {valDesc.TypeIndentifier})";
+                desc.TypeString = $"mapping({keyDesc.TypeString} => {valDesc.TypeString})";
+                return desc;
+            }
+            else if (typeName is ElementaryTypeName elem)
+            {
+                TypeDescription desc = new TypeDescription();
+                desc.TypeIndentifier = elem.TypeDescriptions.TypeIndentifier;
+                desc.TypeString = elem.TypeDescriptions.TypeString;
+                return desc;
+            }
+            else if (typeName is UserDefinedTypeName user)
+            {
+                TypeDescription desc = new TypeDescription();
+                desc.TypeIndentifier = user.TypeDescriptions.TypeIndentifier;
+                desc.TypeString = user.TypeDescriptions.TypeString;
+                return desc;
+            }
+            
+            throw new Exception("Unknown type name");
+        }
     }
 }

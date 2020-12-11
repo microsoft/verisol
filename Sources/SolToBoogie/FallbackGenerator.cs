@@ -58,7 +58,7 @@ namespace SolToBoogie
             BoogieStmtList fbBody = new BoogieStmtList();
             var fbLocalVars = new List<BoogieVariable>();
 
-            if (context.TranslateFlags.ModelStubsAsSkips() || context.TranslateFlags.ModelStubsAsCallbacks())
+            if (context.TranslateFlags.ModelStubsAsSkips() || context.TranslateFlags.ModelStubsAsCallbacks() || context.TranslateFlags.ModelStubsAsMultipleCallbacks())
             {
                 fbBody.AppendStmtList(CreateBodyOfUnknownFallback(fbLocalVars, inParams));
             }
@@ -103,6 +103,17 @@ namespace SolToBoogie
 
             var thenBody = new BoogieStmtList();
             var successIdExp = new BoogieIdentifierExpr(outParams[0].Name);
+            
+            thenBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function START "));
+            var balFrom = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr(inParams[0].Name));
+            var balTo = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr(inParams[1].Name));
+            var msgVal = new BoogieIdentifierExpr(inParams[2].Name);
+            //balance[msg.sender] = balance[msg.sender] - msg.value
+            thenBody.AddStatement(new BoogieAssignCmd(balFrom, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, balFrom, msgVal)));
+            //balance[this] = balance[this] + msg.value
+            thenBody.AddStatement(new BoogieAssignCmd(balTo, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, balTo, msgVal)));
+            thenBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function END "));
+            
             thenBody.AddStatement(callStmt); 
             thenBody.AddStatement(new BoogieAssignCmd(successIdExp, new BoogieLiteralExpr(true)));
 
@@ -112,14 +123,28 @@ namespace SolToBoogie
                 BoogieStmtList.MakeSingletonStmtList(elseBody)));
         }
 
+        private BoogieStmtList HavocLocals(List<BoogieVariable> locals)
+        {
+            BoogieStmtList stmtList = new BoogieStmtList();
+            foreach (BoogieVariable localVar in locals)
+            {
+                string varName = localVar.TypedIdent.Name;
+                if (!varName.Equals("this"))
+                {
+                    stmtList.AddStatement(new BoogieHavocCmd(new BoogieIdentifierExpr(varName)));
+                }
+            }
+
+            return stmtList;
+        }
         private BoogieStmtList CreateBodyOfUnknownFallback(List<BoogieVariable> fbLocalVars, List<BoogieVariable> inParams)
         {
 
-            Debug.Assert(context.TranslateFlags.ModelStubsAsSkips() || context.TranslateFlags.ModelStubsAsCallbacks(),
+            Debug.Assert(context.TranslateFlags.ModelStubsAsSkips() || context.TranslateFlags.ModelStubsAsCallbacks() || context.TranslateFlags.ModelStubsAsMultipleCallbacks(),
                 "CreateBodyOfUnknownFallback called in unexpected context");
             var procBody = new BoogieStmtList();
 
-            procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function START "));
+            /*procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function START "));
             var balnSender = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr(inParams[0].Name));
             var balnThis = new BoogieMapSelect(new BoogieIdentifierExpr("Balance"), new BoogieIdentifierExpr(inParams[1].Name));
             var msgVal = new BoogieIdentifierExpr("amount");
@@ -129,16 +154,92 @@ namespace SolToBoogie
             procBody.AddStatement(new BoogieAssignCmd(balnSender, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, balnSender, msgVal)));
             //balance[to] = balance[to] + msg.value
             procBody.AddStatement(new BoogieAssignCmd(balnThis, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, balnThis, msgVal)));
-            procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function END "));
+            procBody.AddStatement(new BoogieCommentCmd("---- Logic for payable function END "));*/
 
-            if (context.TranslateFlags.ModelStubsAsCallbacks())
+            BoogieStmtList body = procBody;
+            if (context.TranslateFlags.ModelStubsAsCallbacks() ||
+                context.TranslateFlags.ModelStubsAsMultipleCallbacks())
             {
-                fbLocalVars.AddRange(TransUtils.CollectLocalVars(context.ContractDefinitions.ToList(), context));
+                if (context.TranslateFlags.ModelReverts)
+                {
+                    BoogieBinaryOperation revertGuard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, new BoogieIdentifierExpr("choice"), new BoogieLiteralExpr(BigInteger.Zero));
+                    BoogieStmtList thenBody = new BoogieStmtList();
+                    thenBody.AddStatement(new BoogieAssignCmd(new BoogieIdentifierExpr("revert"), new BoogieLiteralExpr(true)));
+                    thenBody.AddStatement(new BoogieReturnCmd());
+                    BoogieIfCmd earlyExitCmd = new BoogieIfCmd(revertGuard, thenBody, null);
+                    body.AddStatement(earlyExitCmd);
+                }
+                if (context.TranslateFlags.InstrumentGas)
+                {
+                    BoogieBinaryOperation gasGuard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.LT, new BoogieIdentifierExpr("gas"), new BoogieLiteralExpr(TranslatorContext.TX_GAS_COST));
+                    BoogieIfCmd earlyExitCmd = new BoogieIfCmd(gasGuard, BoogieStmtList.MakeSingletonStmtList(new BoogieReturnCmd()), null);
+                    body.AddStatement(earlyExitCmd);
+                }
+                
+            }
+            
+            if (context.TranslateFlags.ModelStubsAsMultipleCallbacks())
+            { 
+                fbLocalVars.Add(new BoogieLocalVariable(new BoogieTypedIdent("iterate", BoogieType.Bool)));
+                BoogieBinaryOperation gasGuard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, new BoogieIdentifierExpr("gas"), new BoogieLiteralExpr(TranslatorContext.TX_GAS_COST));
+                BoogieBinaryOperation guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, new BoogieIdentifierExpr("iterate"), gasGuard);
+                BoogieStmtList loopBody = new BoogieStmtList();
+                procBody.AddStatement(new BoogieWhileCmd(guard, loopBody, new List<BoogieExpr>()));
+                body = loopBody;
+            }
+
+            if (context.TranslateFlags.ModelStubsAsCallbacks() || context.TranslateFlags.ModelStubsAsMultipleCallbacks())
+            {
+                List<BoogieVariable> localVars = TransUtils.CollectLocalVars(context.ContractDefinitions.ToList(), context);
+                fbLocalVars.AddRange(localVars);
                 // if (*) fn1(from, *, ...) 
                 // we only redirect the calling contract, but the msg.sender need not be to, as it can call into anohter contract that calls 
                 // into from 
-                procBody.AddStatement(TransUtils.GenerateChoiceBlock(context.ContractDefinitions.ToList(), context, Tuple.Create(inParams[0].Name, inParams[1].Name)));
+
+                if (context.TranslateFlags.ModelStubsAsMultipleCallbacks())
+                {
+                    body.AppendStmtList(HavocLocals(localVars));
+                    body.AddStatement(new BoogieHavocCmd(new BoogieIdentifierExpr("iterate")));
+                }
+
+
+                BoogieIfCmd typeIf = null;
+                foreach (ContractDefinition curDef in context.ContractDefinitions.ToList())
+                {
+                    BoogieIfCmd reentrantCalls = TransUtils.GenerateChoiceBlock(new List<ContractDefinition>() {curDef},
+                        context, false, Tuple.Create(inParams[0].Name, inParams[1].Name));
+                    
+                    if (reentrantCalls == null)
+                    {
+                        continue;
+                    }
+                    
+                    BoogieExpr dtype = new BoogieMapSelect(new BoogieIdentifierExpr("DType"), new BoogieIdentifierExpr(inParams[0].Name));
+                    BoogieBinaryOperation guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, dtype, new BoogieIdentifierExpr(curDef.Name));
+                    typeIf = new BoogieIfCmd(guard, BoogieStmtList.MakeSingletonStmtList(reentrantCalls), typeIf == null ? null : BoogieStmtList.MakeSingletonStmtList(typeIf));
+                }
+                
+                /*BoogieIfCmd ifCmd = null;
+
+                if (context.TranslateFlags.ModelReverts)
+                {
+                    BoogieExpr guard = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ,
+                                        new BoogieIdentifierExpr("choice"),
+                                        new BoogieLiteralExpr(choices.Item2 + 1));
+                                    
+                    BoogieAssignCmd assign = new BoogieAssignCmd(new BoogieIdentifierExpr("revert"), new BoogieLiteralExpr(true));
+                    ifCmd = new BoogieIfCmd(guard, BoogieStmtList.MakeSingletonStmtList(assign), BoogieStmtList.MakeSingletonStmtList(choices.Item1));
+                }
+                else
+                {
+                    ifCmd = choices.Item1;
+                }*/
+
+                body.AddStatement(typeIf);
             }
+            
+            
+            
             return procBody;
         }
 
@@ -193,12 +294,18 @@ namespace SolToBoogie
 
                 if (function != null)
                 {
+                    if (context.TranslateFlags.PerformFunctionSlice &&
+                        !context.TranslateFlags.SliceFunctions.Contains(function))
+                    {
+                        continue;
+                    }
+                    
                     List<BoogieExpr> arguments = new List<BoogieExpr>()
-                {
-                    new BoogieIdentifierExpr(inParams[1].Name),
-                    new BoogieIdentifierExpr(inParams[0].Name),
-                    new BoogieIdentifierExpr(inParams[2].Name)
-                };
+                    {
+                        new BoogieIdentifierExpr(inParams[1].Name),
+                        new BoogieIdentifierExpr(inParams[0].Name),
+                        new BoogieIdentifierExpr(inParams[2].Name)
+                    };
 
                     string callee = TransUtils.GetCanonicalFunctionName(function, context);
                     // to.fallback(from, amount), thus need to switch param0 and param1

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using BoogieAST;
 
 namespace SolToBoogie
 {
@@ -44,6 +45,18 @@ namespace SolToBoogie
                 var contract = str.Substring(str.IndexOf("@") + 1);
                 ignoredMethods.Add(Tuple.Create(method, contract));
             }
+
+            foreach (var arg in args.Where(x => x.StartsWith("/SliceFunctions:")))
+            {
+                var str = arg.Substring("/SliceFunctions:".Length);
+                String[] fns = str.Split(",");
+                translatorFlags.PerformFunctionSlice = true;
+                foreach (String fn in fns)
+                {
+                    translatorFlags.SliceFunctionNames.Add(fn);
+                }
+            }
+            
             if (args.Any(x => x.StartsWith("/ignoreMethod:")))
             {
                 Console.WriteLine($"Ignored method/contract pairs ==> \n\t {string.Join(",", ignoredMethods.Select(x => x.Item1 + "@" + x.Item2))}");
@@ -114,8 +127,8 @@ namespace SolToBoogie
             {
                 Debug.Assert(stubModels.Count() == 1, "Multiple instances of /stubModel:");
                 var model = stubModels.First().Substring("/stubModel:".Length);
-                Debug.Assert(model.Equals("skip") || model.Equals("havoc") || model.Equals("callback"),
-                    $"The argument to /stubModel: can be either {{skip, havoc, callback}}, found {model}");
+                Debug.Assert(model.Equals("skip") || model.Equals("havoc") || model.Equals("callback") || model.Equals("multipleCallbacks"),
+                    $"The argument to /stubModel: can be either {{skip, havoc, callback, multipleCallbacks}}, found {model}");
                 translatorFlags.ModelOfStubs = model;
             }
             if (args.Any(x => x.StartsWith("/inlineDepth:")))
@@ -138,6 +151,13 @@ namespace SolToBoogie
                 translatorFlags.LazyNestedAlloc = true;
             }
 
+            if (args.Any(x => x.Equals("/LazyAllocNoMod")))
+            {
+                translatorFlags.LazyNestedAlloc = true;
+                translatorFlags.LazyAllocNoMod = true;
+                translatorFlags.QuantFreeAllocs = true;
+            }
+
             if (args.Any(x => x.Equals("/OmitAssumeFalseForDynDispatch")))
             {
                 translatorFlags.OmitAssumeFalseForDynDispatch = true;
@@ -152,9 +172,61 @@ namespace SolToBoogie
                     translatorFlags.LazyNestedAlloc = true;
             }
 
+            if (args.Any(x => x.Equals("/allowTxnsFromContract")))
+            {
+                translatorFlags.NoTxnsFromContract = false;
+            }
+
             if (args.Any(x => x.Equals("/instrumentSums")))
             {
                 translatorFlags.InstrumentSums = true;
+            }
+
+            if (args.Any(x => x.Equals("/alias")))
+            {
+                translatorFlags.RunAliasAnalysis = true;
+            }
+            
+            if (args.Any(x => x.Equals("/useMultiDim")))
+            {
+                translatorFlags.RunAliasAnalysis = true;
+                translatorFlags.UseMultiDim = true;
+            }
+
+            if (args.Any(x => x.Equals("/txnsOnFields")))
+            {
+                translatorFlags.TxnsOnFields = true;
+            }
+
+            if (args.Any(x => x.Equals("/noNonlinearArith")))
+            {
+                translatorFlags.NoNonlinearArith = true;
+            }
+
+            if (args.Any(x => x.Equals("/useNumericOperators")))
+            {
+                translatorFlags.UseNumericOperators = true;
+                BoogieBinaryOperation.USE_ARITH_OPS = true;
+            }
+
+            if (args.Any(x => x.Equals("/prePostHarness")))
+            {
+                translatorFlags.PrePostHarness = true;
+            }
+
+            if (args.Any(x => x.Equals("/generateGetters")))
+            {
+                translatorFlags.GenerateGetters = true;
+            }
+
+            if (args.Any(x => x.Equals("/generateERC20Spec")))
+            {
+                translatorFlags.GenerateERC20Spec = true;
+            }
+
+            if (args.Any(x => x.Equals("/modelAssemblyAsHavoc")))
+            {
+                translatorFlags.AssemblyAsHavoc = true;
             }
 
             translatorFlags.PerformContractInferce = args.Any(x => x.StartsWith("/contractInfer"));

@@ -1,5 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
+
+using SolidityAnalysis;
+
 namespace SolToBoogie
 {
     using System;
@@ -19,11 +22,10 @@ namespace SolToBoogie
             bool generateInlineAttributesInBpl = _translatorFlags.GenerateInlineAttributes;
 
             SourceUnitList sourceUnits = solidityAST.GetSourceUnits();
-
-            TranslatorContext context = new TranslatorContext(ignoredMethods, generateInlineAttributesInBpl, _translatorFlags, entryPointContract);
+            
+            TranslatorContext context = new TranslatorContext(solidityAST, ignoredMethods, generateInlineAttributesInBpl, _translatorFlags, entryPointContract);
             context.IdToNodeMap = solidityAST.GetIdToNodeMap();
             context.SourceDirectory = solidityAST.SourceDirectory;
-
             // collect the absolute source path and line number for each AST node
             SourceInfoCollector sourceInfoCollector = new SourceInfoCollector(context);
             sourceUnits.Accept(sourceInfoCollector);
@@ -65,8 +67,11 @@ namespace SolToBoogie
             FunctionEventResolver functionEventResolver = new FunctionEventResolver(context);
             functionEventResolver.Resolve();
 
+            // Generate map helper
+            MapArrayHelper mapHelper = new MapArrayHelper(context, solidityAST);
+            
             // add types, gobal ghost variables, and axioms
-            GhostVarAndAxiomGenerator generator = new GhostVarAndAxiomGenerator(context);
+            GhostVarAndAxiomGenerator generator = new GhostVarAndAxiomGenerator(context, mapHelper);
             generator.Generate();
 
             // collect modifiers information
@@ -77,8 +82,15 @@ namespace SolToBoogie
             UsingCollector usingCollector = new UsingCollector(context);
             sourceUnits.Accept(usingCollector);
 
+            if (context.TranslateFlags.PerformFunctionSlice)
+            {
+                FunctionDependencyCollector depCollector = new FunctionDependencyCollector(context, entryPointContract, context.TranslateFlags.SliceFunctionNames);
+                context.TranslateFlags.SliceFunctions = depCollector.GetFunctionDeps();
+                context.TranslateFlags.SliceModifiers = depCollector.getModifierDeps();
+            }
+            
             // translate procedures
-            ProcedureTranslator procTranslator = new ProcedureTranslator(context, generateInlineAttributesInBpl);
+            ProcedureTranslator procTranslator = new ProcedureTranslator(context, mapHelper, generateInlineAttributesInBpl);
             sourceUnits.Accept(procTranslator);
 
             // generate fallbacks
@@ -102,6 +114,12 @@ namespace SolToBoogie
             {
                 ModSetAnalysis modSetAnalysis = new ModSetAnalysis(context);
                 modSetAnalysis.PerformModSetAnalysis();
+            }
+
+            if (context.TranslateFlags.GenerateERC20Spec)
+            {
+                ERC20SpecGenerator specGen = new ERC20SpecGenerator(context, solidityAST, entryPointContract);
+                specGen.GenerateSpec();
             }
 
             return new BoogieAST(context.Program);

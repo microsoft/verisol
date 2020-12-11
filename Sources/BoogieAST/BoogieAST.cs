@@ -317,19 +317,29 @@ namespace BoogieAST
 
         public BoogieStmtList StructuredStmts { get; set; }
 
-        public BoogieImplementation(string name, List<BoogieVariable> inParams, List<BoogieVariable> outParams, List<BoogieVariable> localVars, BoogieStmtList stmts)
+        public BoogieImplementation(string name, List<BoogieVariable> inParams, List<BoogieVariable> outParams, List<BoogieVariable> localVars, BoogieStmtList stmts, List<BoogieAttribute> attributes = null)
         {
             this.Name = name;
             this.InParams = inParams;
             this.OutParams = outParams;
             this.LocalVars = localVars;
             this.StructuredStmts = stmts;
+            this.Attributes = attributes;
         }
 
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append("implementation ").Append(Name).Append("(");
+            builder.Append("implementation ");
+            if (Attributes != null)
+            {
+                foreach (BoogieAttribute attribute in Attributes)
+                {
+                    builder.Append(attribute).Append(" ");
+                }
+            }
+                
+            builder.Append(Name).Append("(");
             if (InParams.Count > 0)
             {
                 foreach (BoogieVariable inParam in InParams)
@@ -925,6 +935,14 @@ namespace BoogieAST
     public abstract class BoogieStructuredCmd : BoogieCmd
     {
     }
+    
+    public class BoogieWildcardExpr : BoogieExpr
+    {
+        public override string ToString()
+        {
+            return "*";
+        }
+    }
 
     public class BoogieIfCmd : BoogieStructuredCmd
     {
@@ -1212,6 +1230,8 @@ namespace BoogieAST
             UNKNOWN,
         }
 
+        public static bool USE_ARITH_OPS { get; set; }
+        
         public Opcode Op { get; set; }
 
         public BoogieExpr Lhs { get; set; }
@@ -1245,9 +1265,9 @@ namespace BoogieAST
                 case Opcode.MUL:
                     return "*";
                 case Opcode.DIV:
-                    return "div";
+                    return USE_ARITH_OPS ? "/" : "div";
                 case Opcode.MOD:
-                    return "mod";
+                    return USE_ARITH_OPS ? "%" : "mod";
                 case Opcode.EQ:
                     return "==";
                 case Opcode.NEQ:

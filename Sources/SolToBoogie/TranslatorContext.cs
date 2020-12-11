@@ -1,5 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
+
+using SolidityAnalysis;
+
 namespace SolToBoogie
 {
     using System;
@@ -93,11 +96,13 @@ namespace SolToBoogie
         public Dictionary<string, List<BoogieLocalVariable>> ModifierToPreludeLocalVars { get; private set; }
 
         public String EntryPointContract { get; private set; }
+        
+        public SolidityAnalyzer Analysis { get; private set; }
 
         // Options flags
         public TranslatorFlags TranslateFlags { get; private set; }
 
-        public Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, TypeName>> UsingMap => usingMap;
+        public Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, List<TypeName>>> UsingMap => usingMap;
 
         // num of fresh identifiers, should be incremented when making new fresh id
         private int freshIdentifierCount = 0;
@@ -110,9 +115,11 @@ namespace SolToBoogie
 
         // data structures for using
         // maps Contract C --> (source, dest), where source is a library type
-        private readonly Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, TypeName>> usingMap; 
+        private readonly Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, List<TypeName>>> usingMap;
+        
+        public HashSet<String> initFns { get; set; }
 
-        public TranslatorContext(HashSet<Tuple<string, string>> ignoreMethods, bool _genInlineAttrInBpl, TranslatorFlags _translateFlags = null, String entryPointContract = "")
+        public TranslatorContext(AST solidityAST, HashSet<Tuple<string, string>> ignoreMethods, bool _genInlineAttrInBpl, TranslatorFlags _translateFlags = null, String entryPointContract = "")
         {
             Program = new BoogieProgram();
             ContractDefinitions = new HashSet<ContractDefinition>();
@@ -139,11 +146,13 @@ namespace SolToBoogie
             ModifierToBoogiePreImpl = new Dictionary<string, BoogieImplementation>();
             ModifierToBoogiePostImpl = new Dictionary<string, BoogieImplementation>();
             ModifierToPreludeLocalVars = new Dictionary<string, List<BoogieLocalVariable>>();
-            usingMap = new Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, TypeName>>();
+            usingMap = new Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, List<TypeName>>>();
             IgnoreMethods = ignoreMethods;
             genInlineAttrInBpl = _genInlineAttrInBpl;
             TranslateFlags = _translateFlags;
             EntryPointContract = entryPointContract;
+            Analysis = new SolidityAnalyzer(solidityAST, ignoreMethods, entryPointContract);
+            initFns = new HashSet<String>();
         }
 
         public bool HasASTNodeId(int id)
@@ -469,6 +478,12 @@ namespace SolToBoogie
         public bool HasStateVarName(string varName)
         {
             return StateVarNameResolutionMap.ContainsKey(varName);
+        }
+
+        public bool HasStateVar(string varName, ContractDefinition dynamicType)
+        {
+            return StateVarNameResolutionMap.ContainsKey(varName) &&
+                   StateVarNameResolutionMap[varName].ContainsKey(dynamicType);
         }
 
         public VariableDeclaration GetStateVarByDynamicType(string varName, ContractDefinition dynamicType)

@@ -20,7 +20,7 @@ namespace SolidityAST
             }
 
             derivedFilePath = derivedFilePath.Replace("\\", "/" /*, StringComparison.CurrentCulture*/);
-
+            Console.WriteLine(solcPath);
             string jsonString = RunSolc(solcPath, derivedFilePath);
 
             List<string> errors = new List<string>();
@@ -33,6 +33,7 @@ namespace SolidityAST
                 },
             };
 
+            
             CompilerOutput compilerOutput = JsonConvert.DeserializeObject<CompilerOutput>(jsonString);
             if (errors.Count != 0)
             {
@@ -62,7 +63,7 @@ namespace SolidityAST
             p.Start();
 
             string configString = "{ \"language\": \"Solidity\", \"sources\": { %SOLPLACEHOLDER%: { \"urls\": [ %URLPLACEHOLDER% ]}},"
-                + "\"settings\": {\"evmVersion\": \"byzantium\", \"outputSelection\": {\"*\": {\"\": [ \"ast\" ]}}}}";
+                + "\"settings\": {\"evmVersion\": \"constantinople\", \"outputSelection\": {\"*\": {\"\": [ \"ast\" ]}}}}";
             configString = configString.Replace("%SOLPLACEHOLDER%", "\"" + derivedFileName + "\"" /*, StringComparison.CurrentCulture*/);
             configString = configString.Replace("%URLPLACEHOLDER%", "\"" + derivedFilePath + "\""/*, StringComparison.CurrentCulture*/);
 

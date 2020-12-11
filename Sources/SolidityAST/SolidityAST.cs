@@ -881,7 +881,7 @@ namespace SolidityAST
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append("mapping (").Append(KeyType).Append(" => ").Append(ValueType).Append(")");
+            builder.Append("mapping(").Append(KeyType).Append(" => ").Append(ValueType).Append(")");
             return builder.ToString();
         }
     }
@@ -1261,7 +1261,7 @@ namespace SolidityAST
 
     public class VariableDeclarationStatement : Statement
     {
-        public List<int> Assignments { get; set; }
+        public List<int?> Assignments { get; set; }
 
         public List<VariableDeclaration> Declarations { get; set; }
 
@@ -1271,8 +1271,15 @@ namespace SolidityAST
         {
             if (visitor.Visit(this))
             {
-                Debug.Assert(Declarations.Count == 1);
-                Utils.AcceptList(Declarations, visitor);
+                //Debug.Assert(Declarations.Count == 1);
+                //Utils.AcceptList(Declarations, visitor);
+                foreach (VariableDeclaration varDecl in Declarations)
+                {
+                    if (varDecl != null)
+                    {
+                        varDecl.Accept(visitor);
+                    }
+                }
                 if (InitialValue != null)
                 {
                     InitialValue.Accept(visitor);
@@ -1289,8 +1296,16 @@ namespace SolidityAST
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
-            Debug.Assert(Declarations.Count == 1, $"Multiple variable declarations: {Declarations.Count}");
-            builder.Append(Declarations[0]);
+            //Debug.Assert(Declarations.Count == 1, $"Multiple variable declarations: {Declarations.Count}");
+            if (Declarations.Count > 1)
+            {
+                builder.Append($"({String.Join(", ", Declarations)})");
+            }
+            else
+            {
+                builder.Append(Declarations[0]);
+            }
+            
             if (InitialValue != null)
             {
                 builder.Append(" = ").Append(InitialValue);
@@ -1300,9 +1315,18 @@ namespace SolidityAST
         }
     }
 
+    public class ExternalReference
+    {
+        public int declaration { get; set; }
+        public bool isOffset { get; set; }
+        public bool isSlot { get; set; }
+        public String src { get; set; }
+        public int valueSize { get; set; }
+    }
     public class InlineAssembly : Statement
     {
-        public List<object> ExternalReferences { get; set; }
+        //public List<object> ExternalReferences { get; set; }
+        public List<Dictionary<string, ExternalReference>> ExternalReferences { get; set; }
 
         public string Operations { get; set; }
 

@@ -1,5 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
+
+using System.Linq;
+
 namespace SolToBoogie
 {
     using SolidityAST;
@@ -24,7 +27,7 @@ namespace SolToBoogie
         public override bool Visit(ContractDefinition node)
         {
             currentContract = node;
-            context.UsingMap[currentContract] = new Dictionary<UserDefinedTypeName, TypeName>();
+            context.UsingMap[currentContract] = new Dictionary<UserDefinedTypeName, List<TypeName>>();
             return true;
         }
 
@@ -35,11 +38,14 @@ namespace SolToBoogie
 
         public override bool Visit(UsingForDirective node)
         {
-            if (node.TypeName is UserDefinedTypeName userType)
+            if (context.UsingMap[currentContract].ContainsKey(node.LibraryName))
             {
-                Debug.Assert(!userType.TypeDescriptions.IsContract(), $"VeriSol does not support using A for B where B is a contract name, found {userType.ToString()}");
+                context.UsingMap[currentContract][node.LibraryName].Add(node.TypeName);
             }
-            context.UsingMap[currentContract][node.LibraryName] = node.TypeName;
+            else
+            {
+                context.UsingMap[currentContract][node.LibraryName] = new List<TypeName>() {node.TypeName};
+            }
             return true;
         }
     }
