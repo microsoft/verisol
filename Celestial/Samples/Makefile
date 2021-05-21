@@ -15,25 +15,24 @@ help:
 	@echo Usage:
 	@echo "    make"
 	@echo Targets:
-	@echo "    compile experiment=<experiment_name>      Compiles the Celestial source for the specified experiment and generates the Solidity and FStar versions."
-	@echo "    verify  experiment=<experiment_name>      Verifies the generated FStar for the specified experiment."
-	@echo "    compileV experiment=<experiment_name>      Compiles the Celestial source for the specified experiment and generates the VeriSol-compatible Solidity version."
-	@echo "    verifyV  experiment=<experiment_name>      Verifies the generated Solidity using VeriSol for the specified experiment."
-	@echo "    perf    experiment=<experiment_name>      Generates a .csv file with gas comparisions for the specified experiment."
+	@echo "    compile  experiment=<experiment_name>     Compiles the Celestial source for the specified experiment and generates the Solidity and FStar versions."
+	@echo "    verify   experiment=<experiment_name>     Verifies the generated FStar for the specified experiment."
+	@echo "    compileV experiment=<experiment_name>     Compiles the Celestial source for the specified experiment and generates the VeriSol-compatible Solidity version."
+	@echo "    verifyV  experiment=<experiment_name>     Verifies the generated Solidity using VeriSol for the specified experiment."
+	@echo "    perf     experiment=<experiment_name>     Generates a .csv file with gas comparisions for the specified experiment."
 	@echo "    <experiment_name>                         Runs all the above targets for the specified experiment."
 	@echo "    all                                       Compiles, verifies and generates gas performance .csv file for all experiments."
 	@echo Experiments:
 	@echo "    overview"
 	@echo "    asset_transfer"
 	@echo "    etherdelta"
-	@echo "    westlake"
 	@echo "    erc20"
 	@echo "    wrapped_ether"
 	@echo "    multisig"
 	@echo "    simple_auction"
 	@echo "    binancecoin"
 
-all: overview asset_transfer erc20 etherdelta wrapped_ether multisig westlake simple_auction binancecoin
+all: overview asset_transfer erc20 etherdelta wrapped_ether multisig simple_auction binancecoin
 
 compile:
 	@if [ '$(experiment)' = 'overview' ]; then \
@@ -42,8 +41,6 @@ compile:
 		${COMPILER} AssetTransfer/celestial/AssetTransfer.cel --fstDir="../Samples/AssetTransfer/fstar" --solDir="../Samples/AssetTransfer/contracts/"; \
 	elif [ '$(experiment)' = 'etherdelta' ]; then \
 		${COMPILER} EtherDelta/celestial/EtherDelta.cel --fstDir="../Samples/EtherDelta/fstar" --solDir="../Samples/EtherDelta/contracts/"; \
-	elif [ '$(experiment)' = 'westlake' ]; then \
-		${COMPILER} Westlake/celestial/Members.cel --fstDir="../Samples/Westlake/fstar" --solDir="../Samples/Westlake/contracts"; \
 	elif [ '$(experiment)' = 'erc20' ]; then \
 		${COMPILER} OpenZeppelin/ERC20/celestial/OpenZeppelinERC20.cel --fstDir="../Samples/OpenZeppelin/ERC20/fstar" --solDir="../Samples/OpenZeppelin/ERC20/contracts"; \
 	elif [ '$(experiment)' = 'wrapped_ether' ]; then \
@@ -65,8 +62,6 @@ verify:
 		$(call TIME,--z3rlimit 50,AssetTransfer/fstar/MarketPlace_Cel.fst,AssetTransfer); \
 	elif [ '$(experiment)' = 'etherdelta' ]; then \
 		$(call TIME,--z3rlimit 150,EtherDelta/fstar/EtherDelta_Cel.fst,EtherDelta); \
-	elif [ '$(experiment)' = 'westlake' ]; then \
-		$(call TIME,--z3rlimit 50,Westlake/fstar/Members_Cel.fst,Westlake); \
 	elif [ '$(experiment)' = 'erc20' ]; then \
 		$(call TIME,--z3rlimit 50,OpenZeppelin/ERC20/fstar/ERC20_Cel.fst,ERC20); \
 	elif [ '$(experiment)' = 'wrapped_ether' ]; then \
@@ -88,8 +83,6 @@ compileV:
 		${COMPILER2} AssetTransfer/celestial/AssetTransfer.cel --fstDir="../Samples/AssetTransfer/fstar" --solDir="../Samples/AssetTransfer/contracts/"; \
 	elif [ '$(experiment)' = 'etherdelta' ]; then \
 		${COMPILER2} EtherDelta/celestial/EtherDelta.cel --fstDir="../Samples/EtherDelta/fstar" --solDir="../Samples/EtherDelta/contracts/"; \
-	elif [ '$(experiment)' = 'westlake' ]; then \
-		${COMPILER2} Westlake/celestial/Members.cel --fstDir="../Samples/Westlake/fstar" --solDir="../Samples/Westlake/contracts"; \
 	elif [ '$(experiment)' = 'erc20' ]; then \
 		${COMPILER2} OpenZeppelin/ERC20/celestial/OpenZeppelinERC20.cel --fstDir="../Samples/OpenZeppelin/ERC20/fstar" --solDir="../Samples/OpenZeppelin/ERC20/contracts"; \
 	elif [ '$(experiment)' = 'wrapped_ether' ]; then \
@@ -111,8 +104,6 @@ verifyV:
 		${VERISOL} "AssetTransfer\contracts\contract.sol" MarketPlace_Cel; \
 	elif [ '$(experiment)' = 'etherdelta' ]; then \
 		${VERISOL} "EtherDelta\contracts\contract.sol" EtherDelta_Cel; \
-	elif [ '$(experiment)' = 'westlake' ]; then \
-		${VERISOL} "Westlake\contracts\contract.sol" Members_Cel; \
 	elif [ '$(experiment)' = 'erc20' ]; then \
 		${VERISOL} "OpenZeppelin\ERC20\contracts\contract.sol" ERC20_Cel; \
 	elif [ '$(experiment)' = 'wrapped_ether' ]; then \
@@ -132,23 +123,16 @@ perf:
 		cd AssetTransfer && ${TRUFFLE} test/assetTransfer.js; \
 	elif [ '$(experiment)' = 'erc20' ]; then \
 		cd OpenZeppelin/ERC20 && ${TRUFFLE} test/erc20.js; \
-	elif [ '$(experiment)' = 'westlake' ]; then \
-		cd Westlake && ${TRUFFLE} test/westlake.js; \
 	elif [ '$(experiment)' = 'wrapped_ether' ]; then \
 		cd WrappedEther && ${TRUFFLE} test/wrappedEther.js; \
 	elif [ '$(experiment)' = 'multisig' ]; then \
 		cd ConsenSys/MultiSig && ${TRUFFLE} test/multisig.js; \
 	elif [ '$(experiment)' = 'simple_auction' ]; then \
 		cd SimpleAuction && ${TRUFFLE} test/simpleAuction.js; \
-	elif [ '$(experiment)' = 'binancecoin' ]; then \
-		cd BinanceCoin && ${TRUFFLE} test/binanceCoin.js; \
 	else \
 		echo "Invalid experiment argument to target 'perf'"; \
 	fi;
 
-sample:
-	@${COMPILER} ../Compiler/Tests/sample.cel --outputDir="../Compiler/tests"
-	$(call TIME,--include ../Compiler/Tests/ ../Compiler/Tests/sample.fst,sample)
 
 overview:
 	$(MAKE) compile experiment=overview
@@ -162,11 +146,6 @@ asset_transfer :
 etherdelta:
 	$(MAKE) compile experiment=etherdelta
 	$(MAKE) verify experiment=etherdelta
-
-westlake:
-	$(MAKE) compile experiment=westlake
-	$(MAKE) verify experiment=westlake
-	$(MAKE) perf experiment=westlake
 
 erc20:
 	$(MAKE) compile experiment=erc20
@@ -191,4 +170,3 @@ simple_auction:
 binancecoin:
 	$(MAKE) compile experiment=binancecoin
 	$(MAKE) verify experiment=binancecoin
-	$(MAKE) perf experiment=binancecoin
