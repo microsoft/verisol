@@ -1,8 +1,3 @@
-/**
-Address: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
-Value (April 30, 2020): $549,584,248.00 
- */
-
 pragma solidity^0.6.8;
 
 import { Safe_Arith } from "./Safe_Arith.sol" ; 
