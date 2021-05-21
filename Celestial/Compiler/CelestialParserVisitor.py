@@ -1,4 +1,4 @@
-# Generated from .\CelestialParser.g4 by ANTLR 4.7.2
+# Generated from CelestialParser.g4 by ANTLR 4.7.1
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .CelestialParser import CelestialParser
@@ -11,6 +11,41 @@ class CelestialParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by CelestialParser#program.
     def visitProgram(self, ctx:CelestialParser.ProgramContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by CelestialParser#pragmaDirective.
+    def visitPragmaDirective(self, ctx:CelestialParser.PragmaDirectiveContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by CelestialParser#pragmaValue.
+    def visitPragmaValue(self, ctx:CelestialParser.PragmaValueContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by CelestialParser#version.
+    def visitVersion(self, ctx:CelestialParser.VersionContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by CelestialParser#versionConstraint.
+    def visitVersionConstraint(self, ctx:CelestialParser.VersionConstraintContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by CelestialParser#versionOperator.
+    def visitVersionOperator(self, ctx:CelestialParser.VersionOperatorContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by CelestialParser#importDirective.
+    def visitImportDirective(self, ctx:CelestialParser.ImportDirectiveContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by CelestialParser#importDeclaration.
+    def visitImportDeclaration(self, ctx:CelestialParser.ImportDeclarationContext):
         return self.visitChildren(ctx)
 
 
@@ -49,6 +84,16 @@ class CelestialParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by CelestialParser#enumDecl.
+    def visitEnumDecl(self, ctx:CelestialParser.EnumDeclContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by CelestialParser#structDecl.
+    def visitStructDecl(self, ctx:CelestialParser.StructDeclContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by CelestialParser#FDecl.
     def visitFDecl(self, ctx:CelestialParser.FDeclContext):
         return self.visitChildren(ctx)
@@ -69,8 +114,13 @@ class CelestialParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by CelestialParser#IDecl.
-    def visitIDecl(self, ctx:CelestialParser.IDeclContext):
+    # Visit a parse tree produced by CelestialParser#invariantDecl.
+    def visitInvariantDecl(self, ctx:CelestialParser.InvariantDeclContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by CelestialParser#invariantBody.
+    def visitInvariantBody(self, ctx:CelestialParser.InvariantBodyContext):
         return self.visitChildren(ctx)
 
 
@@ -79,8 +129,18 @@ class CelestialParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by CelestialParser#KDecl.
-    def visitKDecl(self, ctx:CelestialParser.KDeclContext):
+    # Visit a parse tree produced by CelestialParser#constructorDecl.
+    def visitConstructorDecl(self, ctx:CelestialParser.ConstructorDeclContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by CelestialParser#spec.
+    def visitSpec(self, ctx:CelestialParser.SpecContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by CelestialParser#stateMutability.
+    def visitStateMutability(self, ctx:CelestialParser.StateMutabilityContext):
         return self.visitChildren(ctx)
 
 
@@ -104,8 +164,18 @@ class CelestialParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by CelestialParser#returnStatement.
+    def visitReturnStatement(self, ctx:CelestialParser.ReturnStatementContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by CelestialParser#varDecl.
     def visitVarDecl(self, ctx:CelestialParser.VarDeclContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by CelestialParser#usingForDecl.
+    def visitUsingForDecl(self, ctx:CelestialParser.UsingForDeclContext):
         return self.visitChildren(ctx)
 
 
@@ -114,158 +184,33 @@ class CelestialParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by CelestialParser#CompoundStmt.
-    def visitCompoundStmt(self, ctx:CelestialParser.CompoundStmtContext):
+    # Visit a parse tree produced by CelestialParser#statement.
+    def visitStatement(self, ctx:CelestialParser.StatementContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by CelestialParser#PushStmt.
-    def visitPushStmt(self, ctx:CelestialParser.PushStmtContext):
+    # Visit a parse tree produced by CelestialParser#elseStatement.
+    def visitElseStatement(self, ctx:CelestialParser.ElseStatementContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by CelestialParser#DeleteStmt.
-    def visitDeleteStmt(self, ctx:CelestialParser.DeleteStmtContext):
+    # Visit a parse tree produced by CelestialParser#lvalue.
+    def visitLvalue(self, ctx:CelestialParser.LvalueContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by CelestialParser#AssertStmt.
-    def visitAssertStmt(self, ctx:CelestialParser.AssertStmtContext):
+    # Visit a parse tree produced by CelestialParser#logcheck.
+    def visitLogcheck(self, ctx:CelestialParser.LogcheckContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by CelestialParser#PrintStmt.
-    def visitPrintStmt(self, ctx:CelestialParser.PrintStmtContext):
+    # Visit a parse tree produced by CelestialParser#expr.
+    def visitExpr(self, ctx:CelestialParser.ExprContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by CelestialParser#ReturnStmt.
-    def visitReturnStmt(self, ctx:CelestialParser.ReturnStmtContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#AssignStmt.
-    def visitAssignStmt(self, ctx:CelestialParser.AssignStmtContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#IfStmt.
-    def visitIfStmt(self, ctx:CelestialParser.IfStmtContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#CreateStmt.
-    def visitCreateStmt(self, ctx:CelestialParser.CreateStmtContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#ForStmt.
-    def visitForStmt(self, ctx:CelestialParser.ForStmtContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#MethodCallStmt.
-    def visitMethodCallStmt(self, ctx:CelestialParser.MethodCallStmtContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#SendStmt.
-    def visitSendStmt(self, ctx:CelestialParser.SendStmtContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#RevertStmt.
-    def visitRevertStmt(self, ctx:CelestialParser.RevertStmtContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#NamedTupleLvalue.
-    def visitNamedTupleLvalue(self, ctx:CelestialParser.NamedTupleLvalueContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#MapOrArrayLvalue.
-    def visitMapOrArrayLvalue(self, ctx:CelestialParser.MapOrArrayLvalueContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#VarLvalue.
-    def visitVarLvalue(self, ctx:CelestialParser.VarLvalueContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#CreateExpr.
-    def visitCreateExpr(self, ctx:CelestialParser.CreateExprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#ArrayMapAccessExpr.
-    def visitArrayMapAccessExpr(self, ctx:CelestialParser.ArrayMapAccessExprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#PrimitiveExpr.
-    def visitPrimitiveExpr(self, ctx:CelestialParser.PrimitiveExprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#CastExpr.
-    def visitCastExpr(self, ctx:CelestialParser.CastExprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#FieldAccessExpr.
-    def visitFieldAccessExpr(self, ctx:CelestialParser.FieldAccessExprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#BinExpr.
-    def visitBinExpr(self, ctx:CelestialParser.BinExprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#ParenExpr.
-    def visitParenExpr(self, ctx:CelestialParser.ParenExprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#ArrayLengthExpr.
-    def visitArrayLengthExpr(self, ctx:CelestialParser.ArrayLengthExprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#UnaryExpr.
-    def visitUnaryExpr(self, ctx:CelestialParser.UnaryExprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#MethodCallExpr.
-    def visitMethodCallExpr(self, ctx:CelestialParser.MethodCallExprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#IdenPrimitive.
-    def visitIdenPrimitive(self, ctx:CelestialParser.IdenPrimitiveContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#BoolPrimitive.
-    def visitBoolPrimitive(self, ctx:CelestialParser.BoolPrimitiveContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#IntPrimitive.
-    def visitIntPrimitive(self, ctx:CelestialParser.IntPrimitiveContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#NullPrimitive.
-    def visitNullPrimitive(self, ctx:CelestialParser.NullPrimitiveContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by CelestialParser#ThisPrimitive.
-    def visitThisPrimitive(self, ctx:CelestialParser.ThisPrimitiveContext):
+    # Visit a parse tree produced by CelestialParser#primitive.
+    def visitPrimitive(self, ctx:CelestialParser.PrimitiveContext):
         return self.visitChildren(ctx)
 
 

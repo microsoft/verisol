@@ -1,4 +1,4 @@
-# Generated from .\Compiler\CelestialParser.g4 by ANTLR 4.8
+# Generated from CelestialParser.g4 by ANTLR 4.7.1
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .CelestialParser import CelestialParser
@@ -413,5 +413,3 @@ class CelestialParserListener(ParseTreeListener):
         pass
 
 
-
-del CelestialParser

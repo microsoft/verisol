@@ -1189,8 +1189,9 @@ class MyListener(CelestialParserListener):
 
         elif (ctx.IN()):
             isMFI = self.getIsMethodFuncInv(self.currentScope)
-            if isMFI == "method":
-                revert ("<ERROR>: 'in' cannot be used inside methods")
+            # if isMFI == "method":
+            #     print (ctx.getText())
+            #     revert ("<ERROR>: 'in' cannot be used inside methods")
             op1 = ctx.getChild(0)
             op2 = ctx.getChild(2)
             op1Type = self.exprType(op1, scope)

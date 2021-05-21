@@ -125,3 +125,4 @@ These syntactic changes can be resolved in the following ways:
 
 * The Celestial -> F* and Celestial -> Solidity prettyprinters do lightweight typechecking. This will also be removed - F*'s typechecker suffices.
 * F* verification may fail with an `unknown assertion failed` error if the contract is large. In such cases, the `z3rlimit` has to be increased.
+* The specification eraser can sometimes reorder field variable declarations. However, this does not affect the semantics of the contract. This will be fixed in a future update.

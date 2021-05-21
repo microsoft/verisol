@@ -1,13 +1,9 @@
-# Generated from .\Compiler\CelestialParser.g4 by ANTLR 4.8
+# Generated from CelestialParser.g4 by ANTLR 4.7.1
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
+from typing.io import TextIO
 import sys
-if sys.version_info[1] > 5:
-	from typing import TextIO
-else:
-	from typing.io import TextIO
-
 
 def serializedATN():
     with StringIO() as buf:
@@ -814,10 +810,9 @@ class CelestialParser ( Parser ):
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.8")
+        self.checkVersion("4.7.1")
         self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
-
 
 
 
@@ -908,7 +903,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class PragmaDirectiveContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -965,7 +959,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class PragmaValueContext(ParserRuleContext):
 
@@ -1024,7 +1017,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class VersionContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1077,7 +1069,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class VersionConstraintContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1129,7 +1120,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class VersionOperatorContext(ParserRuleContext):
 
@@ -1193,7 +1183,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class ImportDirectiveContext(ParserRuleContext):
 
@@ -1396,7 +1385,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ImportDeclarationContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1454,7 +1442,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class IdenContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1493,7 +1480,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class DatatypeContext(ParserRuleContext):
 
@@ -1719,7 +1705,6 @@ class CelestialParser ( Parser ):
             self.unrollRecursionContexts(_parentctx)
         return localctx
 
-
     class IdenTypeListContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1782,7 +1767,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class IdenTypeContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1835,7 +1819,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ContractDeclContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1887,7 +1870,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class ContractBodyContext(ParserRuleContext):
 
@@ -1952,7 +1934,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class ContractContentsContext(ParserRuleContext):
 
@@ -2081,7 +2062,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class EnumDeclContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -2161,7 +2141,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class StructDeclContext(ParserRuleContext):
 
@@ -2256,7 +2235,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class FunDeclContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -2340,7 +2318,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class FunParamListContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -2403,7 +2380,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class FunParamContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -2450,7 +2426,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class FunctionBodyContext(ParserRuleContext):
 
@@ -2501,7 +2476,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class InvariantDeclContext(ParserRuleContext):
 
@@ -2555,7 +2529,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class InvariantBodyContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -2605,7 +2578,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class EventDeclContext(ParserRuleContext):
 
@@ -2701,7 +2673,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class ConstructorDeclContext(ParserRuleContext):
 
@@ -2862,7 +2833,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class SpecContext(ParserRuleContext):
 
@@ -3171,7 +3141,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class StateMutabilityContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -3222,7 +3191,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class MethodDeclContext(ParserRuleContext):
 
@@ -3459,7 +3427,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class MethodParamListContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -3522,7 +3489,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class MethodParamContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -3569,7 +3535,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class MethodBodyContext(ParserRuleContext):
 
@@ -3658,7 +3623,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ReturnStatementContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -3715,7 +3679,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class VarDeclContext(ParserRuleContext):
 
@@ -3785,7 +3748,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class UsingForDeclContext(ParserRuleContext):
 
@@ -3863,7 +3825,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class LoopVarDeclContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -3937,7 +3898,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class StatementContext(ParserRuleContext):
 
@@ -4623,7 +4583,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ElseStatementContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -4668,7 +4627,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class LvalueContext(ParserRuleContext):
 
@@ -4775,7 +4733,6 @@ class CelestialParser ( Parser ):
         finally:
             self.unrollRecursionContexts(_parentctx)
         return localctx
-
 
     class LogcheckContext(ParserRuleContext):
 
@@ -4887,7 +4844,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class ExprContext(ParserRuleContext):
 
@@ -5631,7 +5587,6 @@ class CelestialParser ( Parser ):
             self.unrollRecursionContexts(_parentctx)
         return localctx
 
-
     class PrimitiveContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -5922,7 +5877,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class UnnamedTupleBodyContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -6006,7 +5960,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class NamedTupleBodyContext(ParserRuleContext):
 
@@ -6122,7 +6075,6 @@ class CelestialParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class RvalueListContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -6184,7 +6136,6 @@ class CelestialParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
-
 
     class RvalueContext(ParserRuleContext):
 

@@ -1,9 +1,8 @@
-# Generated from .\Compiler\CelestialLexer.g4 by ANTLR 4.8
+# Generated from CelestialLexer.g4 by ANTLR 4.7.1
 from antlr4 import *
 from io import StringIO
 from typing.io import TextIO
 import sys
-
 
 
 def serializedATN():
@@ -712,7 +711,7 @@ class CelestialLexer(Lexer):
 
     def __init__(self, input=None, output:TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.8")
+        self.checkVersion("4.7.1")
         self._interp = LexerATNSimulator(self, self.atn, self.decisionsToDFA, PredictionContextCache())
         self._actions = None
         self._predicates = None
