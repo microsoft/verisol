@@ -22,6 +22,7 @@ contract <contract_name>
 
     function <function_name> (<args>)
         <public/private>
+        <pure/constant/view>
         <credit> <debit>
         pre <expression : bool>
         post <expression : bool>
@@ -89,4 +90,38 @@ The `log` is a specification-only variable (cannot be used in the contract body)
 Celestial also supports quantifiers in specification expressions as follows: `forall/exists (<type1> <var1>, <type2> <var2>, ...) (<boolean_expression_over_quantified_vars>)`. Note that excessive use of quantifiers can pollute Z3's VCs and may cause verification to break.
 
 ### macros
-Celestial supports macros such as `sum_mapping` which sums all values contained in a `mapping (... => uint)`. It also supports checking membership of a key within a `mapping` using the `in` keyword (e.g. `... && (key in map_var) ...`). Soldity does not support these constructs, and hence are specification-only within Celestial. (Note, Solidity's `mapping()` type does not have the concept of a domain - all keys of that type are present in the mapping. However, we extend this mapping type in our F* model to allow writing more expressive specifications with respect to key membership in a mapping, say after adding or removing an element from the mapping).
+Celestial supports macros such as `sum_mapping` which sums all values contained in a `mapping (... => uint)`. It also supports checking membership of a key within a `mapping` using the `in` keyword (e.g. `... && (key in map_var) ...`). Soldity does not support these constructs, and hence are specification-only within Celestial. (Note, Solidity's `mapping()` type does not have the concept of a domain - all keys of that type are present in the mapping. However, we extend this mapping type in our F* model to allow writing more expressive specifications with respect to key membership in a mapping, say after adding or removing an element from the mapping). Celestial also provides a way to concisely represent the following predicate - A map has only a key `k` updated with value `v` while keeping the other key-value pairs same - using the syntax `new(map_var) == map_var[k => v]`.
+
+The support for custom macros and functions is only bounded by F*'s expressiveness. It is easy to add new macros to Celestial to ease developer effort and to support more intricate specifications, akin to programming in F* directly, albeit in a more imperative style. These were just few macros that we found particularly useful during our analysis of popular smart contracts.
+
+<hr />
+
+## Deviations from Solidity
+
+Celestial's flavour of Solidity has minor syntactic changes compared to vanilla Solidity and also has some restrictions. We are working on Celestial to support vanilla Solidity for a better developer experience. Until then, the following are the changes:
+* `msg.value` is just `value` in Celestial
+* `msg.sender` is just `sender` in Celestial
+* `address(this).balance` is just `balance` in Celestial
+* The zero address `address(0)` is `null` in Celestial
+* Celestial defines macros `uint_max`, `int_max` and `int_min` that correspond to `~uint256(0)`, `(int256(~(uint256(1) << 255)))` and `(int256(uint256(1) << 255))` respectively (the maximum and minimum values for the `uint` and `int` types).
+* Celestial requires `return`ing only at the end of a function and not in between.
+* Functions in Celestial require explicitly writing a `return` at the end of the function body. 
+* Celestial supports a type `inst_map<T>` where `T` is a contract type. This is just a `mapping (Item => bool)` in Solidity with additonal semantics during verification. The semantics are as follows:
+    * Any addresses in an `inst_map<T>` are guaranteed to be of a contract type `T`, which in turn gives stronger guarantees on methods invoked on contract instances corresponding to this address.
+    * This is ensured by allowing additions into the `inst_map` only via an `add()` function defined on the `inst_map` that requires `new T(...)` as an argument - such a restriction guarantees that the addresses are of type `T`.
+    * Additions to the `inst_map` translate to setting the value in the `mapping` to `true`.
+    * Lookups of an address from the `inst_map` returns the contract instance corresponding to that address if present (i.e. if the `mapping` value is `true`) or `address(0)` otherwise.
+* `inst_map`s in specifications can only be used within `spec` functions and cannot be inlined in the `pre`, `post` and `tx_reverts` conditions.
+* Local variables cannot be mutated within blocks.
+* Explicit casting is not allowed, for e.g.: `Item(some_address)`
+
+These syntactic changes can be resolved in the following ways:
+* Exposing a lightweight library for the macros `uint_max`, ...
+* Use Solidity's `mapping(T => bool)` itself in place of `inst_map<T>`s but provide an extra annotation (for the verification backend) to mark this `mapping()` to semantically equivalent to an `inst_map`. This annotation will be erased along with other specifications.
+* Removing mandatory `return` statements is just a tweak in the prettyprinter.
+* Field variables can be used instead of local variables if their mutability is required within blocks.
+
+## Other remarks
+
+* The Celestial -> F* and Celestial -> Solidity prettyprinters do lightweight typechecking. This will also be removed - F*'s typechecker suffices.
+* F* verification may fail with an `unknown assertion failed` error if the contract is large. In such cases, the `z3rlimit` has to be increased.
