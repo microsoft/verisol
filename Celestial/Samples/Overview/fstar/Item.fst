@@ -91,6 +91,41 @@ let item_set_market (c:item_address) (_market:address)
   let item_inst = { item_inst with item_market = _market } in
   set_contract c item_inst
 
+let item_constructor (self:item_address) (sender:address) (value:uint) (tx:tx) (block:block) (_s:address) (_m:address) (_p:uint)
+: Eth1 unit
+  (fun bst -> 
+    item_live self bst /\
+    (let b = pure_get_balance_bst self bst in
+    let cs = CM.sel self bst.cmap in
+      (sender <> null)
+      /\ (cs.item_seller == null)
+      /\ (cs.item_price == 0)
+      /\ (cs.item_market == null)
+    )
+  )
+  (fun bst -> False)
+  (fun bst0 x bst1 ->
+    item_live self bst1 /\ (
+    let cs1 = CM.sel self bst1.cmap in
+    let b0 = pure_get_balance_bst self bst0 in
+    let b1 = pure_get_balance_bst self bst1 in
+    let l0 = bst0.log in
+    let l1 = bst1.log in
+      (bst0.balances == bst1.balances)
+      /\ (l0 == l1)
+      /\ CM.modifies_addrs (Set.singleton self) bst0.cmap bst1.cmap
+  ))
+=
+let cs = get_contract self in
+let balance = get_balance self in
+let _ = item_set_seller self _s in
+let cs = get_contract self in
+let _ = item_set_price self _p in
+let cs = get_contract self in
+let _ = item_set_market self _m in
+let cs = get_contract self in
+()
+
 let getSeller (self:item_address) (sender:address{sender <> null}) (value:uint) (tx:tx) (block:block)
 : Eth1 address
   (fun bst ->

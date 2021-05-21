@@ -131,6 +131,7 @@ let cs = get_contract self in
 let balance = get_balance self in
 let x1 = ((
 let contract_addr = create_contract ({item_seller = null; item_price = 0; item_market = null; }) in 
+let _ = item_constructor contract_addr self 0 tx block self sender price in
 let _ = simplemarket_set_itemsToSell self (M.upd cs.simplemarket_itemsToSell contract_addr true) in contract_addr)) in
 let itemId = x1 in
 let cs = get_contract self in
@@ -164,11 +165,11 @@ let buy (self:simplemarket_address) (sender:address{sender <> null}) (value:uint
     let l1 = bst1.log in
     (balanceAndSellerCredits self bst1)
       /\ ((((~ (((M.contains cs1.simplemarket_itemsToSell itemId)))) /\ (M.equal cs1.simplemarket_sellerCredits (
-                  let x1 = (cs0.simplemarket_sellerCredits) in
-                  let x2 = (seller) in
-                  let x3 = (((M.sel cs0.simplemarket_sellerCredits seller) + value)) in
-                  let x1 = (M.upd x1 x2 x3) in
-                  x1))) /\ (l1 == ((mk_event null simplemarket_eItemSold (sender, itemId))::l0))))
+                let x1 = (cs0.simplemarket_sellerCredits) in
+                let x2 = (seller) in
+                let x3 = (((M.sel cs0.simplemarket_sellerCredits seller) + value)) in
+                let x1 = (M.upd x1 x2 x3) in
+                x1))) /\ (l1 == ((mk_event null simplemarket_eItemSold (sender, itemId))::l0))))
   ))
 =
 let b = get_balance self in
@@ -242,11 +243,11 @@ let withdraw (self:simplemarket_address) (sender:address{sender <> null}) (value
     let l1 = bst1.log in
     (balanceAndSellerCredits self bst1)
       /\ ((((M.equal cs1.simplemarket_sellerCredits (
-                    let x1 = (cs0.simplemarket_sellerCredits) in
-                    let x2 = (sender) in
-                    let x3 = ((M.sel cs0.simplemarket_sellerCredits sender) - amount) in
-                    let x1 = (M.upd x1 x2 x3) in
-                    x1))) /\ (cs1.simplemarket_totalCredits == (cs0.simplemarket_totalCredits - amount))) /\ (b1 == (b0 - amount)))
+                  let x1 = (cs0.simplemarket_sellerCredits) in
+                  let x2 = (sender) in
+                  let x3 = ((M.sel cs0.simplemarket_sellerCredits sender) - amount) in
+                  let x1 = (M.upd x1 x2 x3) in
+                  x1))) /\ (cs1.simplemarket_totalCredits == (cs0.simplemarket_totalCredits - amount))) /\ (b1 == (b0 - amount)))
       /\ (b1 <= b0)
   ))
 =

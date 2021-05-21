@@ -3,6 +3,16 @@ import {Safe_Arith} from"./Safe_Arith.sol";
 
 contract Item {
     address seller; uint price; address market;
+
+    constructor (address _s, address _m, uint _p)
+        modifies_addresses [this]
+    {
+        seller = _s;
+        price = _p;
+        market = _m;
+        return;
+    }
+
     function getSeller () 
         post (s == seller)
         modifies []
@@ -55,7 +65,7 @@ contract SimpleMarket {
         returns (address seller)
     {
         Item item = itemsToSell[itemId];
-        if (item == null) { revert ("No such item"); }
+        if (address(item) == null) { revert ("No such item"); }
         uint iPrice;
         iPrice = item.getPrice();
         if (value != iPrice) 

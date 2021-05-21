@@ -8,6 +8,13 @@ contract Item {
     uint price;
     address market;
 
+    constructor (address _s, address _m, uint _p) public {
+        seller = _s;
+        price = _p;
+        market = _m;
+        return;
+    }
+
     function getSeller () public returns (address s) {
         return seller;
     }
@@ -40,7 +47,7 @@ contract SimpleMarket {
 
     function buy (address itemId) public payable returns (address seller) {
         Item item = get_from_itemsToSell(Item(payable(itemId)));
-        if (item == address(0))
+        if (address(item) == address(0))
         {
             revert ("No such item");
         }
