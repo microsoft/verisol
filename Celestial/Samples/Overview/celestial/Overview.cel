@@ -1,179 +1,85 @@
-contract Item_Cel
-{
-    address market;
-    address sellerId;
-    uint price;
+pragma solidity^0.6.8;
+import {Safe_Arith} from"./Safe_Arith.sol";
 
-    spec querySellerPost (address _r, address old_sellerId)
-    {
-        _r == old_sellerId
-    }
-
-    spec queryPricePost (uint _r, uint old_price)
-    {
-        _r == old_price
-    }
-
-    constructor (address _market, address _sellerId, uint _price)
-        modifies_addresses [this]
-    {
-        market = _market;
-        sellerId = _sellerId;
-        price = _price;
-        return;
-    }
-
-    // demo: function with return value and empty modifies
-    function querySeller () 
-        post querySellerPost(a, sellerId)
+contract Item {
+    address seller; uint price; address market;
+    function getSeller () 
+        post (s == seller)
         modifies []
         modifies_addresses [this]
-        returns (address a)
-    {
-        a = sellerId;
-        return a;
-    }
-
-    function queryPrice () 
-        post queryPricePost(r, price)
+        returns (address s) 
+    { return seller; }
+    
+    function getPrice ()
+        post (ret == price) 
         modifies []
         modifies_addresses [this]
-        returns (uint r)
-    {
-        r = price;
-        return r;
-    }
+        returns (uint ret)
+    { return price; }
 }
 
-// The world's best blockchain powered e-commerce platform!
-contract FlipMart_Cel
-{
-    inst_map<Item_Cel> itemsToSell; // mapping (address => bool) in Solidity
-    mapping (address => uint) sellerCredits;
-    uint sumCredits;
+contract SimpleMarket {
+    mapping(address => uint) sellerCredits;
+    inst_map<Item> itemsToSell;
+    uint totalCredits;
+    event eNewItem (address, address);
+    event eItemSold (address, address);
 
-    event eNewItem (address);
-    event eItemSold (uint);
-
-    // demo: invariant involving balance
-    invariant balanceAndValuation
-    {
-        balance == sumCredits
+    invariant balanceAndSellerCredits {
+        balance == totalCredits &&
+        totalCredits >= sum_mapping (sellerCredits)
     }
 
-    invariant balanceAndValuation2
+    function sell (uint price) public 
+        post (itemId in new(itemsToSell))
+        returns (address itemId)
     {
-        sumCredits == sum_mapping (sellerCredits)
+        itemId = itemsToSell.add(new Item(address(this), sender, price));
+        return itemId;
     }
 
-    // invariant balanceAndValuation3
-    // {
-    //     forall (address i) (sellerCredits[i] <= balance)
-    // }
-
-    // demo: post-condition
-    // demo: update to log
-    // TODO: syntax
-    spec sellPost (address _itemAddress, inst_map<Item_Cel> old_ItemsToSell, inst_map<Item_Cel> new_ItemsToSell, eventlog old_log, eventlog new_log, address _sender)
-    {
-        // new_ItemsToSell == old_ItemsToSell [_itemAddress => true]
-        (_itemAddress in new_ItemsToSell) && !(_itemAddress in old_ItemsToSell) &&
-        new_log == (_sender, eNewItem, _itemAddress)::old_log
-    }
-
-    // demo: modifies and post-condition
-    function sell (uint sellingPrice) public 
-        post sellPost(itemAddress, itemsToSell, new(itemsToSell) , log, new(log), sender)
-        modifies [itemsToSell, log]
-        returns (address itemAddress)
-    {
-        // demo: sending a normal event
-        // demo: highlight that this does not break transaction boundaries
-
-        itemAddress = itemsToSell.add(new Item_Cel(address(this), sender, sellingPrice));
-        send(sender, eNewItem, itemAddress);
-        return itemAddress;
-    }
-
-    spec buyReverts (address _itemAddress, inst_map<Item_Cel> old_itemsToSell, mapping (address => uint) old_sellerCredits, uint _value, uint old_sumCredits)
+    spec buyReverts (address _itemAddress, inst_map<Item> old_itemsToSell, mapping (address => uint) old_sellerCredits, uint _value, uint old_sumCredits)
     {
         ! (_itemAddress in old_itemsToSell)
-        || (_value != old_itemsToSell[_itemAddress].price) 
-        // || (_value + old_sellerCredits[old_itemsToSell[_itemAddress].sellerId] > uint_max)
+        || (_value != old_itemsToSell[_itemAddress].price)
         || (_value + old_sumCredits > uint_max)
     }
 
-    spec buyPost (
-        address _itemAddress,
-        inst_map<Item_Cel> old_ItemsToSell,
-        inst_map<Item_Cel> new_ItemsToSell,
-        mapping (address => uint) old_sellerCredits,
-        mapping (address => uint) new_sellerCredits,
-        address _buyer,
-        eventlog old_log,
-        eventlog new_log
-    ) {
-        (_itemAddress in old_ItemsToSell)
-        && !(_itemAddress in new_ItemsToSell)
-        && old_sellerCredits[old_ItemsToSell[_itemAddress].sellerId] + old_ItemsToSell[_itemAddress].price <= uint_max // to correctly typecheck this function
-        && new_sellerCredits == old_sellerCredits[old_ItemsToSell[_itemAddress].sellerId => old_sellerCredits[old_ItemsToSell[_itemAddress].sellerId] + old_ItemsToSell[_itemAddress].price]
-        && new_log == (_buyer, eItemSold, _itemAddress)::old_log
+    function buy (address itemId) public credit
+        post (!(itemId in new(itemsToSell))
+                && new(sellerCredits) == sellerCredits[seller => (sellerCredits[seller] + value)]
+                && new(log) == (eItemSold, sender, itemId)::log)
+        tx_reverts buyReverts (itemId, itemsToSell, sellerCredits, value, totalCredits)
+            
+        modifies [sellerCredits, totalCredits, itemsToSell, log]
+        returns (address seller)
+    {
+        Item item = itemsToSell[itemId];
+        if (item == null) { revert ("No such item"); }
+        uint iPrice;
+        iPrice = item.getPrice();
+        if (value != iPrice) 
+        {	revert ("Incorrect price"); }
+        seller = item.getSeller();
+        totalCredits = safe_add (totalCredits, value);
+        sellerCredits[seller] = sellerCredits[seller] + value; 
+        delete (itemsToSell, itemId);
+        emit eItemSold(sender, itemId);
+        return seller;
     }
 
-    function buy (address itemAddress) public    
-        credit
-        post buyPost(itemAddress, itemsToSell, new(itemsToSell), sellerCredits, new(sellerCredits), sender, log, new(log))
-        tx_reverts buyReverts (itemAddress, itemsToSell, sellerCredits, value, sumCredits)
-        modifies [sellerCredits, itemsToSell, sumCredits]
+    function withdraw (uint amount) public debit
+        pre address(this) != sender
+        post (new(sellerCredits) == sellerCredits[sender => sellerCredits[sender] - amount])
+             && new(totalCredits) == totalCredits - amount
+             && new(balance) == balance - amount
+        tx_reverts sellerCredits [sender] < amount
     {
-        // demo: default value of mapping
-        Item_Cel item = itemsToSell[itemAddress];
-        if (item == null)
-        {
-            revert("<ErrorLog>: The selected item does not exist or has been sold already");
-        }
-
-        uint price;
-        price = item.queryPrice();
-        if (value != price)
-        {
-            revert("<ErrorLog>: Incorrect price");
-        }
-
-        // demo: function call for trusted contracts
-        address seller;
-        seller = item.querySeller();
-
-        sumCredits = safe_add(sumCredits, price);
-        sellerCredits[seller] = (sellerCredits[seller] + price);
-
-        delete(itemsToSell, itemAddress);
-        send (sender, eItemSold, itemAddress);
-        return;
-    }
-
-    function withdraw (uint amount) public
-        debit
-        post (new(log) == (sender, eTransfer, amount)::log && 
-            ite 
-            (
-                new(balance) < balance,
-                new(sellerCredits) == sellerCredits[sender => sellerCredits[sender] - amount],
-                new(balance) == balance && new(sellerCredits) == sellerCredits
-            ))
-        tx_reverts sellerCredits [sender] < amount || balance < amount
-    {
-        uint bal = balance;
-        if (sellerCredits [sender] >= amount) {
-            send(sender, eTransfer, amount);
-            if (balance < bal) {
-                sellerCredits [sender] = sellerCredits[sender] - amount;
-                sumCredits = sumCredits - amount;
-            }
-        }
-        else {
-            revert(" Insufficient balance");
-        }
+        if (sellerCredits[sender] >= amount) {
+            sender.transfer(amount);
+            sellerCredits[sender] = sellerCredits[sender] - amount;
+            totalCredits = totalCredits - amount;
+        } else { revert ("Insufficient balance"); }
         return;
     }
 }

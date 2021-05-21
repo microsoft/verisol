@@ -60,7 +60,7 @@ compile:
 
 verify:
 	@if [ '$(experiment)' = 'overview' ]; then \
-		$(call TIME,--z3rlimit 50 --include Overview/fstar,Overview/fstar/Flipmart_Cel.fst,Flipmart); \
+		$(call TIME,--z3rlimit 50 --include Overview/fstar,Overview/fstar/SimpleMarket.fst,SimpleMarket); \
 	elif [ '$(experiment)' = 'asset_transfer' ]; then \
 		$(call TIME,--z3rlimit 50,AssetTransfer/fstar/MarketPlace_Cel.fst,AssetTransfer); \
 	elif [ '$(experiment)' = 'etherdelta' ]; then \
@@ -106,7 +106,7 @@ compileV:
 
 verifyV:
 	@if [ '$(experiment)' = 'overview' ]; then \
-		${VERISOL} "Overview\contracts\contract.sol" Flipmart_Cel; \
+		${VERISOL} "Overview\contracts\contract.sol" Overview; \
 	elif [ '$(experiment)' = 'asset_transfer' ]; then \
 		${VERISOL} "AssetTransfer\contracts\contract.sol" MarketPlace_Cel; \
 	elif [ '$(experiment)' = 'etherdelta' ]; then \
