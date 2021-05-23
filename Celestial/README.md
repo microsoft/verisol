@@ -4,17 +4,18 @@ Celestial is a framework to develop formally verified smart contracts written in
 
 ![Celestial's Architecture](CelestialArchitecture.png)
 
-We demonstrate Celestial by verifying several real-world smart contracts from different application domains such as tokens, digital wallets, etc.
+We have used Celestial to verify several real-world smart contracts from different application domains. Our experience shows that Celestial is a valuable tool for writing high-assurance smart contracts.
 
 <hr \>
 
 ## Repository Structure
 
 The repository consists of the following directories:
-* `Compiler/`: Contains the source for the prettyprinters
-* `Compiler/lib/`: Contains F* and Solidity libraries
-* `Samples/`: Contains the contracts we verified, with a subdirectory for each contract
-* `Contract_Telemetry/`: Contains scripts used to obtain contract telemetry
+* `Compiler/`: Contains the source for the prettyprinters.
+* `Compiler/lib/`: Contains F* and Solidity libraries.
+* `Samples/`: Contains the contracts we verified, with a subdirectory for each contract.
+* `Contract_Telemetry/`: Contains scripts used for mining the space of smart contracts for telemetry.
+* Read [Celestial Language](Language.md) for a description of the specification and implementation language supported by Celestial.
 
 <hr \>
 
