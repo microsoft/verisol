@@ -285,7 +285,11 @@ assume val unknown_call : (#a:Type0) -> (self:contract a) -> bytes -> Eth (bool 
   /\ (CM.sel self bst1.cmap) == (CM.sel self bst0.cmap)
 )
 
+/// A `.call()` in Celestial is translated to the above function.
+/// However, since Celestial does not support tuple types currently, one of the
+///   two variants below are used until tuple types are supported.
 
+/// A standalone `.call()` statement in Celestial is translated to this variant.
 assume val call_uint : (#a:Type0) -> (self:contract a) -> (b:bytes) -> Eth1 uint
 (fun bst -> self `CM.live_in` bst.cmap)
 (fun bst -> False)
@@ -294,6 +298,8 @@ assume val call_uint : (#a:Type0) -> (self:contract a) -> (b:bytes) -> Eth1 uint
   /\ (CM.sel self bst1.cmap) == (CM.sel self bst0.cmap)
 )
 
+/// A `.call()` in Celestial is translated to this variant if it is used as an
+///   expression, i.e., its return value (a boolean) is used.
 assume val call_bool : (#a:Type0) -> (self:contract a) -> (b:bytes) -> Eth1 bool
 (fun bst -> self `CM.live_in` bst.cmap)
 (fun bst -> False)
@@ -302,15 +308,17 @@ assume val call_bool : (#a:Type0) -> (self:contract a) -> (b:bytes) -> Eth1 bool
   /\ (CM.sel self bst1.cmap) == (CM.sel self bst0.cmap)
 )
 
-assume val addmod : (x:uint) -> (y:uint) -> (k:uint) -> Eth uint
+val addmod : (x:uint) -> (y:uint) -> (k:uint) -> Eth uint
 (fun _ -> True)
 (fun _ -> k == 0)
 (fun _ r _ -> r == (x + y) % k)
+let addmod x y k = if k = 0 then revert "" else (x + y) % k
 
-assume val mulmod : (x:uint) -> (y:uint) -> (k:uint) -> Eth uint
+val mulmod : (x:uint) -> (y:uint) -> (k:uint) -> Eth uint
 (fun _ -> True)
 (fun _ -> k == 0)
 (fun _ r _ -> r == (op_Multiply x y) % k)
+let mulmod x y k = if k = 0 then revert "" else (op_Multiply x y) % k
 
 let safe_mul (a:uint) (b:uint) : Eth uint
 (fun _ -> True)
