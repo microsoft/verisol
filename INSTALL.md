@@ -10,7 +10,7 @@ The following are dynamically installed at VeriSol runtime (the first time only)
 
 Perform the following set of commands:
 ```
-git clone https://github.com/microsoft/verisol.git
+git clone https://github.com/utopia-group/verisol.git
 ```
 
 From %VERISOL_PATH%  (the root folder of the repository), perform
