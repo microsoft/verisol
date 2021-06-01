@@ -6,12 +6,6 @@ The following are dynamically installed at VeriSol runtime (the first time only)
 
 - Follow either **Nuget** package installation directly, or after building the **sources**.
 
-### Install from nuget.org
-Install to the **global** dotnet CLI tools cache so that you can run command  `VeriSol` from anywhere:
-```
-dotnet tool install VeriSol --version 0.1.1-alpha --global
-```
-
 ### Install from sources
 
 Perform the following set of commands:
